@@ -99,7 +99,8 @@ export function SizesManager() {
   }, [charts, query]);
 
   const filteredRows = tab === "sizes" ? filteredSizes : filteredCharts;
-  const allFilteredSelected = filteredRows.length > 0 && filteredRows.every((r) => selected.has(r.id));
+  const allFilteredSelected =
+    filteredRows.length > 0 && filteredRows.every((r) => selected.has(r.id));
   const someFilteredSelected = filteredRows.some((r) => selected.has(r.id));
   const selectedCount = filteredRows.filter((r) => selected.has(r.id)).length;
 
@@ -126,10 +127,11 @@ export function SizesManager() {
     }
     setSaving(true);
     try {
+      // ponytail: omit optionals when empty — exactOptionalPropertyTypes rejects `prop?: T` assigned `T | undefined`
       const payload = {
-        code: sizeForm.code.trim() || undefined,
         label: sizeForm.label.trim(),
-        sort_order: sizeForm.sort_order ? Number(sizeForm.sort_order) : undefined,
+        ...(sizeForm.code.trim() ? { code: sizeForm.code.trim() } : {}),
+        ...(sizeForm.sort_order ? { sort_order: Number(sizeForm.sort_order) } : {}),
       };
       if (editingSize) {
         await adminApi.updateSize(editingSize.id, payload);
@@ -399,10 +401,18 @@ export function SizesManager() {
             note: "Qua size_chart_id",
           },
         ].map((m, i) => (
-          <div key={m.label} className={cn("rounded-md border p-5", i === 0 ? "border-accent bg-accent/25" : "border-border")}>
+          <div
+            key={m.label}
+            className={cn(
+              "rounded-md border p-5",
+              i === 0 ? "border-accent bg-accent/25" : "border-border",
+            )}
+          >
             <p className="section-label">{m.label}</p>
             <p className="mt-3 font-serif text-3xl">{m.value}</p>
-            <p className={cn("mt-1 text-xs", i === 0 ? "text-primary" : "text-muted-foreground")}>{m.note}</p>
+            <p className={cn("mt-1 text-xs", i === 0 ? "text-primary" : "text-muted-foreground")}>
+              {m.note}
+            </p>
           </div>
         ))}
       </section>
@@ -410,16 +420,29 @@ export function SizesManager() {
       <section className="mt-6 overflow-hidden rounded-md border border-border">
         <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex gap-1">
-            <Button variant={tab === "sizes" ? "default" : "ghost"} size="sm" onClick={() => setTab("sizes")}>
+            <Button
+              variant={tab === "sizes" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setTab("sizes")}
+            >
               Mã size
             </Button>
-            <Button variant={tab === "charts" ? "default" : "ghost"} size="sm" onClick={() => setTab("charts")}>
+            <Button
+              variant={tab === "charts" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setTab("charts")}
+            >
               Bảng size
             </Button>
           </div>
           <div className="relative flex-1 lg:w-64">
             <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" placeholder="Tìm…" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="pl-9"
+              placeholder="Tìm…"
+            />
           </div>
         </div>
 
@@ -429,7 +452,12 @@ export function SizesManager() {
             <Button size="sm" variant="outline" disabled={bulkBusy} onClick={bulkDelete}>
               <Trash2 className="size-3.5" /> Xóa
             </Button>
-            <Button size="sm" variant="ghost" disabled={bulkBusy} onClick={() => setSelected(new Set())}>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={bulkBusy}
+              onClick={() => setSelected(new Set())}
+            >
               Bỏ chọn
             </Button>
           </div>
@@ -455,7 +483,10 @@ export function SizesManager() {
                     STT
                   </th>
                   {["Mã", "Nhãn", "Thứ tự", "Biến thể", ""].map((c) => (
-                    <th key={c || "a"} className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                    <th
+                      key={c || "a"}
+                      className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground"
+                    >
                       {c}
                     </th>
                   ))}
@@ -465,46 +496,58 @@ export function SizesManager() {
                 {filteredSizes.map((row, idx) => {
                   const checked = selected.has(row.id);
                   return (
-                  <tr
-                    key={row.id}
-                    className={cn("border-t border-border hover:bg-secondary/35", checked && "bg-accent/20")}
-                  >
-                    <td className="px-3 py-3">
-                      <input
-                        type="checkbox"
-                        aria-label={`Chọn ${row.label}`}
-                        checked={checked}
-                        onChange={() => toggleOne(row.id)}
-                      />
-                    </td>
-                    <td className="px-2 py-3.5 text-center text-xs tabular-nums text-muted-foreground">{idx + 1}</td>
-                    <td className="px-4 py-3.5 font-mono text-xs">{row.code}</td>
-                    <td className="px-4 py-3.5 font-medium">{row.label}</td>
-                    <td className="px-4 py-3.5 text-muted-foreground">{row.sort_order}</td>
-                    <td className="px-4 py-3.5 text-muted-foreground">{row.variant_count}</td>
-                    <td className="px-2">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" aria-label={`Sửa ${row.label}`} onClick={() => openEditSize(row)}>
-                          <MoreHorizontal />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Xóa ${row.label}`}
-                          disabled={row.variant_count > 0}
-                          onClick={() => removeSize(row)}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
+                    <tr
+                      key={row.id}
+                      className={cn(
+                        "border-t border-border hover:bg-secondary/35",
+                        checked && "bg-accent/20",
+                      )}
+                    >
+                      <td className="px-3 py-3">
+                        <input
+                          type="checkbox"
+                          aria-label={`Chọn ${row.label}`}
+                          checked={checked}
+                          onChange={() => toggleOne(row.id)}
+                        />
+                      </td>
+                      <td className="px-2 py-3.5 text-center text-xs tabular-nums text-muted-foreground">
+                        {idx + 1}
+                      </td>
+                      <td className="px-4 py-3.5 font-mono text-xs">{row.code}</td>
+                      <td className="px-4 py-3.5 font-medium">{row.label}</td>
+                      <td className="px-4 py-3.5 text-muted-foreground">{row.sort_order}</td>
+                      <td className="px-4 py-3.5 text-muted-foreground">{row.variant_count}</td>
+                      <td className="px-2">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Sửa ${row.label}`}
+                            onClick={() => openEditSize(row)}
+                          >
+                            <MoreHorizontal />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Xóa ${row.label}`}
+                            disabled={row.variant_count > 0}
+                            onClick={() => removeSize(row)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
                   );
                 })}
               </tbody>
             </table>
             {!loading && filteredSizes.length === 0 && (
-              <div className="grid h-48 place-items-center text-sm text-muted-foreground">Chưa có size.</div>
+              <div className="grid h-48 place-items-center text-sm text-muted-foreground">
+                Chưa có size.
+              </div>
             )}
           </div>
         ) : (
@@ -527,7 +570,10 @@ export function SizesManager() {
                     STT
                   </th>
                   {["Tên bảng", "Đơn vị", "Số đo", "Sản phẩm", ""].map((c) => (
-                    <th key={c || "a"} className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                    <th
+                      key={c || "a"}
+                      className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground"
+                    >
                       {c}
                     </th>
                   ))}
@@ -537,55 +583,73 @@ export function SizesManager() {
                 {filteredCharts.map((ch, idx) => {
                   const checked = selected.has(ch.id);
                   return (
-                  <tr
-                    key={ch.id}
-                    className={cn("border-t border-border hover:bg-secondary/35", checked && "bg-accent/20")}
-                  >
-                    <td className="px-3 py-3">
-                      <input
-                        type="checkbox"
-                        aria-label={`Chọn ${ch.name}`}
-                        checked={checked}
-                        onChange={() => toggleOne(ch.id)}
-                      />
-                    </td>
-                    <td className="px-2 py-3.5 text-center text-xs tabular-nums text-muted-foreground">{idx + 1}</td>
-                    <td className="px-4 py-3.5 font-medium">
-                      <span className="inline-flex items-center gap-2">
-                        <Ruler className="size-3.5 text-muted-foreground" />
-                        {ch.name}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3.5 text-muted-foreground">{ch.unit}</td>
-                    <td className="px-4 py-3.5 text-muted-foreground">{ch.measurements.length}</td>
-                    <td className="px-4 py-3.5 text-muted-foreground">{ch.product_count ?? 0}</td>
-                    <td className="px-2">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" aria-label={`Sửa ${ch.name}`} onClick={() => openEditChart(ch)}>
-                          <MoreHorizontal />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Xóa ${ch.name}`}
-                          disabled={(ch.product_count ?? 0) > 0}
-                          onClick={() => removeChart(ch)}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
+                    <tr
+                      key={ch.id}
+                      className={cn(
+                        "border-t border-border hover:bg-secondary/35",
+                        checked && "bg-accent/20",
+                      )}
+                    >
+                      <td className="px-3 py-3">
+                        <input
+                          type="checkbox"
+                          aria-label={`Chọn ${ch.name}`}
+                          checked={checked}
+                          onChange={() => toggleOne(ch.id)}
+                        />
+                      </td>
+                      <td className="px-2 py-3.5 text-center text-xs tabular-nums text-muted-foreground">
+                        {idx + 1}
+                      </td>
+                      <td className="px-4 py-3.5 font-medium">
+                        <span className="inline-flex items-center gap-2">
+                          <Ruler className="size-3.5 text-muted-foreground" />
+                          {ch.name}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 text-muted-foreground">{ch.unit}</td>
+                      <td className="px-4 py-3.5 text-muted-foreground">
+                        {ch.measurements.length}
+                      </td>
+                      <td className="px-4 py-3.5 text-muted-foreground">{ch.product_count ?? 0}</td>
+                      <td className="px-2">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Sửa ${ch.name}`}
+                            onClick={() => openEditChart(ch)}
+                          >
+                            <MoreHorizontal />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Xóa ${ch.name}`}
+                            disabled={(ch.product_count ?? 0) > 0}
+                            onClick={() => removeChart(ch)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
                   );
                 })}
               </tbody>
             </table>
             {!loading && filteredCharts.length === 0 && (
-              <div className="grid h-48 place-items-center text-sm text-muted-foreground">Chưa có bảng size.</div>
+              <div className="grid h-48 place-items-center text-sm text-muted-foreground">
+                Chưa có bảng size.
+              </div>
             )}
           </div>
         )}
-        {loading && <div className="grid h-48 place-items-center text-sm text-muted-foreground">Đang tải…</div>}
+        {loading && (
+          <div className="grid h-48 place-items-center text-sm text-muted-foreground">
+            Đang tải…
+          </div>
+        )}
         <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
           <span>
             Hiển thị {filteredRows.length} mục
@@ -646,7 +710,9 @@ export function SizesManager() {
           <SheetHeader>
             <p className="section-label text-primary">{editingChart ? "Chỉnh sửa" : "Tạo mới"}</p>
             <SheetTitle className="font-serif text-2xl">Bảng size</SheetTitle>
-            <SheetDescription>Nhập khoảng đo (min–max) theo từng size. Để trống ô nếu không dùng.</SheetDescription>
+            <SheetDescription>
+              Nhập khoảng đo (min–max) theo từng size. Để trống ô nếu không dùng.
+            </SheetDescription>
           </SheetHeader>
           <div className="mt-7 space-y-5">
             <label className="block">
@@ -691,10 +757,16 @@ export function SizesManager() {
                   <tr>
                     <th className="px-3 py-1" />
                     {MEAS_CODES.flatMap((m) => [
-                      <th key={`${m.code}-min`} className="px-1 py-1 text-[9px] font-normal text-muted-foreground">
+                      <th
+                        key={`${m.code}-min`}
+                        className="px-1 py-1 text-[9px] font-normal text-muted-foreground"
+                      >
                         min
                       </th>,
-                      <th key={`${m.code}-max`} className="px-1 py-1 text-[9px] font-normal text-muted-foreground">
+                      <th
+                        key={`${m.code}-max`}
+                        className="px-1 py-1 text-[9px] font-normal text-muted-foreground"
+                      >
                         max
                       </th>,
                     ])}

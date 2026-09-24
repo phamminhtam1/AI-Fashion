@@ -123,8 +123,16 @@ export function CategoriesManager() {
   const metrics = useMemo(
     () => [
       { label: "Tổng danh mục", value: String(items.length), note: "Tất cả trạng thái" },
-      { label: "Đang hiển thị", value: String(items.filter((c) => c.status === "active").length), note: "Public storefront" },
-      { label: "Đã ẩn / lưu trữ", value: String(items.filter((c) => c.status === "archived").length), note: "Không còn trên menu" },
+      {
+        label: "Đang hiển thị",
+        value: String(items.filter((c) => c.status === "active").length),
+        note: "Public storefront",
+      },
+      {
+        label: "Đã ẩn / lưu trữ",
+        value: String(items.filter((c) => c.status === "archived").length),
+        note: "Không còn trên menu",
+      },
     ],
     [items],
   );
@@ -170,13 +178,14 @@ export function CategoriesManager() {
     }
     setSaving(true);
     try {
+      // ponytail: omit optionals when empty — exactOptionalPropertyTypes rejects `prop?: T` assigned `T | undefined`
       const payload = {
         name: form.name.trim(),
-        slug: form.slug.trim() || undefined,
         description: form.description.trim() || null,
-        sort_order: form.sort_order ? Number(form.sort_order) : undefined,
         status: form.status,
         parent_id: form.parent_id || null,
+        ...(form.slug.trim() ? { slug: form.slug.trim() } : {}),
+        ...(form.sort_order ? { sort_order: Number(form.sort_order) } : {}),
       };
       if (editing) {
         await adminApi.updateCategory(editing.id, payload);
@@ -337,12 +346,18 @@ export function CategoriesManager() {
       <>
         {confirmDialog}
         <nav className="mt-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <button type="button" className="hover:text-foreground hover:underline" onClick={backToList}>
+          <button
+            type="button"
+            className="hover:text-foreground hover:underline"
+            onClick={backToList}
+          >
             Danh mục
           </button>
           <span aria-hidden>›</span>
           <span className="text-foreground">
-            {editing ? `Chỉnh sửa danh mục${editing.name ? ` · ${editing.name}` : ""}` : "Thêm danh mục"}
+            {editing
+              ? `Chỉnh sửa danh mục${editing.name ? ` · ${editing.name}` : ""}`
+              : "Thêm danh mục"}
           </span>
         </nav>
         <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
@@ -422,7 +437,9 @@ export function CategoriesManager() {
                 <select
                   className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
                   value={form.status}
-                  onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as "active" | "archived" }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, status: e.target.value as "active" | "archived" }))
+                  }
                 >
                   <option value="active">Đang hiển thị</option>
                   <option value="archived">Đã lưu trữ</option>
@@ -457,10 +474,14 @@ export function CategoriesManager() {
                 <span
                   className={cn(
                     "grid size-4 shrink-0 place-items-center rounded-full border",
-                    !form.parent_id ? "border-foreground bg-foreground" : "border-muted-foreground/40",
+                    !form.parent_id
+                      ? "border-foreground bg-foreground"
+                      : "border-muted-foreground/40",
                   )}
                 >
-                  {!form.parent_id ? <span className="size-1.5 rounded-full bg-background" /> : null}
+                  {!form.parent_id ? (
+                    <span className="size-1.5 rounded-full bg-background" />
+                  ) : null}
                 </span>
                 <span>
                   <span className="block">Gốc (menu chính)</span>
@@ -491,7 +512,9 @@ export function CategoriesManager() {
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate">{c.name}</span>
-                      <span className="block truncate font-mono text-[10px] text-muted-foreground">{c.slug}</span>
+                      <span className="block truncate font-mono text-[10px] text-muted-foreground">
+                        {c.slug}
+                      </span>
                     </span>
                   </button>
                 );
@@ -522,10 +545,18 @@ export function CategoriesManager() {
 
       <section className="mt-6 grid gap-4 sm:grid-cols-3">
         {metrics.map((m, i) => (
-          <div key={m.label} className={cn("rounded-md border p-5", i === 0 ? "border-accent bg-accent/25" : "border-border")}>
+          <div
+            key={m.label}
+            className={cn(
+              "rounded-md border p-5",
+              i === 0 ? "border-accent bg-accent/25" : "border-border",
+            )}
+          >
             <p className="section-label">{m.label}</p>
             <p className="mt-3 font-serif text-3xl">{m.value}</p>
-            <p className={cn("mt-1 text-xs", i === 0 ? "text-primary" : "text-muted-foreground")}>{m.note}</p>
+            <p className={cn("mt-1 text-xs", i === 0 ? "text-primary" : "text-muted-foreground")}>
+              {m.note}
+            </p>
           </div>
         ))}
       </section>
@@ -540,14 +571,24 @@ export function CategoriesManager() {
                 ["archived", "Đã lưu trữ"],
               ] as const
             ).map(([id, label]) => (
-              <Button key={id} variant={tab === id ? "default" : "ghost"} size="sm" onClick={() => setTab(id)}>
+              <Button
+                key={id}
+                variant={tab === id ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setTab(id)}
+              >
                 {label}
               </Button>
             ))}
           </div>
           <div className="relative flex-1 lg:w-64">
             <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" placeholder="Tìm danh mục…" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="pl-9"
+              placeholder="Tìm danh mục…"
+            />
           </div>
         </div>
 
@@ -560,7 +601,12 @@ export function CategoriesManager() {
             <Button size="sm" variant="outline" disabled={bulkBusy} onClick={bulkDestroy}>
               <Trash2 className="size-3.5" /> Xóa
             </Button>
-            <Button size="sm" variant="ghost" disabled={bulkBusy} onClick={() => setSelected(new Set())}>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={bulkBusy}
+              onClick={() => setSelected(new Set())}
+            >
               Bỏ chọn
             </Button>
           </div>
@@ -621,7 +667,10 @@ export function CategoriesManager() {
                         onChange={() => toggleOne(cat.id)}
                       />
                     </td>
-                    <td className="py-2.5 pr-3 align-middle" style={{ paddingLeft: 8 + depth * 20 }}>
+                    <td
+                      className="py-2.5 pr-3 align-middle"
+                      style={{ paddingLeft: 8 + depth * 20 }}
+                    >
                       <div className="flex min-w-0 items-start gap-1.5">
                         {hasKids ? (
                           <button
@@ -630,17 +679,26 @@ export function CategoriesManager() {
                             aria-label={isCollapsed ? "Mở rộng" : "Thu gọn"}
                             onClick={() => toggleCollapse(cat.id)}
                           >
-                            {isCollapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />}
+                            {isCollapsed ? (
+                              <ChevronRight className="size-4" />
+                            ) : (
+                              <ChevronDown className="size-4" />
+                            )}
                           </button>
                         ) : (
-                          <span className="mt-2 ml-2.5 size-1.5 shrink-0 rounded-full bg-border" aria-hidden />
+                          <span
+                            className="mt-2 ml-2.5 size-1.5 shrink-0 rounded-full bg-border"
+                            aria-hidden
+                          />
                         )}
                         <div className="min-w-0">
                           <button
                             type="button"
                             className={cn(
                               "block max-w-full truncate text-left hover:underline",
-                              isRootGroup || hasKids ? "font-semibold tracking-tight" : "font-normal",
+                              isRootGroup || hasKids
+                                ? "font-semibold tracking-tight"
+                                : "font-normal",
                             )}
                             onClick={() => openEdit(cat)}
                           >
@@ -704,9 +762,15 @@ export function CategoriesManager() {
             </tbody>
           </table>
           {!loading && filtered.length === 0 && (
-            <div className="grid h-48 place-items-center text-sm text-muted-foreground">Không tìm thấy danh mục.</div>
+            <div className="grid h-48 place-items-center text-sm text-muted-foreground">
+              Không tìm thấy danh mục.
+            </div>
           )}
-          {loading && <div className="grid h-48 place-items-center text-sm text-muted-foreground">Đang tải…</div>}
+          {loading && (
+            <div className="grid h-48 place-items-center text-sm text-muted-foreground">
+              Đang tải…
+            </div>
+          )}
         </div>
         <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
           <span>

@@ -215,15 +215,15 @@ export function ProductsManager({
         ?.map((ps) => meta?.sizes.find((s) => s.code === ps.code)?.id)
         .filter((id): id is string => !!id) ??
       [];
-    const colorIds =
-      p.colors
-        ?.map((pc) => meta?.colors.find((c) => c.code === pc.code)?.id)
-        .filter((id): id is string => !!id) ??
-      [...new Set(
+    const colorIds = p.colors
+      ?.map((pc) => meta?.colors.find((c) => c.code === pc.code)?.id)
+      .filter((id): id is string => !!id) ?? [
+      ...new Set(
         (p.variants ?? [])
           .map((v) => meta?.colors.find((c) => c.code === v.color?.code)?.id)
           .filter((id): id is string => !!id),
-      )];
+      ),
+    ];
     setForm({
       name: p.name,
       slug: p.slug,
@@ -400,7 +400,9 @@ export function ProductsManager({
   }
 
   async function bulkArchive() {
-    const ids = filtered.filter((p) => selected.has(p.id) && p.status !== "archived").map((p) => p.id);
+    const ids = filtered
+      .filter((p) => selected.has(p.id) && p.status !== "archived")
+      .map((p) => p.id);
     if (!ids.length) {
       toast.message("Không có mục nào cần ẩn (đã ẩn hết hoặc chưa chọn).");
       return;
@@ -492,12 +494,18 @@ export function ProductsManager({
       <>
         {confirmDialog}
         <nav className="mt-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <button type="button" className="hover:text-foreground hover:underline" onClick={backToList}>
+          <button
+            type="button"
+            className="hover:text-foreground hover:underline"
+            onClick={backToList}
+          >
             Sản phẩm
           </button>
           <span aria-hidden>›</span>
           <span className="text-foreground">
-            {editing ? `Chỉnh sửa sản phẩm${editing.name ? ` · ${editing.name}` : ""}` : "Thêm sản phẩm"}
+            {editing
+              ? `Chỉnh sửa sản phẩm${editing.name ? ` · ${editing.name}` : ""}`
+              : "Thêm sản phẩm"}
           </span>
         </nav>
         <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
@@ -652,7 +660,9 @@ export function ProductsManager({
                 })}
               </div>
               {!meta?.sizes?.length && (
-                <span className="text-xs text-muted-foreground">Chưa có mã size — thêm ở tab Bảng size.</span>
+                <span className="text-xs text-muted-foreground">
+                  Chưa có mã size — thêm ở tab Bảng size.
+                </span>
               )}
             </fieldset>
 
@@ -755,7 +765,11 @@ export function ProductsManager({
             </label>
             <label className="block">
               <span className="text-xs font-medium">Chất liệu</span>
-              <Input className="mt-2" value={form.material} onChange={(e) => setForm((f) => ({ ...f, material: e.target.value }))} />
+              <Input
+                className="mt-2"
+                value={form.material}
+                onChange={(e) => setForm((f) => ({ ...f, material: e.target.value }))}
+              />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
@@ -783,7 +797,9 @@ export function ProductsManager({
               <select
                 className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
                 value={form.status}
-                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as FormState["status"] }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, status: e.target.value as FormState["status"] }))
+                }
               >
                 <option value="draft">Bản nháp</option>
                 <option value="published">Đang bán</option>
@@ -814,8 +830,13 @@ export function ProductsManager({
                 {(editing?.media ?? []).map((m) => {
                   const src = productImageUrl(m.url);
                   return (
-                    <div key={m.asset_id} className="relative h-20 w-16 overflow-hidden rounded-sm border border-border">
-                      {src ? <img src={src} alt={m.alt ?? ""} className="h-full w-full object-cover" /> : null}
+                    <div
+                      key={m.asset_id}
+                      className="relative h-20 w-16 overflow-hidden rounded-sm border border-border"
+                    >
+                      {src ? (
+                        <img src={src} alt={m.alt ?? ""} className="h-full w-full object-cover" />
+                      ) : null}
                       {m.is_cover ? (
                         <span className="absolute left-0.5 top-0.5 rounded bg-foreground/80 px-1 text-[8px] text-background">
                           Cover
@@ -836,7 +857,10 @@ export function ProductsManager({
                           if (!ok) return;
                           setUploading(true);
                           try {
-                            const updated = await adminApi.deleteProductMedia(editing.id, m.asset_id);
+                            const updated = await adminApi.deleteProductMedia(
+                              editing.id,
+                              m.asset_id,
+                            );
                             setEditing(updated);
                             await load();
                             toast.success("Đã xóa ảnh");
@@ -854,7 +878,11 @@ export function ProductsManager({
                 })}
                 {pendingPreview ? (
                   <div className="relative h-20 w-16 overflow-hidden rounded-sm border border-dashed border-primary">
-                    <img src={pendingPreview} alt="Preview" className="h-full w-full object-cover" />
+                    <img
+                      src={pendingPreview}
+                      alt="Preview"
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                 ) : null}
               </div>
@@ -894,24 +922,28 @@ export function ProductsManager({
               </label>
             </div>
 
-          <div className="flex gap-2 border-t border-border pt-6">
-            <Button disabled={saving || uploading} onClick={save}>
-              {saving ? "Đang lưu…" : editing ? "Lưu thay đổi" : "Tạo sản phẩm"}
-            </Button>
-            <Button variant="outline" onClick={backToList}>
-              Hủy
-            </Button>
-          </div>
+            <div className="flex gap-2 border-t border-border pt-6">
+              <Button disabled={saving || uploading} onClick={save}>
+                {saving ? "Đang lưu…" : editing ? "Lưu thay đổi" : "Tạo sản phẩm"}
+              </Button>
+              <Button variant="outline" onClick={backToList}>
+                Hủy
+              </Button>
+            </div>
           </div>
 
           <div>
             <div className="flex items-baseline justify-between gap-2">
               <p className="text-xs font-medium">Danh mục</p>
               {selectedCategoryLabel ? (
-                <p className="truncate text-[11px] text-muted-foreground">Đã chọn: {selectedCategoryLabel}</p>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  Đã chọn: {selectedCategoryLabel}
+                </p>
               ) : null}
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">Chỉ gắn được danh mục lá (không còn mục con).</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Chỉ gắn được danh mục lá (không còn mục con).
+            </p>
             <div className="mt-2 max-h-[28rem] overflow-y-auto rounded-md border border-border lg:max-h-[calc(100vh-22rem)]">
               {categoryGroups.length === 0 ? (
                 <p className="px-3 py-4 text-sm text-muted-foreground">Chưa có danh mục lá.</p>
@@ -936,14 +968,20 @@ export function ProductsManager({
                           <span
                             className={cn(
                               "grid size-4 shrink-0 place-items-center rounded-full border",
-                              selected ? "border-foreground bg-foreground" : "border-muted-foreground/40",
+                              selected
+                                ? "border-foreground bg-foreground"
+                                : "border-muted-foreground/40",
                             )}
                           >
-                            {selected ? <span className="size-1.5 rounded-full bg-background" /> : null}
+                            {selected ? (
+                              <span className="size-1.5 rounded-full bg-background" />
+                            ) : null}
                           </span>
                           <span className="min-w-0">
                             <span className="block truncate">{c.name}</span>
-                            <span className="block truncate font-mono text-[10px] text-muted-foreground">{c.slug}</span>
+                            <span className="block truncate font-mono text-[10px] text-muted-foreground">
+                              {c.slug}
+                            </span>
                           </span>
                         </button>
                       );
@@ -979,10 +1017,18 @@ export function ProductsManager({
 
       <section className="mt-6 grid gap-4 sm:grid-cols-3">
         {metrics.map((m, i) => (
-          <div key={m.label} className={cn("rounded-md border p-5", i === 0 ? "border-accent bg-accent/25" : "border-border")}>
+          <div
+            key={m.label}
+            className={cn(
+              "rounded-md border p-5",
+              i === 0 ? "border-accent bg-accent/25" : "border-border",
+            )}
+          >
             <p className="section-label">{m.label}</p>
             <p className="mt-3 font-serif text-3xl">{m.value}</p>
-            <p className={cn("mt-1 text-xs", i === 0 ? "text-primary" : "text-muted-foreground")}>{m.note}</p>
+            <p className={cn("mt-1 text-xs", i === 0 ? "text-primary" : "text-muted-foreground")}>
+              {m.note}
+            </p>
           </div>
         ))}
       </section>
@@ -998,14 +1044,24 @@ export function ProductsManager({
                 ["archived", "Đã ẩn"],
               ] as const
             ).map(([id, label]) => (
-              <Button key={id} variant={tab === id ? "default" : "ghost"} size="sm" onClick={() => setTab(id)}>
+              <Button
+                key={id}
+                variant={tab === id ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setTab(id)}
+              >
                 {label}
               </Button>
             ))}
           </div>
           <div className="relative flex-1 lg:w-64">
             <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" placeholder="Tìm sản phẩm…" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="pl-9"
+              placeholder="Tìm sản phẩm…"
+            />
           </div>
         </div>
 
@@ -1021,7 +1077,12 @@ export function ProductsManager({
             <Button size="sm" variant="outline" disabled={bulkBusy} onClick={bulkDestroy}>
               <Trash2 className="size-3.5" /> Xóa
             </Button>
-            <Button size="sm" variant="ghost" disabled={bulkBusy} onClick={() => setSelected(new Set())}>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={bulkBusy}
+              onClick={() => setSelected(new Set())}
+            >
               Bỏ chọn
             </Button>
           </div>
@@ -1045,8 +1106,21 @@ export function ProductsManager({
                 <th className="w-12 px-2 py-3 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
                   STT
                 </th>
-                {["Ảnh", "Sản phẩm", "Danh mục", "Size", "Tồn", "Giá bán", "SKU", "Trạng thái", ""].map((c) => (
-                  <th key={c || "a"} className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                {[
+                  "Ảnh",
+                  "Sản phẩm",
+                  "Danh mục",
+                  "Size",
+                  "Tồn",
+                  "Giá bán",
+                  "SKU",
+                  "Trạng thái",
+                  "",
+                ].map((c) => (
+                  <th
+                    key={c || "a"}
+                    className="px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground"
+                  >
                     {c}
                   </th>
                 ))}
@@ -1057,92 +1131,120 @@ export function ProductsManager({
                 const thumb = productImageUrl(p.images?.[0] ?? p.media?.[0]?.url);
                 const checked = selected.has(p.id);
                 return (
-                <tr
-                  key={p.id}
-                  className={cn(
-                    "border-t border-border transition-colors hover:bg-secondary/35",
-                    checked && "bg-accent/20",
-                  )}
-                >
-                  <td className="px-3 py-3">
-                    <input
-                      type="checkbox"
-                      aria-label={`Chọn ${p.name}`}
-                      checked={checked}
-                      onChange={() => toggleOne(p.id)}
-                    />
-                  </td>
-                  <td className="px-2 py-3.5 text-center text-xs tabular-nums text-muted-foreground">
-                    {idx + 1}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <div className="h-20 w-16 overflow-hidden rounded-sm border border-border bg-secondary/40">
-                      {thumb ? (
-                        <img src={thumb} alt={p.name} className="h-full w-full object-cover" loading="lazy" />
-                      ) : (
-                        <div className="grid h-full place-items-center text-[9px] text-muted-foreground">N/A</div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5 font-medium">{p.name}</td>
-                  <td className="px-4 py-3.5 text-muted-foreground">{p.category?.name ?? "—"}</td>
-                  <td className="px-4 py-3.5 text-xs text-muted-foreground">
-                    {p.sizes?.length ? p.sizes.map((s) => s.label).join(", ") : "—"}
-                  </td>
-                  <td className="px-4 py-3.5 text-muted-foreground">{p.stock_total ?? 0}</td>
-                  <td className="px-4 py-3.5">
-                    {Number(p.price_vnd).toLocaleString("vi-VN")}₫
-                    {p.sale_compare_vnd ? (
-                      <span className="ml-2 text-xs text-muted-foreground line-through">
-                        {Number(p.sale_compare_vnd).toLocaleString("vi-VN")}₫
+                  <tr
+                    key={p.id}
+                    className={cn(
+                      "border-t border-border transition-colors hover:bg-secondary/35",
+                      checked && "bg-accent/20",
+                    )}
+                  >
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        aria-label={`Chọn ${p.name}`}
+                        checked={checked}
+                        onChange={() => toggleOne(p.id)}
+                      />
+                    </td>
+                    <td className="px-2 py-3.5 text-center text-xs tabular-nums text-muted-foreground">
+                      {idx + 1}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <div className="h-20 w-16 overflow-hidden rounded-sm border border-border bg-secondary/40">
+                        {thumb ? (
+                          <img
+                            src={thumb}
+                            alt={p.name}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="grid h-full place-items-center text-[9px] text-muted-foreground">
+                            N/A
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5 font-medium">{p.name}</td>
+                    <td className="px-4 py-3.5 text-muted-foreground">{p.category?.name ?? "—"}</td>
+                    <td className="px-4 py-3.5 text-xs text-muted-foreground">
+                      {p.sizes?.length ? p.sizes.map((s) => s.label).join(", ") : "—"}
+                    </td>
+                    <td className="px-4 py-3.5 text-muted-foreground">{p.stock_total ?? 0}</td>
+                    <td className="px-4 py-3.5">
+                      {Number(p.price_vnd).toLocaleString("vi-VN")}₫
+                      {p.sale_compare_vnd ? (
+                        <span className="ml-2 text-xs text-muted-foreground line-through">
+                          {Number(p.sale_compare_vnd).toLocaleString("vi-VN")}₫
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground">
+                      {p.variants?.[0]?.sku ?? "—"}
+                      {p.variants && p.variants.length > 1 ? ` +${p.variants.length - 1}` : ""}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span
+                        className={cn(
+                          "inline-flex whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-medium",
+                          p.status === "draft" || p.status === "archived"
+                            ? "bg-primary/10 text-primary"
+                            : "bg-secondary text-foreground",
+                        )}
+                      >
+                        {statusLabel(p.status)}
                       </span>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground">
-                    {p.variants?.[0]?.sku ?? "—"}
-                    {p.variants && p.variants.length > 1 ? ` +${p.variants.length - 1}` : ""}
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <span
-                      className={cn(
-                        "inline-flex whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-medium",
-                        p.status === "draft" || p.status === "archived"
-                          ? "bg-primary/10 text-primary"
-                          : "bg-secondary text-foreground",
-                      )}
-                    >
-                      {statusLabel(p.status)}
-                    </span>
-                  </td>
-                  <td className="px-2">
-                    <div className="flex justify-end gap-1">
-                      {p.status === "draft" && (
-                        <Button variant="ghost" size="sm" onClick={() => publish(p)}>
-                          Publish
+                    </td>
+                    <td className="px-2">
+                      <div className="flex justify-end gap-1">
+                        {p.status === "draft" && (
+                          <Button variant="ghost" size="sm" onClick={() => publish(p)}>
+                            Publish
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Sửa ${p.name}`}
+                          onClick={() => openEdit(p)}
+                        >
+                          <MoreHorizontal />
                         </Button>
-                      )}
-                      <Button variant="ghost" size="icon" aria-label={`Sá»­a ${p.name}`} onClick={() => openEdit(p)}>
-                        <MoreHorizontal />
-                      </Button>
-                      {p.status !== "archived" && (
-                        <Button variant="ghost" size="icon" aria-label={`Ẩn ${p.name}`} onClick={() => remove(p)}>
-                          <Archive className="size-4" />
+                        {p.status !== "archived" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Ẩn ${p.name}`}
+                            onClick={() => remove(p)}
+                          >
+                            <Archive className="size-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Xóa ${p.name}`}
+                          onClick={() => destroy(p)}
+                        >
+                          <Trash2 className="size-4 text-primary" />
                         </Button>
-                      )}
-                      <Button variant="ghost" size="icon" aria-label={`Xóa ${p.name}`} onClick={() => destroy(p)}>
-                        <Trash2 className="size-4 text-primary" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
+                      </div>
+                    </td>
+                  </tr>
                 );
               })}
             </tbody>
           </table>
           {!loading && filtered.length === 0 && (
-            <div className="grid h-48 place-items-center text-sm text-muted-foreground">Không tìm thấy sản phẩm.</div>
+            <div className="grid h-48 place-items-center text-sm text-muted-foreground">
+              Không tìm thấy sản phẩm.
+            </div>
           )}
-          {loading && <div className="grid h-48 place-items-center text-sm text-muted-foreground">Đang tải…</div>}
+          {loading && (
+            <div className="grid h-48 place-items-center text-sm text-muted-foreground">
+              Đang tải…
+            </div>
+          )}
         </div>
         <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
           <span>
@@ -1151,7 +1253,6 @@ export function ProductsManager({
           </span>
         </div>
       </section>
-
 
       <footer className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-border py-5 text-[11px] text-muted-foreground">
         <span>© 2026 ÉLANE · Modern Femininity</span>
