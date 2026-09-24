@@ -1,0 +1,17 @@
+{
+  "name": "elane",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w @elane/api",
+    "dev:storefront": "npm run dev -w @elane/storefront",
+    "dev:admin": "npm run dev -w @elane/admin",
+    "db:generate": "npm run generate -w @elane/db",
+    "db:migrate": "npm run migrate -w @elane/db",
+    "db:seed": "npm run seed -w @elane/db",
+    "acceptance": "node scripts/phase1-acceptance.mjs"
+  }
+}

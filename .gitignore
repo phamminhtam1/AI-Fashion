@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.output/
+.vinxi/
+.nitro/
+.tanstack/
+uploads/
+.env
+.env.local
+*.log
+.DS_Store
+apps/*/.env
+packages/*/.env

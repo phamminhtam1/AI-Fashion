@@ -1,0 +1,93 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: elane-postgres
+    environment:
+      POSTGRES_USER: elane
+      POSTGRES_PASSWORD: elane
+      POSTGRES_DB: elane
+    ports:
+      - "5432:5432"
+    volumes:
+      - elane_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U elane -d elane"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    container_name: elane-api
+    environment:
+      DATABASE_URL: postgres://elane:elane@postgres:5432/elane
+      SESSION_SECRET: ${SESSION_SECRET:-dev-change-me-elane-phase1-secret}
+      API_PORT: "3001"
+      UPLOAD_DIR: /app/uploads
+      STOREFRONT_ORIGIN: http://localhost:8090
+      ADMIN_ORIGIN: http://localhost:8081
+      COOKIE_SECURE: "false"
+      NODE_ENV: production
+    ports:
+      - "3001:3001"
+    volumes:
+      - elane_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+  storefront:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+      args:
+        APP: storefront
+        PORT: "8090"
+        VITE_API_URL: http://localhost:3001
+    container_name: elane-storefront
+    environment:
+      VITE_API_URL: http://localhost:3001
+      API_INTERNAL_URL: http://api:3001
+      HOST: "0.0.0.0"
+      PORT: "8090"
+    ports:
+      - "8090:8090"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+      args:
+        APP: admin
+        PORT: "8081"
+        VITE_API_URL: http://localhost:3001
+    container_name: elane-admin
+    environment:
+      VITE_API_URL: http://localhost:3001
+      API_INTERNAL_URL: http://api:3001
+      HOST: "0.0.0.0"
+      PORT: "8081"
+    ports:
+      - "8081:8081"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  elane_pg:
+  elane_uploads:

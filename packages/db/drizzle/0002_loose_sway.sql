@@ -1,0 +1,1 @@
+ALTER TABLE "customers" ADD COLUMN "total_spent_vnd" bigint DEFAULT 0 NOT NULL;
