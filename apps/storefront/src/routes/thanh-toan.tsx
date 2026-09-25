@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, Copy } from "lucide-react";
 import { formatVND, products } from "@/lib/products";
 import { FREE_SHIP, useStore } from "@/lib/store";
-import { fetchBankInfo, type BankInfo } from "@/lib/api";
+import { fetchBankInfo, storeApi, type BankInfo } from "@/lib/api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/thanh-toan")({
@@ -41,7 +41,33 @@ function Checkout() {
   const [pay, setPay] = useState<"cod" | "bank">("cod");
   const [bankInfo, setBankInfo] = useState<BankInfo | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [applied, setApplied] = useState<{ code: string; discount_vnd: number } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
   const shipping = subtotal >= FREE_SHIP ? 0 : 30000;
+  const discount = applied?.discount_vnd ?? 0;
+  const grand = Math.max(0, subtotal + shipping - discount);
+
+  async function applyCoupon() {
+    setCouponError(null);
+    const code = couponInput.trim();
+    if (!code) {
+      setCouponError("Nhập mã giảm giá");
+      return;
+    }
+    setCouponBusy(true);
+    try {
+      const res = await storeApi.previewCoupon({ code, subtotal_vnd: subtotal });
+      setApplied({ code: res.code, discount_vnd: res.discount_vnd });
+      setCouponInput(res.code);
+    } catch (err) {
+      setApplied(null);
+      setCouponError(err instanceof Error ? err.message : "Mã không hợp lệ");
+    } finally {
+      setCouponBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (!sessionReady) return;
@@ -184,7 +210,8 @@ function Checkout() {
                 district: String(f.get("district")),
                 note: String(f.get("note") || "") || undefined,
                 paymentMethod: pay,
-                total: subtotal + shipping,
+                total: grand,
+                couponCode: applied?.code,
               });
               setDone(result);
             } catch (err) {
@@ -245,7 +272,48 @@ function Checkout() {
           <dl className="mt-6 space-y-2 border-t border-border pt-4 text-sm">
             <div className="flex justify-between"><dt>Tạm tính</dt><dd>{formatVND(subtotal)}</dd></div>
             <div className="flex justify-between"><dt>Vận chuyển</dt><dd>{shipping ? formatVND(shipping) : "Miễn phí"}</dd></div>
-            <div className="flex justify-between pt-2 text-base font-medium"><dt>Tổng cộng</dt><dd>{formatVND(subtotal + shipping)}</dd></div>
+            {applied && (
+              <div className="flex justify-between text-success">
+                <dt>Giảm giá ({applied.code})</dt>
+                <dd>−{formatVND(applied.discount_vnd)}</dd>
+              </div>
+            )}
+            <div className="pt-2">
+              <label className="mb-2 block text-xs uppercase tracking-widest text-muted-foreground">Mã giảm giá</label>
+              <div className="flex gap-2">
+                <input
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value)}
+                  placeholder="Nhập mã"
+                  className={input}
+                  aria-label="Mã giảm giá"
+                  disabled={!!applied}
+                />
+                {applied ? (
+                  <button
+                    type="button"
+                    className="shrink-0 border border-border px-3 text-xs uppercase tracking-widest"
+                    onClick={() => {
+                      setApplied(null);
+                      setCouponError(null);
+                    }}
+                  >
+                    Gỡ
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={couponBusy}
+                    className="shrink-0 border border-foreground px-3 text-xs uppercase tracking-widest disabled:opacity-60"
+                    onClick={() => void applyCoupon()}
+                  >
+                    {couponBusy ? "…" : "Áp dụng"}
+                  </button>
+                )}
+              </div>
+              {couponError && <p className="mt-2 text-xs text-destructive">{couponError}</p>}
+            </div>
+            <div className="flex justify-between pt-2 text-base font-medium"><dt>Tổng cộng</dt><dd>{formatVND(grand)}</dd></div>
           </dl>
           <button type="submit" disabled={submitting} className="mt-6 w-full bg-primary py-4 text-xs uppercase tracking-widest text-primary-foreground disabled:opacity-60">
             {submitting ? "Đang đặt…" : "Đặt hàng"}

@@ -187,6 +187,11 @@ export const storeApi = {
   removeWishlist: (productId: string) =>
     storeReq<{ ok: boolean }>(`/me/wishlist/${productId}`, { method: "DELETE" }),
   orders: () => storeReq<{ items: StoreOrderSummary[] }>("/me/orders"),
+  previewCoupon: (body: { code: string; subtotal_vnd: number }) =>
+    storeReq<{ code: string; type: string; value: number; discount_vnd: number }>(
+      "/store/coupons/preview",
+      { method: "POST", body: JSON.stringify(body) },
+    ),
   placeOrder: (body: {
     items: Array<{ variant_id: string; qty: number }>;
     shipping: {
@@ -200,6 +205,7 @@ export const storeApi = {
     };
     payment_method: "cod" | "bank";
     note?: string;
+    coupon_code?: string;
   }) =>
     storeReq<{
       id: string;

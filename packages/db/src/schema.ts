@@ -435,6 +435,23 @@ export const wishlistItems = pgTable(
   (t) => [primaryKey({ columns: [t.customerId, t.productId] })],
 );
 
+export const discountCodes = pgTable("discount_codes", {
+  id: id(),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // percent|fixed
+  value: integer("value").notNull(),
+  minOrderVnd: integer("min_order_vnd").notNull().default(0),
+  maxDiscountVnd: integer("max_discount_vnd"),
+  startsAt: ts("starts_at"),
+  endsAt: ts("ends_at"),
+  usageLimit: integer("usage_limit"),
+  usageCount: integer("usage_count").notNull().default(0),
+  status: text("status").notNull().default("active"), // active|disabled
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
 export const orders = pgTable("orders", {
   id: id(),
   orderNumber: text("order_number").notNull().unique(),
@@ -446,6 +463,8 @@ export const orders = pgTable("orders", {
   subtotalVnd: integer("subtotal_vnd").notNull(),
   shippingVnd: integer("shipping_vnd").notNull().default(0),
   discountVnd: integer("discount_vnd").notNull().default(0),
+  discountCodeId: uuid("discount_code_id").references(() => discountCodes.id),
+  discountCode: text("discount_code"),
   grandTotalVnd: integer("grand_total_vnd").notNull(),
   paymentMethod: text("payment_method").notNull(), // cod|bank|card|wallet
   paymentStatus: text("payment_status").notNull().default("unpaid"), // unpaid|awaiting|paid|failed

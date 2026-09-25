@@ -43,6 +43,13 @@
       "when": 1790377200000,
       "tag": "0005_sepay_bank_transfer",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790380000000,
+      "tag": "0006_discount_codes",
+      "breakpoints": true
     }
   ]
 }

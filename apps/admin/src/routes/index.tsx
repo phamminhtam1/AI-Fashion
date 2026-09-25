@@ -53,6 +53,7 @@ import { ProductsManager } from "@/components/ProductsManager";
 import { SizesManager } from "@/components/SizesManager";
 import { InventoryManager } from "@/components/InventoryManager";
 import { CustomersManager } from "@/components/CustomersManager";
+import { DiscountCodesManager } from "@/components/DiscountCodesManager";
 import type { Overview } from "@/lib/api";
 
 export const Route = createFileRoute("/")({
@@ -439,6 +440,8 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
           <SizesManager />
         ) : active === "customers" ? (
           <CustomersManager />
+        ) : active === "promotions" ? (
+          <DiscountCodesManager />
         ) : currentConfig ? (
           <ModulePage config={currentConfig} query={query} setQuery={setQuery} onCreate={() => setCreateOpen(true)} onDetail={openDetail} />
         ) : null}

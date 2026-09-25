@@ -493,6 +493,50 @@ export const adminApi = {
   staff: () => req<{ items: Array<Record<string, unknown>> }>("/admin/staff"),
   audit: () => req<{ items: Array<Record<string, unknown>> }>("/admin/audit-logs"),
   brand: () => req<{ value: Record<string, unknown> }>("/admin/settings/brand"),
+  discountCodes: (params?: { status?: string; q?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.status) q.set("status", params.status);
+    if (params?.q) q.set("q", params.q);
+    const qs = q.toString();
+    return req<{ items: DiscountCode[] }>(`/admin/discount-codes${qs ? `?${qs}` : ""}`);
+  },
+  discountCode: (id: string) => req<DiscountCode>(`/admin/discount-codes/${id}`),
+  createDiscountCode: (body: DiscountCodeInput) =>
+    req<DiscountCode>("/admin/discount-codes", { method: "POST", body: JSON.stringify(body) }),
+  patchDiscountCode: (id: string, body: Partial<DiscountCodeInput>) =>
+    req<DiscountCode>(`/admin/discount-codes/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteDiscountCode: (id: string) =>
+    req<DiscountCode>(`/admin/discount-codes/${id}`, { method: "DELETE" }),
+};
+
+export type DiscountCode = {
+  id: string;
+  code: string;
+  name: string;
+  type: "percent" | "fixed" | string;
+  value: number;
+  min_order_vnd: number;
+  max_discount_vnd: number | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  usage_limit: number | null;
+  usage_count: number;
+  status: "active" | "disabled" | string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DiscountCodeInput = {
+  code: string;
+  name: string;
+  type: "percent" | "fixed";
+  value: number;
+  min_order_vnd?: number;
+  max_discount_vnd?: number | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  usage_limit?: number | null;
+  status?: "active" | "disabled";
 };
 
 export { API_URL };

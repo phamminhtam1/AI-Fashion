@@ -32,6 +32,8 @@ const PERMS = [
   ["customer.read", "Xem khách hàng"],
   ["customer.write", "Sửa khách hàng"],
   ["order.read", "Xem đơn hàng"],
+  ["promotion.read", "Xem mã giảm giá"],
+  ["promotion.write", "Sửa mã giảm giá"],
 ] as const;
 
 const CATEGORIES = [
@@ -181,6 +183,8 @@ async function ensureCustomerModule() {
     ["customer.read", "Xem khách hàng"],
     ["customer.write", "Sửa khách hàng"],
     ["order.read", "Xem đơn hàng"],
+    ["promotion.read", "Xem mã giảm giá"],
+    ["promotion.write", "Sửa mã giảm giá"],
   ] as const) {
     let perm = (await db.select().from(s.permissions).where(eq(s.permissions.code, code)).limit(1))[0];
     if (!perm) {

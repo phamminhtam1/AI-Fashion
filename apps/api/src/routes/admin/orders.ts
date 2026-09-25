@@ -67,6 +67,8 @@ adminOrderRoutes.get("/:id", async (c) => {
       : null,
     subtotal_vnd: order.subtotalVnd,
     shipping_vnd: order.shippingVnd,
+    discount_vnd: order.discountVnd,
+    discount_code: order.discountCode,
     grand_total_vnd: order.grandTotalVnd,
     payment_method: order.paymentMethod,
     payment_status: order.paymentStatus,

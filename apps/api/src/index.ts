@@ -18,7 +18,9 @@ import { adminColorRoutes } from "./routes/admin/colors.js";
 import { adminMediaRoutes } from "./routes/admin/media.js";
 import { adminCustomerRoutes } from "./routes/admin/customers.js";
 import { adminOrderRoutes } from "./routes/admin/orders.js";
+import { adminDiscountCodeRoutes } from "./routes/admin/discount-codes.js";
 import { storeAuthRoutes } from "./routes/store/auth.js";
+import { storeCouponRoutes } from "./routes/store/coupons.js";
 import { meRoutes } from "./routes/me/index.js";
 import { publicCatalogRoutes } from "./routes/public/catalog.js";
 import { publicContentRoutes } from "./routes/public/content.js";
@@ -56,6 +58,7 @@ app.route("/api/v1", publicSizeRoutes);
 app.route("/api/v1", publicPaymentRoutes);
 app.route("/api/v1", sepayWebhookRoutes);
 app.route("/api/v1/store/auth", storeAuthRoutes);
+app.route("/api/v1/store/coupons", storeCouponRoutes);
 app.route("/api/v1/me", meRoutes);
 app.route("/api/v1/admin/auth", adminAuthRoutes);
 app.route("/api/v1/admin/products", adminProductRoutes);
@@ -66,6 +69,7 @@ app.route("/api/v1/admin", adminMediaRoutes);
 app.route("/api/v1/admin/inventory", adminInventoryRoutes);
 app.route("/api/v1/admin/customers", adminCustomerRoutes);
 app.route("/api/v1/admin/orders", adminOrderRoutes);
+app.route("/api/v1/admin/discount-codes", adminDiscountCodeRoutes);
 app.route("/api/v1/admin", adminOpsRoutes);
 
 app.use(

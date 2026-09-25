@@ -28,6 +28,7 @@ export type PlaceOrderInput = {
   note?: string;
   paymentMethod: "cod" | "bank";
   total: number;
+  couponCode?: string;
 };
 
 export type PlaceOrderResult = {
@@ -213,6 +214,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         },
         payment_method: o.paymentMethod,
         note: o.note,
+        ...(o.couponCode ? { coupon_code: o.couponCode } : {}),
       });
       setCart([]);
       await refreshOrders().catch(() => {});

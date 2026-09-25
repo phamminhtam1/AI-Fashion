@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   customerAddresses,
   customers,
+  discountCodes,
   inventoryBalances,
   orderItems,
   orders,
@@ -17,6 +18,12 @@ import type { AppVars } from "../../middleware/auth.js";
 import { requireCustomer } from "../../middleware/auth.js";
 import { ApiError } from "../../lib/errors.js";
 import { availableQty, newOrderNumber, shippingFeeVnd } from "../../lib/order-pricing.js";
+import {
+  assertCouponApplicable,
+  computeDiscountVnd,
+  CouponError,
+  normalizeCouponCode,
+} from "../../lib/discount-codes.js";
 
 export const meRoutes = new Hono<AppVars>();
 meRoutes.use("*", requireCustomer);
@@ -217,6 +224,7 @@ meRoutes.get("/orders/:id", async (c) => {
     subtotal_vnd: order.subtotalVnd,
     shipping_vnd: order.shippingVnd,
     discount_vnd: order.discountVnd,
+    discount_code: order.discountCode,
     grand_total_vnd: order.grandTotalVnd,
     payment_method: order.paymentMethod,
     payment_status: order.paymentStatus,
@@ -257,6 +265,7 @@ meRoutes.post("/orders", async (c) => {
       }),
       payment_method: payEnum,
       note: z.string().optional(),
+      coupon_code: z.string().trim().min(1).optional(),
     })
     .safeParse(await c.req.json());
   if (!body.success) throw new ApiError(400, "validation_error", "Đơn hàng không hợp lệ");
@@ -333,10 +342,57 @@ meRoutes.post("/orders", async (c) => {
 
   const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
   const shipping = shippingFeeVnd(subtotal);
-  const grand = subtotal + shipping;
   const note = body.data.note ?? body.data.shipping.note ?? "";
+  const couponRaw = body.data.coupon_code;
 
   const created = await db.transaction(async (tx) => {
+    let discountVnd = 0;
+    let discountCodeId: string | null = null;
+    let discountCodeSnap: string | null = null;
+
+    if (couponRaw) {
+      const codeNorm = normalizeCouponCode(couponRaw);
+      // ponytail: raw FOR UPDATE — drizzle .for("update") not used elsewhere yet
+      await tx.execute(sql`SELECT id FROM discount_codes WHERE code = ${codeNorm} FOR UPDATE`);
+      const locked = (
+        await tx.select().from(discountCodes).where(eq(discountCodes.code, codeNorm)).limit(1)
+      )[0];
+      if (!locked) throw new ApiError(400, "coupon_not_found", "Không tìm thấy mã giảm giá");
+      try {
+        assertCouponApplicable(locked, subtotal);
+      } catch (e) {
+        if (e instanceof CouponError) throw new ApiError(400, e.code, e.message);
+        throw e;
+      }
+      if (locked.type !== "percent" && locked.type !== "fixed") {
+        throw new ApiError(400, "coupon_inactive", "Mã giảm giá không hợp lệ");
+      }
+      discountVnd = computeDiscountVnd({
+        type: locked.type,
+        value: locked.value,
+        subtotalVnd: subtotal,
+        maxDiscountVnd: locked.maxDiscountVnd,
+      });
+      const bumped = await tx
+        .update(discountCodes)
+        .set({
+          usageCount: sql`${discountCodes.usageCount} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(discountCodes.id, locked.id),
+            sql`(${discountCodes.usageLimit} IS NULL OR ${discountCodes.usageCount} < ${discountCodes.usageLimit})`,
+          ),
+        )
+        .returning({ id: discountCodes.id });
+      if (!bumped[0]) throw new ApiError(400, "coupon_exhausted", "Mã giảm giá đã hết lượt dùng");
+      discountCodeId = locked.id;
+      discountCodeSnap = locked.code;
+    }
+
+    const grand = subtotal + shipping - discountVnd;
+
     for (const line of lines) {
       const bal = (
         await tx
@@ -387,7 +443,9 @@ meRoutes.post("/orders", async (c) => {
             status: "pending",
             subtotalVnd: subtotal,
             shippingVnd: shipping,
-            discountVnd: 0,
+            discountVnd,
+            discountCodeId,
+            discountCode: discountCodeSnap,
             grandTotalVnd: grand,
             paymentMethod: body.data.payment_method,
             paymentStatus: body.data.payment_method === "bank" ? "awaiting" : "unpaid",
