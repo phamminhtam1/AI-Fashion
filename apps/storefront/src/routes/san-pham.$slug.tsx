@@ -1,11 +1,12 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { Heart, Minus, Plus, RefreshCw, Star, Truck } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { formatVND, getCategory, getProduct, products } from "@/lib/products";
 import { useStore } from "@/lib/store";
 import { ProductCard } from "@/components/site/ProductCard";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/san-pham/$slug")({
   loader: ({ params }) => {
@@ -30,22 +31,171 @@ export const Route = createFileRoute("/san-pham/$slug")({
   component: ProductPage,
 });
 
+function preloadImage(src: string) {
+  return new Promise<void>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error("image load failed"));
+    image.src = src;
+    if (image.complete) resolve();
+  });
+}
+
+const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+const ADJACENT_MS = 800;
+const JUMP_MS = 1000;
+const THUMB_VISIBLE = 4;
+const THUMB_W_PX = 80; // w-20
+const THUMB_GAP_PX = 8; // gap-2
+const THUMB_H_PX = (THUMB_W_PX * 4) / 3; // aspect-[3/4]
+const THUMB_SLOT_PX = THUMB_H_PX + THUMB_GAP_PX;
+const THUMB_VIEWPORT_PX = THUMB_H_PX * THUMB_VISIBLE + THUMB_GAP_PX * (THUMB_VISIBLE - 1);
+
+function filmDurationForSteps(steps: number) {
+  return Math.abs(steps) <= 1 ? ADJACENT_MS : JUMP_MS;
+}
+
+/** Shortest circular delta; forward wins ties (last→first is +1). */
+function loopDelta(from: number, to: number, n: number) {
+  if (n <= 0 || from === to) return 0;
+  const forward = (to - from + n) % n;
+  const backward = (from - to + n) % n;
+  return forward <= backward ? forward : -backward;
+}
+
+function normalizeStripIndex(index: number, n: number) {
+  // Keep cursor in the middle copy of a triple track [n, 2n).
+  return ((index % n) + n) % n + n;
+}
+
 function ProductPage() {
   const { slug } = Route.useParams();
   const p = getProduct(slug)!;
   const cat = getCategory(p.category);
   const { addToCart, toggleWishlist, wishlist } = useStore();
-  const [color, setColor] = useState(p.colors[0]!.name);
-  const [size, setSize] = useState<string | null>(p.sizes.length === 1 ? p.sizes[0]! : null);
+
+  const initialCw = p.colorways[0];
+  const initialGallery = initialCw?.images?.length ? initialCw.images : p.images;
+  const initialLoop = initialGallery.length > THUMB_VISIBLE;
+
+  const [colorwayId, setColorwayId] = useState(initialCw?.id ?? "");
+  const cw = p.colorways.find((c) => c.id === colorwayId) ?? p.colorways[0];
+  const sizesForCw = p.variants
+    .filter((v) => !colorwayId || v.colorwayId === colorwayId)
+    .map((v) => v.size);
+  const uniqueSizes = [...new Set(sizesForCw.length ? sizesForCw : p.sizes)];
+  const [size, setSize] = useState<string | null>(uniqueSizes.length === 1 ? uniqueSizes[0]! : null);
   const [qty, setQty] = useState(1);
-  const [img, setImg] = useState(0);
   const liked = wishlist.includes(p.id);
-  const related = products.filter((x) => x.category === p.category && x.id !== p.id).concat(products.filter((x) => x.bestSeller && x.id !== p.id)).slice(0, 4);
+  const related = products
+    .filter((x) => x.category === p.category && x.id !== p.id)
+    .concat(products.filter((x) => x.bestSeller && x.id !== p.id))
+    .slice(0, 4);
+
+  // Shared stripIndex: main slides horizontally, thumbs vertically; selected always at top of 4-slot window.
+  // >4 images → triple track so last↔first loops as one circle.
+  const [gallery, setGallery] = useState<string[]>(initialGallery);
+  const [stripIndex, setStripIndex] = useState(initialLoop ? initialGallery.length : 0);
+  const [galleryKey, setGalleryKey] = useState(0);
+  const [transitionMs, setTransitionMs] = useState(ADJACENT_MS);
+  const [stripReady, setStripReady] = useState(true);
+  const [zooming, setZooming] = useState(false);
+  const [zoomOrigin, setZoomOrigin] = useState({ x: 50, y: 50 });
+
+  const n = gallery.length;
+  const loop = n > THUMB_VISIBLE;
+  const img = n === 0 ? 0 : loop ? ((stripIndex % n) + n) % n : stripIndex;
+  const track = loop ? [...gallery, ...gallery, ...gallery] : gallery;
+
+  useEffect(() => {
+    gallery.forEach((src) => {
+      void preloadImage(src).catch(() => {});
+    });
+  }, [gallery]);
+
+  useEffect(() => {
+    setZooming(false);
+    setZoomOrigin({ x: 50, y: 50 });
+  }, [img, galleryKey]);
+
+  const settleLoopIfNeeded = () => {
+    if (!loop || n === 0) return;
+    const normalized = normalizeStripIndex(stripIndex, n);
+    if (normalized === stripIndex) return;
+    setStripReady(false);
+    setStripIndex(normalized);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setStripReady(true));
+    });
+  };
+
+  const changeImage = (nextIndex: number) => {
+    if (n === 0 || nextIndex < 0 || nextIndex >= n) return;
+    const delta = loop ? loopDelta(img, nextIndex, n) : nextIndex - img;
+    if (delta === 0) return;
+    setTransitionMs(filmDurationForSteps(delta));
+    setStripIndex((i) => i + delta);
+  };
+
+  const handleColorwayChange = (nextId: string) => {
+    if (nextId === colorwayId) return;
+    setColorwayId(nextId);
+    setSize(null);
+
+    const nextCw = p.colorways.find((c) => c.id === nextId);
+    const nextGallery = nextCw?.images?.length ? nextCw.images : p.images;
+    const nextLoop = nextGallery.length > THUMB_VISIBLE;
+    setGalleryKey((k) => k + 1);
+    setStripReady(false);
+    setGallery(nextGallery);
+    setStripIndex(nextLoop ? nextGallery.length : 0);
+    setTransitionMs(0);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setStripReady(true));
+    });
+  };
+
+  const onZoomMove = (e: MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    setZoomOrigin({
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+    });
+  };
 
   const add = () => {
-    if (!size) { toast.error("Vui lòng chọn kích cỡ"); return; }
-    addToCart(p, size, color, qty);
+    if (!size) {
+      toast.error("Vui lòng chọn kích cỡ");
+      return;
+    }
+    const variant = p.variants.find(
+      (v) => v.size === size && (!colorwayId || v.colorwayId === colorwayId),
+    );
+    if (!variant) {
+      toast.error("Không tìm thấy SKU");
+      return;
+    }
+    addToCart(p, variant.id, qty);
   };
+
+  const renderThumb = (src: string, logical: number, key: string) => (
+    <button
+      key={key}
+      type="button"
+      onClick={() => changeImage(logical)}
+      aria-label={`Ảnh ${logical + 1}`}
+      aria-current={img === logical ? "true" : undefined}
+      className={cn(
+        "aspect-[3/4] w-20 shrink-0 overflow-hidden border transition-[border-color,opacity,transform] duration-200 ease-out active:scale-[0.97] motion-reduce:transition-none",
+        img === logical
+          ? "border-foreground opacity-100"
+          : "border-transparent opacity-75 hover:opacity-100",
+      )}
+    >
+      <img src={src} alt="" className="h-full w-full object-cover" />
+    </button>
+  );
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-6 md:px-8 md:py-10">
@@ -57,15 +207,87 @@ function ProductPage() {
 
       <div className="mt-6 grid gap-10 lg:grid-cols-[1.3fr_1fr] lg:gap-16">
         <div className="grid gap-3 md:grid-cols-[80px_1fr]">
-          <div className="order-2 flex gap-2 md:order-1 md:flex-col">
-            {p.images.map((src, i) => (
-              <button key={i} onClick={() => setImg(i)} className={`aspect-[3/4] w-20 overflow-hidden border ${img === i ? "border-foreground" : "border-transparent"}`} aria-label={`Ảnh ${i + 1}`}>
-                <img src={src} alt="" className="h-full w-full object-cover" />
-              </button>
-            ))}
+          {/* Mobile: horizontal strip */}
+          <div
+            key={`thumbs-m-${galleryKey}`}
+            className="order-2 flex gap-2 overflow-x-auto md:hidden motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-200"
+          >
+            {gallery.map((src, i) => renderThumb(src, i, `m-${src}-${i}`))}
           </div>
-          <div className="order-1 aspect-[3/4] overflow-hidden bg-secondary md:order-2">
-            <img src={p.images[img]} alt={p.name} width={768} height={1024} className="h-full w-full cursor-zoom-in object-cover transition-transform duration-700 hover:scale-125" />
+
+          {/* Desktop: vertical filmstrip, max 4 visible; loops when >4 */}
+          <div
+            className="order-1 hidden overflow-hidden md:block"
+            style={{ height: THUMB_VIEWPORT_PX }}
+          >
+            <div
+              key={`thumbs-d-${galleryKey}`}
+              className={cn(
+                "flex w-20 flex-col gap-2 will-change-transform motion-reduce:transition-none",
+                stripReady && "transition-transform",
+              )}
+              style={{
+                transform: `translate3d(0, -${(loop ? stripIndex : 0) * THUMB_SLOT_PX}px, 0)`,
+                transitionDuration: stripReady ? `${transitionMs}ms` : "0ms",
+                transitionTimingFunction: EASE,
+              }}
+            >
+              {track.map((src, i) =>
+                renderThumb(src, n === 0 ? 0 : i % n, `d-${src}-${i}`),
+              )}
+            </div>
+          </div>
+
+          <div
+            className="relative order-1 aspect-[3/4] overflow-hidden bg-secondary md:order-2"
+            onMouseEnter={() => setZooming(true)}
+            onMouseLeave={() => {
+              setZooming(false);
+              setZoomOrigin({ x: 50, y: 50 });
+            }}
+            onMouseMove={onZoomMove}
+          >
+            <div
+              key={galleryKey}
+              className={cn(
+                "flex h-full w-full will-change-transform motion-reduce:transition-none",
+                stripReady && "transition-transform",
+              )}
+              style={{
+                transform: `translate3d(-${stripIndex * 100}%, 0, 0)`,
+                transitionDuration: stripReady ? `${transitionMs}ms` : "0ms",
+                transitionTimingFunction: EASE,
+              }}
+              onTransitionEnd={(e) => {
+                if (e.target !== e.currentTarget) return;
+                if (e.propertyName !== "transform") return;
+                settleLoopIfNeeded();
+              }}
+            >
+              {track.map((src, i) => {
+                const logical = n === 0 ? 0 : i % n;
+                return (
+                  <div key={`${src}-${i}`} className="h-full w-full shrink-0 grow-0 basis-full overflow-hidden">
+                    <img
+                      src={src}
+                      alt={logical === img ? p.name : ""}
+                      width={768}
+                      height={1024}
+                      draggable={false}
+                      className="h-full w-full cursor-zoom-in object-cover transition-transform duration-500 ease-out motion-reduce:transition-none motion-reduce:scale-100"
+                      style={
+                        logical === img && i === stripIndex
+                          ? {
+                              transformOrigin: `${zoomOrigin.x}% ${zoomOrigin.y}%`,
+                              transform: zooming ? "scale(1.35)" : "scale(1)",
+                            }
+                          : undefined
+                      }
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -82,16 +304,33 @@ function ProductPage() {
             ) : formatVND(p.price)}
           </div>
 
-          <div className="mt-8">
-            <p className="text-xs uppercase tracking-widest">Màu sắc: <span className="text-muted-foreground normal-case">{color}</span></p>
-            <div className="mt-3 flex gap-3">
-              {p.colors.map((c) => (
-                <button key={c.name} onClick={() => setColor(c.name)} aria-label={c.name} className={`h-8 w-8 rounded-full border p-0.5 ${color === c.name ? "border-foreground" : "border-border"}`}>
-                  <span className="block h-full w-full rounded-full" style={{ backgroundColor: c.hex }} />
-                </button>
-              ))}
+          {p.colorways.length > 0 && (
+            <div className="mt-8">
+              <p className="text-xs uppercase tracking-widest">Màu sắc</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {p.colorways.map((c, i) => {
+                  const selected = c.id === (cw?.id ?? colorwayId);
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => handleColorwayChange(c.id)}
+                      aria-label={`Màu ${i + 1}`}
+                      className={cn(
+                        "relative h-[68px] w-[52px] overflow-hidden border-2 transition-[border-color,transform,opacity] duration-200 active:scale-[0.96] motion-reduce:transition-none",
+                        selected ? "border-[#8B1E2D]" : "border-border",
+                      )}
+                    >
+                      <img src={c.thumbnail} alt="" className="h-full w-full object-cover" />
+                      {selected && (
+                        <span className="absolute bottom-0 right-0 border-b-[14px] border-l-[14px] border-b-[#8B1E2D] border-l-transparent" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="mt-6">
             <div className="flex justify-between text-xs uppercase tracking-widest">
@@ -99,7 +338,7 @@ function ProductPage() {
               <Link to="/huong-dan-chon-size" className="text-muted-foreground underline normal-case tracking-normal">Hướng dẫn chọn size</Link>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              {p.sizes.map((s) => (
+              {uniqueSizes.map((s) => (
                 <button key={s} onClick={() => setSize(s)} className={`h-11 min-w-14 border px-3 text-sm transition ${size === s ? "border-foreground bg-primary text-primary-foreground" : "border-border hover:border-foreground"}`}>{s}</button>
               ))}
             </div>

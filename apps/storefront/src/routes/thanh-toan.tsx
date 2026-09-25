@@ -84,7 +84,7 @@ function Checkout() {
               return (
                 <li key={i} className="flex gap-3 text-sm">
                   <img src={p.images[0]} alt={p.name} className="h-20 w-15 object-cover" />
-                  <div className="flex-1"><p>{p.name}</p><p className="text-xs text-muted-foreground">{it.color} · {it.size} · x{it.qty}</p></div>
+                  <div className="flex-1"><p>{p.name}</p><p className="text-xs text-muted-foreground">{it.sku} · {it.size} · x{it.qty}</p></div>
                   <span>{formatVND((p.salePrice ?? p.price) * it.qty)}</span>
                 </li>
               );

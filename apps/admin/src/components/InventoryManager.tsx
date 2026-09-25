@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import {
   type InventoryItem,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useConfirmDialog } from "@/components/ConfirmDialog";
 
 type Tab = "all" | "low" | "out" | "docs";
 type View = "list" | "form";
@@ -95,6 +96,7 @@ export function InventoryManager({
   const [matrixQty, setMatrixQty] = useState<Record<string, string>>({});
   const [matrixDirection, setMatrixDirection] = useState<"in" | "out">("in");
   const [saving, setSaving] = useState(false);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   const loadStock = useCallback(async () => {
     const res = await adminApi.inventory();
@@ -247,49 +249,30 @@ export function InventoryManager({
     setProductQuery(opts?.productName ?? "");
     setView("form");
     try {
-      // Prefer stock rows (have color/size/available); merge products API for any SKU missing.
-      const byProduct = new Map<string, CatalogProduct>();
-      for (const row of items) {
-        const p = byProduct.get(row.product_id) ?? {
-          id: row.product_id,
-          name: row.product_name,
-          variants: [],
-        };
-        if (!p.variants.some((v) => v.id === row.variant_id)) {
-          p.variants.push({
-            id: row.variant_id,
-            color: row.color_name,
-            size: row.size_label,
-            sku: row.sku,
-            available: row.available,
-          });
-        }
-        byProduct.set(row.product_id, p);
-      }
-      const prods = await adminApi.products();
+      // Active variants from products API are source of truth; stock rows only enrich available qty.
+      // (Old zero balances for deactivated sizes must not invent matrix cells.)
+      const availableByVariant = new Map(items.map((row) => [row.variant_id, row.available]));
+      const prods = await adminApi.productsAll();
+      const list: CatalogProduct[] = [];
       for (const p of prods.items) {
-        const entry = byProduct.get(p.id) ?? { id: p.id, name: p.name, variants: [] };
+        const variants: CatalogVariant[] = [];
         for (const v of p.variants ?? []) {
           if (v.status === "archived" || v.status === "inactive") continue;
-          if (entry.variants.some((x) => x.id === v.id)) continue;
-          entry.variants.push({
+          variants.push({
             id: v.id,
             color: v.color?.name ?? v.color_name ?? "—",
             size: v.size?.label ?? v.size_label ?? "—",
             sku: v.sku,
-            available: v.available ?? 0,
+            available: availableByVariant.get(v.id) ?? v.available ?? 0,
           });
         }
-        byProduct.set(p.id, entry);
-      }
-      const list = [...byProduct.values()]
-        .filter((p) => p.variants.length)
-        .sort((a, b) => a.name.localeCompare(b.name, "vi"));
-      for (const p of list) {
-        p.variants.sort((a, b) =>
+        if (!variants.length) continue;
+        variants.sort((a, b) =>
           `${a.color} ${a.size}`.localeCompare(`${b.color} ${b.size}`, "vi"),
         );
+        list.push({ id: p.id, name: p.name, variants });
       }
+      list.sort((a, b) => a.name.localeCompare(b.name, "vi"));
       setCatalog(list);
 
       if (opts?.productId) {
@@ -394,6 +377,31 @@ export function InventoryManager({
     }
   }
 
+  async function deleteDoc(doc: { id: string; code: string; status: string }) {
+    const posted = doc.status === "posted";
+    const ok = await confirm({
+      title: `Xóa phiếu ${doc.code}?`,
+      description: posted
+        ? "Phiếu đã ghi sổ — xóa sẽ đảo ngược tồn kho theo các dòng phiếu. Không hoàn tác."
+        : "Xóa phiếu nháp/đã duyệt. Không hoàn tác.",
+      confirmLabel: "Xóa phiếu",
+      destructive: true,
+    });
+    if (!ok) return;
+    setSaving(true);
+    try {
+      const res = await adminApi.deleteDoc(doc.id);
+      toast.success(res.reversed_stock ? "Đã xóa phiếu và đảo tồn" : "Đã xóa phiếu");
+      backToList();
+      setTab("docs");
+      await reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Xóa phiếu thất bại");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (view === "form") {
     const status = editingDoc?.status;
     return (
@@ -426,6 +434,16 @@ export function InventoryManager({
             <Button variant="outline" onClick={backToList}>
               Quay lại
             </Button>
+            {!compose && editingDoc ? (
+              <Button
+                variant="outline"
+                className="text-destructive hover:bg-destructive/10"
+                disabled={saving}
+                onClick={() => deleteDoc(editingDoc)}
+              >
+                <Trash2 className="size-4" /> Xóa
+              </Button>
+            ) : null}
             {compose ? (
               <Button disabled={saving} onClick={createDraft}>
                 {saving ? "Đang lưu…" : "Tạo phiếu"}
@@ -449,7 +467,7 @@ export function InventoryManager({
                 <label className="block">
                   <span className="text-xs font-medium">Loại phiếu</span>
                   <select
-                    className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                    className="mt-2 flex h-9 w-full rounded-md border border-input bg-[#f7f4ef] px-3 text-sm"
                     value={formType}
                     onChange={(e) => setFormType(e.target.value as DocType)}
                   >
@@ -482,7 +500,7 @@ export function InventoryManager({
                   <label className="block">
                     <span className="text-[11px] text-muted-foreground">Sản phẩm</span>
                     <select
-                      className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm"
+                      className="mt-1 flex h-9 w-full rounded-md border border-input bg-[#f7f4ef] px-2 text-sm"
                       value={matrixProductId}
                       onChange={(e) => selectMatrixProduct(e.target.value)}
                     >
@@ -498,7 +516,7 @@ export function InventoryManager({
                     <label className="block">
                       <span className="text-[11px] text-muted-foreground">Chiều (áp dụng khi thêm lưới)</span>
                       <select
-                        className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm"
+                        className="mt-1 flex h-9 w-full rounded-md border border-input bg-[#f7f4ef] px-2 text-sm"
                         value={matrixDirection}
                         onChange={(e) => setMatrixDirection(e.target.value as "in" | "out")}
                       >
@@ -637,7 +655,7 @@ export function InventoryManager({
                                 {formType === "adjustment" ? (
                                   <td className="px-3 py-2">
                                     <select
-                                      className="flex h-8 rounded-md border border-input bg-transparent px-2 text-xs"
+                                      className="flex h-8 rounded-md border border-input bg-[#f7f4ef] px-2 text-xs"
                                       value={line.direction}
                                       onChange={(e) =>
                                         setLines((ls) =>
@@ -726,10 +744,12 @@ export function InventoryManager({
                   : `${editingDoc?.lines.length ?? 0} dòng · ${STATUS_LABEL[editingDoc?.status ?? ""] ?? ""}`}
               </p>
               {!compose && editingDoc?.status === "posted" ? (
-                <p className="mt-4 text-xs text-muted-foreground">Phiếu đã ghi sổ — chỉ xem.</p>
+                <p className="mt-4 text-xs text-muted-foreground">
+                  Đã ghi sổ — xóa sẽ đảo tồn (cần quyền duyệt kho).
+                </p>
               ) : null}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {compose ? (
                 <Button disabled={saving} onClick={createDraft}>
                   {saving ? "Đang lưu…" : "Tạo phiếu"}
@@ -743,6 +763,16 @@ export function InventoryManager({
                   Ghi sổ
                 </Button>
               ) : null}
+              {!compose && editingDoc ? (
+                <Button
+                  variant="outline"
+                  className="text-destructive hover:bg-destructive/10"
+                  disabled={saving}
+                  onClick={() => deleteDoc(editingDoc)}
+                >
+                  <Trash2 className="size-4" /> Xóa phiếu
+                </Button>
+              ) : null}
               <Button variant="outline" onClick={backToList}>
                 {compose ? "Hủy" : "Đóng"}
               </Button>
@@ -754,6 +784,7 @@ export function InventoryManager({
           <span>© 2026 ÉLANE · Modern Femininity</span>
           <span>Kho hàng · form</span>
         </footer>
+        {confirmDialog}
       </>
     );
   }
@@ -822,12 +853,13 @@ export function InventoryManager({
                   <th className="px-4 py-3 text-left">Trạng thái</th>
                   <th className="px-4 py-3 text-right">Dòng</th>
                   <th className="px-4 py-3 text-left">Ngày</th>
+                  <th className="px-4 py-3 text-right"> </th>
                 </tr>
               </thead>
               <tbody>
                 {filteredDocs.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                       Chưa có phiếu.
                     </td>
                   </tr>
@@ -844,6 +876,21 @@ export function InventoryManager({
                       <td className="px-4 py-3.5 text-right">{d.line_count}</td>
                       <td className="px-4 py-3.5 text-muted-foreground">
                         {new Date(d.created_at).toLocaleString("vi-VN")}
+                      </td>
+                      <td className="px-4 py-3.5 text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:bg-destructive/10"
+                          disabled={saving}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void deleteDoc(d);
+                          }}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
                       </td>
                     </tr>
                   ))
@@ -904,6 +951,7 @@ export function InventoryManager({
         <span>© 2026 ÉLANE · Modern Femininity</span>
         <span>Kho hàng · list</span>
       </footer>
+      {confirmDialog}
     </>
   );
 }

@@ -51,8 +51,9 @@
   --destructive: oklch(0.48 0.135 28);
   --destructive-foreground: oklch(0.975 0.008 72);
   --border: oklch(0.72 0.018 70 / 45%);
-  --input: oklch(0.72 0.018 70 / 55%);
+  --input: oklch(0.62 0.02 70 / 55%);
   --ring: oklch(0.48 0.135 28);
+  --field: #f7f4ef;
 }
 
 @layer base {
@@ -60,6 +61,10 @@
   html { background: var(--color-background); }
   body { margin: 0; background-color: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans); letter-spacing: 0; }
   button, a, input, textarea { letter-spacing: 0; }
+  /* Form controls: brighter than page cream so empty vs filled is obvious */
+  select {
+    background-color: var(--field);
+  }
 }
 
 @utility section-label {

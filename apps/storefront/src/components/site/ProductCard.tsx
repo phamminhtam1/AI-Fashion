@@ -27,11 +27,24 @@ export function ProductCard({ product: p }: { product: Product }) {
         </button>
         <div className="absolute inset-x-0 bottom-0 hidden translate-y-full p-3 transition-transform duration-300 group-hover:translate-y-0 md:block">
           <div className="flex flex-wrap justify-center gap-1 bg-background/95 p-2 backdrop-blur">
-            {p.sizes.map((s) => (
-              <button key={s} onClick={() => addToCart(p, s, p.colors[0]!.name)} className="min-w-9 px-2 py-1 text-xs hover:bg-primary hover:text-primary-foreground">
-                {s}
-              </button>
-            ))}
+            {p.sizes.map((s) => {
+              const v =
+                p.variants.find((x) => x.size === s && (!p.colorways[0] || x.colorwayId === p.colorways[0].id)) ??
+                p.variants.find((x) => x.size === s);
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  disabled={!v}
+                  onClick={() => {
+                    if (v) addToCart(p, v.id);
+                  }}
+                  className="min-w-9 px-2 py-1 text-xs hover:bg-primary hover:text-primary-foreground disabled:opacity-40"
+                >
+                  {s}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -50,8 +63,10 @@ export function ProductCard({ product: p }: { product: Product }) {
           )}
         </div>
         <div className="flex gap-1.5 pt-1">
-          {p.colors.map((c) => (
-            <span key={c.name} title={c.name} className="h-3 w-3 rounded-full border border-border" style={{ backgroundColor: c.hex }} />
+          {p.colorways.map((c) => (
+            <span key={c.id} className="h-8 w-6 overflow-hidden border border-border">
+              <img src={c.thumbnail} alt="" className="h-full w-full object-cover" />
+            </span>
           ))}
         </div>
       </div>

@@ -4,7 +4,7 @@ import hero from "@/assets/hero.jpg";
 import setImg from "@/assets/p-set.jpg";
 import coatImg from "@/assets/p-coat.jpg";
 import dressImg from "@/assets/p-dress.jpg";
-import { categories, products } from "@/lib/products";
+import { categories, prioritizeApparel, products } from "@/lib/products";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Newsletter } from "@/components/site/Footer";
 
@@ -37,7 +37,7 @@ function SectionHead({ eyebrow, title, to }: { eyebrow: string; title: string; t
 }
 
 function Home() {
-  const newIn = products.filter((p) => p.isNew).slice(0, 8);
+  const newIn = prioritizeApparel(products.filter((p) => p.isNew)).slice(0, 8);
   const best = products.filter((p) => p.bestSeller).slice(0, 4);
   return (
     <>

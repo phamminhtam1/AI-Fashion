@@ -1,9 +1,10 @@
 import { Hono } from "hono";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, sql, or, ilike, gte, lte, isNull } from "drizzle-orm";
 import { z } from "zod";
 import {
   products,
   productCategories,
+  productColorways,
   productOccasions,
   productVariants,
   productMedia,
@@ -19,18 +20,15 @@ import {
   inventoryBalances,
   inventoryDocumentLines,
   stockMovements,
-  warehouses,
 } from "@elane/db";
-import fs from "node:fs";
-import path from "node:path";
 import type { Db } from "@elane/db";
 import type { AppVars } from "../../middleware/auth.js";
 import { requireAuth } from "../../middleware/auth.js";
 import { ApiError, requestId } from "../../lib/errors.js";
 import { requirePerm } from "../../lib/session.js";
 import { enrichTree } from "../../lib/category-tree.js";
+import { deleteMediaObjects } from "../../lib/media-storage.js";
 import { mapProduct } from "../public/catalog.js";
-import { env } from "../../env.js";
 
 async function assertLeafCategory(db: Db, categoryId: string) {
   const all = await db.select().from(categories);
@@ -46,16 +44,6 @@ async function assertLeafCategory(db: Db, categoryId: string) {
   }
 }
 
-export const adminProductRoutes = new Hono<AppVars>();
-adminProductRoutes.use("*", requireAuth);
-
-const sizeStockSchema = z.array(
-  z.object({
-    size_id: z.string().uuid(),
-    qty: z.number().int().nonnegative(),
-  }),
-);
-
 function slugify(str: string) {
   return str
     .normalize("NFD")
@@ -67,17 +55,218 @@ function slugify(str: string) {
     .replace(/(^-|-$)/g, "");
 }
 
+function makeSku(slug: string, colorwayId: string, sizeCode: string, n: number) {
+  return `${slug.toUpperCase().slice(0, 8)}-CW${colorwayId.slice(0, 4).toUpperCase()}-${(sizeCode ?? "SZ").slice(0, 4)}-${Date.now().toString(36).toUpperCase()}${n}`.replace(
+    /[^A-Z0-9-]/g,
+    "",
+  );
+}
+
+async function ensureVariantsForColorway(
+  db: Db,
+  productId: string,
+  slug: string,
+  colorwayId: string,
+  sizeIds: string[],
+  price: number,
+  compareAt: number | null,
+) {
+  const allSizes = await db.select().from(sizes);
+  const existing = await db
+    .select()
+    .from(productVariants)
+    .where(and(eq(productVariants.productId, productId), eq(productVariants.colorwayId, colorwayId)));
+  let i = 0;
+  for (const sizeId of sizeIds) {
+    const found = existing.find((v) => v.sizeId === sizeId);
+    if (found) {
+      if (found.status !== "active") {
+        await db
+          .update(productVariants)
+          .set({ status: "active", updatedAt: new Date() })
+          .where(eq(productVariants.id, found.id));
+      }
+      continue;
+    }
+    i += 1;
+    const size = allSizes.find((s) => s.id === sizeId);
+    await db.insert(productVariants).values({
+      productId,
+      sku: makeSku(slug, colorwayId, size?.code ?? "SZ", i),
+      colorwayId,
+      sizeId,
+      priceVnd: price,
+      compareAtPriceVnd: compareAt,
+      status: "active",
+    });
+  }
+}
+
+/** Activate/create wanted sizes; deactivate extras for this colorway only. */
+async function syncColorwaySizes(
+  db: Db,
+  productId: string,
+  slug: string,
+  colorwayId: string,
+  wantSizeIds: string[],
+  price: number,
+  compareAt: number | null,
+) {
+  const want = new Set(wantSizeIds);
+  const existing = await db
+    .select()
+    .from(productVariants)
+    .where(and(eq(productVariants.productId, productId), eq(productVariants.colorwayId, colorwayId)));
+  for (const v of existing) {
+    if (!want.has(v.sizeId) && v.status === "active") {
+      await db
+        .update(productVariants)
+        .set({ status: "inactive", updatedAt: new Date() })
+        .where(eq(productVariants.id, v.id));
+    }
+  }
+  if (wantSizeIds.length) {
+    await ensureVariantsForColorway(db, productId, slug, colorwayId, wantSizeIds, price, compareAt);
+  }
+}
+
+export const adminProductRoutes = new Hono<AppVars>();
+adminProductRoutes.use("*", requireAuth);
+
+const sizeStockSchema = z.array(
+  z.object({
+    size_id: z.string().uuid(),
+    qty: z.number().int().nonnegative(),
+  }),
+);
+
 adminProductRoutes.get("/", async (c) => {
   const user = c.get("user")!;
   requirePerm(user, "product.read");
   const db = c.get("db");
-  const status = c.req.query("status");
-  const rows = status
-    ? await db.select().from(products).where(eq(products.status, status)).orderBy(desc(products.updatedAt)).limit(200)
-    : await db.select().from(products).orderBy(desc(products.updatedAt)).limit(200);
+
+  const page = Math.max(1, Number(c.req.query("page") ?? 1) || 1);
+  const rawLimit = Number(c.req.query("limit") ?? 20) || 20;
+  const limit = ([20, 50, 100] as number[]).includes(rawLimit) ? rawLimit : 20;
+  const offset = (page - 1) * limit;
+
+  const status = c.req.query("status") || undefined;
+  const q = (c.req.query("q") ?? "").trim();
+  const categoryId = c.req.query("category_id") || undefined;
+  const priceMin = c.req.query("price_min") ? Number(c.req.query("price_min")) : undefined;
+  const priceMax = c.req.query("price_max") ? Number(c.req.query("price_max")) : undefined;
+  const stock = c.req.query("stock") as "in" | "out" | "none" | undefined;
+
+  const conds = [];
+  if (status && ["draft", "published", "archived"].includes(status)) {
+    conds.push(eq(products.status, status));
+  }
+  if (q) {
+    const like = `%${q}%`;
+    conds.push(
+      or(
+        ilike(products.name, like),
+        ilike(products.slug, like),
+        sql`exists (
+          select 1 from product_variants v
+          where v.product_id = ${products.id} and v.sku ilike ${like}
+        )`,
+      )!,
+    );
+  }
+  if (categoryId) {
+    const cats = await db.select({ id: categories.id, parentId: categories.parentId }).from(categories);
+    const byParent = new Map<string | null, string[]>();
+    for (const cat of cats) {
+      const p = cat.parentId;
+      if (!byParent.has(p)) byParent.set(p, []);
+      byParent.get(p)!.push(cat.id);
+    }
+    const ids = [categoryId];
+    const queue = [categoryId];
+    while (queue.length) {
+      const id = queue.shift()!;
+      for (const child of byParent.get(id) ?? []) {
+        ids.push(child);
+        queue.push(child);
+      }
+    }
+    conds.push(inArray(products.primaryCategoryId, ids));
+  }
+
+  const priceSq = db
+    .select({
+      productId: productVariants.productId,
+      minPrice: sql<number>`min(${productVariants.priceVnd})::int`.as("min_price"),
+    })
+    .from(productVariants)
+    .where(eq(productVariants.status, "active"))
+    .groupBy(productVariants.productId)
+    .as("price_sq");
+
+  const stockSq = db
+    .select({
+      productId: productVariants.productId,
+      stock: sql<number>`coalesce(sum(${inventoryBalances.onHand}), 0)::int`.as("stock"),
+      balCount: sql<number>`count(${inventoryBalances.variantId})::int`.as("bal_count"),
+    })
+    .from(productVariants)
+    .leftJoin(inventoryBalances, eq(inventoryBalances.variantId, productVariants.id))
+    .groupBy(productVariants.productId)
+    .as("stock_sq");
+
+  if (priceMin != null && Number.isFinite(priceMin)) {
+    conds.push(gte(priceSq.minPrice, priceMin));
+  }
+  if (priceMax != null && Number.isFinite(priceMax)) {
+    conds.push(lte(priceSq.minPrice, priceMax));
+  }
+  if (stock === "in") {
+    conds.push(sql`${stockSq.stock} > 0`);
+  } else if (stock === "out") {
+    conds.push(sql`${stockSq.balCount} > 0 and ${stockSq.stock} = 0`);
+  } else if (stock === "none") {
+    conds.push(or(isNull(stockSq.balCount), sql`${stockSq.balCount} = 0`)!);
+  }
+
+  const where = conds.length ? and(...conds) : undefined;
+
+  const [countRow] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(products)
+    .leftJoin(priceSq, eq(priceSq.productId, products.id))
+    .leftJoin(stockSq, eq(stockSq.productId, products.id))
+    .where(where);
+
+  const total = countRow?.n ?? 0;
+
+  const rows = await db
+    .select({ product: products })
+    .from(products)
+    .leftJoin(priceSq, eq(priceSq.productId, products.id))
+    .leftJoin(stockSq, eq(stockSq.productId, products.id))
+    .where(where)
+    .orderBy(desc(products.updatedAt))
+    .limit(limit)
+    .offset(offset);
+
+  const includeCost = user.permissions.includes("cost.read");
   const items = [];
-  for (const p of rows) items.push(await mapProduct(db, p, user.permissions.includes("cost.read")));
-  return c.json({ items });
+  for (const r of rows) items.push(await mapProduct(db, r.product, includeCost));
+
+  const statusRows = await db
+    .select({ status: products.status, n: sql<number>`count(*)::int` })
+    .from(products)
+    .groupBy(products.status);
+  const status_counts = { all: 0, published: 0, draft: 0, archived: 0 };
+  for (const r of statusRows) {
+    status_counts.all += r.n;
+    if (r.status === "published" || r.status === "draft" || r.status === "archived") {
+      status_counts[r.status] = r.n;
+    }
+  }
+
+  return c.json({ items, total, page, limit, status_counts });
 });
 
 adminProductRoutes.get("/meta", async (c) => {
@@ -125,6 +314,114 @@ adminProductRoutes.get("/:id", async (c) => {
   return c.json(await mapProduct(db, rows[0], user.permissions.includes("cost.read")));
 });
 
+adminProductRoutes.post("/:id/colorways", async (c) => {
+  const user = c.get("user")!;
+  requirePerm(user, "product.write");
+  const raw = await c.req.json().catch(() => ({}));
+  const body = z
+    .object({
+      size_ids: z.array(z.string().uuid()).optional(),
+    })
+    .safeParse(raw);
+  if (!body.success) throw new ApiError(400, "validation_error", "Dữ liệu không hợp lệ");
+
+  const db = c.get("db");
+  const productId = c.req.param("id");
+  const rows = await db.select().from(products).where(eq(products.id, productId)).limit(1);
+  if (!rows[0]) throw new ApiError(404, "not_found", "Không tìm thấy sản phẩm");
+
+  const existing = await db.select().from(productColorways).where(eq(productColorways.productId, productId));
+  const sortOrder = existing.reduce((m, r) => Math.max(m, r.sortOrder), -1) + 1;
+  const [row] = await db.insert(productColorways).values({ productId, sortOrder }).returning();
+
+  const variants = await db.select().from(productVariants).where(eq(productVariants.productId, productId));
+  const active = variants.filter((v) => v.status === "active");
+  const price = active[0]?.priceVnd ?? variants[0]?.priceVnd ?? 0;
+  const compare = active[0]?.compareAtPriceVnd ?? variants[0]?.compareAtPriceVnd ?? null;
+  const sizeIds = body.data.size_ids ?? [];
+  if (sizeIds.length && row) {
+    await ensureVariantsForColorway(db, productId, rows[0].slug, row.id, sizeIds, price, compare);
+  }
+
+  await db.insert(auditLogs).values({
+    actorAccountId: user.accountId,
+    action: "product.colorway.create",
+    resourceType: "product",
+    resourceId: productId,
+    afterRedacted: { colorway_id: row!.id, sort_order: sortOrder, size_ids: sizeIds },
+    requestId: requestId(c),
+  });
+
+  return c.json(await mapProduct(db, rows[0], user.permissions.includes("cost.read")), 201);
+});
+
+adminProductRoutes.delete("/:id/colorways/:colorwayId", async (c) => {
+  const user = c.get("user")!;
+  requirePerm(user, "product.write");
+  const db = c.get("db");
+  const productId = c.req.param("id");
+  const colorwayId = c.req.param("colorwayId");
+
+  const rows = await db.select().from(products).where(eq(products.id, productId)).limit(1);
+  if (!rows[0]) throw new ApiError(404, "not_found", "Không tìm thấy sản phẩm");
+
+  const cw = await db
+    .select()
+    .from(productColorways)
+    .where(and(eq(productColorways.id, colorwayId), eq(productColorways.productId, productId)))
+    .limit(1);
+  if (!cw[0]) throw new ApiError(404, "not_found", "Không tìm thấy màu");
+
+  const allCw = await db.select().from(productColorways).where(eq(productColorways.productId, productId));
+  if (allCw.length <= 1) {
+    throw new ApiError(400, "last_colorway", "Cần giữ ít nhất một màu");
+  }
+
+  const variants = await db
+    .select()
+    .from(productVariants)
+    .where(and(eq(productVariants.productId, productId), eq(productVariants.colorwayId, colorwayId)));
+
+  const mediaLinks = await db
+    .select()
+    .from(productMedia)
+    .where(and(eq(productMedia.productId, productId), eq(productMedia.colorwayId, colorwayId)));
+  const assetIds = mediaLinks.map((l) => l.assetId);
+  if (mediaLinks.length) {
+    await db.delete(productMedia).where(inArray(productMedia.id, mediaLinks.map((l) => l.id)));
+  }
+  let objectKeys: string[] = [];
+  if (assetIds.length) {
+    const assets = await db.select().from(mediaAssets).where(inArray(mediaAssets.id, assetIds));
+    objectKeys = assets.map((a) => a.objectKey);
+    await db.delete(mediaAssets).where(inArray(mediaAssets.id, assetIds));
+  }
+
+  const variantIds = variants.map((v) => v.id);
+  if (variantIds.length) {
+    await db.delete(stockMovements).where(inArray(stockMovements.variantId, variantIds));
+    await db.delete(inventoryDocumentLines).where(inArray(inventoryDocumentLines.variantId, variantIds));
+    await db.delete(inventoryBalances).where(inArray(inventoryBalances.variantId, variantIds));
+  }
+  await db
+    .delete(productVariants)
+    .where(and(eq(productVariants.productId, productId), eq(productVariants.colorwayId, colorwayId)));
+  await db.delete(productColorways).where(eq(productColorways.id, colorwayId));
+
+  await deleteMediaObjects(objectKeys);
+
+  await db.insert(auditLogs).values({
+    actorAccountId: user.accountId,
+    action: "product.colorway.delete",
+    resourceType: "product",
+    resourceId: productId,
+    beforeRedacted: { colorway_id: colorwayId },
+    requestId: requestId(c),
+  });
+
+  return c.json(await mapProduct(db, rows[0], user.permissions.includes("cost.read")));
+});
+
 adminProductRoutes.post("/", async (c) => {
   const user = c.get("user")!;
   requirePerm(user, "product.write");
@@ -140,13 +437,9 @@ adminProductRoutes.post("/", async (c) => {
       status: z.enum(["draft", "published", "archived"]).default("draft"),
       price_vnd: z.number().int().nonnegative().optional(),
       compare_at_price_vnd: z.number().int().nonnegative().nullable().optional(),
-      color_id: z.string().uuid().optional(),
-      color_ids: z.array(z.string().uuid()).optional(),
       size_id: z.string().uuid().optional(),
       size_ids: z.array(z.string().uuid()).optional(),
       size_stocks: sizeStockSchema.optional(),
-      is_best_seller: z.boolean().optional(),
-      is_new: z.boolean().optional(),
     })
     .safeParse(await c.req.json());
   if (!body.success) throw new ApiError(400, "validation_error", "Dữ liệu không hợp lệ");
@@ -174,8 +467,8 @@ adminProductRoutes.post("/", async (c) => {
       sizeChartId: body.data.size_chart_id ?? null,
       status: body.data.status,
       publishedAt: body.data.status === "published" ? new Date() : null,
-      isBestSeller: body.data.is_best_seller ?? false,
-      newUntil: body.data.is_new ? new Date(Date.now() + 90 * 86400000) : null,
+      isBestSeller: false,
+      newUntil: null,
     })
     .returning();
 
@@ -184,26 +477,15 @@ adminProductRoutes.post("/", async (c) => {
     await db.insert(productOccasions).values({ productId: row!.id, occasionId: body.data.occasion_id });
   }
 
+  const [colorway] = await db
+    .insert(productColorways)
+    .values({ productId: row!.id, sortOrder: 0 })
+    .returning();
+
   const price = body.data.price_vnd ?? 0;
-  const wantsVariants =
-    price > 0 ||
-    body.data.color_id ||
-    body.data.color_ids?.length ||
-    body.data.size_id ||
-    body.data.size_ids?.length ||
-    body.data.size_stocks?.length;
-  if (wantsVariants) {
-    const allColors = await db.select().from(colors);
+  const wantsVariants = price > 0 || body.data.size_id || body.data.size_ids?.length || body.data.size_stocks?.length;
+  if (wantsVariants && colorway) {
     const allSizes = await db.select().from(sizes).orderBy(sizes.sortOrder);
-    let colorIds =
-      body.data.color_ids?.length
-        ? body.data.color_ids
-        : body.data.color_id
-          ? [body.data.color_id]
-          : allColors.slice(0, 1).map((c) => c.id);
-    for (const cid of colorIds) {
-      if (!allColors.some((c) => c.id === cid)) throw new ApiError(400, "invalid_color", "Màu không hợp lệ");
-    }
     const cat = await db
       .select()
       .from(categories)
@@ -221,43 +503,15 @@ adminProductRoutes.post("/", async (c) => {
         if (!sizeIds.length) sizeIds = allSizes.slice(0, 1).map((s) => s.id);
       }
     }
-    const wh = await db.select().from(warehouses).where(eq(warehouses.code, "MAIN")).limit(1);
-    if (colorIds.length && sizeIds.length) {
-      let i = 0;
-      for (const colorId of colorIds) {
-        const color = allColors.find((c) => c.id === colorId);
-        for (const sizeId of sizeIds) {
-          i += 1;
-          const size = allSizes.find((s) => s.id === sizeId);
-          const sku =
-            `${slug.toUpperCase().slice(0, 8)}-${(color?.code ?? "CL").slice(0, 4)}-${(size?.code ?? "SZ").slice(0, 4)}-${Date.now().toString(36).toUpperCase()}${i}`.replace(
-              /[^A-Z0-9-]/g,
-              "",
-            );
-          const [variant] = await db
-            .insert(productVariants)
-            .values({
-              productId: row!.id,
-              sku,
-              colorId,
-              sizeId,
-              priceVnd: price,
-              compareAtPriceVnd: body.data.compare_at_price_vnd ?? null,
-              status: "active",
-            })
-            .returning();
-          if (wh[0] && variant) {
-            await db.insert(inventoryBalances).values({
-              warehouseId: wh[0].id,
-              variantId: variant.id,
-              onHand: 0,
-              reserved: 0,
-              reorderPoint: 3,
-            });
-          }
-        }
-      }
-    }
+    await ensureVariantsForColorway(
+      db,
+      row!.id,
+      slug,
+      colorway.id,
+      sizeIds,
+      price,
+      body.data.compare_at_price_vnd ?? null,
+    );
   }
 
   await db.insert(auditLogs).values({
@@ -282,15 +536,20 @@ adminProductRoutes.patch("/:id", async (c) => {
       material: z.string().nullable().optional(),
       seo_title: z.string().nullable().optional(),
       seo_description: z.string().nullable().optional(),
-      is_best_seller: z.boolean().optional(),
-      is_new: z.boolean().optional(),
       status: z.enum(["draft", "published", "archived"]).optional(),
       primary_category_id: z.string().uuid().optional(),
       occasion_id: z.string().uuid().nullable().optional(),
       size_chart_id: z.string().uuid().nullable().optional(),
       size_ids: z.array(z.string().uuid()).optional(),
-      color_ids: z.array(z.string().uuid()).optional(),
       size_stocks: sizeStockSchema.optional(),
+      colorway_sizes: z
+        .array(
+          z.object({
+            colorway_id: z.string().uuid(),
+            size_ids: z.array(z.string().uuid()),
+          }),
+        )
+        .optional(),
       price_vnd: z.number().int().nonnegative().optional(),
       compare_at_price_vnd: z.number().int().nonnegative().nullable().optional(),
     })
@@ -306,17 +565,15 @@ adminProductRoutes.patch("/:id", async (c) => {
     if (!chart[0]) throw new ApiError(400, "invalid_size_chart", "Bảng size không hợp lệ");
   }
 
-  const sizeIdsForCheck = body.data.size_ids ?? body.data.size_stocks?.map((s) => s.size_id);
-  if (sizeIdsForCheck?.length) {
+  const sizeIdsForCheck = [
+    ...(body.data.size_ids ?? []),
+    ...(body.data.size_stocks?.map((s) => s.size_id) ?? []),
+    ...(body.data.colorway_sizes?.flatMap((c) => c.size_ids) ?? []),
+  ];
+  if (sizeIdsForCheck.length) {
     const allSizes = await db.select().from(sizes);
     for (const sid of sizeIdsForCheck) {
       if (!allSizes.some((s) => s.id === sid)) throw new ApiError(400, "invalid_size", "Size không hợp lệ");
-    }
-  }
-  if (body.data.color_ids?.length) {
-    const allColors = await db.select().from(colors);
-    for (const cid of body.data.color_ids) {
-      if (!allColors.some((c) => c.id === cid)) throw new ApiError(400, "invalid_color", "Màu không hợp lệ");
     }
   }
 
@@ -350,13 +607,6 @@ adminProductRoutes.patch("/:id", async (c) => {
       material: body.data.material !== undefined ? body.data.material : existing[0].material,
       seoTitle: body.data.seo_title !== undefined ? body.data.seo_title : existing[0].seoTitle,
       seoDescription: body.data.seo_description !== undefined ? body.data.seo_description : existing[0].seoDescription,
-      isBestSeller: body.data.is_best_seller ?? existing[0].isBestSeller,
-      newUntil:
-        body.data.is_new === undefined
-          ? existing[0].newUntil
-          : body.data.is_new
-            ? (existing[0].newUntil ?? new Date(Date.now() + 90 * 86400000))
-            : null,
       status,
       publishedAt: status === "published" ? (publishedAt ?? new Date()) : publishedAt,
       primaryCategoryId,
@@ -394,87 +644,50 @@ adminProductRoutes.patch("/:id", async (c) => {
     }
   }
 
-  // Sync color×size matrix → create missing variants, deactivate removed
-  const syncSizeIds = body.data.size_ids ?? body.data.size_stocks?.map((s) => s.size_id);
-  const syncColorIds = body.data.color_ids;
-  if (syncSizeIds || syncColorIds) {
-    const variants = await db.select().from(productVariants).where(eq(productVariants.productId, existing[0].id));
-    const allSizes = await db.select().from(sizes);
-    const allColors = await db.select().from(colors);
-    const active = variants.filter((v) => v.status === "active");
-    const wantSizes = new Set(
-      syncSizeIds ?? [...new Set(active.map((v) => v.sizeId))],
-    );
-    let wantColors = new Set(
-      syncColorIds ?? [...new Set(active.map((v) => v.colorId))],
-    );
-    if (!wantColors.size) {
-      const fallback = allColors[0]?.id;
-      if (fallback) wantColors = new Set([fallback]);
-    }
-    const price = body.data.price_vnd ?? variants[0]?.priceVnd ?? 0;
-    const compare =
-      body.data.compare_at_price_vnd !== undefined
-        ? body.data.compare_at_price_vnd
-        : (variants[0]?.compareAtPriceVnd ?? null);
-    const wh = await db.select().from(warehouses).where(eq(warehouses.code, "MAIN")).limit(1);
+  const variantsForPrice = await db
+    .select()
+    .from(productVariants)
+    .where(eq(productVariants.productId, existing[0].id));
+  const price =
+    body.data.price_vnd ?? variantsForPrice.find((v) => v.status === "active")?.priceVnd ?? variantsForPrice[0]?.priceVnd ?? 0;
+  const compare =
+    body.data.compare_at_price_vnd !== undefined
+      ? body.data.compare_at_price_vnd
+      : (variantsForPrice.find((v) => v.status === "active")?.compareAtPriceVnd ??
+        variantsForPrice[0]?.compareAtPriceVnd ??
+        null);
 
-    for (const v of variants) {
-      const keep = wantSizes.has(v.sizeId) && wantColors.has(v.colorId);
-      if (!keep && v.status === "active") {
-        await db
-          .update(productVariants)
-          .set({ status: "inactive", updatedAt: new Date() })
-          .where(eq(productVariants.id, v.id));
-      }
+  if (body.data.colorway_sizes) {
+    for (const entry of body.data.colorway_sizes) {
+      const cw = await db
+        .select()
+        .from(productColorways)
+        .where(and(eq(productColorways.id, entry.colorway_id), eq(productColorways.productId, existing[0].id)))
+        .limit(1);
+      if (!cw[0]) throw new ApiError(400, "invalid_colorway", "Màu không thuộc sản phẩm này");
+      await syncColorwaySizes(
+        db,
+        existing[0].id,
+        row!.slug,
+        entry.colorway_id,
+        entry.size_ids,
+        price,
+        compare,
+      );
     }
-
-    for (const sizeId of wantSizes) {
-      for (const colorId of wantColors) {
-        const found = variants.find((v) => v.sizeId === sizeId && v.colorId === colorId);
-        if (found) {
-          if (found.status !== "active") {
-            await db
-              .update(productVariants)
-              .set({ status: "active", updatedAt: new Date() })
-              .where(eq(productVariants.id, found.id));
-          }
-          continue;
-        }
-        const size = allSizes.find((s) => s.id === sizeId);
-        const color = allColors.find((c) => c.id === colorId);
-        const sku =
-          `${existing[0].slug.toUpperCase().slice(0, 8)}-${(color?.code ?? "CL").slice(0, 4)}-${(size?.code ?? "SZ").slice(0, 4)}-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`.replace(
-            /[^A-Z0-9-]/g,
-            "",
-          );
-        const [variant] = await db
-          .insert(productVariants)
-          .values({
-            productId: existing[0].id,
-            sku,
-            colorId,
-            sizeId,
-            priceVnd: price,
-            compareAtPriceVnd: compare,
-            status: "active",
-          })
-          .returning();
-        if (wh[0] && variant) {
-          await db.insert(inventoryBalances).values({
-            warehouseId: wh[0].id,
-            variantId: variant.id,
-            onHand: 0,
-            reserved: 0,
-            reorderPoint: 3,
-          });
-          variants.push(variant);
-        }
+  } else {
+    // Legacy: shared size_ids → apply same list to every colorway
+    const syncSizeIds = body.data.size_ids ?? body.data.size_stocks?.map((s) => s.size_id);
+    if (syncSizeIds) {
+      const colorways = await db
+        .select()
+        .from(productColorways)
+        .where(eq(productColorways.productId, existing[0].id));
+      for (const cw of colorways) {
+        await syncColorwaySizes(db, existing[0].id, row!.slug, cw.id, syncSizeIds, price, compare);
       }
     }
   }
-
-  // size_stocks ignored — tồn chỉ đổi qua phiếu kho
 
   await db.insert(auditLogs).values({
     actorAccountId: user.accountId,
@@ -537,36 +750,36 @@ adminProductRoutes.delete("/:id", async (c) => {
     return c.json({ id: row!.id, status: "archived", archived: true });
   }
 
-  // Hard delete — gỡ hết quan hệ rồi xóa SP
   const productId = existing[0].id;
   const variants = await db.select().from(productVariants).where(eq(productVariants.productId, productId));
   const variantIds = variants.map((v) => v.id);
 
-  for (const vid of variantIds) {
-    await db.delete(stockMovements).where(eq(stockMovements.variantId, vid));
-    await db.delete(inventoryDocumentLines).where(eq(inventoryDocumentLines.variantId, vid));
-    await db.delete(inventoryBalances).where(eq(inventoryBalances.variantId, vid));
+  if (variantIds.length) {
+    await db.delete(stockMovements).where(inArray(stockMovements.variantId, variantIds));
+    await db.delete(inventoryDocumentLines).where(inArray(inventoryDocumentLines.variantId, variantIds));
+    await db.delete(inventoryBalances).where(inArray(inventoryBalances.variantId, variantIds));
   }
 
   const mediaLinks = await db.select().from(productMedia).where(eq(productMedia.productId, productId));
+  const assetIds = mediaLinks.map((l) => l.assetId);
   await db.delete(productMedia).where(eq(productMedia.productId, productId));
-  for (const link of mediaLinks) {
-    const assets = await db.select().from(mediaAssets).where(eq(mediaAssets.id, link.assetId)).limit(1);
-    await db.delete(mediaAssets).where(eq(mediaAssets.id, link.assetId));
-    if (assets[0]) {
-      try {
-        fs.unlinkSync(path.join(env.uploadDir, assets[0].objectKey));
-      } catch {
-        /* ignore */
-      }
-    }
+
+  let objectKeys: string[] = [];
+  if (assetIds.length) {
+    const assets = await db.select().from(mediaAssets).where(inArray(mediaAssets.id, assetIds));
+    objectKeys = assets.map((a) => a.objectKey);
+    await db.delete(mediaAssets).where(inArray(mediaAssets.id, assetIds));
   }
 
   await db.delete(productVariants).where(eq(productVariants.productId, productId));
+  await db.delete(productColorways).where(eq(productColorways.productId, productId));
   await db.delete(productCategories).where(eq(productCategories.productId, productId));
   await db.delete(productOccasions).where(eq(productOccasions.productId, productId));
   await db.delete(collectionProducts).where(eq(collectionProducts.productId, productId));
   await db.delete(products).where(eq(products.id, productId));
+
+  // Storage after DB commit path — one batch round-trip (was N sequential ~4s)
+  await deleteMediaObjects(objectKeys);
 
   await db.insert(auditLogs).values({
     actorAccountId: user.accountId,

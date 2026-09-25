@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, count, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, ne } from "drizzle-orm";
 import { z } from "zod";
 import { categories, productCategories, auditLogs, type Db } from "@elane/db";
 import type { AppVars } from "../../middleware/auth.js";
@@ -15,6 +15,31 @@ import {
 
 export const adminCategoryRoutes = new Hono<AppVars>();
 adminCategoryRoutes.use("*", requireAuth);
+
+function siblingParentFilter(parentId: string | null) {
+  return parentId === null ? isNull(categories.parentId) : eq(categories.parentId, parentId);
+}
+
+/** Dồn sort_order anh/em cùng cha về 0..n-1 (theo thứ tự hiện tại). */
+async function repackSiblingSortOrders(db: Db, parentId: string | null) {
+  const siblings = await db
+    .select({ id: categories.id, sortOrder: categories.sortOrder, name: categories.name })
+    .from(categories)
+    .where(siblingParentFilter(parentId))
+    .orderBy(asc(categories.sortOrder), asc(categories.name));
+  for (let i = 0; i < siblings.length; i++) {
+    if (siblings[i]!.sortOrder !== i) {
+      await db.update(categories).set({ sortOrder: i, updatedAt: new Date() }).where(eq(categories.id, siblings[i]!.id));
+    }
+  }
+  return siblings.length;
+}
+
+/** STT tiếp theo trong nhóm anh/em — luôn dồn lại trước để tái sử dụng số đã xóa. */
+async function nextSiblingSortOrder(db: Db, parentId: string | null) {
+  const n = await repackSiblingSortOrders(db, parentId);
+  return n;
+}
 
 function slugify(str: string) {
   return str
@@ -149,8 +174,7 @@ adminCategoryRoutes.post("/", async (c) => {
     await assertCanAddChild(db, parentId);
   }
 
-  const maxSort = await db.select({ m: sql<number>`coalesce(max(${categories.sortOrder}), 0)` }).from(categories);
-  const sortOrder = body.data.sort_order ?? (maxSort[0]?.m ?? 0) + 1;
+  const sortOrder = body.data.sort_order ?? (await nextSiblingSortOrder(db, parentId));
 
   const [row] = await db
     .insert(categories)
@@ -274,6 +298,8 @@ adminCategoryRoutes.delete("/:id", async (c) => {
     for (const n of toDelete) {
       await db.delete(categories).where(eq(categories.id, n.id));
     }
+    // Dồn lại STT anh/em còn lại cùng cấp với mục vừa xóa
+    await repackSiblingSortOrders(db, existing[0].parentId);
     await db.insert(auditLogs).values({
       actorAccountId: user.accountId,
       action: "category.delete",

@@ -737,7 +737,7 @@ export function SizesManager() {
             <label className="block">
               <span className="text-xs font-medium">Hướng dẫn đo</span>
               <textarea
-                className="mt-2 min-h-20 w-full rounded-md border border-input bg-transparent p-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+                className="mt-2 min-h-20 w-full rounded-md border border-input bg-[#f7f4ef] p-3 text-sm outline-none focus:ring-1 focus:ring-ring"
                 value={chartForm.instructions}
                 onChange={(e) => setChartForm((f) => ({ ...f, instructions: e.target.value }))}
               />

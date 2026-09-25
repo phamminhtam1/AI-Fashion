@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   inventoryBalances,
@@ -8,8 +8,8 @@ import {
   stockMovements,
   warehouses,
   productVariants,
+  productColorways,
   products,
-  colors,
   sizes,
   idempotencyRecords,
   auditLogs,
@@ -36,7 +36,7 @@ adminInventoryRoutes.get("/", async (c) => {
       sku: productVariants.sku,
       product_id: products.id,
       product_name: products.name,
-      color_name: colors.name,
+      color_name: sql<string>`'Màu ' || (${productColorways.sortOrder} + 1)`,
       size_code: sizes.code,
       size_label: sizes.label,
       on_hand: inventoryBalances.onHand,
@@ -47,9 +47,14 @@ adminInventoryRoutes.get("/", async (c) => {
     .from(inventoryBalances)
     .innerJoin(productVariants, eq(productVariants.id, inventoryBalances.variantId))
     .innerJoin(products, eq(products.id, productVariants.productId))
-    .innerJoin(colors, eq(colors.id, productVariants.colorId))
+    .innerJoin(productColorways, eq(productColorways.id, productVariants.colorwayId))
     .innerJoin(sizes, eq(sizes.id, productVariants.sizeId))
-    .where(eq(inventoryBalances.warehouseId, wh[0].id))
+    .where(
+      and(
+        eq(inventoryBalances.warehouseId, wh[0].id),
+        eq(productVariants.status, "active"),
+      ),
+    )
     .orderBy(products.name, productVariants.sku)
     .limit(500);
   return c.json({ warehouse: wh[0], items: rows });
@@ -102,13 +107,13 @@ adminInventoryRoutes.get("/documents/:id", async (c) => {
       unit_cost_vnd: inventoryDocumentLines.unitCostVnd,
       sku: productVariants.sku,
       product_name: products.name,
-      color_name: colors.name,
+      color_name: sql<string>`'Màu ' || (${productColorways.sortOrder} + 1)`,
       size_label: sizes.label,
     })
     .from(inventoryDocumentLines)
     .innerJoin(productVariants, eq(productVariants.id, inventoryDocumentLines.variantId))
     .innerJoin(products, eq(products.id, productVariants.productId))
-    .innerJoin(colors, eq(colors.id, productVariants.colorId))
+    .innerJoin(productColorways, eq(productColorways.id, productVariants.colorwayId))
     .innerJoin(sizes, eq(sizes.id, productVariants.sizeId))
     .where(eq(inventoryDocumentLines.documentId, docs[0].id));
   const d = docs[0];
@@ -294,4 +299,103 @@ adminInventoryRoutes.post("/documents/:id/post", async (c) => {
   });
 
   return c.json({ id: docs[0].id, status: "posted" });
+});
+
+adminInventoryRoutes.delete("/documents/:id", async (c) => {
+  const user = c.get("user")!;
+  const db = c.get("db");
+  const docs = await db
+    .select()
+    .from(inventoryDocuments)
+    .where(eq(inventoryDocuments.id, c.req.param("id")))
+    .limit(1);
+  if (!docs[0]) throw new ApiError(404, "not_found", "Không tìm thấy phiếu");
+  if (docs[0].status === "void") throw new ApiError(404, "not_found", "Phiếu đã hủy");
+
+  const posted = docs[0].status === "posted";
+  if (posted) requirePerm(user, "inventory.adjust.approve");
+  else requirePerm(user, "inventory.receive");
+
+  const lines = await db
+    .select()
+    .from(inventoryDocumentLines)
+    .where(eq(inventoryDocumentLines.documentId, docs[0].id));
+  const lineIds = lines.map((l) => l.id);
+
+  await db.transaction(async (tx) => {
+    if (posted && lineIds.length) {
+      const movements = await tx
+        .select()
+        .from(stockMovements)
+        .where(inArray(stockMovements.documentLineId, lineIds));
+
+      for (const m of movements) {
+        const reverse = -m.deltaQty;
+        const bal = await tx
+          .select()
+          .from(inventoryBalances)
+          .where(
+            and(eq(inventoryBalances.warehouseId, m.warehouseId), eq(inventoryBalances.variantId, m.variantId)),
+          )
+          .limit(1)
+          .for("update");
+
+        if (!bal[0]) {
+          if (reverse < 0) throw new ApiError(409, "insufficient_stock", "Không đảo được tồn — thiếu dòng cân đối");
+          if (reverse > 0) {
+            await tx.insert(inventoryBalances).values({
+              warehouseId: m.warehouseId,
+              variantId: m.variantId,
+              onHand: reverse,
+              reserved: 0,
+              reorderPoint: 5,
+            });
+          }
+        } else {
+          const next = bal[0].onHand + reverse;
+          if (next < 0 || bal[0].reserved > next) {
+            throw new ApiError(409, "insufficient_stock", "Không đảo được tồn — sẽ âm hoặc không đủ sau khi xóa phiếu");
+          }
+          if (next === 0 && bal[0].reserved === 0) {
+            await tx
+              .delete(inventoryBalances)
+              .where(
+                and(
+                  eq(inventoryBalances.warehouseId, m.warehouseId),
+                  eq(inventoryBalances.variantId, m.variantId),
+                ),
+              );
+          } else {
+            await tx
+              .update(inventoryBalances)
+              .set({ onHand: next, updatedAt: new Date() })
+              .where(
+                and(
+                  eq(inventoryBalances.warehouseId, m.warehouseId),
+                  eq(inventoryBalances.variantId, m.variantId),
+                ),
+              );
+          }
+        }
+
+        await tx.delete(stockMovements).where(eq(stockMovements.id, m.id));
+      }
+    }
+
+    if (lineIds.length) {
+      await tx.delete(inventoryDocumentLines).where(inArray(inventoryDocumentLines.id, lineIds));
+    }
+    await tx.delete(inventoryDocuments).where(eq(inventoryDocuments.id, docs[0]!.id));
+
+    await tx.insert(auditLogs).values({
+      actorAccountId: user.accountId,
+      action: posted ? "inventory.delete_posted" : "inventory.delete",
+      resourceType: "inventory_document",
+      resourceId: docs[0]!.id,
+      beforeRedacted: { code: docs[0]!.code, status: docs[0]!.status, type: docs[0]!.type },
+      requestId: requestId(c),
+    });
+  });
+
+  return c.json({ id: docs[0].id, deleted: true, reversed_stock: posted });
 });

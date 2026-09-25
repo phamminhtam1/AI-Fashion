@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
-    "test": "tsx --test src/**/*.test.ts"
+    "test": "tsx --test src/**/*.test.ts",
+    "import:pantio": "tsx src/scripts/import-pantio.ts --fresh"
   },
   "dependencies": {
     "@elane/db": "*",
     "@hono/node-server": "^1.19.0",
+    "@supabase/supabase-js": "^2.117.1",
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.44.5",

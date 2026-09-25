@@ -1,14 +1,12 @@
 import { Hono } from "hono";
 import { and, asc, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
-import { mediaAssets, productMedia, products, auditLogs } from "@elane/db";
+import { mediaAssets, productMedia, productColorways, products, auditLogs } from "@elane/db";
 import type { AppVars } from "../../middleware/auth.js";
 import { requireAuth } from "../../middleware/auth.js";
 import { ApiError, requestId } from "../../lib/errors.js";
+import { deleteMediaObject, uploadMediaObject } from "../../lib/media-storage.js";
 import { requirePerm } from "../../lib/session.js";
-import { env } from "../../env.js";
 import { mapProduct } from "../public/catalog.js";
 
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
@@ -27,6 +25,15 @@ adminMediaRoutes.post("/products/:id/media", async (c) => {
   if (!rows[0]) throw new ApiError(404, "not_found", "Không tìm thấy sản phẩm");
 
   const body = await c.req.parseBody();
+  const colorwayId = typeof body["colorway_id"] === "string" ? body["colorway_id"] : null;
+  if (!colorwayId) throw new ApiError(400, "missing_colorway", "Thiếu colorway_id");
+  const cw = await db
+    .select()
+    .from(productColorways)
+    .where(and(eq(productColorways.id, colorwayId), eq(productColorways.productId, productId)))
+    .limit(1);
+  if (!cw[0]) throw new ApiError(400, "invalid_colorway", "Colorway không hợp lệ");
+
   const file = body["file"];
   if (!file || typeof file === "string") {
     throw new ApiError(400, "validation_error", "Thiếu file ảnh (field: file)");
@@ -47,10 +54,8 @@ adminMediaRoutes.post("/products/:id/media", async (c) => {
 
   const ext =
     mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : mime === "image/gif" ? "gif" : "jpg";
-  const objectKey = `products/${productId}/${randomUUID()}.${ext}`;
-  const abs = path.join(env.uploadDir, objectKey);
-  fs.mkdirSync(path.dirname(abs), { recursive: true });
-  fs.writeFileSync(abs, buf);
+  const objectKey = `${productId}/${randomUUID()}.${ext}`;
+  await uploadMediaObject(objectKey, buf, mime);
 
   const existingMedia = await db
     .select()
@@ -82,12 +87,12 @@ adminMediaRoutes.post("/products/:id/media", async (c) => {
     .values({
       productId,
       assetId: asset!.id,
+      colorwayId,
       sortOrder: existingMedia.length,
       isCover,
     })
     .returning();
 
-  // Cover luôn sort 0
   if (isCover) {
     await db.update(productMedia).set({ sortOrder: 0 }).where(eq(productMedia.id, link!.id));
   }
@@ -97,7 +102,7 @@ adminMediaRoutes.post("/products/:id/media", async (c) => {
     action: "product.media.upload",
     resourceType: "product",
     resourceId: productId,
-    afterRedacted: { asset_id: asset!.id, object_key: objectKey, is_cover: isCover },
+    afterRedacted: { asset_id: asset!.id, object_key: objectKey, is_cover: isCover, colorway_id: colorwayId },
     requestId: requestId(c),
   });
 
@@ -123,12 +128,7 @@ adminMediaRoutes.delete("/products/:id/media/:assetId", async (c) => {
   await db.delete(mediaAssets).where(eq(mediaAssets.id, assetId));
 
   if (assets[0]) {
-    const abs = path.join(env.uploadDir, assets[0].objectKey);
-    try {
-      fs.unlinkSync(abs);
-    } catch {
-      /* ignore missing file */
-    }
+    await deleteMediaObject(assets[0].objectKey);
   }
 
   // Nếu xóa cover, promote ảnh đầu còn lại

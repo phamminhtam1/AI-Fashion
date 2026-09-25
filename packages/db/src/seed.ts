@@ -435,11 +435,9 @@ async function main() {
     .returning();
   const occBySlug = Object.fromEntries(occRows.map((o) => [o.slug, o]));
 
-  const colorRows = await db
+  await db
     .insert(s.colors)
-    .values(COLORS.map(([code, name, hex]) => ({ code, name, hex })))
-    .returning();
-  const colorByCode = Object.fromEntries(colorRows.map((c) => [c.code, c]));
+    .values(COLORS.map(([code, name, hex]) => ({ code, name, hex })));
 
   const sizeRows = await db
     .insert(s.sizes)
@@ -548,9 +546,18 @@ async function main() {
     await db.insert(s.productOccasions).values({ productId: product!.id, occasionId: occ.id });
 
     const sizeCodes = catSlug === "phu-kien" ? ["ONE_SIZE"] : ["XS", "S", "M", "L", "XL"];
+    const colorwayByCode = new Map<string, string>();
+    for (let i = 0; i < colorCodes.length; i++) {
+      const cc = colorCodes[i]!;
+      const [cw] = await db
+        .insert(s.productColorways)
+        .values({ productId: product!.id, sortOrder: i })
+        .returning();
+      colorwayByCode.set(cc, cw!.id);
+    }
     for (const cc of colorCodes) {
       for (const sc of sizeCodes) {
-        const color = colorByCode[cc]!;
+        const colorwayId = colorwayByCode.get(cc)!;
         const size = sizeByCode[sc]!;
         const sku = `${slug.toUpperCase().slice(0, 12)}-${cc.toUpperCase()}-${sc}`.replace(/[^A-Z0-9-]/g, "");
         const [variant] = await db
@@ -558,7 +565,7 @@ async function main() {
           .values({
             productId: product!.id,
             sku,
-            colorId: color.id,
+            colorwayId,
             sizeId: size.id,
             priceVnd: salePrice ?? price,
             compareAtPriceVnd: salePrice ? price : null,

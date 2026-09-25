@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { and, asc, count, eq, ne } from "drizzle-orm";
+import { and, asc, eq, ne } from "drizzle-orm";
 import { z } from "zod";
-import { colors, productVariants, auditLogs } from "@elane/db";
+import { colors, auditLogs } from "@elane/db";
 import type { AppVars } from "../../middleware/auth.js";
 import { requireAuth } from "../../middleware/auth.js";
 import { ApiError, requestId } from "../../lib/errors.js";
@@ -38,21 +38,15 @@ adminColorRoutes.get("/", async (c) => {
   requirePerm(c.get("user")!, "product.read");
   const db = c.get("db");
   const rows = await db.select().from(colors).orderBy(asc(colors.name));
-  const items = [];
-  for (const row of rows) {
-    const [pc] = await db
-      .select({ n: count() })
-      .from(productVariants)
-      .where(eq(productVariants.colorId, row.id));
-    items.push({
+  return c.json({
+    items: rows.map((row) => ({
       id: row.id,
       code: row.code,
       name: row.name,
       hex: row.hex,
-      variant_count: Number(pc?.n ?? 0),
-    });
-  }
-  return c.json({ items });
+      variant_count: 0,
+    })),
+  });
 });
 
 adminColorRoutes.post("/", async (c) => {
@@ -145,16 +139,12 @@ adminColorRoutes.patch("/:id", async (c) => {
     resourceId: row!.id,
     requestId: requestId(c),
   });
-  const [pc] = await db
-    .select({ n: count() })
-    .from(productVariants)
-    .where(eq(productVariants.colorId, row!.id));
   return c.json({
     id: row!.id,
     code: row!.code,
     name: row!.name,
     hex: row!.hex,
-    variant_count: Number(pc?.n ?? 0),
+    variant_count: 0,
   });
 });
 
@@ -164,14 +154,6 @@ adminColorRoutes.delete("/:id", async (c) => {
   const db = c.get("db");
   const existing = await db.select().from(colors).where(eq(colors.id, c.req.param("id"))).limit(1);
   if (!existing[0]) throw new ApiError(404, "not_found", "Không tìm thấy màu");
-
-  const [pc] = await db
-    .select({ n: count() })
-    .from(productVariants)
-    .where(eq(productVariants.colorId, existing[0].id));
-  if (Number(pc?.n ?? 0) > 0) {
-    throw new ApiError(409, "in_use", `Màu đang dùng ở ${pc!.n} biến thể — không thể xóa`);
-  }
 
   await db.delete(colors).where(eq(colors.id, existing[0].id));
   await db.insert(auditLogs).values({

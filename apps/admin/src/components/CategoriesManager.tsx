@@ -414,7 +414,7 @@ export function CategoriesManager() {
             <label className="block">
               <span className="text-xs font-medium">Mô tả</span>
               <textarea
-                className="mt-2 min-h-28 w-full rounded-md border border-input bg-transparent p-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+                className="mt-2 min-h-28 w-full rounded-md border border-input bg-[#f7f4ef] p-3 text-sm outline-none focus:ring-1 focus:ring-ring"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 placeholder="Mô tả ngắn…"
@@ -435,7 +435,7 @@ export function CategoriesManager() {
               <label className="block">
                 <span className="text-xs font-medium">Trạng thái</span>
                 <select
-                  className="mt-2 flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                  className="mt-2 flex h-9 w-full rounded-md border border-input bg-[#f7f4ef] px-3 text-sm"
                   value={form.status}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, status: e.target.value as "active" | "archived" }))

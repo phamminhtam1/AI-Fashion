@@ -39,7 +39,7 @@ function CartPage() {
                 <Link to="/san-pham/$slug" params={{ slug: p.slug }}><img src={p.images[0]} alt={p.name} className="h-36 w-27 object-cover" /></Link>
                 <div className="flex flex-1 flex-col">
                   <div className="flex justify-between gap-4">
-                    <div><p>{p.name}</p><p className="mt-1 text-sm text-muted-foreground">{it.color} · Size {it.size}</p></div>
+                    <div><p>{p.name}</p><p className="mt-1 text-sm text-muted-foreground">{it.sku} · Size {it.size}</p></div>
                     <button onClick={() => removeItem(i)} aria-label="Xóa"><X className="h-4 w-4" /></button>
                   </div>
                   <div className="mt-auto flex items-center justify-between">

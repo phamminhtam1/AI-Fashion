@@ -21,6 +21,12 @@ export type ApiProduct = {
   price_vnd: number;
   sale_compare_vnd: number | null;
   images: string[];
+  colorways?: Array<{
+    id: string;
+    sort_order: number;
+    thumbnail: string | null;
+    images: string[];
+  }>;
   colors: { name: string; hex: string | null; code: string }[];
   sizes: { code: string; label: string }[];
   variants: Array<{
@@ -28,6 +34,7 @@ export type ApiProduct = {
     sku: string;
     price_vnd: number;
     compare_at_price_vnd: number | null;
+    colorway_id?: string;
     color: { code: string; name: string; hex: string | null };
     size: { code: string; label: string };
   }>;
@@ -45,7 +52,6 @@ async function get<T>(path: string): Promise<T> {
 export function mediaUrl(path: string) {
   if (!path) return "";
   if (path.startsWith("http")) return path;
-  // Always public host so <img> in browser works
   return `${PUBLIC_API_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
@@ -61,7 +67,15 @@ export async function fetchProduct(slug: string) {
 }
 
 export async function fetchCategories() {
-  return get<{ items: Array<{ slug: string; name: string; description: string | null }> }>("/categories");
+  return get<{
+    items: Array<{
+      id: string;
+      slug: string;
+      name: string;
+      description: string | null;
+      parent_id: string | null;
+    }>;
+  }>("/categories");
 }
 
 export async function fetchFaqs() {

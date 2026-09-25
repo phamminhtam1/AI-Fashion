@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
-import { productsForListing } from "@/lib/products";
+import { categoryBreadcrumb, productsForListing } from "@/lib/products";
 import { ProductCard } from "@/components/site/ProductCard";
 
 export const Route = createFileRoute("/danh-muc/$slug")({
@@ -30,6 +30,7 @@ const sorts = { new: "Mới nhất", asc: "Giá tăng dần", desc: "Giá giảm
 function Listing() {
   const { slug } = Route.useParams();
   const data = productsForListing(slug)!;
+  const crumbs = categoryBreadcrumb(slug);
   const [sort, setSort] = useState<keyof typeof sorts>("new");
   const [size, setSize] = useState<string | null>(null);
   const [maxPrice, setMaxPrice] = useState(4000000);
@@ -48,7 +49,28 @@ function Listing() {
   return (
     <div className="mx-auto max-w-[1440px] px-6 py-10 md:px-8">
       <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground">
-        <Link to="/" className="hover:text-foreground">Trang chủ</Link> / <span className="text-foreground">{data.title}</span>
+        <Link to="/" className="hover:text-foreground">
+          Trang chủ
+        </Link>
+        {crumbs.length > 0 ? (
+          crumbs.map((c, i) => (
+            <span key={c.slug}>
+              {" / "}
+              {i < crumbs.length - 1 ? (
+                <Link to="/danh-muc/$slug" params={{ slug: c.slug }} className="hover:text-foreground">
+                  {c.name}
+                </Link>
+              ) : (
+                <span className="text-foreground">{c.name}</span>
+              )}
+            </span>
+          ))
+        ) : (
+          <>
+            {" / "}
+            <span className="text-foreground">{data.title}</span>
+          </>
+        )}
       </nav>
       <header className="mt-6 max-w-2xl">
         <h1 className="text-4xl md:text-5xl">{data.title}</h1>

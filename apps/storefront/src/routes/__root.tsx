@@ -78,8 +78,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async () => {
-    const { ensureCatalog } = await import("@/lib/products");
+    const { ensureCatalog, getNavItems } = await import("@/lib/products");
     await ensureCatalog();
+    // Return nav so client hydrates with children (module cache is server-only).
+    return { navItems: getNavItems() };
   },
   head: () => ({
     meta: [
@@ -126,12 +128,13 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const { navItems } = Route.useLoaderData();
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <StoreProvider>
-        <Header />
+        <Header navItems={navItems} />
         <main className="min-h-[60vh]"><Outlet /></main>
         <Footer />
         <Toaster position="bottom-center" />

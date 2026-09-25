@@ -22,6 +22,13 @@
       "when": 1790274251368,
       "tag": "0002_loose_sway",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790323800000,
+      "tag": "0003_product_colorways",
+      "breakpoints": true
     }
   ]
 }

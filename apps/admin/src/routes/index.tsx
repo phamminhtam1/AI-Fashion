@@ -20,7 +20,6 @@ import {
   Package,
   Plus,
   Ruler,
-  Palette,
   Search,
   Settings,
   ShieldCheck,
@@ -52,7 +51,6 @@ import { adminApi } from "@/lib/api";
 import { CategoriesManager } from "@/components/CategoriesManager";
 import { ProductsManager } from "@/components/ProductsManager";
 import { SizesManager } from "@/components/SizesManager";
-import { ColorsManager } from "@/components/ColorsManager";
 import { InventoryManager } from "@/components/InventoryManager";
 import { CustomersManager } from "@/components/CustomersManager";
 import type { Overview } from "@/lib/api";
@@ -155,7 +153,6 @@ const operations: NavItem[] = [
   { id: "products", label: "Sản phẩm", icon: Package },
   { id: "categories", label: "Danh mục", icon: LayoutGrid },
   { id: "sizes", label: "Bảng size", icon: Ruler },
-  { id: "colors", label: "Mảng màu", icon: Palette },
   { id: "inventory", label: "Kho hàng", icon: Boxes, count: 5 },
   { id: "customers", label: "Khách hàng", icon: Users },
   { id: "promotions", label: "Khuyến mãi", icon: Tag },
@@ -215,7 +212,7 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
 
   useEffect(() => {
     // Hydrate Phase 1 modules with API data; keep layout/mock for the rest
-    Promise.all([adminApi.overview(), adminApi.products(), adminApi.inventory(), adminApi.staff(), adminApi.audit()])
+    Promise.all([adminApi.overview(), adminApi.productsAll(), adminApi.inventory(), adminApi.staff(), adminApi.audit()])
       .then(([overview, products, inventory, staff, audit]) => {
         setLiveConfigs((prev) => {
           const next = { ...prev };
@@ -344,14 +341,11 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden items-center gap-2 rounded-full border border-border px-3 py-2 text-xs text-muted-foreground md:flex">
-              <span className="size-1.5 rounded-full bg-primary" /> Trực tuyến · API
+              <span className="size-1.5 rounded-full bg-primary" /> Trực tuyến
             </div>
             <Button variant="outline" size="icon" aria-label="Thông báo" className="relative">
               <Bell />
               <span className="absolute right-1 top-1 size-1.5 rounded-full bg-primary" />
-            </Button>
-            <Button className="hidden sm:inline-flex" onClick={() => setCreateOpen(true)}>
-              <Plus /> Tạo mới
             </Button>
           </div>
         </header>
@@ -374,8 +368,6 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
           />
         ) : active === "sizes" ? (
           <SizesManager />
-        ) : active === "colors" ? (
-          <ColorsManager />
         ) : active === "customers" ? (
           <CustomersManager />
         ) : currentConfig ? (

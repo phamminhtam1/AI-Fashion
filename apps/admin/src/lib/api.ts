@@ -31,12 +31,26 @@ export type AdminProduct = {
   price_vnd: number;
   sale_compare_vnd: number | null;
   images: string[];
-  media?: Array<{ asset_id: string; url: string; alt: string | null; is_cover: boolean }>;
+  media?: Array<{
+    asset_id: string;
+    url: string;
+    alt: string | null;
+    is_cover: boolean;
+    colorway_id?: string | null;
+  }>;
+  colorways?: Array<{
+    id: string;
+    sort_order: number;
+    thumbnail?: string | null;
+    images?: string[];
+  }>;
   variants: Array<{
     id: string;
     sku: string;
     price_vnd: number;
     status?: string;
+    colorway_id?: string;
+    size_id?: string;
     color?: { code: string; name: string; hex?: string | null };
     size?: { code: string; label: string };
     color_name?: string;
@@ -290,8 +304,46 @@ export const adminApi = {
     }),
   deleteAddress: (customerId: string, addressId: string) =>
     req<{ ok: boolean }>(`/admin/customers/${customerId}/addresses/${addressId}`, { method: "DELETE" }),
-  products: (status?: string) =>
-    req<{ items: AdminProduct[] }>(`/admin/products${status ? `?status=${status}` : ""}`),
+  products: (params?: {
+    status?: string;
+    q?: string;
+    category_id?: string;
+    price_min?: number;
+    price_max?: number;
+    stock?: "in" | "out" | "none";
+    page?: number;
+    limit?: number;
+  }) => {
+    const q = new URLSearchParams();
+    if (params?.status) q.set("status", params.status);
+    if (params?.q) q.set("q", params.q);
+    if (params?.category_id) q.set("category_id", params.category_id);
+    if (params?.price_min != null) q.set("price_min", String(params.price_min));
+    if (params?.price_max != null) q.set("price_max", String(params.price_max));
+    if (params?.stock) q.set("stock", params.stock);
+    if (params?.page) q.set("page", String(params.page));
+    if (params?.limit) q.set("limit", String(params.limit));
+    const qs = q.toString();
+    return req<{
+      items: AdminProduct[];
+      total: number;
+      page: number;
+      limit: number;
+      status_counts: { all: number; published: number; draft: number; archived: number };
+    }>(`/admin/products${qs ? `?${qs}` : ""}`);
+  },
+  /** Walk pages when a caller needs the full catalog (inventory matrix, overview). */
+  productsAll: async () => {
+    const items: AdminProduct[] = [];
+    let page = 1;
+    for (;;) {
+      const res = await adminApi.products({ page, limit: 100 });
+      items.push(...res.items);
+      if (items.length >= res.total || !res.items.length) break;
+      page += 1;
+    }
+    return { items };
+  },
   productMeta: () => req<ProductMeta>("/admin/products/meta"),
   createProduct: (body: Record<string, unknown>) =>
     req<AdminProduct>("/admin/products", { method: "POST", body: JSON.stringify(body) }),
@@ -303,9 +355,17 @@ export const adminApi = {
       `/admin/products/${id}${hard ? "?hard=1" : ""}`,
       { method: "DELETE" },
     ),
-  uploadProductMedia: async (id: string, file: File, isCover = true) => {
+  uploadProductMedia: async (
+    id: string,
+    file: File,
+    opts: { colorwayId: string; isCover?: boolean } | boolean = true,
+  ) => {
+    const colorwayId = typeof opts === "boolean" ? "" : opts.colorwayId;
+    const isCover = typeof opts === "boolean" ? opts : (opts.isCover ?? true);
+    if (!colorwayId) throw new Error("Thiếu colorway_id");
     const fd = new FormData();
     fd.append("file", file);
+    fd.append("colorway_id", colorwayId);
     if (isCover) fd.append("is_cover", "true");
     const res = await fetch(`${API_URL}/api/v1/admin/products/${id}/media`, {
       method: "POST",
@@ -316,6 +376,13 @@ export const adminApi = {
     if (!res.ok) throw new Error((data as { message?: string }).message ?? `API ${res.status}`);
     return data as AdminProduct;
   },
+  createColorway: (productId: string, body?: { size_ids?: string[] }) =>
+    req<AdminProduct>(`/admin/products/${productId}/colorways`, {
+      method: "POST",
+      body: JSON.stringify(body ?? {}),
+    }),
+  deleteColorway: (productId: string, colorwayId: string) =>
+    req<AdminProduct>(`/admin/products/${productId}/colorways/${colorwayId}`, { method: "DELETE" }),
   deleteProductMedia: (id: string, assetId: string) =>
     req<AdminProduct>(`/admin/products/${id}/media/${assetId}`, { method: "DELETE" }),
   categories: (status?: string) =>
@@ -393,6 +460,11 @@ export const adminApi = {
       method: "POST",
       headers: { "Idempotency-Key": key },
     }),
+  deleteDoc: (id: string) =>
+    req<{ id: string; deleted: boolean; reversed_stock: boolean }>(
+      `/admin/inventory/documents/${id}`,
+      { method: "DELETE" },
+    ),
   staff: () => req<{ items: Array<Record<string, unknown>> }>("/admin/staff"),
   audit: () => req<{ items: Array<Record<string, unknown>> }>("/admin/audit-logs"),
   brand: () => req<{ value: Record<string, unknown> }>("/admin/settings/brand"),

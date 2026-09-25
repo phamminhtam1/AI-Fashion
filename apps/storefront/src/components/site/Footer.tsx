@@ -20,7 +20,12 @@ export function Newsletter() {
   );
 }
 
-const shop: [string, string][] = [["hang-moi", "Hàng mới"], ["vay-dam", "Váy / Đầm"], ["ao", "Áo"], ["sale", "Sale"]];
+const shop: [string, string][] = [
+  ["hang-moi", "Hàng mới"],
+  ["cong-so", "Công sở"],
+  ["du-tiec", "Dự tiệc"],
+  ["sale", "Sale"],
+];
 const lk = "hover:text-foreground";
 
 export function Footer() {

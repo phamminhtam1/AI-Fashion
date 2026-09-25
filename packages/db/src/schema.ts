@@ -225,6 +225,15 @@ export const sizeChartMeasurements = pgTable(
   (t) => [uniqueIndex("size_chart_meas_uq").on(t.sizeChartId, t.sizeId, t.measurementCode)],
 );
 
+export const productColorways = pgTable("product_colorways", {
+  id: id(),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => products.id),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: createdAt(),
+});
+
 export const productVariants = pgTable(
   "product_variants",
   {
@@ -234,9 +243,9 @@ export const productVariants = pgTable(
       .references(() => products.id),
     sku: text("sku").notNull().unique(),
     barcode: text("barcode").unique(),
-    colorId: uuid("color_id")
+    colorwayId: uuid("colorway_id")
       .notNull()
-      .references(() => colors.id),
+      .references(() => productColorways.id),
     sizeId: uuid("size_id")
       .notNull()
       .references(() => sizes.id),
@@ -248,7 +257,7 @@ export const productVariants = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [uniqueIndex("variant_pcs_uq").on(t.productId, t.colorId, t.sizeId)],
+  (t) => [uniqueIndex("variant_pcs_uq").on(t.productId, t.colorwayId, t.sizeId)],
 );
 
 export const mediaAssets = pgTable("media_assets", {
@@ -271,7 +280,7 @@ export const productMedia = pgTable("product_media", {
   assetId: uuid("asset_id")
     .notNull()
     .references(() => mediaAssets.id),
-  colorId: uuid("color_id").references(() => colors.id),
+  colorwayId: uuid("colorway_id").references(() => productColorways.id),
   sortOrder: integer("sort_order").notNull().default(0),
   isCover: boolean("is_cover").notNull().default(false),
   createdAt: createdAt(),
