@@ -37,6 +37,7 @@ export type ApiProduct = {
     colorway_id?: string;
     color: { code: string; name: string; hex: string | null };
     size: { code: string; label: string };
+    available: number;
   }>;
 };
 

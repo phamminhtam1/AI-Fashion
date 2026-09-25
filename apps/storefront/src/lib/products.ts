@@ -37,7 +37,7 @@ export type Product = {
   colorways: Array<{ id: string; thumbnail: string; images: string[] }>;
   colors: { name: string; hex: string }[];
   sizes: string[];
-  variants: Array<{ id: string; sku: string; colorwayId: string; size: string }>;
+  variants: Array<{ id: string; sku: string; colorwayId: string; size: string; available: number }>;
   isNew?: boolean | undefined;
   bestSeller?: boolean | undefined;
   rating: number;
@@ -98,6 +98,7 @@ export function mapApiProduct(p: ApiProduct): Product {
       sku: v.sku,
       colorwayId: v.colorway_id ?? v.color?.code ?? "",
       size: v.size.label,
+      available: v.available ?? 0,
     })),
     isNew: p.is_new,
     bestSeller: p.best_seller,
