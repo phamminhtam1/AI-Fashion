@@ -23,6 +23,8 @@ import { meRoutes } from "./routes/me/index.js";
 import { publicCatalogRoutes } from "./routes/public/catalog.js";
 import { publicContentRoutes } from "./routes/public/content.js";
 import { publicSizeRoutes } from "./routes/public/sizes.js";
+import { publicPaymentRoutes } from "./routes/public/payments.js";
+import { sepayWebhookRoutes } from "./routes/webhooks/sepay.js";
 
 fs.mkdirSync(env.uploadDir, { recursive: true });
 
@@ -51,6 +53,8 @@ app.get("/health", (c) => c.json({ ok: true }));
 app.route("/api/v1", publicCatalogRoutes);
 app.route("/api/v1", publicContentRoutes);
 app.route("/api/v1", publicSizeRoutes);
+app.route("/api/v1", publicPaymentRoutes);
+app.route("/api/v1", sepayWebhookRoutes);
 app.route("/api/v1/store/auth", storeAuthRoutes);
 app.route("/api/v1/me", meRoutes);
 app.route("/api/v1/admin/auth", adminAuthRoutes);

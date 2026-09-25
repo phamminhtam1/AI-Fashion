@@ -171,7 +171,7 @@ meRoutes.delete("/wishlist/:productId", async (c) => {
   return c.json({ ok: true });
 });
 
-const payEnum = z.enum(["cod", "bank", "card", "wallet"]);
+const payEnum = z.enum(["cod", "bank"]);
 
 meRoutes.get("/orders", async (c) => {
   const db = c.get("db");
@@ -189,6 +189,8 @@ meRoutes.get("/orders", async (c) => {
       status: o.status,
       grand_total_vnd: o.grandTotalVnd,
       payment_method: o.paymentMethod,
+      payment_status: o.paymentStatus,
+      paid_at: o.paidAt,
       placed_at: o.placedAt,
     })),
   });
@@ -217,6 +219,9 @@ meRoutes.get("/orders/:id", async (c) => {
     discount_vnd: order.discountVnd,
     grand_total_vnd: order.grandTotalVnd,
     payment_method: order.paymentMethod,
+    payment_status: order.paymentStatus,
+    paid_at: order.paidAt,
+    payment_ref: order.paymentRef,
     recipient: order.recipientSnapshot,
     shipping_address: order.shippingAddressSnapshot,
     placed_at: order.placedAt,
@@ -385,6 +390,7 @@ meRoutes.post("/orders", async (c) => {
             discountVnd: 0,
             grandTotalVnd: grand,
             paymentMethod: body.data.payment_method,
+            paymentStatus: body.data.payment_method === "bank" ? "awaiting" : "unpaid",
             recipientSnapshot: {
               full_name: body.data.shipping.full_name,
               phone: body.data.shipping.phone,
@@ -443,6 +449,8 @@ meRoutes.post("/orders", async (c) => {
       order_number: created.orderNumber,
       status: created.status,
       grand_total_vnd: created.grandTotalVnd,
+      payment_method: created.paymentMethod,
+      payment_status: created.paymentStatus,
     },
     201,
   );

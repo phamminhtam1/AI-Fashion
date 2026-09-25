@@ -6,6 +6,7 @@ import type { AppVars } from "../../middleware/auth.js";
 import { requireAuth } from "../../middleware/auth.js";
 import { ApiError } from "../../lib/errors.js";
 import { requirePerm } from "../../lib/session.js";
+import { markOrderPaid } from "../../lib/mark-order-paid.js";
 
 export const adminOrderRoutes = new Hono<AppVars>();
 adminOrderRoutes.use("*", requireAuth);
@@ -20,6 +21,9 @@ adminOrderRoutes.get("/", async (c) => {
       status: orders.status,
       grandTotalVnd: orders.grandTotalVnd,
       paymentMethod: orders.paymentMethod,
+      paymentStatus: orders.paymentStatus,
+      paidAt: orders.paidAt,
+      paymentRef: orders.paymentRef,
       placedAt: orders.placedAt,
       customerName: customers.fullName,
     })
@@ -35,6 +39,9 @@ adminOrderRoutes.get("/", async (c) => {
       status: o.status,
       grand_total_vnd: o.grandTotalVnd,
       payment_method: o.paymentMethod,
+      payment_status: o.paymentStatus,
+      paid_at: o.paidAt,
+      payment_ref: o.paymentRef,
       placed_at: o.placedAt,
       customer_name: o.customerName,
     })),
@@ -62,6 +69,9 @@ adminOrderRoutes.get("/:id", async (c) => {
     shipping_vnd: order.shippingVnd,
     grand_total_vnd: order.grandTotalVnd,
     payment_method: order.paymentMethod,
+    payment_status: order.paymentStatus,
+    paid_at: order.paidAt,
+    payment_ref: order.paymentRef,
     recipient: order.recipientSnapshot,
     shipping_address: order.shippingAddressSnapshot,
     placed_at: order.placedAt,
@@ -73,6 +83,20 @@ adminOrderRoutes.get("/:id", async (c) => {
       unit_price_vnd: it.unitPriceVnd,
       line_total_vnd: it.lineTotalVnd,
     })),
+  });
+});
+
+adminOrderRoutes.post("/:id/mark-paid", async (c) => {
+  requirePerm(c.get("user")!, "order.read");
+  const id = c.req.param("id");
+  const ok = await markOrderPaid(c.get("db"), id, "manual");
+  if (!ok) throw new ApiError(400, "invalid_state", "Đơn không ở trạng thái chờ chuyển khoản");
+  const order = (await c.get("db").select().from(orders).where(eq(orders.id, id)).limit(1))[0]!;
+  return c.json({
+    id: order.id,
+    order_number: order.orderNumber,
+    status: order.status,
+    payment_status: order.paymentStatus,
   });
 });
 

@@ -21,4 +21,9 @@ export const env = {
   supabaseUrl: normalizeSupabaseUrl(process.env.SUPABASE_URL),
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || undefined,
   supabaseMediaBucket: process.env.SUPABASE_MEDIA_BUCKET ?? "products",
+  sepayWebhookSecret: process.env.SEPAY_WEBHOOK_SECRET ?? "",
+  sepayBankAccount: process.env.SEPAY_BANK_ACCOUNT ?? "",
+  sepayAccountName: process.env.SEPAY_ACCOUNT_NAME ?? "",
+  sepayBankName: process.env.SEPAY_BANK_NAME ?? "",
+  sepayBankBin: process.env.SEPAY_BANK_BIN ?? "",
 };
