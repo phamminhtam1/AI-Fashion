@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Copy } from "lucide-react";
 import { formatVND, products } from "@/lib/products";
 import { FREE_SHIP, useStore } from "@/lib/store";
+import { fetchBankInfo, type BankInfo } from "@/lib/api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/thanh-toan")({
@@ -20,11 +21,25 @@ export const Route = createFileRoute("/thanh-toan")({
 
 const input = "w-full border border-border bg-background px-4 py-3 text-sm outline-none focus:border-foreground";
 
+type Done = {
+  orderNumber: string;
+  grandTotalVnd: number;
+  paymentMethod: "cod" | "bank";
+};
+
+function copyText(label: string, value: string) {
+  void navigator.clipboard.writeText(value).then(
+    () => toast.success(`Đã copy ${label}`),
+    () => toast.error("Không copy được"),
+  );
+}
+
 function Checkout() {
   const { cart, subtotal, placeOrder, user, sessionReady } = useStore();
   const nav = useNavigate();
-  const [done, setDone] = useState<string | null>(null);
-  const [pay, setPay] = useState<"cod" | "bank" | "card" | "wallet">("cod");
+  const [done, setDone] = useState<Done | null>(null);
+  const [pay, setPay] = useState<"cod" | "bank">("cod");
+  const [bankInfo, setBankInfo] = useState<BankInfo | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const shipping = subtotal >= FREE_SHIP ? 0 : 30000;
 
@@ -35,15 +50,99 @@ function Checkout() {
     }
   }, [sessionReady, user, nav]);
 
-  if (done)
+  useEffect(() => {
+    if (pay !== "bank") return;
+    let cancelled = false;
+    void fetchBankInfo()
+      .then((info) => {
+        if (!cancelled) setBankInfo(info);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setBankInfo(null);
+          toast.error(err instanceof Error ? err.message : "Chưa cấu hình tài khoản ngân hàng");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [pay]);
+
+  if (done) {
+    if (done.paymentMethod === "bank" && bankInfo) {
+      const qr = `https://img.vietqr.io/image/${bankInfo.bank_bin}-${bankInfo.account_number}-compact2.png?amount=${done.grandTotalVnd}&addInfo=${encodeURIComponent(done.orderNumber)}&accountName=${encodeURIComponent(bankInfo.account_name)}`;
+      return (
+        <div className="mx-auto max-w-lg px-6 py-16 text-center">
+          <CheckCircle2 className="mx-auto h-12 w-12 text-success" strokeWidth={1} />
+          <h1 className="mt-6 text-4xl">Đơn đã tạo</h1>
+          <p className="mt-3 text-muted-foreground">
+            Mã đơn <b className="text-foreground">{done.orderNumber}</b>. Quét QR hoặc chuyển khoản đúng số tiền và nội dung để hệ thống xác nhận tự động.
+          </p>
+          <img src={qr} alt="VietQR chuyển khoản" className="mx-auto mt-8 h-56 w-56 bg-white object-contain p-2" />
+          <dl className="mt-8 space-y-3 text-left text-sm">
+            <div className="flex items-center justify-between gap-3 border-b border-border py-2">
+              <div>
+                <dt className="text-xs uppercase tracking-widest text-muted-foreground">Ngân hàng</dt>
+                <dd>{bankInfo.bank_name}</dd>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-b border-border py-2">
+              <div>
+                <dt className="text-xs uppercase tracking-widest text-muted-foreground">Số tài khoản</dt>
+                <dd className="font-medium">{bankInfo.account_number}</dd>
+              </div>
+              <button type="button" className="p-2" aria-label="Copy STK" onClick={() => copyText("STK", bankInfo.account_number)}>
+                <Copy className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-b border-border py-2">
+              <div>
+                <dt className="text-xs uppercase tracking-widest text-muted-foreground">Chủ tài khoản</dt>
+                <dd>{bankInfo.account_name}</dd>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-b border-border py-2">
+              <div>
+                <dt className="text-xs uppercase tracking-widest text-muted-foreground">Số tiền</dt>
+                <dd className="font-medium">{formatVND(done.grandTotalVnd)}</dd>
+              </div>
+              <button type="button" className="p-2" aria-label="Copy số tiền" onClick={() => copyText("số tiền", String(done.grandTotalVnd))}>
+                <Copy className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-b border-border py-2">
+              <div>
+                <dt className="text-xs uppercase tracking-widest text-muted-foreground">Nội dung CK</dt>
+                <dd className="font-medium">{done.orderNumber}</dd>
+              </div>
+              <button type="button" className="p-2" aria-label="Copy nội dung" onClick={() => copyText("nội dung", done.orderNumber)}>
+                <Copy className="h-4 w-4" />
+              </button>
+            </div>
+          </dl>
+          <p className="mt-6 text-sm text-muted-foreground">Đơn sẽ chuyển sang đã thanh toán sau khi SePay nhận được giao dịch khớp mã và số tiền.</p>
+          <div className="mt-8 flex justify-center gap-3">
+            <Link to="/" className="bg-primary px-10 py-4 text-xs uppercase tracking-widest text-primary-foreground">Tiếp tục mua sắm</Link>
+            <Link to="/tai-khoan" className="border border-foreground px-10 py-4 text-xs uppercase tracking-widest">Xem đơn hàng</Link>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="mx-auto max-w-lg py-32 text-center">
         <CheckCircle2 className="mx-auto h-12 w-12 text-success" strokeWidth={1} />
         <h1 className="mt-6 text-4xl">Cảm ơn bạn!</h1>
-        <p className="mt-3 text-muted-foreground">Đơn hàng <b className="text-foreground">{done}</b> đã được đặt thành công. Chúng tôi sẽ liên hệ xác nhận trong thời gian sớm nhất.</p>
-        <div className="mt-8 flex justify-center gap-3"><Link to="/" className="bg-primary px-10 py-4 text-xs uppercase tracking-widest text-primary-foreground">Tiếp tục mua sắm</Link><Link to="/tai-khoan" className="border border-foreground px-10 py-4 text-xs uppercase tracking-widest">Xem đơn hàng</Link></div>
+        <p className="mt-3 text-muted-foreground">
+          Đơn hàng <b className="text-foreground">{done.orderNumber}</b> đã được đặt thành công. Chúng tôi sẽ liên hệ xác nhận trong thời gian sớm nhất.
+        </p>
+        <div className="mt-8 flex justify-center gap-3">
+          <Link to="/" className="bg-primary px-10 py-4 text-xs uppercase tracking-widest text-primary-foreground">Tiếp tục mua sắm</Link>
+          <Link to="/tai-khoan" className="border border-foreground px-10 py-4 text-xs uppercase tracking-widest">Xem đơn hàng</Link>
+        </div>
       </div>
     );
+  }
 
   if (!sessionReady || !user) {
     return (
@@ -68,11 +167,15 @@ function Checkout() {
         className="mt-10 grid gap-12 lg:grid-cols-[1fr_380px]"
         onSubmit={(e) => {
           e.preventDefault();
+          if (pay === "bank" && !bankInfo) {
+            toast.error("Chưa cấu hình tài khoản ngân hàng");
+            return;
+          }
           const f = new FormData(e.currentTarget);
           void (async () => {
             setSubmitting(true);
             try {
-              const orderNumber = await placeOrder({
+              const result = await placeOrder({
                 fullName: String(f.get("name")),
                 phone: String(f.get("phone")),
                 email: String(f.get("email")),
@@ -83,7 +186,7 @@ function Checkout() {
                 paymentMethod: pay,
                 total: subtotal + shipping,
               });
-              setDone(orderNumber);
+              setDone(result);
             } catch (err) {
               toast.error(err instanceof Error ? err.message : "Đặt hàng thất bại");
             } finally {
@@ -110,12 +213,19 @@ function Checkout() {
           <fieldset>
             <legend className="mb-4 text-xs uppercase tracking-widest">Phương thức thanh toán</legend>
             <div className="divide-y divide-border border border-border">
-              {([["cod", "Thanh toán khi nhận hàng (COD)"], ["bank", "Chuyển khoản ngân hàng"], ["card", "Thẻ tín dụng / ghi nợ"], ["wallet", "Ví MoMo / ZaloPay"]] as const).map(([v, l]) => (
+              {([["cod", "Thanh toán khi nhận hàng (COD)"], ["bank", "Chuyển khoản ngân hàng"]] as const).map(([v, l]) => (
                 <label key={v} className="flex cursor-pointer items-center gap-3 px-4 py-4 text-sm">
                   <input type="radio" name="pay" value={v} checked={pay === v} onChange={() => setPay(v)} className="accent-foreground" /> {l}
                 </label>
               ))}
             </div>
+            {pay === "bank" && bankInfo && (
+              <div className="mt-4 space-y-1 border border-border bg-secondary/40 px-4 py-4 text-sm text-muted-foreground">
+                <p><span className="text-foreground">{bankInfo.bank_name}</span> · {bankInfo.account_number}</p>
+                <p>{bankInfo.account_name}</p>
+                <p className="pt-1 text-xs">Nội dung chuyển khoản = mã đơn (hiện sau khi đặt).</p>
+              </div>
+            )}
           </fieldset>
         </div>
         <aside className="h-fit bg-secondary p-8">

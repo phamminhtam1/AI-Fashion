@@ -312,6 +312,9 @@ export const adminApi = {
         status: string;
         grand_total_vnd: number;
         payment_method: string;
+        payment_status: string;
+        paid_at: string | null;
+        payment_ref: string | null;
         placed_at: string;
         customer_name: string;
       }>;
@@ -321,6 +324,11 @@ export const adminApi = {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
+  markOrderPaid: (id: string) =>
+    req<{ id: string; order_number: string; status: string; payment_status: string }>(
+      `/admin/orders/${id}/mark-paid`,
+      { method: "POST" },
+    ),
   products: (params?: {
     status?: string;
     q?: string;

@@ -54,7 +54,15 @@ export type StoreOrderSummary = {
   status: string;
   grand_total_vnd: number;
   payment_method: string;
+  payment_status?: string;
   placed_at: string;
+};
+
+export type BankInfo = {
+  account_number: string;
+  account_name: string;
+  bank_name: string;
+  bank_bin: string;
 };
 
 export class ApiError extends Error {
@@ -190,13 +198,21 @@ export const storeApi = {
       district: string;
       note?: string;
     };
-    payment_method: "cod" | "bank" | "card" | "wallet";
+    payment_method: "cod" | "bank";
     note?: string;
   }) =>
-    storeReq<{ id: string; order_number: string; status: string; grand_total_vnd: number }>(
-      "/me/orders",
-      { method: "POST", body: JSON.stringify(body) },
-    ),
+    storeReq<{
+      id: string;
+      order_number: string;
+      status: string;
+      grand_total_vnd: number;
+      payment_method: string;
+      payment_status: string;
+    }>("/me/orders", { method: "POST", body: JSON.stringify(body) }),
 };
+
+export function fetchBankInfo() {
+  return get<BankInfo>("/payments/bank-info");
+}
 
 export { PUBLIC_API_URL as API_URL };

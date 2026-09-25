@@ -26,8 +26,14 @@ export type PlaceOrderInput = {
   city: string;
   district: string;
   note?: string;
-  paymentMethod: "cod" | "bank" | "card" | "wallet";
+  paymentMethod: "cod" | "bank";
   total: number;
+};
+
+export type PlaceOrderResult = {
+  orderNumber: string;
+  grandTotalVnd: number;
+  paymentMethod: "cod" | "bank";
 };
 
 type Store = {
@@ -44,7 +50,7 @@ type Store = {
   logout: () => Promise<void>;
   orders: Order[];
   refreshOrders: () => Promise<void>;
-  placeOrder: (o: PlaceOrderInput) => Promise<string>;
+  placeOrder: (o: PlaceOrderInput) => Promise<PlaceOrderResult>;
   cart: CartItem[];
   wishlist: string[];
   cartOpen: boolean;
@@ -210,7 +216,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       });
       setCart([]);
       await refreshOrders().catch(() => {});
-      return res.order_number;
+      return {
+        orderNumber: res.order_number,
+        grandTotalVnd: res.grand_total_vnd,
+        paymentMethod: o.paymentMethod,
+      };
     },
     cart,
     wishlist,

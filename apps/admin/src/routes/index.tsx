@@ -202,6 +202,9 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<string[] | null>(null);
+  const [orderMeta, setOrderMeta] = useState<
+    Record<string, { id: string; payment_method: string; payment_status: string }>
+  >({});
   const [liveConfigs, setLiveConfigs] = useState(configs);
   const [inventorySeed, setInventorySeed] = useState<{
     productId: string;
@@ -219,15 +222,29 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
       adminApi.staff(),
       adminApi.audit(),
       adminApi.orders().catch(() => ({ items: [] as Array<{
+        id: string;
         order_number: string;
         customer_name: string;
         grand_total_vnd: number;
         payment_method: string;
+        payment_status: string;
         status: string;
         placed_at: string;
       }> })),
     ])
       .then(([overview, products, inventory, staff, audit, orderList]) => {
+        setOrderMeta(
+          Object.fromEntries(
+            orderList.items.map((o) => [
+              o.order_number,
+              {
+                id: o.id,
+                payment_method: o.payment_method,
+                payment_status: o.payment_status ?? "unpaid",
+              },
+            ]),
+          ),
+        );
         setLiveConfigs((prev) => {
           const next = { ...prev };
           if (next.orders) {
@@ -236,11 +253,12 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
               confirmed: "Đã duyệt",
               cancelled: "Đã hủy",
             };
-            const payLabel: Record<string, string> = {
-              cod: "COD",
-              bank: "Chuyển khoản",
-              card: "Thẻ",
-              wallet: "Ví",
+            const payCell = (method: string, status: string) => {
+              if (method === "cod") return "COD";
+              if (method === "bank" && status === "awaiting") return "CK · chờ";
+              if (method === "bank" && status === "paid") return "CK · đã TT";
+              if (method === "bank") return "Chuyển khoản";
+              return method;
             };
             next.orders = {
               ...next.orders,
@@ -262,7 +280,7 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
                 o.customer_name,
                 "—",
                 `${Number(o.grand_total_vnd).toLocaleString("vi-VN")}₫`,
-                payLabel[o.payment_method] ?? o.payment_method,
+                payCell(o.payment_method, o.payment_status ?? "unpaid"),
                 statusLabel[o.status] ?? o.status,
               ]),
             };
@@ -426,7 +444,59 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
         ) : null}
       </main>
 
-      <DetailSheet open={detailOpen} setOpen={setDetailOpen} row={selectedRow} section={title} />
+      <DetailSheet
+        open={detailOpen}
+        setOpen={setDetailOpen}
+        row={selectedRow}
+        section={title}
+        orderMeta={orderMeta}
+        onMarkedPaid={() => {
+          // re-trigger hydrate by toggling active briefly would be heavy; refetch orders only
+          void adminApi.orders().then((orderList) => {
+            setOrderMeta(
+              Object.fromEntries(
+                orderList.items.map((o) => [
+                  o.order_number,
+                  {
+                    id: o.id,
+                    payment_method: o.payment_method,
+                    payment_status: o.payment_status ?? "unpaid",
+                  },
+                ]),
+              ),
+            );
+            setLiveConfigs((prev) => {
+              if (!prev.orders) return prev;
+              const statusLabel: Record<string, string> = {
+                pending: "Chờ xác nhận",
+                confirmed: "Đã duyệt",
+                cancelled: "Đã hủy",
+              };
+              const payCell = (method: string, status: string) => {
+                if (method === "cod") return "COD";
+                if (method === "bank" && status === "awaiting") return "CK · chờ";
+                if (method === "bank" && status === "paid") return "CK · đã TT";
+                if (method === "bank") return "Chuyển khoản";
+                return method;
+              };
+              return {
+                ...prev,
+                orders: {
+                  ...prev.orders,
+                  rows: orderList.items.map((o) => [
+                    o.order_number,
+                    o.customer_name,
+                    "—",
+                    `${Number(o.grand_total_vnd).toLocaleString("vi-VN")}₫`,
+                    payCell(o.payment_method, o.payment_status ?? "unpaid"),
+                    statusLabel[o.status] ?? o.status,
+                  ]),
+                },
+              };
+            });
+          });
+        }}
+      />
       <CreateSheet open={createOpen} setOpen={setCreateOpen} section={title} />
     </div>
   );
@@ -758,6 +828,79 @@ function ModulePage({config,query,setQuery,onCreate,onDetail}:{config:ModuleConf
  </>
 }
 function Status({text}:{text:string}) { const urgent=/Chờ|Sắp hết|Nguy cấp|Đổi trả|Hết hàng/.test(text); return <span className={cn("inline-flex whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-medium",urgent?"bg-primary/10 text-primary":"bg-secondary text-foreground")}>{text}</span> }
-function DetailSheet({open,setOpen,row,section}:{open:boolean;setOpen:(o:boolean)=>void;row:string[]|null;section:string}) {return <Sheet open={open} onOpenChange={setOpen}><SheetContent className="w-full overflow-y-auto sm:max-w-lg"><SheetHeader><p className="section-label text-primary">{section}</p><SheetTitle className="font-serif text-2xl">{row?.[0] ?? "Chi tiết"}</SheetTitle><SheetDescription>Thông tin và lịch sử cập nhật của mục đã chọn.</SheetDescription></SheetHeader><div className="mt-7 space-y-1">{row?.map((v,i)=><div key={i} className="flex items-start justify-between gap-6 border-b border-border py-3"><span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">Trường {String(i+1).padStart(2,"0")}</span><span className="text-right text-sm font-medium">{v}</span></div>)}</div><div className="mt-7 rounded-md bg-secondary p-4"><p className="text-xs font-medium">Hoạt động gần nhất</p><p className="mt-1 text-xs text-muted-foreground">Cập nhật bởi Linh Hà · 12 phút trước</p></div><div className="mt-6 flex gap-2"><Button className="flex-1" onClick={()=>setOpen(false)}>Chỉnh sửa</Button><Button variant="outline" className="flex-1" onClick={()=>setOpen(false)}>Đóng</Button></div></SheetContent></Sheet>}
+function DetailSheet({
+  open,
+  setOpen,
+  row,
+  section,
+  orderMeta,
+  onMarkedPaid,
+}: {
+  open: boolean;
+  setOpen: (o: boolean) => void;
+  row: string[] | null;
+  section: string;
+  orderMeta: Record<string, { id: string; payment_method: string; payment_status: string }>;
+  onMarkedPaid: () => void;
+}) {
+  const [marking, setMarking] = useState(false);
+  const meta = row?.[0] ? orderMeta[row[0]] : undefined;
+  const canMarkPaid =
+    section === "Đơn hàng" && meta?.payment_method === "bank" && meta.payment_status === "awaiting";
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+        <SheetHeader>
+          <p className="section-label text-primary">{section}</p>
+          <SheetTitle className="font-serif text-2xl">{row?.[0] ?? "Chi tiết"}</SheetTitle>
+          <SheetDescription>Thông tin và lịch sử cập nhật của mục đã chọn.</SheetDescription>
+        </SheetHeader>
+        <div className="mt-7 space-y-1">
+          {row?.map((v, i) => (
+            <div key={i} className="flex items-start justify-between gap-6 border-b border-border py-3">
+              <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                Trường {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="text-right text-sm font-medium">{v}</span>
+            </div>
+          ))}
+        </div>
+        {canMarkPaid && (
+          <Button
+            className="mt-6 w-full"
+            disabled={marking}
+            onClick={() => {
+              if (!meta) return;
+              setMarking(true);
+              void adminApi
+                .markOrderPaid(meta.id)
+                .then(() => {
+                  onMarkedPaid();
+                  setOpen(false);
+                })
+                .catch(() => {})
+                .finally(() => setMarking(false));
+            }}
+          >
+            {marking ? "Đang cập nhật…" : "Đánh dấu đã nhận tiền"}
+          </Button>
+        )}
+        <div className="mt-7 rounded-md bg-secondary p-4">
+          <p className="text-xs font-medium">Hoạt động gần nhất</p>
+          <p className="mt-1 text-xs text-muted-foreground">Cập nhật bởi Linh Hà · 12 phút trước</p>
+        </div>
+        <div className="mt-6 flex gap-2">
+          <Button className="flex-1" onClick={() => setOpen(false)}>
+            Chỉnh sửa
+          </Button>
+          <Button variant="outline" className="flex-1" onClick={() => setOpen(false)}>
+            Đóng
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
 function CreateSheet({open,setOpen,section}:{open:boolean;setOpen:(o:boolean)=>void;section:string}) { const [saved,setSaved]=useState(false); return <Sheet open={open} onOpenChange={o=>{setOpen(o);if(!o)setSaved(false)}}><SheetContent className="w-full overflow-y-auto sm:max-w-lg"><SheetHeader><p className="section-label text-primary">Tạo mới</p><SheetTitle className="font-serif text-2xl">{section}</SheetTitle><SheetDescription>Điền thông tin cơ bản để tạo bản nháp mới.</SheetDescription></SheetHeader>{saved?<div className="mt-10 rounded-md border border-border bg-secondary p-6 text-center"><div className="mx-auto grid size-10 place-items-center rounded-full bg-foreground text-background">✓</div><h3 className="mt-4 font-serif text-xl">Đã lưu bản nháp</h3><p className="mt-2 text-sm text-muted-foreground">Đây là thao tác minh họa giao diện, chưa lưu dữ liệu thật.</p><Button className="mt-5" onClick={()=>setOpen(false)}>Hoàn tất</Button></div>:<div className="mt-7 space-y-5"><label className="block"><span className="text-xs font-medium">Tên / tiêu đề</span><Input className="mt-2" placeholder={`Nhập tên ${section.toLowerCase()}…`}/></label><label className="block"><span className="text-xs font-medium">Trạng thái</span><button className="mt-2 flex h-9 w-full items-center justify-between rounded-md border border-input px-3 text-sm">Bản nháp <ChevronDown className="size-4"/></button></label><label className="block"><span className="text-xs font-medium">Ghi chú nội bộ</span><textarea className="mt-2 min-h-28 w-full rounded-md border border-input bg-transparent p-3 text-sm outline-none focus:ring-1 focus:ring-ring" placeholder="Thêm ghi chú…"/></label><div className="rounded-md border border-dashed border-border p-6 text-center"><Upload className="mx-auto size-5 text-muted-foreground"/><p className="mt-2 text-sm font-medium">Thả tệp vào đây hoặc chọn từ máy</p><p className="mt-1 text-xs text-muted-foreground">JPG, PNG hoặc PDF · tối đa 10 MB</p></div><div className="flex gap-2 pt-2"><Button className="flex-1" onClick={()=>setSaved(true)}>Lưu bản nháp</Button><Button variant="outline" onClick={()=>setOpen(false)}>Hủy</Button></div></div>}</SheetContent></Sheet> }
 function Footer(){return <footer className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-border py-5 text-[11px] text-muted-foreground"><span>© 2026 ÉLANE · Modern Femininity</span><span>Atelier Console · Tất cả hệ thống hoạt động ổn định</span></footer>}
