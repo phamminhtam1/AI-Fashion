@@ -448,6 +448,9 @@ export const orders = pgTable("orders", {
   discountVnd: integer("discount_vnd").notNull().default(0),
   grandTotalVnd: integer("grand_total_vnd").notNull(),
   paymentMethod: text("payment_method").notNull(), // cod|bank|card|wallet
+  paymentStatus: text("payment_status").notNull().default("unpaid"), // unpaid|awaiting|paid|failed
+  paidAt: ts("paid_at"),
+  paymentRef: text("payment_ref"),
   recipientSnapshot: jsonb("recipient_snapshot").$type<Record<string, string>>().notNull(),
   shippingAddressSnapshot: jsonb("shipping_address_snapshot").$type<Record<string, string>>().notNull(),
   placedAt: ts("placed_at").notNull().defaultNow(),
@@ -473,6 +476,14 @@ export const orderItems = pgTable("order_items", {
   unitPriceVnd: integer("unit_price_vnd").notNull(),
   qty: integer("qty").notNull(),
   lineTotalVnd: integer("line_total_vnd").notNull(),
+});
+
+export const sepayWebhookEvents = pgTable("sepay_webhook_events", {
+  id: id(),
+  sepayId: bigint("sepay_id", { mode: "number" }).notNull().unique(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+  matchedOrderId: uuid("matched_order_id").references(() => orders.id),
+  createdAt: createdAt(),
 });
 
 // --- CMS / system ---

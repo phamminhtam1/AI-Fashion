@@ -36,6 +36,13 @@
       "when": 1790370000000,
       "tag": "0004_storefront_customer_auth_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790377200000,
+      "tag": "0005_sepay_bank_transfer",
+      "breakpoints": true
     }
   ]
 }
