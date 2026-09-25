@@ -5,6 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { formatVND, getCategory, getProduct, products } from "@/lib/products";
 import { useStore } from "@/lib/store";
 import { ProductCard } from "@/components/site/ProductCard";
+import { colorwayHasStock, findVariant, isSizeInStock } from "@/lib/variant-stock";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -84,7 +85,12 @@ function ProductPage() {
     .filter((v) => !colorwayId || v.colorwayId === colorwayId)
     .map((v) => v.size);
   const uniqueSizes = [...new Set(sizesForCw.length ? sizesForCw : p.sizes)];
-  const [size, setSize] = useState<string | null>(uniqueSizes.length === 1 ? uniqueSizes[0]! : null);
+  const hasStock = colorwayHasStock(p.variants, colorwayId, uniqueSizes);
+  const [size, setSize] = useState<string | null>(() => {
+    if (uniqueSizes.length !== 1) return null;
+    const only = uniqueSizes[0]!;
+    return isSizeInStock(p.variants, colorwayId, only) ? only : null;
+  });
   const [qty, setQty] = useState(1);
   const liked = wishlist.includes(p.id);
   const related = products
@@ -165,15 +171,18 @@ function ProductPage() {
   };
 
   const add = () => {
+    if (!hasStock) return;
     if (!size) {
       toast.error("Vui lòng chọn kích cỡ");
       return;
     }
-    const variant = p.variants.find(
-      (v) => v.size === size && (!colorwayId || v.colorwayId === colorwayId),
-    );
+    const variant = findVariant(p.variants, colorwayId, size);
     if (!variant) {
       toast.error("Không tìm thấy SKU");
+      return;
+    }
+    if (variant.available <= 0) {
+      toast.error("Size này tạm hết hàng");
       return;
     }
     addToCart(p, variant.id, qty);
@@ -338,9 +347,40 @@ function ProductPage() {
               <Link to="/huong-dan-chon-size" className="text-muted-foreground underline normal-case tracking-normal">Hướng dẫn chọn size</Link>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              {uniqueSizes.map((s) => (
-                <button key={s} onClick={() => setSize(s)} className={`h-11 min-w-14 border px-3 text-sm transition ${size === s ? "border-foreground bg-primary text-primary-foreground" : "border-border hover:border-foreground"}`}>{s}</button>
-              ))}
+              {uniqueSizes.map((s) => {
+                const inStock = isSizeInStock(p.variants, colorwayId, s);
+                const selected = size === s;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    disabled={!inStock}
+                    onClick={() => inStock && setSize(s)}
+                    aria-label={inStock ? undefined : `Size ${s} hết hàng`}
+                    aria-disabled={!inStock ? true : undefined}
+                    className={cn(
+                      "relative h-11 min-w-14 border px-3 text-sm transition",
+                      !inStock && "cursor-not-allowed opacity-40 border-border text-muted-foreground",
+                      inStock && selected && "border-foreground bg-primary text-primary-foreground",
+                      inStock && !selected && "border-border hover:border-foreground",
+                    )}
+                  >
+                    <span className={cn(!inStock && "opacity-70")}>{s}</span>
+                    {!inStock && (
+                      <>
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute inset-x-2 top-1/2 h-px origin-center -rotate-45 bg-foreground/50"
+                        />
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute inset-x-2 top-1/2 h-px origin-center rotate-45 bg-foreground/50"
+                        />
+                      </>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -350,7 +390,17 @@ function ProductPage() {
               <span className="w-8 text-center">{qty}</span>
               <button className="px-3 py-3" onClick={() => setQty(qty + 1)} aria-label="Tăng"><Plus className="h-4 w-4" /></button>
             </div>
-            <button onClick={add} className="flex-1 bg-primary text-xs uppercase tracking-widest text-primary-foreground transition hover:opacity-90">Thêm vào giỏ hàng</button>
+            <button
+              type="button"
+              onClick={add}
+              disabled={!hasStock}
+              className={cn(
+                "flex-1 bg-primary text-xs uppercase tracking-widest text-primary-foreground transition",
+                hasStock ? "hover:opacity-90" : "cursor-not-allowed opacity-50",
+              )}
+            >
+              {hasStock ? "Thêm vào giỏ hàng" : "Sản phẩm tạm hết hàng"}
+            </button>
             <button onClick={() => toggleWishlist(p.id)} aria-label="Yêu thích" className="grid w-12 place-items-center border border-border hover:border-foreground">
               <Heart className={`h-5 w-5 ${liked ? "fill-foreground" : ""}`} strokeWidth={1.5} />
             </button>
