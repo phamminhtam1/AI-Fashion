@@ -1,20 +1,50 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { products, type Product } from "./products";
+import { storeApi, type StoreOrderSummary } from "./api";
 
 /** Free-shipping threshold (VND) — matches announcement bar. */
 export const FREE_SHIP = 1_000_000;
 
-export type User = { name: string; email: string; phone?: string };
-export type Order = { id: string; date: string; items: CartItem[]; total: number; status: string; address: string };
+export type User = { id: string; name: string; email: string; phone?: string };
+export type Order = {
+  id: string;
+  orderNumber: string;
+  date: string;
+  items: CartItem[];
+  total: number;
+  status: string;
+  address: string;
+};
 export type CartItem = { productId: string; variantId: string; sku: string; size: string; qty: number };
+
+export type PlaceOrderInput = {
+  fullName: string;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  district: string;
+  note?: string;
+  paymentMethod: "cod" | "bank" | "card" | "wallet";
+  total: number;
+};
 
 type Store = {
   user: User | null;
-  login: (u: User) => void;
-  logout: () => void;
+  sessionReady: boolean;
+  refreshSession: () => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (input: {
+    fullName: string;
+    email: string;
+    phone?: string;
+    password: string;
+  }) => Promise<void>;
+  logout: () => Promise<void>;
   orders: Order[];
-  placeOrder: (o: Omit<Order, "id" | "date" | "status" | "items">) => string;
+  refreshOrders: () => Promise<void>;
+  placeOrder: (o: PlaceOrderInput) => Promise<string>;
   cart: CartItem[];
   wishlist: string[];
   cartOpen: boolean;
@@ -44,25 +74,77 @@ function parseCart(raw: unknown): CartItem[] {
   );
 }
 
+function mapOrders(items: StoreOrderSummary[]): Order[] {
+  return items.map((o) => ({
+    id: o.id,
+    orderNumber: o.order_number,
+    date: o.placed_at,
+    items: [],
+    total: o.grand_total_vnd,
+    status: o.status,
+    address: "",
+  }));
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [ready, setReady] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+
+  const refreshSession = async () => {
+    const me = await storeApi.me();
+    if (!me) {
+      setUser(null);
+      return;
+    }
+    setUser({
+      id: me.customer_id,
+      name: me.full_name,
+      email: me.email ?? "",
+      phone: me.phone ?? undefined,
+    });
+    try {
+      const wish = await storeApi.wishlist();
+      setWishlist(wish.items.map((x) => x.product_id));
+    } catch {
+      /* keep local */
+    }
+  };
+
+  const refreshOrders = async () => {
+    if (!user && !(await storeApi.me())) {
+      setOrders([]);
+      return;
+    }
+    const res = await storeApi.orders();
+    setOrders(mapOrders(res.items));
+  };
 
   useEffect(() => {
     try {
       setCart(parseCart(JSON.parse(localStorage.getItem("elane-cart") || "[]")));
       setWishlist(JSON.parse(localStorage.getItem("elane-wish") || "[]"));
-      setUser(JSON.parse(localStorage.getItem("elane-user") || "null"));
-      setOrders(JSON.parse(localStorage.getItem("elane-orders") || "[]"));
+      localStorage.removeItem("elane-user");
+      localStorage.removeItem("elane-orders");
     } catch {
       setCart([]);
     }
     setReady(true);
+    void (async () => {
+      try {
+        await refreshSession();
+      } catch {
+        setUser(null);
+      } finally {
+        setSessionReady(true);
+      }
+    })();
   }, []);
+
   useEffect(() => {
     if (ready) localStorage.setItem("elane-cart", JSON.stringify(cart));
   }, [cart, ready]);
@@ -71,10 +153,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [wishlist, ready]);
 
   useEffect(() => {
-    if (!ready) return;
-    localStorage.setItem("elane-user", JSON.stringify(user));
-    localStorage.setItem("elane-orders", JSON.stringify(orders));
-  }, [user, orders, ready]);
+    if (!sessionReady || !user) return;
+    void refreshOrders().catch(() => setOrders([]));
+  }, [sessionReady, user?.id]);
 
   const price = (id: string) => {
     const p = products.find((x) => x.id === id);
@@ -83,23 +164,53 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const value: Store = {
     user,
-    login: (u) => {
-      setUser(u);
-      toast.success(`Chào mừng, ${u.name}`);
+    sessionReady,
+    refreshSession,
+    login: async (email, password) => {
+      await storeApi.login({ email, password });
+      await refreshSession();
+      toast.success("Đăng nhập thành công");
     },
-    logout: () => {
+    register: async ({ fullName, email, phone, password }) => {
+      await storeApi.register({
+        full_name: fullName,
+        email,
+        phone,
+        password,
+      });
+      await refreshSession();
+      toast.success(`Chào mừng, ${fullName}`);
+    },
+    logout: async () => {
+      try {
+        await storeApi.logout();
+      } catch {
+        /* still clear local */
+      }
       setUser(null);
+      setOrders([]);
       toast("Đã đăng xuất");
     },
     orders,
-    placeOrder: (o) => {
-      const id = "ELN" + Math.floor(100000 + Math.random() * 900000);
-      setOrders((os) => [
-        { ...o, id, date: new Date().toISOString(), status: "Đang xử lý", items: cart },
-        ...os,
-      ]);
+    refreshOrders,
+    placeOrder: async (o) => {
+      const res = await storeApi.placeOrder({
+        items: cart.map((x) => ({ variant_id: x.variantId, qty: x.qty })),
+        shipping: {
+          full_name: o.fullName,
+          phone: o.phone,
+          email: o.email,
+          address_line: o.address,
+          city: o.city,
+          district: o.district,
+          note: o.note,
+        },
+        payment_method: o.paymentMethod,
+        note: o.note,
+      });
       setCart([]);
-      return id;
+      await refreshOrders().catch(() => {});
+      return res.order_number;
     },
     cart,
     wishlist,
@@ -122,12 +233,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     updateQty: (i, qty) => setCart((c) => c.map((x, j) => (j === i ? { ...x, qty: Math.max(1, qty) } : x))),
     removeItem: (i) => setCart((c) => c.filter((_, j) => j !== i)),
     clearCart: () => setCart([]),
-    toggleWishlist: (id) =>
-      setWishlist((w) => {
-        const has = w.includes(id);
-        toast(has ? "Đã xóa khỏi danh sách yêu thích" : "Đã thêm vào danh sách yêu thích");
-        return has ? w.filter((x) => x !== id) : [...w, id];
-      }),
+    toggleWishlist: (id) => {
+      if (!user) {
+        toast.error("Vui lòng đăng nhập để lưu yêu thích");
+        return;
+      }
+      const has = wishlist.includes(id);
+      setWishlist((w) => (has ? w.filter((x) => x !== id) : [...w, id]));
+      void (async () => {
+        try {
+          if (has) await storeApi.removeWishlist(id);
+          else await storeApi.addWishlist(id);
+          toast(has ? "Đã xóa khỏi danh sách yêu thích" : "Đã thêm vào danh sách yêu thích");
+        } catch (e) {
+          setWishlist((w) => (has ? [...w, id] : w.filter((x) => x !== id)));
+          toast.error(e instanceof Error ? e.message : "Không cập nhật được yêu thích");
+        }
+      })();
+    },
     cartCount: cart.reduce((s, x) => s + x.qty, 0),
     subtotal: cart.reduce((s, x) => s + price(x.productId) * x.qty, 0),
   };

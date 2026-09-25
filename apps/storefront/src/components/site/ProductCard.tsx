@@ -49,7 +49,7 @@ export function ProductCard({ product: p }: { product: Product }) {
         </div>
       </div>
       <div className="mt-3 space-y-1">
-        <Link to="/san-pham/$slug" params={{ slug: p.slug }} className="block text-sm leading-snug hover:underline">
+        <Link to="/san-pham/$slug" params={{ slug: p.slug }} className="block truncate text-sm leading-snug hover:underline" title={p.name}>
           {p.name}
         </Link>
         <div className="flex items-baseline gap-2 text-sm">

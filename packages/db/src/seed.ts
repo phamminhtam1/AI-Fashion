@@ -31,79 +31,8 @@ const PERMS = [
   ["audit.read", "Xem audit"],
   ["customer.read", "Xem khách hàng"],
   ["customer.write", "Sửa khách hàng"],
+  ["order.read", "Xem đơn hàng"],
 ] as const;
-
-/** Spend → segment: <15M new · 15–50M loyal · >50M vip */
-function segmentFromSpend(totalSpentVnd: number): "new" | "loyal" | "vip" {
-  if (totalSpentVnd > 50_000_000) return "vip";
-  if (totalSpentVnd >= 15_000_000) return "loyal";
-  return "new";
-}
-
-const CUSTOMER_SAMPLES: Array<{
-  fullName: string;
-  phone: string | null;
-  email: string | null;
-  totalSpentVnd: number;
-  status?: "active" | "blocked";
-  note?: string;
-  address?: { recipientName: string; phone: string; addressLine: string; city: string };
-}> = [
-  {
-    fullName: "Trần Mai Anh",
-    phone: "0901234567",
-    email: "maianh@example.com",
-    totalSpentVnd: 72_000_000,
-    address: {
-      recipientName: "Trần Mai Anh",
-      phone: "0901234567",
-      addressLine: "12 Nguyễn Huệ",
-      city: "TP. Hồ Chí Minh",
-    },
-  },
-  {
-    fullName: "Ngọc Diễm",
-    phone: "0912345678",
-    email: null,
-    totalSpentVnd: 28_500_000,
-    address: {
-      recipientName: "Ngọc Diễm",
-      phone: "0912345678",
-      addressLine: "45 Lê Lợi",
-      city: "Hà Nội",
-    },
-  },
-  { fullName: "Phạm Thu Hà", phone: "0923456789", email: "thuha@example.com", totalSpentVnd: 3_200_000 },
-  { fullName: "Lê Khánh Linh", phone: "0934567890", email: null, totalSpentVnd: 8_900_000, note: "Gọi lại tuần sau" },
-  {
-    fullName: "Hoàng Minh Châu",
-    phone: "0945678901",
-    email: "chau@example.com",
-    totalSpentVnd: 95_000_000,
-    address: {
-      recipientName: "Hoàng Minh Châu",
-      phone: "0945678901",
-      addressLine: "88 Pasteur",
-      city: "TP. Hồ Chí Minh",
-    },
-  },
-  { fullName: "Đỗ Bảo Trâm", phone: "0956789012", email: "tram@example.com", totalSpentVnd: 18_000_000 },
-  { fullName: "Vũ Lan Anh", phone: "0967890123", email: null, totalSpentVnd: 0 },
-  { fullName: "Bùi Thanh Tú", phone: "0978901234", email: "thanhtu@example.com", totalSpentVnd: 42_000_000 },
-  {
-    fullName: "Ngô Phương Thảo",
-    phone: "0989012345",
-    email: "thao@example.com",
-    totalSpentVnd: 22_400_000,
-    address: {
-      recipientName: "Ngô Phương Thảo",
-      phone: "0989012345",
-      addressLine: "3 Trần Phú",
-      city: "Đà Nẵng",
-    },
-  },
-  { fullName: "Đặng Huyền My", phone: "0990123456", email: null, totalSpentVnd: 1_100_000, status: "blocked" },
-];
 
 const CATEGORIES = [
   ["vay-dam", "Váy / Đầm", "Những thiết kế đầm tinh tế cho mọi khoảnh khắc."],
@@ -251,6 +180,7 @@ async function ensureCustomerModule() {
   for (const [code, description] of [
     ["customer.read", "Xem khách hàng"],
     ["customer.write", "Sửa khách hàng"],
+    ["order.read", "Xem đơn hàng"],
   ] as const) {
     let perm = (await db.select().from(s.permissions).where(eq(s.permissions.code, code)).limit(1))[0];
     if (!perm) {
@@ -268,50 +198,7 @@ async function ensureCustomerModule() {
       }
     }
   }
-
-  // Backfill spend + recompute segment for existing rows (incl. legacy "care").
-  const byPhone = Object.fromEntries(CUSTOMER_SAMPLES.map((c) => [c.phone, c]));
-  const existingCust = await db.select().from(s.customers);
-  for (const row of existingCust) {
-    const sample = row.phone ? byPhone[row.phone] : undefined;
-    const spent = sample?.totalSpentVnd ?? row.totalSpentVnd ?? 0;
-    const segment = segmentFromSpend(spent);
-    if (row.totalSpentVnd !== spent || row.segment !== segment) {
-      await db
-        .update(s.customers)
-        .set({ totalSpentVnd: spent, segment, updatedAt: new Date() })
-        .where(eq(s.customers.id, row.id));
-    }
-  }
-
-  const any = await db.select().from(s.customers).limit(1);
-  if (any[0]) return;
-
-  for (const sample of CUSTOMER_SAMPLES) {
-    const segment = segmentFromSpend(sample.totalSpentVnd);
-    const [row] = await db
-      .insert(s.customers)
-      .values({
-        fullName: sample.fullName,
-        phone: sample.phone,
-        email: sample.email,
-        segment,
-        totalSpentVnd: sample.totalSpentVnd,
-        status: sample.status ?? "active",
-        internalNote: sample.note ?? "",
-      })
-      .returning();
-    if (sample.address && row) {
-      await db.insert(s.customerAddresses).values({
-        customerId: row.id,
-        recipientName: sample.address.recipientName,
-        phone: sample.address.phone,
-        addressLine: sample.address.addressLine,
-        administrativeUnits: { city: sample.address.city },
-        isDefault: true,
-      });
-    }
-  }
+  // ponytail: no sample customers — CRM starts empty; real rows come from admin / future checkout
 }
 
 type Raw = [string, string, number, number | undefined, string[], string, string, boolean?, boolean?];
@@ -344,7 +231,7 @@ async function main() {
   if (existing.length) {
     await ensureDefaultSizeChart();
     await ensureCustomerModule();
-    console.log("Seed already applied (admin exists). Ensured size chart + customers. Skipping full seed.");
+    console.log("Seed already applied (admin exists). Ensured size chart + customer perms. Skipping full seed.");
     process.exit(0);
   }
 

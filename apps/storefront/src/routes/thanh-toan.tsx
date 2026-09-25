@@ -1,8 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { formatVND, products } from "@/lib/products";
 import { FREE_SHIP, useStore } from "@/lib/store";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/thanh-toan")({
   head: () => ({
@@ -20,10 +21,19 @@ export const Route = createFileRoute("/thanh-toan")({
 const input = "w-full border border-border bg-background px-4 py-3 text-sm outline-none focus:border-foreground";
 
 function Checkout() {
-  const { cart, subtotal, placeOrder, user } = useStore();
+  const { cart, subtotal, placeOrder, user, sessionReady } = useStore();
+  const nav = useNavigate();
   const [done, setDone] = useState<string | null>(null);
-  const [pay, setPay] = useState("cod");
+  const [pay, setPay] = useState<"cod" | "bank" | "card" | "wallet">("cod");
+  const [submitting, setSubmitting] = useState(false);
   const shipping = subtotal >= FREE_SHIP ? 0 : 30000;
+
+  useEffect(() => {
+    if (!sessionReady) return;
+    if (!user) {
+      void nav({ to: "/dang-nhap", search: { next: "/thanh-toan" } });
+    }
+  }, [sessionReady, user, nav]);
 
   if (done)
     return (
@@ -34,6 +44,14 @@ function Checkout() {
         <div className="mt-8 flex justify-center gap-3"><Link to="/" className="bg-primary px-10 py-4 text-xs uppercase tracking-widest text-primary-foreground">Tiếp tục mua sắm</Link><Link to="/tai-khoan" className="border border-foreground px-10 py-4 text-xs uppercase tracking-widest">Xem đơn hàng</Link></div>
       </div>
     );
+
+  if (!sessionReady || !user) {
+    return (
+      <div className="py-32 text-center text-muted-foreground">
+        Đang chuyển tới đăng nhập…
+      </div>
+    );
+  }
 
   if (cart.length === 0)
     return (
@@ -48,29 +66,53 @@ function Checkout() {
       <h1 className="text-4xl">Thanh toán</h1>
       <form
         className="mt-10 grid gap-12 lg:grid-cols-[1fr_380px]"
-        onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.currentTarget); setDone(placeOrder({ total: subtotal + shipping, address: `${f.get("address")}, ${f.get("district")}, ${f.get("city")}` })); }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          const f = new FormData(e.currentTarget);
+          void (async () => {
+            setSubmitting(true);
+            try {
+              const orderNumber = await placeOrder({
+                fullName: String(f.get("name")),
+                phone: String(f.get("phone")),
+                email: String(f.get("email")),
+                address: String(f.get("address")),
+                city: String(f.get("city")),
+                district: String(f.get("district")),
+                note: String(f.get("note") || "") || undefined,
+                paymentMethod: pay,
+                total: subtotal + shipping,
+              });
+              setDone(orderNumber);
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : "Đặt hàng thất bại");
+            } finally {
+              setSubmitting(false);
+            }
+          })();
+        }}
       >
         <div className="space-y-10">
           <fieldset className="space-y-3">
             <legend className="mb-4 text-xs uppercase tracking-widest">Thông tin giao hàng</legend>
             <div className="grid gap-3 md:grid-cols-2">
-              <input required name="name" defaultValue={user?.name} placeholder="Họ và tên" className={input} aria-label="Họ và tên" />
-              <input required type="tel" placeholder="Số điện thoại" className={input} aria-label="Số điện thoại" />
+              <input required name="name" defaultValue={user.name} placeholder="Họ và tên" className={input} aria-label="Họ và tên" />
+              <input required name="phone" type="tel" defaultValue={user.phone} placeholder="Số điện thoại" className={input} aria-label="Số điện thoại" />
             </div>
-            <input required type="email" defaultValue={user?.email} placeholder="Email" className={input} aria-label="Email" />
+            <input required name="email" type="email" defaultValue={user.email} placeholder="Email" className={input} aria-label="Email" />
             <input required name="address" placeholder="Địa chỉ" className={input} aria-label="Địa chỉ" />
             <div className="grid gap-3 md:grid-cols-2">
               <input required name="city" placeholder="Tỉnh / Thành phố" className={input} aria-label="Tỉnh / Thành phố" />
               <input required name="district" placeholder="Quận / Huyện" className={input} aria-label="Quận / Huyện" />
             </div>
-            <textarea placeholder="Ghi chú đơn hàng" className={input} rows={3} aria-label="Ghi chú" />
+            <textarea name="note" placeholder="Ghi chú đơn hàng" className={input} rows={3} aria-label="Ghi chú" />
           </fieldset>
           <fieldset>
             <legend className="mb-4 text-xs uppercase tracking-widest">Phương thức thanh toán</legend>
             <div className="divide-y divide-border border border-border">
-              {[["cod", "Thanh toán khi nhận hàng (COD)"], ["bank", "Chuyển khoản ngân hàng"], ["card", "Thẻ tín dụng / ghi nợ"], ["wallet", "Ví MoMo / ZaloPay"]].map(([v, l]) => (
+              {([["cod", "Thanh toán khi nhận hàng (COD)"], ["bank", "Chuyển khoản ngân hàng"], ["card", "Thẻ tín dụng / ghi nợ"], ["wallet", "Ví MoMo / ZaloPay"]] as const).map(([v, l]) => (
                 <label key={v} className="flex cursor-pointer items-center gap-3 px-4 py-4 text-sm">
-                  <input type="radio" name="pay" value={v} checked={pay === v} onChange={() => setPay(v!)} className="accent-foreground" /> {l}
+                  <input type="radio" name="pay" value={v} checked={pay === v} onChange={() => setPay(v)} className="accent-foreground" /> {l}
                 </label>
               ))}
             </div>
@@ -95,7 +137,9 @@ function Checkout() {
             <div className="flex justify-between"><dt>Vận chuyển</dt><dd>{shipping ? formatVND(shipping) : "Miễn phí"}</dd></div>
             <div className="flex justify-between pt-2 text-base font-medium"><dt>Tổng cộng</dt><dd>{formatVND(subtotal + shipping)}</dd></div>
           </dl>
-          <button className="mt-6 w-full bg-primary py-4 text-xs uppercase tracking-widest text-primary-foreground">Đặt hàng</button>
+          <button type="submit" disabled={submitting} className="mt-6 w-full bg-primary py-4 text-xs uppercase tracking-widest text-primary-foreground disabled:opacity-60">
+            {submitting ? "Đang đặt…" : "Đặt hàng"}
+          </button>
         </aside>
       </form>
     </div>

@@ -390,18 +390,23 @@ export const stockMovements = pgTable("stock_movements", {
 });
 
 // --- Customers (Phase2-light) ---
-export const customers = pgTable("customers", {
-  id: id(),
-  fullName: text("full_name").notNull(),
-  email: text("email"),
-  phone: text("phone"),
-  segment: text("segment").notNull().default("new"), // new|loyal|vip — derived from total_spent_vnd
-  status: text("status").notNull().default("active"), // active|blocked
-  totalSpentVnd: bigint("total_spent_vnd", { mode: "number" }).notNull().default(0),
-  internalNote: text("internal_note").notNull().default(""),
-  createdAt: createdAt(),
-  updatedAt: updatedAt(),
-});
+export const customers = pgTable(
+  "customers",
+  {
+    id: id(),
+    accountId: uuid("account_id").references(() => accounts.id),
+    fullName: text("full_name").notNull(),
+    email: text("email"),
+    phone: text("phone"),
+    segment: text("segment").notNull().default("new"), // new|loyal|vip — derived from total_spent_vnd
+    status: text("status").notNull().default("active"), // active|blocked
+    totalSpentVnd: bigint("total_spent_vnd", { mode: "number" }).notNull().default(0),
+    internalNote: text("internal_note").notNull().default(""),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("customers_account_id_uidx").on(t.accountId)],
+);
 
 export const customerAddresses = pgTable("customer_addresses", {
   id: id(),
@@ -414,6 +419,60 @@ export const customerAddresses = pgTable("customer_addresses", {
   administrativeUnits: jsonb("administrative_units").$type<Record<string, string>>().notNull().default({}),
   isDefault: boolean("is_default").notNull().default(false),
   createdAt: createdAt(),
+});
+
+export const wishlistItems = pgTable(
+  "wishlist_items",
+  {
+    customerId: uuid("customer_id")
+      .notNull()
+      .references(() => customers.id),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.customerId, t.productId] })],
+);
+
+export const orders = pgTable("orders", {
+  id: id(),
+  orderNumber: text("order_number").notNull().unique(),
+  customerId: uuid("customer_id")
+    .notNull()
+    .references(() => customers.id),
+  status: text("status").notNull().default("pending"), // pending|confirmed|cancelled
+  currency: text("currency").notNull().default("VND"),
+  subtotalVnd: integer("subtotal_vnd").notNull(),
+  shippingVnd: integer("shipping_vnd").notNull().default(0),
+  discountVnd: integer("discount_vnd").notNull().default(0),
+  grandTotalVnd: integer("grand_total_vnd").notNull(),
+  paymentMethod: text("payment_method").notNull(), // cod|bank|card|wallet
+  recipientSnapshot: jsonb("recipient_snapshot").$type<Record<string, string>>().notNull(),
+  shippingAddressSnapshot: jsonb("shipping_address_snapshot").$type<Record<string, string>>().notNull(),
+  placedAt: ts("placed_at").notNull().defaultNow(),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export const orderItems = pgTable("order_items", {
+  id: id(),
+  orderId: uuid("order_id")
+    .notNull()
+    .references(() => orders.id),
+  variantId: uuid("variant_id")
+    .notNull()
+    .references(() => productVariants.id),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => products.id),
+  sku: text("sku").notNull(),
+  productName: text("product_name").notNull(),
+  sizeLabel: text("size_label").notNull(),
+  colorLabel: text("color_label"),
+  unitPriceVnd: integer("unit_price_vnd").notNull(),
+  qty: integer("qty").notNull(),
+  lineTotalVnd: integer("line_total_vnd").notNull(),
 });
 
 // --- CMS / system ---

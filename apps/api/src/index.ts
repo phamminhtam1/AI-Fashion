@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { env } from "./env.js";
 import { ApiError, ensureRequestId, errorBody } from "./lib/errors.js";
-import { attachDb, attachUser, type AppVars } from "./middleware/auth.js";
+import { attachDb, attachUser, attachCustomer, type AppVars } from "./middleware/auth.js";
 import { adminAuthRoutes } from "./routes/admin/auth.js";
 import { adminProductRoutes } from "./routes/admin/products.js";
 import { adminInventoryRoutes } from "./routes/admin/inventory.js";
@@ -17,6 +17,9 @@ import { adminSizeRoutes } from "./routes/admin/sizes.js";
 import { adminColorRoutes } from "./routes/admin/colors.js";
 import { adminMediaRoutes } from "./routes/admin/media.js";
 import { adminCustomerRoutes } from "./routes/admin/customers.js";
+import { adminOrderRoutes } from "./routes/admin/orders.js";
+import { storeAuthRoutes } from "./routes/store/auth.js";
+import { meRoutes } from "./routes/me/index.js";
 import { publicCatalogRoutes } from "./routes/public/catalog.js";
 import { publicContentRoutes } from "./routes/public/content.js";
 import { publicSizeRoutes } from "./routes/public/sizes.js";
@@ -41,12 +44,15 @@ app.use(
 
 app.use("*", attachDb(db));
 app.use("*", attachUser);
+app.use("*", attachCustomer);
 
 app.get("/health", (c) => c.json({ ok: true }));
 
 app.route("/api/v1", publicCatalogRoutes);
 app.route("/api/v1", publicContentRoutes);
 app.route("/api/v1", publicSizeRoutes);
+app.route("/api/v1/store/auth", storeAuthRoutes);
+app.route("/api/v1/me", meRoutes);
 app.route("/api/v1/admin/auth", adminAuthRoutes);
 app.route("/api/v1/admin/products", adminProductRoutes);
 app.route("/api/v1/admin/categories", adminCategoryRoutes);
@@ -55,6 +61,7 @@ app.route("/api/v1/admin/colors", adminColorRoutes);
 app.route("/api/v1/admin", adminMediaRoutes);
 app.route("/api/v1/admin/inventory", adminInventoryRoutes);
 app.route("/api/v1/admin/customers", adminCustomerRoutes);
+app.route("/api/v1/admin/orders", adminOrderRoutes);
 app.route("/api/v1/admin", adminOpsRoutes);
 
 app.use(

@@ -149,7 +149,7 @@ type ModuleConfig = {
 
 const operations: NavItem[] = [
   { id: "overview", label: "Tổng quan", icon: Home },
-  { id: "orders", label: "Đơn hàng", icon: ShoppingBag, count: 12 },
+  { id: "orders", label: "Đơn hàng", icon: ShoppingBag },
   { id: "products", label: "Sản phẩm", icon: Package },
   { id: "categories", label: "Danh mục", icon: LayoutGrid },
   { id: "sizes", label: "Bảng size", icon: Ruler },
@@ -174,10 +174,10 @@ const system: NavItem[] = [
 const allItems = [...operations, ...content, ...system];
 
 const configs: Record<string, ModuleConfig> = {
-  orders: { eyebrow: "Vận hành bán hàng", title: "Đơn hàng", description: "Theo dõi thanh toán, đóng gói, giao nhận và đổi trả.", action: "Tạo đơn hàng", tabs: ["Tất cả", "Chờ xác nhận", "Đang xử lý", "Đang giao", "Hoàn tất", "Đổi trả"], metrics: [{label:"Đơn hôm nay",value:"128",note:"+8,2% so với hôm qua"},{label:"Chờ xử lý",value:"12",note:"3 đơn ưu tiên"},{label:"Đang giao",value:"47",note:"96% đúng hẹn"}], columns:["Mã đơn","Khách hàng","Sản phẩm","Tổng tiền","Thanh toán","Trạng thái"], rows:[["#EL-20481","Trần Mai Anh","2 sản phẩm","3.450.000₫","Đã thanh toán","Đang giao"],["#EL-20480","Ngọc Diễm","1 sản phẩm","1.980.000₫","COD","Đóng gói"],["#EL-20479","Hương Thảo","3 sản phẩm","5.120.000₫","Chờ thanh toán","Chờ xác nhận"],["#EL-20478","Kim Chi","2 sản phẩm","2.740.000₫","Đã thanh toán","Đã duyệt"],["#EL-20477","Thu Trang","1 sản phẩm","1.290.000₫","Đã hoàn tiền","Đổi trả"]]},
+  orders: { eyebrow: "Vận hành bán hàng", title: "Đơn hàng", description: "Theo dõi thanh toán, đóng gói, giao nhận và đổi trả.", action: "Tạo đơn hàng", tabs: ["Tất cả", "Chờ xác nhận", "Đang xử lý", "Đang giao", "Hoàn tất", "Đổi trả"], metrics: [{label:"Đơn hôm nay",value:"0",note:"Chưa có dữ liệu"},{label:"Chờ xử lý",value:"0",note:"—"},{label:"Đang giao",value:"0",note:"—"}], columns:["Mã đơn","Khách hàng","Sản phẩm","Tổng tiền","Thanh toán","Trạng thái"], rows:[]},
   products: { eyebrow:"Danh mục thương mại",title:"Sản phẩm",description:"Quản lý thông tin, biến thể, hình ảnh, giá bán và trạng thái hiển thị.",action:"Thêm sản phẩm",tabs:["Tất cả","Đang bán","Bản nháp","Hết hàng","Đã ẩn"],metrics:[{label:"Tổng sản phẩm",value:"248",note:"226 đang bán"},{label:"Biến thể",value:"1.482",note:"Màu × kích thước"},{label:"Giá trị tồn",value:"3,84 tỷ",note:"Theo giá vốn"}],columns:["Sản phẩm","SKU","Danh mục","Giá bán","Tồn kho","Trạng thái"],rows:[["Đầm lụa hai dây Noir","EL-DR-041","Váy / Đầm","1.890.000₫","42","Đang bán"],["Đầm suông linen Aurora","EL-DR-040","Váy / Đầm","1.290.000₫","67","Đang bán"],["Áo sơ mi lụa Ivory","EL-TP-038","Áo","990.000₫","114","Đang bán"],["Áo len Cashmere Soft","EL-TP-036","Áo","1.190.000₫","18","Sắp hết"],["Set tweed Parisienne","EL-ST-032","Set bộ","2.490.000₫","0","Hết hàng"]]},
   inventory: { eyebrow:"Kho vận",title:"Kho hàng",description:"Theo dõi tồn theo màu, kích thước và lịch sử điều chỉnh.",action:"Tạo phiếu nhập",tabs:["Tổng quan","Sắp hết","Hết hàng","Phiếu nhập","Điều chỉnh"],metrics:[{label:"Tổng tồn",value:"4.862",note:"1.482 biến thể"},{label:"Sắp hết",value:"18",note:"Cần xử lý trong tuần"},{label:"Đang nhập",value:"326",note:"2 phiếu dự kiến"}],columns:["Sản phẩm","Biến thể","SKU","Khả dụng","Đã giữ","Mức tồn"],rows:[["Áo len Cashmere Soft","Nâu / S","EL-TP-036-BR-S","2","4","Nguy cấp"],["Chân váy Champagne","Kem / M","EL-SK-029-CR-M","3","1","Sắp hết"],["Đầm lụa Noir","Đen / XS","EL-DR-041-BK-XS","5","2","Sắp hết"],["Blazer oversize Noir","Đen / L","EL-OW-026-BK-L","12","3","Ổn định"],["Quần linen Dune","Be / M","EL-PT-031-BE-M","38","6","Ổn định"]]},
-  customers: { eyebrow:"Quan hệ khách hàng",title:"Khách hàng",description:"Hồ sơ, hành vi mua sắm và phân khúc thành viên ÉLANE.",action:"Thêm khách hàng",tabs:["Tất cả","Mới","Thân thiết","VIP","Cần chăm sóc"],metrics:[{label:"Tổng khách hàng",value:"18.420",note:"+312 tháng này"},{label:"Khách quay lại",value:"38,6%",note:"+4,1 điểm"},{label:"Giá trị vòng đời",value:"6,42 triệu",note:"Trung bình mỗi khách"}],columns:["Khách hàng","Phân khúc","Số đơn","Tổng chi tiêu","Đơn gần nhất","Trạng thái"],rows:[["Trần Mai Anh","ÉLANE Privé","18","42.680.000₫","Hôm nay","Hoạt động"],["Ngọc Diễm","Thân thiết","9","16.250.000₫","Hôm qua","Hoạt động"],["Hương Thảo","Mới","1","5.120.000₫","18/03/2026","Mới"],["Kim Chi","Thân thiết","7","12.740.000₫","16/03/2026","Hoạt động"],["Thu Trang","Cần chăm sóc","4","7.390.000₫","02/01/2026","Không hoạt động"]]},
+  customers: { eyebrow:"Quan hệ khách hàng",title:"Khách hàng",description:"Hồ sơ, hành vi mua sắm và phân khúc thành viên ÉLANE.",action:"Thêm khách hàng",tabs:["Tất cả","Mới","Thân thiết","VIP","Cần chăm sóc"],metrics:[{label:"Tổng khách hàng",value:"0",note:"—"},{label:"Khách quay lại",value:"0",note:"—"},{label:"Giá trị vòng đời",value:"0",note:"—"}],columns:["Khách hàng","Phân khúc","Số đơn","Tổng chi tiêu","Đơn gần nhất","Trạng thái"],rows:[]},
   promotions: { eyebrow:"Tăng trưởng",title:"Khuyến mãi",description:"Thiết lập mã ưu đãi, lịch sale và điều kiện áp dụng.",action:"Tạo khuyến mãi",tabs:["Đang chạy","Sắp diễn ra","Đã kết thúc","Mã giảm giá"],metrics:[{label:"Doanh thu hỗ trợ",value:"684 triệu",note:"24,1% tổng doanh thu"},{label:"Mã đã dùng",value:"1.284",note:"Trong 30 ngày"},{label:"Chi phí ưu đãi",value:"92 triệu",note:"3,2% doanh thu"}],columns:["Chiến dịch","Loại","Ưu đãi","Thời gian","Lượt dùng","Trạng thái"],rows:[["Mid-season Sale","Giảm theo sản phẩm","Đến 30%","15–30/09","842","Đang chạy"],["WELCOME10","Mã đơn đầu","10%","Không giới hạn","312","Đang chạy"],["ÉLANE Privé","Theo phân khúc","15%","20–24/09","—","Sắp diễn ra"],["Freeship 1 triệu","Vận chuyển","100% phí ship","Không giới hạn","1.924","Đang chạy"]]},
   collections: { eyebrow:"Biên tập thương hiệu",title:"Bộ sưu tập",description:"Sắp xếp câu chuyện mùa, sản phẩm và trải nghiệm ra mắt.",action:"Tạo bộ sưu tập",tabs:["Đã xuất bản","Bản nháp","Đã lên lịch","Lưu trữ"],metrics:[{label:"Đang hiển thị",value:"8",note:"3 bộ sưu tập mùa"},{label:"Sản phẩm gắn",value:"164",note:"66% danh mục"},{label:"Lượt xem",value:"84,2K",note:"30 ngày gần nhất"}],columns:["Bộ sưu tập","Mùa","Sản phẩm","Cập nhật","Hiệu quả","Trạng thái"],rows:[["Autumn / Winter 2026","AW26","50","Hôm nay","32,4K lượt xem","Đã xuất bản"],["La Parisienne","Editorial","18","18/09/2026","18,7K lượt xem","Đã xuất bản"],["Office Refined","Essentials","26","14/09/2026","14,2K lượt xem","Đã xuất bản"],["Holiday Soirée","FW26","32","12/09/2026","—","Bản nháp"]]},
   lookbook: { eyebrow:"Thư viện hình ảnh",title:"Lookbook",description:"Quản lý bộ ảnh, thứ tự khung hình và trạng thái xuất bản.",action:"Tải bộ ảnh",tabs:["Tất cả","Đã xuất bản","Đang duyệt","Bản nháp"],metrics:[{label:"Bộ ảnh",value:"24",note:"8 bộ trong AW26"},{label:"Khung hình",value:"486",note:"42 ảnh chưa dùng"},{label:"Lượt tương tác",value:"12,8%",note:"+2,4 điểm"}],columns:["Lookbook","Bộ sưu tập","Khung hình","Người phụ trách","Cập nhật","Trạng thái"],rows:[["The Winter Edit","AW26","18","Linh Hà","Hôm nay","Sẵn sàng"],["La Parisienne","Editorial","24","Mai Phương","18/09/2026","Đã xuất bản"],["Soft Structure","Office Refined","16","An Nhiên","14/09/2026","Đang duyệt"],["Noir After Dark","Holiday Soirée","21","Mai Phương","12/09/2026","Bản nháp"]]},
@@ -212,10 +212,61 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
 
   useEffect(() => {
     // Hydrate Phase 1 modules with API data; keep layout/mock for the rest
-    Promise.all([adminApi.overview(), adminApi.productsAll(), adminApi.inventory(), adminApi.staff(), adminApi.audit()])
-      .then(([overview, products, inventory, staff, audit]) => {
+    Promise.all([
+      adminApi.overview(),
+      adminApi.productsAll(),
+      adminApi.inventory(),
+      adminApi.staff(),
+      adminApi.audit(),
+      adminApi.orders().catch(() => ({ items: [] as Array<{
+        order_number: string;
+        customer_name: string;
+        grand_total_vnd: number;
+        payment_method: string;
+        status: string;
+        placed_at: string;
+      }> })),
+    ])
+      .then(([overview, products, inventory, staff, audit, orderList]) => {
         setLiveConfigs((prev) => {
           const next = { ...prev };
+          if (next.orders) {
+            const statusLabel: Record<string, string> = {
+              pending: "Chờ xác nhận",
+              confirmed: "Đã duyệt",
+              cancelled: "Đã hủy",
+            };
+            const payLabel: Record<string, string> = {
+              cod: "COD",
+              bank: "Chuyển khoản",
+              card: "Thẻ",
+              wallet: "Ví",
+            };
+            next.orders = {
+              ...next.orders,
+              metrics: [
+                { label: "Tổng đơn", value: String(orderList.items.length), note: "Từ hệ thống" },
+                {
+                  label: "Chờ xử lý",
+                  value: String(orderList.items.filter((o) => o.status === "pending").length),
+                  note: "pending",
+                },
+                {
+                  label: "Đã duyệt",
+                  value: String(orderList.items.filter((o) => o.status === "confirmed").length),
+                  note: "confirmed",
+                },
+              ],
+              rows: orderList.items.map((o) => [
+                o.order_number,
+                o.customer_name,
+                "—",
+                `${Number(o.grand_total_vnd).toLocaleString("vi-VN")}₫`,
+                payLabel[o.payment_method] ?? o.payment_method,
+                statusLabel[o.status] ?? o.status,
+              ]),
+            };
+          }
           if (next.products) {
             next.products = {
               ...next.products,

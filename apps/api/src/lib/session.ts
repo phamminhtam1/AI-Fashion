@@ -1,10 +1,19 @@
 import { createHash, randomBytes } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
-import { accountSessions, accounts, employees, employeeRoleGrants, rolePermissions, permissions } from "@elane/db";
+import {
+  accountSessions,
+  accounts,
+  customers,
+  employees,
+  employeeRoleGrants,
+  rolePermissions,
+  permissions,
+} from "@elane/db";
 import type { Db } from "@elane/db";
 import { ApiError } from "./errors.js";
 
 export const SESSION_COOKIE = "elane_session";
+export const CUSTOMER_SESSION_COOKIE = "elane_customer_session";
 const SESSION_DAYS = 7;
 
 export function hashToken(token: string) {
@@ -44,6 +53,15 @@ export type AuthUser = {
   fullName: string;
   status: string;
   permissions: string[];
+};
+
+export type CustomerUser = {
+  accountId: string;
+  customerId: string;
+  email: string | null;
+  fullName: string;
+  phone: string | null;
+  status: string;
 };
 
 export async function resolveSession(db: Db, token: string | undefined): Promise<AuthUser | null> {
@@ -87,6 +105,46 @@ export async function resolveSession(db: Db, token: string | undefined): Promise
     fullName: row.fullName,
     status: row.accountStatus,
     permissions: [...new Set(grants.map((g) => g.code))],
+  };
+}
+
+export async function resolveCustomerSession(
+  db: Db,
+  token: string | undefined,
+): Promise<CustomerUser | null> {
+  if (!token) return null;
+  const tokenHash = hashToken(token);
+  const rows = await db
+    .select({
+      accountId: accounts.id,
+      email: accounts.email,
+      accountStatus: accounts.status,
+      customerId: customers.id,
+      fullName: customers.fullName,
+      phone: customers.phone,
+      customerStatus: customers.status,
+      expiresAt: accountSessions.expiresAt,
+      revokedAt: accountSessions.revokedAt,
+    })
+    .from(accountSessions)
+    .innerJoin(accounts, eq(accounts.id, accountSessions.accountId))
+    .innerJoin(customers, eq(customers.accountId, accounts.id))
+    .where(eq(accountSessions.tokenHash, tokenHash))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) return null;
+  if (row.revokedAt) return null;
+  if (row.expiresAt.getTime() < Date.now()) return null;
+  if (row.accountStatus !== "active" || row.customerStatus !== "active") return null;
+
+  return {
+    accountId: row.accountId,
+    customerId: row.customerId,
+    email: row.email,
+    fullName: row.fullName,
+    phone: row.phone,
+    status: row.accountStatus,
   };
 }
 

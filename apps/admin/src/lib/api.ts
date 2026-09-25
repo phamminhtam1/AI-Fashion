@@ -304,6 +304,23 @@ export const adminApi = {
     }),
   deleteAddress: (customerId: string, addressId: string) =>
     req<{ ok: boolean }>(`/admin/customers/${customerId}/addresses/${addressId}`, { method: "DELETE" }),
+  orders: () =>
+    req<{
+      items: Array<{
+        id: string;
+        order_number: string;
+        status: string;
+        grand_total_vnd: number;
+        payment_method: string;
+        placed_at: string;
+        customer_name: string;
+      }>;
+    }>("/admin/orders"),
+  patchOrder: (id: string, body: { status: "pending" | "confirmed" | "cancelled" }) =>
+    req<{ id: string; order_number: string; status: string }>(`/admin/orders/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
   products: (params?: {
     status?: string;
     q?: string;

@@ -40,6 +40,32 @@ export type ApiProduct = {
   }>;
 };
 
+export type StoreMe = {
+  customer_id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+};
+
+export type StoreOrderSummary = {
+  id: string;
+  order_number: string;
+  status: string;
+  grand_total_vnd: number;
+  payment_method: string;
+  placed_at: string;
+};
+
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  constructor(status: number, message: string, code?: string) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
+
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${apiBase()}/api/v1${path}`);
   if (!res.ok) {
@@ -47,6 +73,26 @@ async function get<T>(path: string): Promise<T> {
     throw new Error((body as { message?: string }).message ?? `API ${res.status}`);
   }
   return res.json() as Promise<T>;
+}
+
+async function storeReq<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${apiBase()}/api/v1${path}`, {
+    credentials: "include",
+    ...init,
+    headers: {
+      ...(init?.body ? { "Content-Type": "application/json" } : {}),
+      ...init?.headers,
+    },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      (data as { message?: string }).message ?? `API ${res.status}`,
+      (data as { code?: string }).code,
+    );
+  }
+  return data as T;
 }
 
 export function mediaUrl(path: string) {
@@ -109,5 +155,47 @@ export async function fetchDefaultSizeChart() {
 export async function fetchSizeChart(id: string) {
   return get<ApiSizeChart>(`/size-charts/${id}`);
 }
+
+export const storeApi = {
+  register: (body: { full_name: string; email: string; phone?: string; password: string }) =>
+    storeReq<{ ok: boolean }>("/store/auth/register", { method: "POST", body: JSON.stringify(body) }),
+  login: (body: { email: string; password: string }) =>
+    storeReq<{ ok: boolean }>("/store/auth/login", { method: "POST", body: JSON.stringify(body) }),
+  logout: () => storeReq<{ ok: boolean }>("/store/auth/logout", { method: "POST" }),
+  me: async (): Promise<StoreMe | null> => {
+    try {
+      return await storeReq<StoreMe>("/store/auth/me");
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) return null;
+      throw e;
+    }
+  },
+  patchMe: (body: { full_name?: string; phone?: string | null }) =>
+    storeReq<StoreMe>("/store/auth/me", { method: "PATCH", body: JSON.stringify(body) }),
+  wishlist: () => storeReq<{ items: Array<{ product_id: string }> }>("/me/wishlist"),
+  addWishlist: (productId: string) =>
+    storeReq<{ ok: boolean }>(`/me/wishlist/${productId}`, { method: "PUT" }),
+  removeWishlist: (productId: string) =>
+    storeReq<{ ok: boolean }>(`/me/wishlist/${productId}`, { method: "DELETE" }),
+  orders: () => storeReq<{ items: StoreOrderSummary[] }>("/me/orders"),
+  placeOrder: (body: {
+    items: Array<{ variant_id: string; qty: number }>;
+    shipping: {
+      full_name: string;
+      phone: string;
+      email: string;
+      address_line: string;
+      city: string;
+      district: string;
+      note?: string;
+    };
+    payment_method: "cod" | "bank" | "card" | "wallet";
+    note?: string;
+  }) =>
+    storeReq<{ id: string; order_number: string; status: string; grand_total_vnd: number }>(
+      "/me/orders",
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+};
 
 export { PUBLIC_API_URL as API_URL };
