@@ -48,6 +48,20 @@ export type StoreMe = {
   phone: string | null;
 };
 
+export type StoreOrderItem = {
+  id: string;
+  variant_id?: string;
+  product_id: string;
+  sku?: string;
+  product_name: string;
+  size_label: string;
+  color_label?: string | null;
+  unit_price_vnd: number;
+  qty: number;
+  line_total_vnd: number;
+  image_url?: string | null;
+};
+
 export type StoreOrderSummary = {
   id: string;
   order_number: string;
@@ -55,7 +69,41 @@ export type StoreOrderSummary = {
   grand_total_vnd: number;
   payment_method: string;
   payment_status?: string;
+  paid_at?: string | null;
   placed_at: string;
+  items_count?: number;
+  items_preview?: StoreOrderItem[];
+};
+
+export type StoreOrderDetail = {
+  id: string;
+  order_number: string;
+  status: string;
+  currency: string;
+  subtotal_vnd: number;
+  shipping_vnd: number;
+  discount_vnd: number;
+  discount_code?: string | null;
+  grand_total_vnd: number;
+  payment_method: string;
+  payment_status: string;
+  paid_at?: string | null;
+  payment_ref?: string | null;
+  recipient?: {
+    full_name?: string;
+    phone?: string;
+    email?: string;
+    recipient_name?: string;
+  } | null;
+  shipping_address?: {
+    address_line?: string;
+    city?: string;
+    district?: string;
+    full_address?: string;
+    note?: string;
+  } | null;
+  placed_at: string;
+  items: StoreOrderItem[];
 };
 
 export type BankInfo = {
@@ -63,6 +111,7 @@ export type BankInfo = {
   account_name: string;
   bank_name: string;
   bank_bin: string;
+  bank_code?: string;
 };
 
 export class ApiError extends Error {
@@ -187,6 +236,11 @@ export const storeApi = {
   removeWishlist: (productId: string) =>
     storeReq<{ ok: boolean }>(`/me/wishlist/${productId}`, { method: "DELETE" }),
   orders: () => storeReq<{ items: StoreOrderSummary[] }>("/me/orders"),
+  order: (id: string) => storeReq<StoreOrderDetail>(`/me/orders/${id}`),
+  cancelOrder: (id: string) =>
+    storeReq<{ id: string; order_number: string; status: string }>(`/me/orders/${id}/cancel`, {
+      method: "POST",
+    }),
   previewCoupon: (body: { code: string; subtotal_vnd: number }) =>
     storeReq<{ code: string; type: string; value: number; discount_vnd: number }>(
       "/store/coupons/preview",

@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { products, type Product } from "./products";
-import { storeApi, type StoreOrderSummary } from "./api";
+import { storeApi, type StoreOrderItem, type StoreOrderSummary } from "./api";
 
 /** Free-shipping threshold (VND) — matches announcement bar. */
 export const FREE_SHIP = 1_000_000;
@@ -15,6 +15,11 @@ export type Order = {
   total: number;
   status: string;
   address: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  paidAt?: string | null;
+  itemsCount?: number;
+  itemsPreview?: StoreOrderItem[];
 };
 export type CartItem = { productId: string; variantId: string; sku: string; size: string; qty: number };
 
@@ -32,9 +37,11 @@ export type PlaceOrderInput = {
 };
 
 export type PlaceOrderResult = {
+  id: string;
   orderNumber: string;
   grandTotalVnd: number;
   paymentMethod: "cod" | "bank";
+  paymentStatus: string;
 };
 
 type Store = {
@@ -90,6 +97,11 @@ function mapOrders(items: StoreOrderSummary[]): Order[] {
     total: o.grand_total_vnd,
     status: o.status,
     address: "",
+    paymentMethod: o.payment_method,
+    paymentStatus: o.payment_status,
+    paidAt: o.paid_at,
+    itemsCount: o.items_count,
+    itemsPreview: o.items_preview,
   }));
 }
 
@@ -219,9 +231,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setCart([]);
       await refreshOrders().catch(() => {});
       return {
+        id: res.id,
         orderNumber: res.order_number,
         grandTotalVnd: res.grand_total_vnd,
         paymentMethod: o.paymentMethod,
+        paymentStatus: res.payment_status,
       };
     },
     cart,

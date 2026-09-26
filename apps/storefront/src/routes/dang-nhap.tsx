@@ -4,9 +4,10 @@ import { btnCls, inputCls, seo } from "@/components/site/PageHeader";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dang-nhap")({
-  validateSearch: (s: Record<string, unknown>) => ({
-    next: typeof s.next === "string" ? s.next : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): { next?: string } => {
+    if (typeof s.next === "string" && s.next.length > 0) return { next: s.next };
+    return {};
+  },
   head: () => seo("Đăng nhập — ÉLANE", "Đăng nhập tài khoản ÉLANE để theo dõi đơn hàng và nhận ưu đãi thành viên.", [{ name: "robots", content: "noindex" }]),
   component: Login,
 });

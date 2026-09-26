@@ -14,5 +14,7 @@ publicPaymentRoutes.get("/payments/bank-info", (c) => {
     account_name: env.sepayAccountName,
     bank_name: env.sepayBankName,
     bank_bin: env.sepayBankBin,
+    // short_name for SePay/VietQR — MSB bắt buộc QR gắn VA (acc = số VA)
+    bank_code: env.sepayBankName || "MSB",
   });
 });

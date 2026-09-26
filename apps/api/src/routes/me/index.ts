@@ -1,13 +1,15 @@
 import { Hono } from "hono";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   customerAddresses,
   customers,
   discountCodes,
   inventoryBalances,
+  mediaAssets,
   orderItems,
   orders,
+  productMedia,
   products,
   productVariants,
   sizes,
@@ -18,6 +20,7 @@ import type { AppVars } from "../../middleware/auth.js";
 import { requireCustomer } from "../../middleware/auth.js";
 import { ApiError } from "../../lib/errors.js";
 import { availableQty, newOrderNumber, shippingFeeVnd } from "../../lib/order-pricing.js";
+import { mediaPublicUrl } from "../../lib/media-storage.js";
 import {
   assertCouponApplicable,
   computeDiscountVnd,
@@ -189,17 +192,71 @@ meRoutes.get("/orders", async (c) => {
     .where(eq(orders.customerId, customerId))
     .orderBy(desc(orders.placedAt))
     .limit(50);
+
+  if (rows.length === 0) {
+    return c.json({ items: [] });
+  }
+
+  const orderIds = rows.map((r) => r.id);
+  const items = await db
+    .select()
+    .from(orderItems)
+    .where(inArray(orderItems.orderId, orderIds));
+
+  const productIds = Array.from(new Set(items.map((i) => i.productId)));
+  const covers =
+    productIds.length > 0
+      ? await db
+          .select({
+            productId: productMedia.productId,
+            objectKey: mediaAssets.objectKey,
+          })
+          .from(productMedia)
+          .innerJoin(mediaAssets, eq(mediaAssets.id, productMedia.assetId))
+          .where(inArray(productMedia.productId, productIds))
+          .orderBy(desc(productMedia.isCover), productMedia.sortOrder)
+      : [];
+
+  const coverMap = new Map<string, string>();
+  for (const cov of covers) {
+    if (!coverMap.has(cov.productId)) {
+      coverMap.set(cov.productId, mediaPublicUrl(cov.objectKey));
+    }
+  }
+
+  const itemsByOrder = new Map<string, typeof items>();
+  for (const it of items) {
+    const list = itemsByOrder.get(it.orderId) ?? [];
+    list.push(it);
+    itemsByOrder.set(it.orderId, list);
+  }
+
   return c.json({
-    items: rows.map((o) => ({
-      id: o.id,
-      order_number: o.orderNumber,
-      status: o.status,
-      grand_total_vnd: o.grandTotalVnd,
-      payment_method: o.paymentMethod,
-      payment_status: o.paymentStatus,
-      paid_at: o.paidAt,
-      placed_at: o.placedAt,
-    })),
+    items: rows.map((o) => {
+      const orderIts = itemsByOrder.get(o.id) ?? [];
+      return {
+        id: o.id,
+        order_number: o.orderNumber,
+        status: o.status,
+        grand_total_vnd: o.grandTotalVnd,
+        payment_method: o.paymentMethod,
+        payment_status: o.paymentStatus,
+        paid_at: o.paidAt,
+        placed_at: o.placedAt,
+        items_count: orderIts.reduce((sum, i) => sum + i.qty, 0),
+        items_preview: orderIts.map((it) => ({
+          id: it.id,
+          product_id: it.productId,
+          product_name: it.productName,
+          size_label: it.sizeLabel,
+          color_label: it.colorLabel,
+          unit_price_vnd: it.unitPriceVnd,
+          qty: it.qty,
+          line_total_vnd: it.lineTotalVnd,
+          image_url: coverMap.get(it.productId) ?? null,
+        })),
+      };
+    }),
   });
 });
 
@@ -216,6 +273,28 @@ meRoutes.get("/orders/:id", async (c) => {
   )[0];
   if (!order) throw new ApiError(404, "not_found", "Không tìm thấy đơn hàng");
   const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+
+  const productIds = Array.from(new Set(items.map((i) => i.productId)));
+  const covers =
+    productIds.length > 0
+      ? await db
+          .select({
+            productId: productMedia.productId,
+            objectKey: mediaAssets.objectKey,
+          })
+          .from(productMedia)
+          .innerJoin(mediaAssets, eq(mediaAssets.id, productMedia.assetId))
+          .where(inArray(productMedia.productId, productIds))
+          .orderBy(desc(productMedia.isCover), productMedia.sortOrder)
+      : [];
+
+  const coverMap = new Map<string, string>();
+  for (const cov of covers) {
+    if (!coverMap.has(cov.productId)) {
+      coverMap.set(cov.productId, mediaPublicUrl(cov.objectKey));
+    }
+  }
+
   return c.json({
     id: order.id,
     order_number: order.orderNumber,
@@ -244,8 +323,79 @@ meRoutes.get("/orders/:id", async (c) => {
       unit_price_vnd: it.unitPriceVnd,
       qty: it.qty,
       line_total_vnd: it.lineTotalVnd,
+      image_url: coverMap.get(it.productId) ?? null,
     })),
   });
+});
+
+meRoutes.post("/orders/:id/cancel", async (c) => {
+  const id = c.req.param("id");
+  const db = c.get("db");
+  const customerId = c.get("customer")!.customerId;
+
+  const order = (
+    await db
+      .select()
+      .from(orders)
+      .where(and(eq(orders.id, id), eq(orders.customerId, customerId)))
+      .limit(1)
+  )[0];
+  if (!order) throw new ApiError(404, "not_found", "Không tìm thấy đơn hàng");
+  if (order.status !== "pending") {
+    throw new ApiError(400, "invalid_state", "Không thể hủy đơn ở trạng thái này");
+  }
+  if (order.paymentMethod !== "bank" || order.paymentStatus !== "awaiting") {
+    throw new ApiError(400, "invalid_state", "Chỉ hủy được đơn đang chờ chuyển khoản");
+  }
+
+  const wh = (await db.select().from(warehouses).where(eq(warehouses.code, "MAIN")).limit(1))[0];
+  if (!wh) throw new ApiError(500, "internal_error", "Chưa cấu hình kho");
+
+  const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+
+  await db.transaction(async (tx) => {
+    for (const it of items) {
+      await tx
+        .update(inventoryBalances)
+        .set({
+          reserved: sql`GREATEST(0, ${inventoryBalances.reserved} - ${it.qty})`,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(inventoryBalances.warehouseId, wh.id),
+            eq(inventoryBalances.variantId, it.variantId),
+          ),
+        );
+    }
+
+    const [updated] = await tx
+      .update(orders)
+      .set({
+        status: "cancelled",
+        paymentStatus: "failed",
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(orders.id, order.id),
+          eq(orders.status, "pending"),
+          eq(orders.paymentStatus, "awaiting"),
+        ),
+      )
+      .returning({ id: orders.id });
+    if (!updated) throw new ApiError(400, "invalid_state", "Không thể hủy đơn ở trạng thái này");
+
+    await tx
+      .update(customers)
+      .set({
+        totalSpentVnd: sql`GREATEST(0, ${customers.totalSpentVnd} - ${order.grandTotalVnd})`,
+        updatedAt: new Date(),
+      })
+      .where(eq(customers.id, customerId));
+  });
+
+  return c.json({ id: order.id, order_number: order.orderNumber, status: "cancelled" });
 });
 
 meRoutes.post("/orders", async (c) => {
@@ -370,7 +520,7 @@ meRoutes.post("/orders", async (c) => {
       discountVnd = computeDiscountVnd({
         type: locked.type,
         value: locked.value,
-        subtotalVnd: subtotal,
+        baseVnd: subtotal + shipping,
         maxDiscountVnd: locked.maxDiscountVnd,
       });
       const bumped = await tx

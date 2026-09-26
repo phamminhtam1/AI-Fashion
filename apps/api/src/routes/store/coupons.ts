@@ -11,6 +11,7 @@ import {
   CouponError,
   normalizeCouponCode,
 } from "../../lib/discount-codes.js";
+import { shippingFeeVnd } from "../../lib/order-pricing.js";
 
 export const storeCouponRoutes = new Hono<AppVars>();
 storeCouponRoutes.use("*", requireCustomer);
@@ -29,8 +30,9 @@ storeCouponRoutes.post("/preview", async (c) => {
   const row = (await db.select().from(discountCodes).where(eq(discountCodes.code, code)).limit(1))[0];
   if (!row) throw new ApiError(400, "coupon_not_found", "Không tìm thấy mã giảm giá");
 
+  const subtotal = body.data.subtotal_vnd;
   try {
-    assertCouponApplicable(row, body.data.subtotal_vnd);
+    assertCouponApplicable(row, subtotal);
   } catch (e) {
     if (e instanceof CouponError) throw new ApiError(400, e.code, e.message);
     throw e;
@@ -40,10 +42,11 @@ storeCouponRoutes.post("/preview", async (c) => {
     throw new ApiError(400, "coupon_inactive", "Mã giảm giá không hợp lệ");
   }
 
+  const baseVnd = subtotal + shippingFeeVnd(subtotal);
   const discount_vnd = computeDiscountVnd({
     type: row.type,
     value: row.value,
-    subtotalVnd: body.data.subtotal_vnd,
+    baseVnd,
     maxDiscountVnd: row.maxDiscountVnd,
   });
 

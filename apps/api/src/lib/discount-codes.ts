@@ -4,16 +4,17 @@ export function normalizeCouponCode(code: string): string {
   return code.trim().toUpperCase();
 }
 
+/** `baseVnd` = subtotal + shipping (order total before discount). */
 export function computeDiscountVnd(args: {
   type: "percent" | "fixed";
   value: number;
-  subtotalVnd: number;
+  baseVnd: number;
   maxDiscountVnd: number | null;
 }): number {
-  const { type, value, subtotalVnd, maxDiscountVnd } = args;
-  let raw = type === "percent" ? Math.floor((subtotalVnd * value) / 100) : value;
+  const { type, value, baseVnd, maxDiscountVnd } = args;
+  let raw = type === "percent" ? Math.floor((baseVnd * value) / 100) : value;
   if (type === "percent" && maxDiscountVnd != null) raw = Math.min(raw, maxDiscountVnd);
-  return Math.max(0, Math.min(raw, subtotalVnd));
+  return Math.max(0, Math.min(raw, baseVnd));
 }
 
 export type CouponRow = {

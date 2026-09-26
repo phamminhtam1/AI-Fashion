@@ -30,6 +30,11 @@ services:
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
       SUPABASE_MEDIA_BUCKET: ${SUPABASE_MEDIA_BUCKET:-products}
+      SEPAY_WEBHOOK_SECRET: ${SEPAY_WEBHOOK_SECRET:-}
+      SEPAY_BANK_ACCOUNT: ${SEPAY_BANK_ACCOUNT:-}
+      SEPAY_ACCOUNT_NAME: ${SEPAY_ACCOUNT_NAME:-}
+      SEPAY_BANK_NAME: ${SEPAY_BANK_NAME:-}
+      SEPAY_BANK_BIN: ${SEPAY_BANK_BIN:-}
       STOREFRONT_ORIGIN: http://localhost:8090
       ADMIN_ORIGIN: http://localhost:8081
       COOKIE_SECURE: "false"
@@ -91,6 +96,19 @@ services:
       - "8081:8081"
     volumes:
       - ./apps/admin:/app/apps/admin
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: elane-ngrok
+    command: http api:3001 --log stdout
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    ports:
+      - "4040:4040"
     depends_on:
       api:
         condition: service_healthy

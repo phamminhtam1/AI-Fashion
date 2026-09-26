@@ -67,15 +67,16 @@ Existing `discount_vnd` remains the monetary amount applied.
 ### Formula
 
 ```
+base = subtotal + shipping_vnd
 raw = type === "percent"
-  ? floor(subtotal * value / 100)
+  ? floor(base * value / 100)
   : value
 if percent && max_discount_vnd != null: raw = min(raw, max_discount_vnd)
-discount_vnd = clamp(raw, 0, subtotal)
-grand_total_vnd = subtotal + shipping_vnd - discount_vnd
+discount_vnd = clamp(raw, 0, base)
+grand_total_vnd = base - discount_vnd
 ```
 
-Shipping is unchanged by coupons in this iteration.
+Discount may cover merchandise and shipping. `min_order_vnd` still checks merchandise subtotal only.
 
 ## API
 

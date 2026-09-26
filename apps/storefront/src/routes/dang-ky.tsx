@@ -22,10 +22,11 @@ function Register() {
           const f = new FormData(e.currentTarget);
           void (async () => {
             try {
+              const phoneRaw = String(f.get("phone") || "").trim();
               await register({
                 fullName: String(f.get("name")),
                 email: String(f.get("email")),
-                phone: String(f.get("phone") || "") || undefined,
+                ...(phoneRaw ? { phone: phoneRaw } : {}),
                 password: String(f.get("password")),
               });
               nav({ to: "/tai-khoan" });
