@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { formatVND } from "@/lib/products";
-import { storeApi, type StoreOrderDetail } from "@/lib/api";
+import { checkPaymentStatus, storeApi, type StoreOrderDetail } from "@/lib/api";
 import { toast } from "sonner";
 import { fireCheckoutCelebration } from "@/lib/celebrate";
 
@@ -63,21 +63,24 @@ export function OrderDetailModal({ orderId, onClose, onPayNow, onOrderUpdated }:
   useEffect(() => {
     if (!order || order.payment_status !== "awaiting") return;
     let stopped = false;
-    const interval = setInterval(async () => {
+    const check = async () => {
+      if (stopped) return;
       try {
-        const fresh = await storeApi.order(orderId);
+        const st = await checkPaymentStatus(orderId);
         if (stopped) return;
-        if (fresh.payment_status === "paid") {
+        if (st.is_paid) {
+          stopped = true;
+          const fresh = await storeApi.order(orderId);
           setOrder(fresh);
           fireCheckoutCelebration();
           toast.success("Đơn hàng đã được xác nhận thanh toán thành công!");
           onOrderUpdatedRef.current?.();
-          clearInterval(interval);
         }
       } catch {
         /* ignore polling errors */
       }
-    }, 2500);
+    };
+    const interval = setInterval(check, 1500);
     return () => {
       stopped = true;
       clearInterval(interval);

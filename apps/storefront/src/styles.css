@@ -151,3 +151,29 @@
   }
   h1, h2, h3 { font-family: var(--font-serif); font-weight: 400; letter-spacing: -0.01em; }
 }
+
+@keyframes qr-scan {
+  0% {
+    top: 2%;
+    opacity: 0.2;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  50% {
+    top: 96%;
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    top: 2%;
+    opacity: 0.2;
+  }
+}
+
+.animate-qr-scan {
+  animation: qr-scan 2.6s ease-in-out infinite;
+}
+

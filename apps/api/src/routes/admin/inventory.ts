@@ -122,11 +122,11 @@ adminInventoryRoutes.get("/documents", async (c) => {
       posted_at: inventoryDocuments.postedAt,
       line_count: sql<number>`(
         select count(*)::int from inventory_document_lines l
-        where l.document_id = ${inventoryDocuments.id}
+        where l.document_id = inventory_documents.id
       )`,
       total_qty: sql<number>`(
         select coalesce(sum(l.qty), 0)::int from inventory_document_lines l
-        where l.document_id = ${inventoryDocuments.id}
+        where l.document_id = inventory_documents.id
       )`,
     })
     .from(inventoryDocuments)

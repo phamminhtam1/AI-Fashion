@@ -673,14 +673,16 @@ meRoutes.post("/orders", async (c) => {
           })),
         );
 
-        // bump customer spend lightly for segment later
-        await tx
-          .update(customers)
-          .set({
-            totalSpentVnd: sql`${customers.totalSpentVnd} + ${grand}`,
-            updatedAt: new Date(),
-          })
-          .where(eq(customers.id, customerId));
+        // only bump customer spend for COD (bank transfer will bump when paid)
+        if (body.payment_method === "cod") {
+          await tx
+            .update(customers)
+            .set({
+              totalSpentVnd: sql`${customers.totalSpentVnd} + ${grand}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(customers.id, customerId));
+        }
 
         return order;
       } catch (e: unknown) {

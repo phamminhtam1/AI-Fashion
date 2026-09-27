@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, desc, eq, ilike, or } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { auditLogs, discountCodes } from "@elane/db";
 import type { AppVars } from "../../middleware/auth.js";
@@ -59,22 +59,104 @@ adminDiscountCodeRoutes.get("/", async (c) => {
   const db = c.get("db");
   const status = c.req.query("status");
   const q = c.req.query("q")?.trim();
+  const type = c.req.query("type"); // "percent" | "fixed"
+  const timing = c.req.query("timing"); // "active_now" | "upcoming" | "expired" | "no_expiry"
+  const usage = c.req.query("usage"); // "unused" | "partial" | "exhausted"
+  const dateFrom = c.req.query("date_from");
+  const dateTo = c.req.query("date_to");
+  const sortBy = c.req.query("sort_by") ?? "created_at_desc";
 
+  const now = new Date();
   const filters = [];
   if (status === "active" || status === "disabled") filters.push(eq(discountCodes.status, status));
+  if (type === "percent" || type === "fixed") filters.push(eq(discountCodes.type, type));
   if (q) {
     const pattern = `%${q}%`;
-    filters.push(or(ilike(discountCodes.code, pattern), ilike(discountCodes.name, pattern)));
+    filters.push(or(ilike(discountCodes.code, pattern), ilike(discountCodes.name, pattern))!);
   }
+  if (timing === "active_now") {
+    filters.push(
+      and(
+        or(isNull(discountCodes.startsAt), lte(discountCodes.startsAt, now))!,
+        or(isNull(discountCodes.endsAt), gte(discountCodes.endsAt, now))!,
+      )!,
+    );
+  } else if (timing === "upcoming") {
+    filters.push(and(isNotNull(discountCodes.startsAt), gte(discountCodes.startsAt, now))!);
+  } else if (timing === "expired") {
+    filters.push(and(isNotNull(discountCodes.endsAt), lte(discountCodes.endsAt, now))!);
+  } else if (timing === "no_expiry") {
+    filters.push(isNull(discountCodes.endsAt));
+  }
+  if (usage === "unused") {
+    filters.push(eq(discountCodes.usageCount, 0));
+  } else if (usage === "exhausted") {
+    filters.push(
+      and(
+        isNotNull(discountCodes.usageLimit),
+        sql`${discountCodes.usageCount} >= ${discountCodes.usageLimit}`,
+      )!,
+    );
+  } else if (usage === "partial") {
+    filters.push(
+      and(
+        sql`${discountCodes.usageCount} > 0`,
+        or(
+          isNull(discountCodes.usageLimit),
+          sql`${discountCodes.usageCount} < ${discountCodes.usageLimit}`,
+        )!,
+      )!,
+    );
+  }
+  if (dateFrom) {
+    const d = new Date(dateFrom);
+    if (!Number.isNaN(d.getTime())) filters.push(gte(discountCodes.createdAt, d));
+  }
+  if (dateTo) {
+    const d = new Date(dateTo);
+    if (!Number.isNaN(d.getTime())) {
+      d.setHours(23, 59, 59, 999);
+      filters.push(lte(discountCodes.createdAt, d));
+    }
+  }
+
+  const orderExpr = (() => {
+    switch (sortBy) {
+      case "usage_desc": return desc(discountCodes.usageCount);
+      case "usage_asc": return sql`${discountCodes.usageCount} asc`;
+      case "value_desc": return desc(discountCodes.value);
+      case "ends_at_asc": return sql`${discountCodes.endsAt} asc nulls last`;
+      default: return desc(discountCodes.createdAt);
+    }
+  })();
+
+  const where = filters.length ? and(...filters) : undefined;
+
+  const [countRow] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(discountCodes)
+    .where(where);
+
+  // Summary stats (always unfiltered)
+  const statsRows = await db
+    .select({ status: discountCodes.status, n: sql<number>`count(*)::int` })
+    .from(discountCodes)
+    .groupBy(discountCodes.status);
+  const stats: Record<string, number> = {};
+  for (const r of statsRows) stats[r.status] = r.n;
 
   const rows = await db
     .select()
     .from(discountCodes)
-    .where(filters.length ? and(...filters) : undefined)
-    .orderBy(desc(discountCodes.createdAt))
+    .where(where)
+    .orderBy(orderExpr)
     .limit(200);
 
-  return c.json({ items: rows.map(mapCode) });
+  return c.json({
+    items: rows.map(mapCode),
+    total: countRow?.n ?? 0,
+    stats,
+  });
 });
 
 adminDiscountCodeRoutes.get("/:id", async (c) => {

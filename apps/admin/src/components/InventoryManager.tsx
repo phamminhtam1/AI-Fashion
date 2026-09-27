@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { adminApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
 import { useConfirmDialog } from "@/components/ConfirmDialog";
 import type {
@@ -399,6 +400,10 @@ export function InventoryManager({
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<"available" | "name" | "sku">("available");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [stockPage, setStockPage] = useState(1);
+  const [stockPageSize, setStockPageSize] = useState(20);
+  const [docPage, setDocPage] = useState(1);
+  const [docPageSize, setDocPageSize] = useState(15);
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [docs, setDocs] = useState<InventoryDocumentListItem[]>([]);
@@ -821,8 +826,8 @@ export function InventoryManager({
 
     const receiptDocs = docs.filter((d) => d.type === "receipt");
     const issueDocs = docs.filter((d) => d.type === "issue");
-    const totalInboundQty = receiptDocs.reduce((s, d) => s + (d.total_qty || 0), 0);
-    const totalOutboundQty = issueDocs.reduce((s, d) => s + (d.total_qty || 0), 0);
+    const totalInboundQty = receiptDocs.reduce((s, d) => s + (Number(d.total_qty) || 0), 0);
+    const totalOutboundQty = issueDocs.reduce((s, d) => s + (Number(d.total_qty) || 0), 0);
 
     return {
       totalAvailable,
@@ -892,6 +897,28 @@ export function InventoryManager({
     return list;
   }, [docs, docTab, query]);
 
+  // Reset pagination when filters change
+  useEffect(() => {
+    setStockPage(1);
+  }, [stockTab, query, sortBy, sortDir]);
+
+  useEffect(() => {
+    setDocPage(1);
+  }, [docTab, query]);
+
+  // Sliced data for pagination
+  const totalStockPages = Math.max(1, Math.ceil(filteredStock.length / stockPageSize));
+  const pagedStock = useMemo(() => {
+    const start = (stockPage - 1) * stockPageSize;
+    return filteredStock.slice(start, start + stockPageSize);
+  }, [filteredStock, stockPage, stockPageSize]);
+
+  const totalDocPages = Math.max(1, Math.ceil(filteredDocs.length / docPageSize));
+  const pagedDocs = useMemo(() => {
+    const start = (docPage - 1) * docPageSize;
+    return filteredDocs.slice(start, start + docPageSize);
+  }, [filteredDocs, docPage, docPageSize]);
+
   return (
     <div className="space-y-6 pb-12">
       {confirmDialog}
@@ -926,7 +953,14 @@ export function InventoryManager({
           >
             <Boxes className="size-3.5" />
             <span>Tồn kho hàng hóa</span>
-            <span className="rounded-full bg-secondary px-1.5 py-0.2 font-mono text-[10px] text-muted-foreground">
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 font-mono text-[10px] leading-none inline-flex items-center justify-center transition-colors",
+                view === "stock"
+                  ? "bg-foreground text-background font-bold shadow-xs"
+                  : "bg-secondary text-muted-foreground border border-border/60",
+              )}
+            >
               {items.length}
             </span>
           </button>
@@ -942,7 +976,17 @@ export function InventoryManager({
             )}
           >
             <FileSpreadsheet className="size-3.5" />
-            <span>Phiếu kho ({docs.length})</span>
+            <span>Phiếu kho</span>
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 font-mono text-[10px] leading-none inline-flex items-center justify-center transition-colors",
+                view === "docs"
+                  ? "bg-foreground text-background font-bold shadow-xs"
+                  : "bg-secondary text-muted-foreground border border-border/60",
+              )}
+            >
+              {docs.length}
+            </span>
           </button>
 
           {view === "doc_detail" && docDetail && (
@@ -1060,29 +1104,40 @@ export function InventoryManager({
         <section className="mt-6 overflow-hidden rounded-md border border-border bg-card">
           {/* Sub Filters & Search */}
           <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between bg-card/40">
-            <div className="flex gap-1 overflow-x-auto pb-1 lg:pb-0">
+            <div className="flex gap-1.5 overflow-x-auto pb-1 lg:pb-0">
               {[
                 { key: "all", label: "Tất cả", count: items.length },
                 { key: "low", label: "Sắp hết hàng", count: shopMetrics.lowCount },
                 { key: "out", label: "Hết hàng", count: shopMetrics.outCount },
                 { key: "safe", label: "Tồn an toàn", count: shopMetrics.safeCount },
-              ].map((f) => (
-                <Button
-                  key={f.key}
-                  variant={stockTab === f.key ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setStockTab(f.key as StockFilter)}
-                  className={cn(
-                    "h-8 text-xs font-medium",
-                    stockTab === f.key && "bg-foreground text-background hover:bg-foreground/90",
-                  )}
-                >
-                  {f.label}
-                  <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
-                    ({f.count})
-                  </span>
-                </Button>
-              ))}
+              ].map((f) => {
+                const isActive = stockTab === f.key;
+
+                return (
+                  <Button
+                    key={f.key}
+                    variant={isActive ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setStockTab(f.key as StockFilter)}
+                    className={cn(
+                      "h-8 text-xs font-medium shrink-0 gap-1.5 transition-all",
+                      isActive && "bg-foreground text-background hover:bg-foreground/90 shadow-xs",
+                    )}
+                  >
+                    <span>{f.label}</span>
+                    <span
+                      className={cn(
+                        "rounded-full px-1.5 py-0.2 font-mono text-[10px] leading-none inline-flex items-center justify-center min-w-4 h-4 transition-all",
+                        isActive
+                          ? "bg-white text-stone-950 font-bold shadow-xs"
+                          : "bg-secondary text-muted-foreground border border-border/70",
+                      )}
+                    >
+                      {f.count}
+                    </span>
+                  </Button>
+                );
+              })}
             </div>
 
             <div className="flex items-center gap-2">
@@ -1178,7 +1233,7 @@ export function InventoryManager({
                     </td>
                   </tr>
                 ) : (
-                  filteredStock.map((row) => {
+                  pagedStock.map((row) => {
                     const imgUrl = resolveImageUrl(row.image_url);
                     const isOutStock = row.available <= 0;
                     const isLowStock = !isOutStock && row.available <= row.reorder_point;
@@ -1343,11 +1398,20 @@ export function InventoryManager({
             </table>
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
-            <span>Hiển thị {filteredStock.length} / {items.length} biến thể SKU</span>
-            <span>Kho vận ÉLANE Atelier</span>
-          </div>
+          {/* Footer with Pagination */}
+          <TablePagination
+            currentPage={stockPage}
+            totalPages={totalStockPages}
+            totalItems={filteredStock.length}
+            pageSize={stockPageSize}
+            pageSizeOptions={[10, 20, 50, 100]}
+            onPageChange={setStockPage}
+            onPageSizeChange={(newSize) => {
+              setStockPageSize(newSize);
+              setStockPage(1);
+            }}
+            itemName="biến thể SKU"
+          />
         </section>
       )}
 
@@ -1448,7 +1512,7 @@ export function InventoryManager({
                     </td>
                   </tr>
                 ) : (
-                  filteredDocs.map((doc) => {
+                  pagedDocs.map((doc) => {
                     const isReceipt = doc.type === "receipt";
                     const isIssue = doc.type === "issue";
                     const isPosted = doc.status === "posted";
@@ -1494,10 +1558,10 @@ export function InventoryManager({
                         {/* Items Qty */}
                         <td className="px-4 py-3 text-center text-xs font-mono">
                           <span className="font-semibold text-foreground">
-                            {doc.total_qty ? `${doc.total_qty} cái` : "—"}
+                            {Number(doc.total_qty) > 0 ? `${Number(doc.total_qty).toLocaleString("vi-VN")} cái` : "—"}
                           </span>
                           <span className="block text-[10px] text-muted-foreground font-sans">
-                            {doc.line_count} dòng sản phẩm
+                            {Number(doc.line_count) > 0 ? `${Number(doc.line_count).toLocaleString("vi-VN")} dòng sản phẩm` : "0 dòng sản phẩm"}
                           </span>
                         </td>
 
@@ -1550,11 +1614,20 @@ export function InventoryManager({
             </table>
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
-            <span>Hiển thị {filteredDocs.length} / {docs.length} phiếu kho</span>
-            <span>ÉLANE Warehouse Ledger</span>
-          </div>
+          {/* Footer with Pagination */}
+          <TablePagination
+            currentPage={docPage}
+            totalPages={totalDocPages}
+            totalItems={filteredDocs.length}
+            pageSize={docPageSize}
+            pageSizeOptions={[10, 15, 25, 50]}
+            onPageChange={setDocPage}
+            onPageSizeChange={(newSize) => {
+              setDocPageSize(newSize);
+              setDocPage(1);
+            }}
+            itemName="phiếu kho"
+          />
         </section>
       )}
 

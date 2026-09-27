@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { toast } from "sonner";
 import { products, type Product } from "./products";
 import { storeApi, type StoreOrderItem, type StoreOrderSummary } from "./api";
@@ -132,7 +132,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
 
-  const refreshSession = async () => {
+  const refreshSession = useCallback(async () => {
     const me = await storeApi.me();
     if (!me) {
       setUser(null);
@@ -150,16 +150,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } catch {
       /* keep local */
     }
-  };
+  }, []);
 
-  const refreshOrders = async () => {
-    if (!user && !(await storeApi.me())) {
-      setOrders([]);
+  const inFlightOrdersRef = useRef<Promise<void> | null>(null);
+  const lastOrdersFetchRef = useRef<number>(0);
+
+  const refreshOrders = useCallback(async () => {
+    const now = Date.now();
+    if (inFlightOrdersRef.current) {
+      return inFlightOrdersRef.current;
+    }
+    // Throttle duplicate calls within 2000ms
+    if (now - lastOrdersFetchRef.current < 2000) {
       return;
     }
-    const res = await storeApi.orders();
-    setOrders(mapOrders(res.items));
-  };
+    lastOrdersFetchRef.current = now;
+    const p = (async () => {
+      try {
+        const res = await storeApi.orders();
+        setOrders(mapOrders(res.items));
+      } catch {
+        /* ignore */
+      } finally {
+        inFlightOrdersRef.current = null;
+      }
+    })();
+    inFlightOrdersRef.current = p;
+    return p;
+  }, []);
 
   useEffect(() => {
     try {

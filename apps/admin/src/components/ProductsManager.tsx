@@ -125,9 +125,11 @@ export function ProductsManager({
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"all" | "published" | "draft" | "archived">("all");
   const [categoryId, setCategoryId] = useState("");
+  const [occasionId, setOccasionId] = useState("");
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [stock, setStock] = useState<StockFilter>("");
+  const [sortBy, setSortBy] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [total, setTotal] = useState(0);
@@ -197,18 +199,25 @@ export function ProductsManager({
         status?: string;
         q?: string;
         category_id?: string;
+        occasion_slug?: string;
         price_min?: number;
         price_max?: number;
         stock?: "in" | "out" | "none";
+        sort_by?: string;
         page?: number;
         limit?: number;
       } = { page, limit };
       if (query.trim()) params.q = query.trim();
       if (tab !== "all") params.status = tab;
       if (categoryId) params.category_id = categoryId;
+      if (occasionId) {
+        const slug = meta?.occasions.find((o) => o.id === occasionId)?.slug;
+        if (slug) params.occasion_slug = slug;
+      }
       if (priceMin.trim()) params.price_min = Number(priceMin);
       if (priceMax.trim()) params.price_max = Number(priceMax);
       if (stock) params.stock = stock;
+      if (sortBy) params.sort_by = sortBy;
 
       const [prods, m] = await Promise.all([adminApi.products(params), adminApi.productMeta()]);
       setItems(prods.items);
@@ -220,7 +229,7 @@ export function ProductsManager({
     } finally {
       setLoading(false);
     }
-  }, [page, limit, query, tab, categoryId, priceMin, priceMax, stock]);
+  }, [page, limit, query, tab, categoryId, occasionId, priceMin, priceMax, stock, sortBy]);
 
   useEffect(() => {
     const t = setTimeout(() => setQuery(queryInput.trim()), 300);
@@ -234,7 +243,7 @@ export function ProductsManager({
   useEffect(() => {
     setPage(1);
     setSelected(new Set());
-  }, [tab, query, categoryId, priceMin, priceMax, stock, limit]);
+  }, [tab, query, categoryId, occasionId, priceMin, priceMax, stock, limit, sortBy]);
 
   const allFilteredSelected = items.length > 0 && items.every((p) => selected.has(p.id));
   const someFilteredSelected = items.some((p) => selected.has(p.id));
@@ -301,16 +310,39 @@ export function ProductsManager({
         clear: () => setStock(""),
       });
     }
+    if (occasionId) {
+      const name = meta?.occasions.find((o) => o.id === occasionId)?.name ?? "Dịp mặc";
+      chips.push({
+        key: "occasion",
+        label: `Dịp: ${name}`,
+        clear: () => setOccasionId(""),
+      });
+    }
+    if (sortBy) {
+      const labels: Record<string, string> = {
+        price_asc: "Giá thấp → cao",
+        price_desc: "Giá cao → thấp",
+        stock_desc: "Tồn nhiều nhất",
+        name_asc: "Tên A→Z",
+      };
+      chips.push({
+        key: "sort",
+        label: `Sắp xếp: ${labels[sortBy] ?? sortBy}`,
+        clear: () => setSortBy(""),
+      });
+    }
     return chips;
-  }, [categoryId, priceMin, priceMax, stock, filterCategories]);
+  }, [categoryId, occasionId, priceMin, priceMax, stock, sortBy, filterCategories, meta]);
 
   const activeFilterCount = activeFilterChips.length;
 
   function clearAdvancedFilters() {
     setCategoryId("");
+    setOccasionId("");
     setPriceMin("");
     setPriceMax("");
     setStock("");
+    setSortBy("");
   }
 
   function clearDrafts() {
@@ -1373,8 +1405,10 @@ export function ProductsManager({
                   {label}
                   <span
                     className={cn(
-                      "tabular-nums",
-                      tab === id ? "text-background/70" : "text-muted-foreground/80",
+                      "rounded-full px-1.5 py-0.2 font-mono text-[10px] leading-none inline-flex items-center justify-center min-w-4 h-4 transition-all",
+                      tab === id
+                        ? "bg-white text-stone-950 font-bold shadow-xs"
+                        : "bg-secondary text-muted-foreground border border-border/70",
                     )}
                   >
                     {count}
@@ -1423,71 +1457,151 @@ export function ProductsManager({
                     ) : null}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align="end" className="w-80 space-y-4 p-4">
-                  <div>
-                    <p className="section-label">Bộ lọc nâng cao</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Áp dụng ngay khi chọn.</p>
+                <PopoverContent align="end" className="w-[340px] p-0 shadow-xl">
+                  <div className="border-b border-border px-4 py-3">
+                    <p className="text-sm font-semibold">Bộ lọc nâng cao</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">Kết hợp nhiều điều kiện để lọc sản phẩm.</p>
                   </div>
-                  <label className="block space-y-1.5">
-                    <span className="text-xs font-medium">Danh mục</span>
-                    <select
-                      className="h-9 w-full rounded-md border border-input bg-[#f7f4ef] px-3 text-sm outline-none focus:ring-1 focus:ring-ring"
-                      value={categoryId}
-                      onChange={(e) => setCategoryId(e.target.value)}
-                    >
-                      <option value="">Tất cả danh mục</option>
-                      {filterCategories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <div className="space-y-1.5">
-                    <span className="text-xs font-medium">Khoảng giá (VND)</span>
-                    <div className="flex gap-2">
-                      <Input
-                        inputMode="numeric"
-                        placeholder="Từ"
-                        value={priceMin}
-                        onChange={(e) => setPriceMin(e.target.value.replace(/[^\d]/g, ""))}
-                      />
-                      <Input
-                        inputMode="numeric"
-                        placeholder="Đến"
-                        value={priceMax}
-                        onChange={(e) => setPriceMax(e.target.value.replace(/[^\d]/g, ""))}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <span className="text-xs font-medium">Tồn kho</span>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {(
-                        [
-                          ["", "Tất cả"],
-                          ["in", "Còn hàng"],
-                          ["out", "Hết hàng"],
-                          ["none", "Chưa nhập"],
-                        ] as const
-                      ).map(([id, label]) => (
-                        <button
-                          key={id || "all"}
-                          type="button"
-                          onClick={() => setStock(id)}
-                          className={cn(
-                            "rounded-md border px-2 py-1.5 text-xs transition-colors",
-                            stock === id
-                              ? "border-foreground bg-foreground text-background"
-                              : "border-border bg-[#f7f4ef] text-muted-foreground hover:text-foreground",
-                          )}
+                  <div className="max-h-[70vh] overflow-y-auto">
+                  <div className="space-y-4 p-4">
+                    {/* Category */}
+                    <label className="block space-y-1.5">
+                      <span className="text-xs font-medium">Danh mục</span>
+                      <select
+                        className="h-8 w-full rounded-md border border-input bg-[#f7f4ef] px-3 text-xs outline-none focus:ring-1 focus:ring-ring"
+                        value={categoryId}
+                        onChange={(e) => setCategoryId(e.target.value)}
+                      >
+                        <option value="">Tất cả danh mục</option>
+                        {filterCategories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {/* Occasion */}
+                    {(meta?.occasions ?? []).length > 0 && (
+                      <label className="block space-y-1.5">
+                        <span className="text-xs font-medium">Dịp mặc</span>
+                        <select
+                          className="h-8 w-full rounded-md border border-input bg-[#f7f4ef] px-3 text-xs outline-none focus:ring-1 focus:ring-ring"
+                          value={occasionId}
+                          onChange={(e) => setOccasionId(e.target.value)}
                         >
-                          {label}
-                        </button>
-                      ))}
+                          <option value="">Tất cả dịp</option>
+                          {(meta?.occasions ?? []).map((o) => (
+                            <option key={o.id} value={o.id}>
+                              {o.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+
+                    {/* Price range */}
+                    <div className="space-y-1.5">
+                      <span className="text-xs font-medium">Khoảng giá (VND)</span>
+                      <div className="flex gap-2">
+                        <Input
+                          inputMode="numeric"
+                          placeholder="Từ"
+                          value={priceMin}
+                          onChange={(e) => setPriceMin(e.target.value.replace(/[^\d]/g, ""))}
+                          className="h-8 text-xs"
+                        />
+                        <Input
+                          inputMode="numeric"
+                          placeholder="Đến"
+                          value={priceMax}
+                          onChange={(e) => setPriceMax(e.target.value.replace(/[^\d]/g, ""))}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      {/* Price presets */}
+                      <div className="flex flex-wrap gap-1 pt-0.5">
+                        {[
+                          { l: "< 200k", min: "", max: "200000" },
+                          { l: "200–500k", min: "200000", max: "500000" },
+                          { l: "500k–1tr", min: "500000", max: "1000000" },
+                          { l: "> 1tr", min: "1000000", max: "" },
+                        ].map((p) => (
+                          <button
+                            key={p.l}
+                            type="button"
+                            onClick={() => { setPriceMin(p.min); setPriceMax(p.max); }}
+                            className={cn(
+                              "rounded border px-2 py-1 text-[11px] transition-colors",
+                              priceMin === p.min && priceMax === p.max
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border bg-[#f7f4ef] text-muted-foreground hover:text-foreground",
+                            )}
+                          >
+                            {p.l}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Stock */}
+                    <div className="space-y-1.5">
+                      <span className="text-xs font-medium">Tồn kho</span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {(
+                          [
+                            ["", "Tất cả"],
+                            ["in", "Còn hàng"],
+                            ["out", "Hết hàng"],
+                            ["none", "Chưa nhập"],
+                          ] as const
+                        ).map(([id, label]) => (
+                          <button
+                            key={id || "all"}
+                            type="button"
+                            onClick={() => setStock(id)}
+                            className={cn(
+                              "rounded-md border px-2 py-1.5 text-xs transition-colors",
+                              stock === id
+                                ? "border-foreground bg-foreground text-background"
+                                : "border-border bg-[#f7f4ef] text-muted-foreground hover:text-foreground",
+                            )}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Sort */}
+                    <div className="space-y-1.5">
+                      <span className="text-xs font-medium">Sắp xếp</span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {([
+                          ["", "Mới nhất"],
+                          ["price_asc", "Giá thấp → cao"],
+                          ["price_desc", "Giá cao → thấp"],
+                          ["name_asc", "Tên A→Z"],
+                        ] as const).map(([id, label]) => (
+                          <button
+                            key={id || "default"}
+                            type="button"
+                            onClick={() => setSortBy(id)}
+                            className={cn(
+                              "rounded-md border px-2 py-1.5 text-xs transition-colors",
+                              sortBy === id
+                                ? "border-foreground bg-foreground text-background"
+                                : "border-border bg-[#f7f4ef] text-muted-foreground hover:text-foreground",
+                            )}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex justify-end border-t border-border pt-3">
+                  </div>
+                  <div className="flex justify-end border-t border-border px-4 py-3">
                     <Button
                       type="button"
                       variant="ghost"
@@ -1499,6 +1613,7 @@ export function ProductsManager({
                     </Button>
                   </div>
                 </PopoverContent>
+
               </Popover>
 
               <select

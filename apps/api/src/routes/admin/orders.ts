@@ -23,6 +23,7 @@ adminOrderRoutes.use("*", requireAuth);
 adminOrderRoutes.get("/", async (c) => {
   requirePerm(c.get("user")!, "order.read");
   const db = c.get("db");
+  const limitParam = Math.min(1000, Math.max(1, Number(c.req.query("limit")) || 200));
   const rows = await db
     .select({
       id: orders.id,
@@ -43,7 +44,7 @@ adminOrderRoutes.get("/", async (c) => {
     .from(orders)
     .innerJoin(customers, eq(customers.id, orders.customerId))
     .orderBy(desc(orders.placedAt))
-    .limit(100);
+    .limit(limitParam);
 
   return c.json({
     items: rows.map((o) => ({

@@ -136,8 +136,11 @@ async function get<T>(path: string): Promise<T> {
 async function storeReq<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${apiBase()}/api/v1${path}`, {
     credentials: "include",
+    cache: "no-store",
     ...init,
     headers: {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
       ...(init?.body ? { "Content-Type": "application/json" } : {}),
       ...init?.headers,
     },
@@ -271,8 +274,36 @@ export const storeApi = {
     }>("/me/orders", { method: "POST", body: JSON.stringify(body) }),
 };
 
+export type OrderPaymentStatus = {
+  id: string;
+  order_number: string;
+  status: string;
+  payment_status: string;
+  payment_method: string;
+  grand_total_vnd: number;
+  paid_at?: string | null;
+  is_paid: boolean;
+};
+
+export async function checkPaymentStatus(orderIdOrNumber: string): Promise<OrderPaymentStatus> {
+  const url = `${apiBase()}/api/v1/payments/order-status/${encodeURIComponent(orderIdOrNumber)}?_t=${Date.now()}`;
+  const res = await fetch(url, {
+    cache: "no-store",
+    headers: {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { message?: string }).message ?? `API ${res.status}`);
+  }
+  return res.json() as Promise<OrderPaymentStatus>;
+}
+
 export function fetchBankInfo() {
   return get<BankInfo>("/payments/bank-info");
 }
 
 export { PUBLIC_API_URL as API_URL };
+

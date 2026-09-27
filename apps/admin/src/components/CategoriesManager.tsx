@@ -1,9 +1,10 @@
-import { Archive, ChevronDown, ChevronRight, Plus, Search, Trash2 } from "lucide-react";
+import { Archive, ChevronDown, ChevronRight, Plus, Search, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { adminApi, type Category } from "@/lib/api";
 import { useConfirmDialog } from "@/components/ConfirmDialog";
@@ -55,10 +56,24 @@ function parentOptions(items: Category[], editingId: string | null) {
   return items.filter((c) => !blocked.has(c.id));
 }
 
+type AdvancedFilter = {
+  hasProducts: "" | "with" | "empty";
+  depthLevel: "" | "root" | "sub" | "leaf";
+  sortBy: "name_asc" | "product_count_desc" | "sort_order" | "status";
+};
+
+const emptyAdvancedFilter: AdvancedFilter = {
+  hasProducts: "",
+  depthLevel: "",
+  sortBy: "sort_order",
+};
+
 export function CategoriesManager() {
   const [items, setItems] = useState<Category[]>([]);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"all" | "active" | "archived">("all");
+  const [advFilter, setAdvFilter] = useState<AdvancedFilter>(emptyAdvancedFilter);
+  const [draftAdv, setDraftAdv] = useState<AdvancedFilter>(emptyAdvancedFilter);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "form">("list");
   const [editing, setEditing] = useState<Category | null>(null);
@@ -96,12 +111,50 @@ export function CategoriesManager() {
 
   useEffect(() => {
     setSelected(new Set());
-  }, [tab, query]);
+  }, [tab, query, advFilter]);
+
+  const advFilterChips = useMemo(() => {
+    const chips: Array<{ key: string; label: string; clear: () => void }> = [];
+    if (advFilter.hasProducts) {
+      chips.push({
+        key: "hp",
+        label: advFilter.hasProducts === "with" ? "Có sản phẩm" : "Không có SP",
+        clear: () => setAdvFilter((f) => ({ ...f, hasProducts: "" })),
+      });
+    }
+    if (advFilter.depthLevel) {
+      const labels: Record<string, string> = { root: "Danh mục gốc", sub: "Danh mục con", leaf: "Danh mục lá" };
+      chips.push({
+        key: "depth",
+        label: labels[advFilter.depthLevel] ?? advFilter.depthLevel,
+        clear: () => setAdvFilter((f) => ({ ...f, depthLevel: "" })),
+      });
+    }
+    if (advFilter.sortBy !== "sort_order") {
+      const labels: Record<string, string> = { name_asc: "Tên A→Z", product_count_desc: "Nhiều SP nhất", status: "Trạng thái" };
+      chips.push({
+        key: "sort",
+        label: `Sắp xếp: ${labels[advFilter.sortBy] ?? advFilter.sortBy}`,
+        clear: () => setAdvFilter((f) => ({ ...f, sortBy: "sort_order" })),
+      });
+    }
+    return chips;
+  }, [advFilter]);
 
   const filtered = useMemo(() => {
     let list = items;
     if (tab === "active") list = list.filter((c) => c.status === "active");
     if (tab === "archived") list = list.filter((c) => c.status === "archived");
+    // Advanced filters
+    if (advFilter.hasProducts === "with") list = list.filter((c) => (c.product_count ?? 0) > 0);
+    if (advFilter.hasProducts === "empty") list = list.filter((c) => (c.product_count ?? 0) === 0);
+    if (advFilter.depthLevel === "root") list = list.filter((c) => !c.parent_id);
+    if (advFilter.depthLevel === "sub") list = list.filter((c) => !!c.parent_id && (c.child_count ?? 0) > 0);
+    if (advFilter.depthLevel === "leaf") list = list.filter((c) => c.is_leaf);
+    // Sort
+    if (advFilter.sortBy === "name_asc") list = [...list].sort((a, b) => a.name.localeCompare(b.name, "vi"));
+    else if (advFilter.sortBy === "product_count_desc") list = [...list].sort((a, b) => (b.product_count ?? 0) - (a.product_count ?? 0));
+    else if (advFilter.sortBy === "status") list = [...list].sort((a, b) => a.status.localeCompare(b.status));
     const q = query.trim().toLowerCase();
     if (q) {
       return list.filter((c) => `${c.name} ${c.slug}`.toLowerCase().includes(q));
@@ -114,7 +167,7 @@ export function CategoriesManager() {
       }
       return true;
     });
-  }, [items, tab, query, collapsed]);
+  }, [items, tab, query, collapsed, advFilter]);
 
   const allFilteredSelected = filtered.length > 0 && filtered.every((c) => selected.has(c.id));
   const someFilteredSelected = filtered.some((c) => selected.has(c.id));
@@ -562,34 +615,179 @@ export function CategoriesManager() {
       </section>
 
       <section className="mt-6 overflow-hidden rounded-md border border-border">
-        <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex gap-1 overflow-x-auto pb-1 lg:pb-0">
-            {(
-              [
-                ["all", "Tất cả"],
-                ["active", "Đang hiển thị"],
-                ["archived", "Đã lưu trữ"],
-              ] as const
-            ).map(([id, label]) => (
-              <Button
-                key={id}
-                variant={tab === id ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setTab(id)}
+        <div className="border-b border-border bg-secondary/20 px-4 py-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            {/* Status tabs */}
+            <div className="flex shrink-0 gap-0.5 rounded-md border border-border/70 bg-[#f7f4ef] p-0.5">
+              {([
+                ["all", "Tất cả", items.length],
+                ["active", "Đang hiển thị", items.filter((c) => c.status === "active").length],
+                ["archived", "Đã lưu trữ", items.filter((c) => c.status === "archived").length],
+              ] as const).map(([id, label, cnt]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setTab(id)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-xs font-medium transition-colors",
+                    tab === id
+                      ? "bg-foreground text-background shadow-sm"
+                      : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground",
+                  )}
+                >
+                  {label}
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.2 font-mono text-[10px] leading-none inline-flex items-center justify-center min-w-4 h-4 transition-all",
+                      tab === id
+                        ? "bg-white text-stone-950 font-bold shadow-xs"
+                        : "bg-secondary text-muted-foreground border border-border/70",
+                    )}
+                  >
+                    {cnt}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Search */}
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="h-9 border-border/70 bg-[#f7f4ef] pl-9 pr-9"
+                placeholder="Tìm danh mục, slug…"
+              />
+              {query && (
+                <button type="button" className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground" onClick={() => setQuery("")}>
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Advanced filter popover */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "h-9 shrink-0 gap-1.5 border-border/70 bg-[#f7f4ef]",
+                    advFilterChips.length > 0 && "border-primary/40 bg-accent/40",
+                  )}
+                >
+                  <SlidersHorizontal className="size-3.5" />
+                  Bộ lọc
+                  {advFilterChips.length > 0 && (
+                    <span className="ml-0.5 inline-flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                      {advFilterChips.length}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-72 p-0 shadow-xl">
+                <div className="border-b border-border px-4 py-3">
+                  <p className="text-sm font-semibold">Bộ lọc nâng cao</p>
+                </div>
+                <div className="space-y-4 p-4">
+                  {/* Has products */}
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-medium">Sản phẩm</span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {([["", "Tất cả"], ["with", "Có SP"], ["empty", "Không có"]] as const).map(([v, l]) => (
+                        <button
+                          key={v || "all"}
+                          type="button"
+                          onClick={() => setDraftAdv((f) => ({ ...f, hasProducts: v }))}
+                          className={cn(
+                            "rounded-md border px-2 py-1.5 text-xs transition-colors",
+                            draftAdv.hasProducts === v
+                              ? "border-foreground bg-foreground text-background"
+                              : "border-border bg-[#f7f4ef] text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          {l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Depth level */}
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-medium">Cấp danh mục</span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {([
+                        ["", "Tất cả"],
+                        ["root", "Gốc (cấp 1)"],
+                        ["sub", "Có danh mục con"],
+                        ["leaf", "Danh mục lá"],
+                      ] as const).map(([v, l]) => (
+                        <button
+                          key={v || "all"}
+                          type="button"
+                          onClick={() => setDraftAdv((f) => ({ ...f, depthLevel: v }))}
+                          className={cn(
+                            "rounded-md border px-2 py-1.5 text-xs transition-colors",
+                            draftAdv.depthLevel === v
+                              ? "border-foreground bg-foreground text-background"
+                              : "border-border bg-[#f7f4ef] text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          {l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Sort */}
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-medium">Sắp xếp</span>
+                    <select
+                      className="h-8 w-full rounded-md border border-input bg-[#f7f4ef] px-3 text-xs outline-none"
+                      value={draftAdv.sortBy}
+                      onChange={(e) => setDraftAdv((f) => ({ ...f, sortBy: e.target.value as AdvancedFilter["sortBy"] }))}
+                    >
+                      <option value="sort_order">Thứ tự mặc định</option>
+                      <option value="name_asc">Tên A→Z</option>
+                      <option value="product_count_desc">Nhiều sản phẩm nhất</option>
+                      <option value="status">Trạng thái</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex justify-between border-t border-border px-4 py-3">
+                  <Button type="button" variant="ghost" size="sm" onClick={() => { setDraftAdv(emptyAdvancedFilter); setAdvFilter(emptyAdvancedFilter); }}>
+                    Xóa lọc
+                  </Button>
+                  <Button type="button" size="sm" onClick={() => setAdvFilter(draftAdv)}>
+                    Áp dụng
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Active filter chips */}
+          {advFilterChips.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {advFilterChips.map((chip) => (
+                <button
+                  key={chip.key}
+                  type="button"
+                  onClick={chip.clear}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-[#f7f4ef] px-2.5 py-1 text-[11px] text-foreground transition-colors hover:border-primary/40"
+                >
+                  {chip.label}
+                  <X className="size-3 opacity-60" />
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => { setAdvFilter(emptyAdvancedFilter); setDraftAdv(emptyAdvancedFilter); }}
+                className="text-[11px] font-medium text-primary underline-offset-2 hover:underline"
               >
-                {label}
-              </Button>
-            ))}
-          </div>
-          <div className="relative flex-1 lg:w-64">
-            <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="pl-9"
-              placeholder="Tìm danh mục…"
-            />
-          </div>
+                Xóa tất cả
+              </button>
+            </div>
+          )}
         </div>
 
         {selectedCount > 0 && (

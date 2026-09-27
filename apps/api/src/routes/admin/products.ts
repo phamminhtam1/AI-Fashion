@@ -159,9 +159,11 @@ adminProductRoutes.get("/", async (c) => {
   const status = c.req.query("status") || undefined;
   const q = (c.req.query("q") ?? "").trim();
   const categoryId = c.req.query("category_id") || undefined;
+  const occasionSlug = c.req.query("occasion_slug") || undefined;
   const priceMin = c.req.query("price_min") ? Number(c.req.query("price_min")) : undefined;
   const priceMax = c.req.query("price_max") ? Number(c.req.query("price_max")) : undefined;
   const stock = c.req.query("stock") as "in" | "out" | "none" | undefined;
+  const sortBy = c.req.query("sort_by") || undefined;
 
   const conds = [];
   if (status && ["draft", "published", "archived"].includes(status)) {
@@ -198,6 +200,13 @@ adminProductRoutes.get("/", async (c) => {
       }
     }
     conds.push(inArray(products.primaryCategoryId, ids));
+  }
+  if (occasionSlug) {
+    conds.push(sql`exists (
+      select 1 from product_occasions po
+      join occasions occ on occ.id = po.occasion_id
+      where po.product_id = ${products.id} and occ.slug = ${occasionSlug}
+    )`);
   }
 
   const priceSq = db
@@ -237,6 +246,17 @@ adminProductRoutes.get("/", async (c) => {
 
   const where = conds.length ? and(...conds) : undefined;
 
+  // Build order expression
+  const orderExpr = (() => {
+    switch (sortBy) {
+      case "price_asc": return priceSq.minPrice;
+      case "price_desc": return desc(priceSq.minPrice);
+      case "name_asc": return products.name;
+      case "stock_desc": return desc(stockSq.stock);
+      default: return desc(products.updatedAt);
+    }
+  })();
+
   const [countRow] = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(products)
@@ -252,7 +272,7 @@ adminProductRoutes.get("/", async (c) => {
     .leftJoin(priceSq, eq(priceSq.productId, products.id))
     .leftJoin(stockSq, eq(stockSq.productId, products.id))
     .where(where)
-    .orderBy(desc(products.updatedAt))
+    .orderBy(orderExpr)
     .limit(limit)
     .offset(offset);
 
@@ -274,6 +294,7 @@ adminProductRoutes.get("/", async (c) => {
 
   return c.json({ items, total, page, limit, status_counts });
 });
+
 
 adminProductRoutes.get("/meta", async (c) => {
   requirePerm(c.get("user")!, "product.read");

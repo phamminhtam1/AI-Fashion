@@ -19,9 +19,11 @@ import { OrderPaymentModal } from "@/components/orders/OrderPaymentModal";
 export const Route = createFileRoute("/tai-khoan")({
   validateSearch: (s: Record<string, unknown>): { orderId?: string; tab?: "overview" | "orders" | "profile" } => {
     const res: { orderId?: string; tab?: "overview" | "orders" | "profile" } = {};
-    if (typeof s.orderId === "string" && s.orderId.length > 0) res.orderId = s.orderId;
-    if (typeof s.tab === "string" && ["overview", "orders", "profile"].includes(s.tab)) {
-      res.tab = s.tab as "overview" | "orders" | "profile";
+    const oId = s["orderId"];
+    const tabVal = s["tab"];
+    if (typeof oId === "string" && oId.length > 0) res.orderId = oId;
+    if (typeof tabVal === "string" && ["overview", "orders", "profile"].includes(tabVal)) {
+      res.tab = tabVal as "overview" | "orders" | "profile";
     }
     return res;
   },
@@ -59,7 +61,8 @@ function Account() {
   // Always refresh orders on mount
   useEffect(() => {
     void refreshOrders();
-  }, [refreshOrders]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Refresh when returning to tab / window focus
   useEffect(() => {
@@ -85,9 +88,9 @@ function Account() {
     if (!hasAwaitingOrders) return;
     const interval = setInterval(() => {
       void refreshOrders();
-    }, 2500);
+    }, 3000);
     return () => clearInterval(interval);
-  }, [hasAwaitingOrders, refreshOrders]);
+  }, [hasAwaitingOrders]);
 
   const awaitingCount = useMemo(() => {
     return orders.filter(

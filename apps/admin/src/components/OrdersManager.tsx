@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { adminApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
 import type { InventorySeed } from "@/components/InventoryManager";
 
@@ -1362,8 +1363,12 @@ GHI CHÚ: ${detail.shipping_address?.note || "Cho khách xem hàng trước khi 
 
 export function OrdersManager({
   onNavigateToInventory,
+  targetOrderNumber,
+  onOrderConsumed,
 }: {
   onNavigateToInventory?: (seed: InventorySeed) => void;
+  targetOrderNumber?: string | null;
+  onOrderConsumed?: () => void;
 } = {}) {
   const [activeMainTab, setActiveMainTab] = useState<"list" | "detail">("list");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -1375,6 +1380,8 @@ export function OrdersManager({
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"date" | "total">("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -1391,6 +1398,24 @@ export function OrdersManager({
   useEffect(() => {
     void fetchOrders();
   }, [fetchOrders]);
+
+  useEffect(() => {
+    if (targetOrderNumber && orders.length > 0) {
+      const match = orders.find(
+        (o) =>
+          o.order_number.toLowerCase() === targetOrderNumber.toLowerCase() ||
+          o.id === targetOrderNumber
+      );
+      if (match) {
+        setSelectedOrderId(match.id);
+        setSelectedOrderNumber(match.order_number);
+        setActiveMainTab("detail");
+      } else {
+        setSearch(targetOrderNumber);
+      }
+      onOrderConsumed?.();
+    }
+  }, [targetOrderNumber, orders, onOrderConsumed]);
 
   // Open detail tab for an order
   const handleOpenDetail = (order: OrderSummary) => {
@@ -1446,6 +1471,18 @@ export function OrdersManager({
       });
   }, [orders, statusFilter, search, sortBy, sortDir]);
 
+  // Reset page when filter or search changes
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, search, sortBy, sortDir]);
+
+  // Pagination for order list
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pagedOrders = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
+
   // Metrics
   const metrics = useMemo(() => {
     const total = orders.length;
@@ -1457,13 +1494,15 @@ export function OrdersManager({
     ).length;
     const fulfilled = orders.filter((o) => o.fulfillment_status === "fulfilled").length;
     const pending = orders.filter((o) => o.status === "pending").length;
+    const confirmed = orders.filter((o) => o.status === "confirmed").length;
+    const cancelled = orders.filter((o) => o.status === "cancelled").length;
     const awaitingBank = orders.filter(
       (o) => o.payment_method === "bank" && o.payment_status === "awaiting",
     ).length;
     const totalPaid = orders
       .filter((o) => o.payment_status === "paid")
       .reduce((sum, o) => sum + Number(o.grand_total_vnd), 0);
-    return { total, readyToFulfill, fulfilled, pending, awaitingBank, totalPaid };
+    return { total, readyToFulfill, fulfilled, pending, confirmed, cancelled, awaitingBank, totalPaid };
   }, [orders]);
 
   return (
@@ -1491,7 +1530,14 @@ export function OrdersManager({
           >
             <ShoppingBag className="size-3.5" />
             <span>Danh sách đơn hàng</span>
-            <span className="rounded-full bg-secondary px-1.5 py-0.2 font-mono text-[10px] text-muted-foreground">
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 font-mono text-[10px] leading-none inline-flex items-center justify-center transition-colors",
+                activeMainTab === "list"
+                  ? "bg-foreground text-background font-bold shadow-xs"
+                  : "bg-secondary text-muted-foreground border border-border/60",
+              )}
+            >
               {orders.length}
             </span>
           </button>
@@ -1542,8 +1588,10 @@ export function OrdersManager({
             <div
               onClick={() => setStatusFilter("all")}
               className={cn(
-                "rounded-md border p-5 bg-card cursor-pointer transition-colors",
-                statusFilter === "all" ? "border-foreground/60 shadow-sm" : "border-border hover:border-border/80",
+                "rounded-md border p-5 bg-card cursor-pointer transition-all",
+                statusFilter === "all"
+                  ? "ring-2 ring-foreground/80 border-foreground/80 bg-foreground/5 shadow-sm"
+                  : "border-border hover:border-border/80",
               )}
             >
               <p className="section-label">Tổng đơn hàng</p>
@@ -1555,26 +1603,20 @@ export function OrdersManager({
             <div
               onClick={() => setStatusFilter("ready_to_fulfill")}
               className={cn(
-                "rounded-md border p-5 bg-card cursor-pointer transition-colors",
-                metrics.readyToFulfill > 0
-                  ? "border-amber-600/50 bg-amber-500/10 shadow-sm"
+                "rounded-md border p-5 bg-card cursor-pointer transition-all",
+                statusFilter === "ready_to_fulfill"
+                  ? "ring-2 ring-foreground/80 border-foreground/80 bg-foreground/5 shadow-sm"
                   : "border-border hover:border-border/80",
-                statusFilter === "ready_to_fulfill" && "ring-1 ring-amber-600",
               )}
             >
               <div className="flex items-center justify-between">
-                <p className="section-label text-amber-900 dark:text-amber-200">Cần xuất kho</p>
-                <Boxes className={cn("size-4 text-amber-700", metrics.readyToFulfill > 0 && "animate-pulse")} />
+                <p className="section-label">Cần xuất kho</p>
+                <Boxes className={cn("size-4 text-muted-foreground", metrics.readyToFulfill > 0 && "text-foreground")} />
               </div>
-              <p
-                className={cn(
-                  "mt-3 font-serif text-3xl font-normal",
-                  metrics.readyToFulfill > 0 ? "text-amber-900 dark:text-amber-200 font-medium" : "text-foreground",
-                )}
-              >
+              <p className="mt-3 font-serif text-3xl font-normal">
                 {metrics.readyToFulfill}
               </p>
-              <p className={cn("mt-1 text-xs", metrics.readyToFulfill > 0 ? "text-amber-800 dark:text-amber-300 font-medium" : "text-muted-foreground")}>
+              <p className="mt-1 text-xs text-muted-foreground">
                 Đã TT / COD · Sẵn sàng xuất
               </p>
             </div>
@@ -1582,21 +1624,17 @@ export function OrdersManager({
             <div
               onClick={() => setStatusFilter("pending")}
               className={cn(
-                "rounded-md border p-5 bg-card cursor-pointer transition-colors",
-                metrics.awaitingBank > 0 ? "border-primary/40 bg-primary/5" : "border-border hover:border-border/80",
-                statusFilter === "pending" && "ring-1 ring-primary",
+                "rounded-md border p-5 bg-card cursor-pointer transition-all",
+                statusFilter === "pending"
+                  ? "ring-2 ring-foreground/80 border-foreground/80 bg-foreground/5 shadow-sm"
+                  : "border-border hover:border-border/80",
               )}
             >
               <p className="section-label">Chờ chuyển khoản</p>
-              <p
-                className={cn(
-                  "mt-3 font-serif text-3xl font-normal",
-                  metrics.awaitingBank > 0 && "text-primary",
-                )}
-              >
+              <p className="mt-3 font-serif text-3xl font-normal">
                 {metrics.awaitingBank}
               </p>
-              <p className={cn("mt-1 text-xs", metrics.awaitingBank > 0 ? "text-primary" : "text-muted-foreground")}>
+              <p className="mt-1 text-xs text-muted-foreground">
                 Chờ tiền về SePay
               </p>
             </div>
@@ -1613,36 +1651,44 @@ export function OrdersManager({
             {/* Filter and Search Bar */}
             <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between bg-card/40">
               {/* Status Tabs */}
-              <div className="flex gap-1 overflow-x-auto pb-1 lg:pb-0">
-                {TAB_FILTERS.map((f) => (
-                  <Button
-                    key={f.key}
-                    variant={statusFilter === f.key ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setStatusFilter(f.key)}
-                    className={cn(
-                      "h-8 text-xs font-medium shrink-0",
-                      statusFilter === f.key && "bg-foreground text-background hover:bg-foreground/90",
-                    )}
-                  >
-                    {f.label}
-                    {f.key === "ready_to_fulfill" && metrics.readyToFulfill > 0 && (
-                      <span className="ml-1.5 rounded-full bg-amber-500/25 text-amber-900 dark:text-amber-200 px-1.5 py-0.2 text-[10px] font-mono font-bold">
-                        {metrics.readyToFulfill}
-                      </span>
-                    )}
-                    {f.key === "pending" && metrics.pending > 0 && (
-                      <span className="ml-1.5 rounded-full bg-primary/20 text-primary px-1.5 py-0.2 text-[10px] font-mono">
-                        {metrics.pending}
-                      </span>
-                    )}
-                    {f.key === "fulfilled" && metrics.fulfilled > 0 && (
-                      <span className="ml-1.5 rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.2 text-[10px] font-mono">
-                        {metrics.fulfilled}
-                      </span>
-                    )}
-                  </Button>
-                ))}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+                {TAB_FILTERS.map((f) => {
+                  const isActive = statusFilter === f.key;
+                  let count: number | null = null;
+                  if (f.key === "all") count = metrics.total;
+                  else if (f.key === "ready_to_fulfill") count = metrics.readyToFulfill;
+                  else if (f.key === "fulfilled") count = metrics.fulfilled;
+                  else if (f.key === "pending") count = metrics.pending;
+                  else if (f.key === "confirmed") count = metrics.confirmed;
+                  else if (f.key === "cancelled") count = metrics.cancelled;
+
+                  return (
+                    <Button
+                      key={f.key}
+                      variant={isActive ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setStatusFilter(f.key)}
+                      className={cn(
+                        "h-8 text-xs font-medium shrink-0 gap-1.5 transition-all",
+                        isActive && "bg-foreground text-background hover:bg-foreground/90 shadow-xs",
+                      )}
+                    >
+                      <span>{f.label}</span>
+                      {count !== null && (
+                        <span
+                          className={cn(
+                            "rounded-full px-1.5 py-0.2 font-mono text-[10px] leading-none inline-flex items-center justify-center min-w-4 h-4 transition-all",
+                            isActive
+                              ? "bg-white text-stone-950 font-bold shadow-xs"
+                              : "bg-secondary text-muted-foreground border border-border/70",
+                          )}
+                        >
+                          {count}
+                        </span>
+                      )}
+                    </Button>
+                  );
+                })}
               </div>
 
               {/* Search & Actions */}
@@ -1737,7 +1783,7 @@ export function OrdersManager({
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((order) => (
+                    pagedOrders.map((order) => (
                       <tr
                         key={order.id}
                         onClick={() => handleOpenDetail(order)}
@@ -1814,11 +1860,20 @@ export function OrdersManager({
               </table>
             </div>
 
-            {/* Table Footer */}
-            <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
-              <span>Hiển thị {filtered.length} / {orders.length} đơn hàng</span>
-              <span>ÉLANE Atelier Console</span>
-            </div>
+            {/* Table Footer with Pagination */}
+            <TablePagination
+              currentPage={page}
+              totalPages={totalPages}
+              totalItems={filtered.length}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 15, 25, 50, 100]}
+              onPageChange={setPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setPage(1);
+              }}
+              itemName="đơn hàng"
+            />
           </section>
         </div>
       )}

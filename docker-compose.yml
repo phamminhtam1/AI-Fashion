@@ -43,6 +43,7 @@ services:
       - "3001:3001"
     volumes:
       - elane_uploads:/app/uploads
+      - ./apps/api:/app/apps/api
     depends_on:
       postgres:
         condition: service_healthy

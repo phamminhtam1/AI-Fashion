@@ -209,6 +209,7 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
   >({});
   const [liveConfigs, setLiveConfigs] = useState(configs);
   const [inventorySeed, setInventorySeed] = useState<InventorySeed | null>(null);
+  const [orderSeed, setOrderSeed] = useState<string | null>(null);
   const title = allItems.find((item) => item.id === active)?.label ?? "Tổng quan";
   const currentConfig = liveConfigs[active] ?? productConfig;
 
@@ -430,7 +431,11 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
         {active === "overview" ? (
           <Dashboard onNavigate={choose} onCreate={() => setCreateOpen(true)} onDetail={openDetail} />
         ) : active === "orders" ? (
-          <OrdersManager onNavigateToInventory={goInventoryWithSeed} />
+          <OrdersManager
+            onNavigateToInventory={goInventoryWithSeed}
+            targetOrderNumber={orderSeed}
+            onOrderConsumed={() => setOrderSeed(null)}
+          />
         ) : active === "categories" ? (
           <CategoriesManager />
         ) : active === "products" ? (
@@ -448,7 +453,12 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
         ) : active === "sizes" ? (
           <SizesManager />
         ) : active === "customers" ? (
-          <CustomersManager />
+          <CustomersManager
+            onNavigateToOrder={(orderNumber) => {
+              setOrderSeed(orderNumber);
+              choose("orders");
+            }}
+          />
         ) : active === "promotions" ? (
           <DiscountCodesManager />
         ) : currentConfig ? (
@@ -578,7 +588,7 @@ function Sidebar({
   );
 }
 function NavGroup({label,items,active,choose}:{label:string;items:NavItem[];active:string;choose:(id:string)=>void}) {
-  return <div className="mb-5"><p className="mb-2 px-3 text-[9px] font-medium uppercase tracking-[0.24em] text-muted-foreground">{label}</p><div className="space-y-0.5">{items.map(item=>{const Icon=item.icon;return <button key={item.id} onClick={()=>choose(item.id)} className={cn("flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",active===item.id?"bg-foreground text-background":"text-muted-foreground hover:bg-secondary hover:text-foreground")}><Icon className="size-4"/><span>{item.label}</span>{item.count&&<span className={cn("ml-auto rounded-full px-1.5 text-[10px]",active===item.id?"bg-primary text-primary-foreground":"bg-primary/10 text-primary")}>{item.count}</span>}</button>})}</div></div>
+  return <div className="mb-5"><p className="mb-2 px-3 text-[9px] font-medium uppercase tracking-[0.24em] text-muted-foreground">{label}</p><div className="space-y-0.5">{items.map(item=>{const Icon=item.icon;return <button key={item.id} onClick={()=>choose(item.id)} className={cn("flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",active===item.id?"bg-foreground text-background font-medium":"text-muted-foreground hover:bg-secondary hover:text-foreground")}><Icon className="size-4"/><span>{item.label}</span>{item.count&&<span className={cn("ml-auto rounded-full px-2 py-0.5 text-[10px] font-mono font-bold leading-none inline-flex items-center justify-center transition-all",active===item.id?"bg-white text-stone-950 shadow-xs":"bg-secondary text-muted-foreground border border-border/70")}>{item.count}</span>}</button>})}</div></div>
 }
 
 const DOC_TYPE_VI: Record<string, string> = {

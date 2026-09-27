@@ -169,12 +169,54 @@ export type CustomerAddress = {
   created_at: string;
 };
 
+export type CustomerOrderItem = {
+  id: string;
+  product_id?: string;
+  variant_id?: string;
+  sku: string;
+  product_name: string;
+  size_label: string | null;
+  color_label?: string | null;
+  image_url?: string | null;
+  unit_price_vnd: number;
+  qty: number;
+  line_total_vnd: number;
+};
+
 export type CustomerOrderSummary = {
   id: string;
   order_number: string;
   status: string;
   grand_total_vnd: number;
+  subtotal_vnd?: number;
+  shipping_vnd?: number;
+  discount_vnd?: number;
+  discount_code?: string | null;
+  payment_method: string;
+  payment_status: string;
+  paid_at?: string | null;
+  payment_ref?: string | null;
   placed_at: string;
+  fulfillment_status?: string;
+  fulfilled_at?: string | null;
+  inventory_doc_code?: string | null;
+  items?: CustomerOrderItem[];
+};
+
+export type CustomerAnalytics = {
+  total_orders: number;
+  completed_orders: number;
+  cancelled_orders: number;
+  pending_orders?: number;
+  total_spent_vnd: number;
+  pending_spent_vnd?: number;
+  cancelled_spent_vnd?: number;
+  aov_vnd: number;
+  first_order_at: string | null;
+  last_order_at: string | null;
+  days_since_last_order: number | null;
+  top_sizes: Array<{ size: string; count: number }>;
+  top_products: Array<{ name: string; count: number; total_vnd: number; image_url?: string | null }>;
 };
 
 export type Customer = {
@@ -188,8 +230,10 @@ export type Customer = {
   internal_note?: string;
   address_count?: number;
   default_address?: string | null;
+  city?: string | null;
   addresses?: CustomerAddress[];
   orders?: CustomerOrderSummary[];
+  analytics?: CustomerAnalytics;
   created_at: string;
   updated_at: string;
 };
@@ -256,13 +300,33 @@ export const adminApi = {
       permissions: string[];
     }>("/admin/auth/me"),
   overview: () => req<Overview>("/admin/overview"),
-  customers: (params?: { segment?: string; status?: string; q?: string }) => {
+  customers: (params?: {
+    segment?: string;
+    status?: string;
+    q?: string;
+    spent_min?: number;
+    spent_max?: number;
+    date_from?: string;
+    date_to?: string;
+    city?: string;
+    sort_by?: string;
+    page?: number;
+    limit?: number;
+  }) => {
     const q = new URLSearchParams();
     if (params?.segment) q.set("segment", params.segment);
     if (params?.status) q.set("status", params.status);
     if (params?.q) q.set("q", params.q);
+    if (params?.spent_min != null) q.set("spent_min", String(params.spent_min));
+    if (params?.spent_max != null) q.set("spent_max", String(params.spent_max));
+    if (params?.date_from) q.set("date_from", params.date_from);
+    if (params?.date_to) q.set("date_to", params.date_to);
+    if (params?.city) q.set("city", params.city);
+    if (params?.sort_by) q.set("sort_by", params.sort_by);
+    if (params?.page) q.set("page", String(params.page));
+    if (params?.limit) q.set("limit", String(params.limit));
     const qs = q.toString();
-    return req<{ items: Customer[] }>(`/admin/customers${qs ? `?${qs}` : ""}`);
+    return req<{ items: Customer[]; total: number; page: number; limit: number; segment_distribution: Record<string, number> }>(`/admin/customers${qs ? `?${qs}` : ""}`);
   },
   customer: (id: string) => req<Customer>(`/admin/customers/${id}`),
   createCustomer: (body: {
@@ -427,9 +491,11 @@ export const adminApi = {
     status?: string;
     q?: string;
     category_id?: string;
+    occasion_slug?: string;
     price_min?: number;
     price_max?: number;
     stock?: "in" | "out" | "none";
+    sort_by?: string;
     page?: number;
     limit?: number;
   }) => {
@@ -437,9 +503,11 @@ export const adminApi = {
     if (params?.status) q.set("status", params.status);
     if (params?.q) q.set("q", params.q);
     if (params?.category_id) q.set("category_id", params.category_id);
+    if (params?.occasion_slug) q.set("occasion_slug", params.occasion_slug);
     if (params?.price_min != null) q.set("price_min", String(params.price_min));
     if (params?.price_max != null) q.set("price_max", String(params.price_max));
     if (params?.stock) q.set("stock", params.stock);
+    if (params?.sort_by) q.set("sort_by", params.sort_by);
     if (params?.page) q.set("page", String(params.page));
     if (params?.limit) q.set("limit", String(params.limit));
     const qs = q.toString();
@@ -598,12 +666,27 @@ export const adminApi = {
   staff: () => req<{ items: Array<Record<string, unknown>> }>("/admin/staff"),
   audit: () => req<{ items: Array<Record<string, unknown>> }>("/admin/audit-logs"),
   brand: () => req<{ value: Record<string, unknown> }>("/admin/settings/brand"),
-  discountCodes: (params?: { status?: string; q?: string }) => {
+  discountCodes: (params?: {
+    status?: string;
+    q?: string;
+    type?: string;
+    timing?: string;
+    usage?: string;
+    date_from?: string;
+    date_to?: string;
+    sort_by?: string;
+  }) => {
     const q = new URLSearchParams();
     if (params?.status) q.set("status", params.status);
     if (params?.q) q.set("q", params.q);
+    if (params?.type) q.set("type", params.type);
+    if (params?.timing) q.set("timing", params.timing);
+    if (params?.usage) q.set("usage", params.usage);
+    if (params?.date_from) q.set("date_from", params.date_from);
+    if (params?.date_to) q.set("date_to", params.date_to);
+    if (params?.sort_by) q.set("sort_by", params.sort_by);
     const qs = q.toString();
-    return req<{ items: DiscountCode[] }>(`/admin/discount-codes${qs ? `?${qs}` : ""}`);
+    return req<{ items: DiscountCode[]; total: number; stats: Record<string, number> }>(`/admin/discount-codes${qs ? `?${qs}` : ""}`);
   },
   discountCode: (id: string) => req<DiscountCode>(`/admin/discount-codes/${id}`),
   createDiscountCode: (body: DiscountCodeInput) =>
