@@ -15,9 +15,11 @@ import {
   Truck,
 } from "lucide-react";
 import { formatVND, products } from "@/lib/products";
-import { FREE_SHIP, useStore } from "@/lib/store";
+import { FREE_SHIP, useStore, getCartItemImage } from "@/lib/store";
 import { fetchBankInfo, storeApi, type BankInfo, type StoreOrderDetail } from "@/lib/api";
 import { toast } from "sonner";
+import { fireCheckoutCelebration } from "@/lib/celebrate";
+import { VIETNAM_PROVINCES, getDistrictsByProvince } from "@/lib/vietnam-address";
 
 export const Route = createFileRoute("/thanh-toan")({
   head: () => ({
@@ -54,7 +56,20 @@ function copyText(label: string, value: string) {
 }
 
 function SuccessScreen({ done }: { done: Success }) {
+  const { refreshOrders } = useStore();
   const [order, setOrder] = useState<StoreOrderDetail | null>(null);
+
+  useEffect(() => {
+    void refreshOrders();
+  }, [refreshOrders]);
+
+  useEffect(() => {
+    fireCheckoutCelebration();
+    const interval = setInterval(() => {
+      fireCheckoutCelebration();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!done.orderId) return;
@@ -71,25 +86,22 @@ function SuccessScreen({ done }: { done: Success }) {
   }, [done.orderId]);
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-16 sm:py-24 space-y-12">
+    <div className="mx-auto max-w-4xl px-6 py-16 sm:py-24 space-y-12 animate-in fade-in duration-500">
       {/* Top Banner Celebration */}
       <div className="text-center space-y-4">
         <div className="relative inline-flex items-center justify-center">
-          <div className="absolute -inset-4 rounded-full bg-emerald-500/10 blur-lg animate-pulse" />
-          <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600">
-            <CheckCircle2 className="h-10 w-10" strokeWidth={1.5} />
+          <div className="absolute -inset-6 rounded-full bg-emerald-500/20 blur-xl animate-pulse" />
+          <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-emerald-500/15 border-2 border-emerald-500/40 text-emerald-600 shadow-lg transition-transform hover:scale-105">
+            <CheckCircle2 className="h-12 w-12" strokeWidth={1.8} />
           </div>
         </div>
 
         <div>
-          <span className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-            ÉLANE Haute Couture • Xác nhận đơn hàng
-          </span>
           <h1 className="mt-2 text-3xl sm:text-4xl font-serif">Cảm Ơn Quý Khách!</h1>
           <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
             {done.paymentMethod === "bank" ? (
               <>
-                Đơn hàng <b className="text-foreground">#{done.orderNumber}</b> đã thanh toán thành công qua SePay VietQR. Chúng tôi đang tiến hành đóng gói và giao hàng sớm nhất.
+                Đơn hàng <b className="text-foreground">#{done.orderNumber}</b> đã thanh toán thành công qua VietQR. Chúng tôi đang tiến hành đóng gói và giao hàng sớm nhất.
               </>
             ) : (
               <>
@@ -128,8 +140,8 @@ function SuccessScreen({ done }: { done: Success }) {
                 )}
                 <div
                   className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border transition-all ${st.done
-                      ? "bg-foreground text-background border-foreground shadow-sm"
-                      : "bg-background text-muted-foreground border-border"
+                    ? "bg-foreground text-background border-foreground shadow-sm"
+                    : "bg-background text-muted-foreground border-border"
                     }`}
                 >
                   <Icon className="h-4 w-4" />
@@ -257,6 +269,7 @@ function SuccessScreen({ done }: { done: Success }) {
       <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
         <Link
           to="/tai-khoan"
+          search={{ orderId: done.orderId }}
           className="bg-foreground text-background px-8 py-4 text-xs uppercase tracking-widest font-medium hover:bg-foreground/90 transition-all shadow-sm"
         >
           Xem đơn hàng trong Tài khoản
@@ -283,6 +296,7 @@ function AwaitingBankScreen({
   onPaid: () => void;
   onCancelled: () => void;
 }) {
+  const { refreshOrders } = useStore();
   const [cancelling, setCancelling] = useState(false);
   const [orderDetail, setOrderDetail] = useState<StoreOrderDetail | null>(null);
   const [timeLeft, setTimeLeft] = useState(15 * 60); // 15 mins countdown
@@ -346,7 +360,9 @@ function AwaitingBankScreen({
         const o = await storeApi.order(awaiting.orderId);
         if (stopped) return;
         if (o.payment_status === "paid") {
+          fireCheckoutCelebration();
           toast.success("Thanh toán thành công! Hệ thống đang xử lý đơn.");
+          void refreshOrders();
           onPaidRef.current();
           return;
         }
@@ -593,6 +609,7 @@ function AwaitingBankScreen({
             </button>
             <Link
               to="/tai-khoan"
+              search={{ orderId: awaiting.orderId }}
               className="border border-foreground px-6 py-3 text-xs uppercase tracking-wider text-foreground hover:bg-foreground hover:text-background transition-colors"
             >
               Xem trong Tài khoản
@@ -616,9 +633,18 @@ function Checkout() {
   const [applied, setApplied] = useState<{ code: string; discount_vnd: number } | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponBusy, setCouponBusy] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const shipping = subtotal >= FREE_SHIP ? 0 : 30000;
   const discount = applied?.discount_vnd ?? 0;
   const grand = Math.max(0, subtotal + shipping - discount);
+
+  const availableDistricts = selectedCity ? getDistrictsByProvince(selectedCity) : [];
+
+  const handleCityChange = (c: string) => {
+    setSelectedCity(c);
+    setSelectedDistrict("");
+  };
 
   async function applyCoupon() {
     setCouponError(null);
@@ -675,6 +701,7 @@ function Checkout() {
         awaiting={awaiting}
         bankInfo={bankInfo}
         onPaid={() => {
+          void refreshOrders();
           setSuccess({ orderId: awaiting.orderId, orderNumber: awaiting.orderNumber, paymentMethod: "bank" });
           setAwaiting(null);
         }}
@@ -718,6 +745,23 @@ function Checkout() {
             return;
           }
           const f = new FormData(e.currentTarget);
+          const cityVal = selectedCity || String(f.get("city") || "");
+          const districtVal = selectedDistrict || String(f.get("district") || "");
+          const addressVal = String(f.get("address") || "").trim();
+
+          if (!cityVal) {
+            toast.error("Vui lòng chọn Tỉnh / Thành phố");
+            return;
+          }
+          if (!districtVal) {
+            toast.error("Vui lòng chọn Quận / Huyện");
+            return;
+          }
+          if (!addressVal) {
+            toast.error("Vui lòng nhập địa chỉ cụ thể");
+            return;
+          }
+
           void (async () => {
             setSubmitting(true);
             try {
@@ -725,9 +769,9 @@ function Checkout() {
                 fullName: String(f.get("name")),
                 phone: String(f.get("phone")),
                 email: String(f.get("email")),
-                address: String(f.get("address")),
-                city: String(f.get("city")),
-                district: String(f.get("district")),
+                address: addressVal,
+                city: cityVal,
+                district: districtVal,
                 note: String(f.get("note") || "") || undefined,
                 paymentMethod: pay,
                 total: grand,
@@ -740,6 +784,7 @@ function Checkout() {
                   grandTotalVnd: result.grandTotalVnd,
                 });
               } else {
+                fireCheckoutCelebration();
                 setSuccess({ orderId: result.id, orderNumber: result.orderNumber, paymentMethod: "cod" });
               }
             } catch (err) {
@@ -751,22 +796,98 @@ function Checkout() {
         }}
       >
         <div className="space-y-10">
-          <fieldset className="space-y-3">
-            <legend className="mb-4 text-xs uppercase tracking-widest">Thông tin giao hàng</legend>
+          <fieldset className="space-y-4">
+            <legend className="mb-4 text-xs uppercase tracking-widest font-semibold">Thông tin giao hàng</legend>
             <div className="grid gap-3 md:grid-cols-2">
-              <input required name="name" defaultValue={user.name} placeholder="Họ và tên" className={input} aria-label="Họ và tên" />
-              <input required name="phone" type="tel" defaultValue={user.phone} placeholder="Số điện thoại" className={input} aria-label="Số điện thoại" />
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-wider text-muted-foreground">
+                  Họ và tên <span className="text-destructive">*</span>
+                </label>
+                <input required name="name" defaultValue={user.name} placeholder="Họ và tên" className={input} aria-label="Họ và tên" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-wider text-muted-foreground">
+                  Số điện thoại <span className="text-destructive">*</span>
+                </label>
+                <input required name="phone" type="tel" defaultValue={user.phone} placeholder="Số điện thoại" className={input} aria-label="Số điện thoại" />
+              </div>
             </div>
-            <input required name="email" type="email" defaultValue={user.email} placeholder="Email" className={input} aria-label="Email" />
-            <input required name="address" placeholder="Địa chỉ" className={input} aria-label="Địa chỉ" />
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-wider text-muted-foreground">
+                Email nhận thông báo <span className="text-destructive">*</span>
+              </label>
+              <input required name="email" type="email" defaultValue={user.email} placeholder="Email" className={input} aria-label="Email" />
+            </div>
+
+            {/* Chuẩn Tỉnh thành & Quận huyện Việt Nam */}
             <div className="grid gap-3 md:grid-cols-2">
-              <input required name="city" placeholder="Tỉnh / Thành phố" className={input} aria-label="Tỉnh / Thành phố" />
-              <input required name="district" placeholder="Quận / Huyện" className={input} aria-label="Quận / Huyện" />
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-wider text-muted-foreground">
+                  Tỉnh / Thành phố <span className="text-destructive">*</span>
+                </label>
+                <select
+                  required
+                  name="city"
+                  value={selectedCity}
+                  onChange={(e) => handleCityChange(e.target.value)}
+                  className={input}
+                  aria-label="Tỉnh / Thành phố"
+                >
+                  <option value="">-- Chọn Tỉnh / Thành phố --</option>
+                  {VIETNAM_PROVINCES.map((p) => (
+                    <option key={p.name} value={p.name}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-wider text-muted-foreground">
+                  Quận / Huyện <span className="text-destructive">*</span>
+                </label>
+                <select
+                  required
+                  name="district"
+                  value={selectedDistrict}
+                  onChange={(e) => setSelectedDistrict(e.target.value)}
+                  disabled={!selectedCity}
+                  className={`${input} ${!selectedCity ? "cursor-not-allowed opacity-50 bg-secondary/30" : ""}`}
+                  aria-label="Quận / Huyện"
+                >
+                  <option value="">
+                    {selectedCity ? "-- Chọn Quận / Huyện --" : "-- Chọn Tỉnh / Thành trước --"}
+                  </option>
+                  {availableDistricts.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <textarea name="note" placeholder="Ghi chú đơn hàng" className={input} rows={3} aria-label="Ghi chú" />
+
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-wider text-muted-foreground">
+                Địa chỉ cụ thể <span className="text-destructive">*</span>
+              </label>
+              <input
+                required
+                name="address"
+                placeholder="Số nhà, tên tòa nhà, tên đường, phường / xã..."
+                className={input}
+                aria-label="Địa chỉ cụ thể"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-wider text-muted-foreground">
+                Ghi chú giao hàng
+              </label>
+              <textarea name="note" placeholder="Ghi chú đơn hàng (ví dụ: giao giờ hành chính, gọi trước khi giao...)" className={input} rows={3} aria-label="Ghi chú" />
+            </div>
           </fieldset>
           <fieldset>
-            <legend className="mb-4 text-xs uppercase tracking-widest">Phương thức thanh toán</legend>
+            <legend className="mb-4 text-xs uppercase tracking-widest font-semibold">Phương thức thanh toán</legend>
             <div className="divide-y divide-border border border-border">
               {([["cod", "Thanh toán khi nhận hàng (COD)"], ["bank", "Chuyển khoản ngân hàng"]] as const).map(([v, l]) => (
                 <label key={v} className="flex cursor-pointer items-center gap-3 px-4 py-4 text-sm">
@@ -774,13 +895,6 @@ function Checkout() {
                 </label>
               ))}
             </div>
-            {pay === "bank" && bankInfo && (
-              <div className="mt-4 space-y-1 border border-border bg-secondary/40 px-4 py-4 text-sm text-muted-foreground">
-                <p><span className="text-foreground">{bankInfo.bank_name}</span> · {bankInfo.account_number}</p>
-                <p>{bankInfo.account_name}</p>
-                <p className="pt-1 text-xs">Nội dung chuyển khoản = mã đơn (hiện sau khi đặt).</p>
-              </div>
-            )}
           </fieldset>
         </div>
         <aside className="h-fit bg-secondary p-8">
@@ -788,10 +902,11 @@ function Checkout() {
           <ul className="mt-6 space-y-4">
             {cart.map((it, i) => {
               const p = products.find((x) => x.id === it.productId)!;
+              const itemImg = getCartItemImage(it, p);
               return (
                 <li key={i} className="flex gap-3 text-sm">
-                  <img src={p.images[0]} alt={p.name} className="h-20 w-15 object-cover" />
-                  <div className="flex-1"><p>{p.name}</p><p className="text-xs text-muted-foreground">{it.sku} · {it.size} · x{it.qty}</p></div>
+                  <img src={itemImg} alt={p.name} className="h-20 w-15 object-cover" />
+                  <div className="flex-1"><p>{p.name}</p><p className="text-xs text-muted-foreground">{it.colorName ? `${it.colorName} · ` : ""}{it.sku} · Size {it.size} · x{it.qty}</p></div>
                   <span>{formatVND((p.salePrice ?? p.price) * it.qty)}</span>
                 </li>
               );

@@ -21,7 +21,25 @@ export type Order = {
   itemsCount?: number;
   itemsPreview?: StoreOrderItem[];
 };
-export type CartItem = { productId: string; variantId: string; sku: string; size: string; qty: number };
+export type CartItem = {
+  productId: string;
+  variantId: string;
+  sku: string;
+  size: string;
+  qty: number;
+  colorwayId?: string;
+  colorName?: string;
+  image?: string;
+};
+
+export function getCartItemImage(it: CartItem, p?: Product): string {
+  if (it.image) return it.image;
+  if (!p) return "";
+  const v = p.variants.find((x) => x.id === it.variantId);
+  const cwId = it.colorwayId || v?.colorwayId;
+  const cw = p.colorways.find((c) => c.id === cwId);
+  return cw?.thumbnail || cw?.images?.[0] || p.images[0] || "";
+}
 
 export type PlaceOrderInput = {
   fullName: string;
@@ -248,12 +266,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         toast.error("Không tìm thấy biến thể");
         return;
       }
+      const cw = p.colorways.find((c) => c.id === v.colorwayId);
+      const cwIndex = p.colorways.findIndex((c) => c.id === v.colorwayId);
+      const colorName = cwIndex >= 0 ? p.colors[cwIndex]?.name : undefined;
+      const image = cw?.thumbnail || cw?.images?.[0] || p.images[0];
       setCart((c) => {
         const i = c.findIndex((x) => x.variantId === variantId);
         if (i >= 0) return c.map((x, j) => (j === i ? { ...x, qty: x.qty + qty } : x));
-        return [...c, { productId: p.id, variantId, sku: v.sku, size: v.size, qty }];
+        return [
+          ...c,
+          {
+            productId: p.id,
+            variantId,
+            sku: v.sku,
+            size: v.size,
+            qty,
+            colorwayId: v.colorwayId,
+            colorName,
+            image,
+          },
+        ];
       });
-      toast.success("Đã thêm vào giỏ hàng", { description: `${p.name} · ${v.sku} · ${v.size}` });
+      toast.success("Đã thêm vào giỏ hàng", {
+        description: `${p.name}${colorName ? ` · ${colorName}` : ""} · Size ${v.size}`,
+      });
       setCartOpen(true);
     },
     updateQty: (i, qty) => setCart((c) => c.map((x, j) => (j === i ? { ...x, qty: Math.max(1, qty) } : x))),

@@ -30,6 +30,9 @@ import { enrichTree } from "../../lib/category-tree.js";
 import { deleteMediaObjects } from "../../lib/media-storage.js";
 import { mapProduct } from "../public/catalog.js";
 
+const canReadCost = (u: { permissions: string[] }) =>
+  u.permissions.includes("cost.read") || u.permissions.includes("product.read") || u.permissions.includes("*");
+
 async function assertLeafCategory(db: Db, categoryId: string) {
   const all = await db.select().from(categories);
   const meta = enrichTree(all.map((r) => ({ id: r.id, parentId: r.parentId })));
@@ -70,6 +73,7 @@ async function ensureVariantsForColorway(
   sizeIds: string[],
   price: number,
   compareAt: number | null,
+  costVnd?: number | null,
 ) {
   const allSizes = await db.select().from(sizes);
   const existing = await db
@@ -97,6 +101,7 @@ async function ensureVariantsForColorway(
       sizeId,
       priceVnd: price,
       compareAtPriceVnd: compareAt,
+      costVnd: costVnd !== undefined ? costVnd : (price > 0 ? Math.round(price * 0.3) : null),
       status: "active",
     });
   }
@@ -111,6 +116,7 @@ async function syncColorwaySizes(
   wantSizeIds: string[],
   price: number,
   compareAt: number | null,
+  costVnd?: number | null,
 ) {
   const want = new Set(wantSizeIds);
   const existing = await db
@@ -126,7 +132,7 @@ async function syncColorwaySizes(
     }
   }
   if (wantSizeIds.length) {
-    await ensureVariantsForColorway(db, productId, slug, colorwayId, wantSizeIds, price, compareAt);
+    await ensureVariantsForColorway(db, productId, slug, colorwayId, wantSizeIds, price, compareAt, costVnd);
   }
 }
 
@@ -250,7 +256,7 @@ adminProductRoutes.get("/", async (c) => {
     .limit(limit)
     .offset(offset);
 
-  const includeCost = user.permissions.includes("cost.read");
+  const includeCost = canReadCost(user);
   const items = [];
   for (const r of rows) items.push(await mapProduct(db, r.product, includeCost));
 
@@ -311,7 +317,7 @@ adminProductRoutes.get("/:id", async (c) => {
   const db = c.get("db");
   const rows = await db.select().from(products).where(eq(products.id, c.req.param("id"))).limit(1);
   if (!rows[0]) throw new ApiError(404, "not_found", "Không tìm thấy");
-  return c.json(await mapProduct(db, rows[0], user.permissions.includes("cost.read")));
+  return c.json(await mapProduct(db, rows[0], canReadCost(user)));
 });
 
 adminProductRoutes.post("/:id/colorways", async (c) => {
@@ -338,9 +344,10 @@ adminProductRoutes.post("/:id/colorways", async (c) => {
   const active = variants.filter((v) => v.status === "active");
   const price = active[0]?.priceVnd ?? variants[0]?.priceVnd ?? 0;
   const compare = active[0]?.compareAtPriceVnd ?? variants[0]?.compareAtPriceVnd ?? null;
+  const cost = active[0]?.costVnd ?? variants[0]?.costVnd ?? (price > 0 ? Math.round(price * 0.3) : null);
   const sizeIds = body.data.size_ids ?? [];
   if (sizeIds.length && row) {
-    await ensureVariantsForColorway(db, productId, rows[0].slug, row.id, sizeIds, price, compare);
+    await ensureVariantsForColorway(db, productId, rows[0].slug, row.id, sizeIds, price, compare, cost);
   }
 
   await db.insert(auditLogs).values({
@@ -352,7 +359,7 @@ adminProductRoutes.post("/:id/colorways", async (c) => {
     requestId: requestId(c),
   });
 
-  return c.json(await mapProduct(db, rows[0], user.permissions.includes("cost.read")), 201);
+  return c.json(await mapProduct(db, rows[0], canReadCost(user)), 201);
 });
 
 adminProductRoutes.delete("/:id/colorways/:colorwayId", async (c) => {
@@ -419,7 +426,7 @@ adminProductRoutes.delete("/:id/colorways/:colorwayId", async (c) => {
     requestId: requestId(c),
   });
 
-  return c.json(await mapProduct(db, rows[0], user.permissions.includes("cost.read")));
+  return c.json(await mapProduct(db, rows[0], canReadCost(user)));
 });
 
 adminProductRoutes.post("/", async (c) => {
@@ -437,6 +444,7 @@ adminProductRoutes.post("/", async (c) => {
       status: z.enum(["draft", "published", "archived"]).default("draft"),
       price_vnd: z.number().int().nonnegative().optional(),
       compare_at_price_vnd: z.number().int().nonnegative().nullable().optional(),
+      cost_vnd: z.number().int().nonnegative().nullable().optional(),
       size_id: z.string().uuid().optional(),
       size_ids: z.array(z.string().uuid()).optional(),
       size_stocks: sizeStockSchema.optional(),
@@ -483,6 +491,7 @@ adminProductRoutes.post("/", async (c) => {
     .returning();
 
   const price = body.data.price_vnd ?? 0;
+  const cost = body.data.cost_vnd ?? (price > 0 ? Math.round(price * 0.3) : null);
   const wantsVariants = price > 0 || body.data.size_id || body.data.size_ids?.length || body.data.size_stocks?.length;
   if (wantsVariants && colorway) {
     const allSizes = await db.select().from(sizes).orderBy(sizes.sortOrder);
@@ -511,6 +520,7 @@ adminProductRoutes.post("/", async (c) => {
       sizeIds,
       price,
       body.data.compare_at_price_vnd ?? null,
+      cost,
     );
   }
 
@@ -522,7 +532,7 @@ adminProductRoutes.post("/", async (c) => {
     afterRedacted: { name: row!.name, slug: row!.slug, status: row!.status },
     requestId: requestId(c),
   });
-  return c.json(await mapProduct(db, row!, user.permissions.includes("cost.read")), 201);
+  return c.json(await mapProduct(db, row!, canReadCost(user)), 201);
 });
 
 adminProductRoutes.patch("/:id", async (c) => {
@@ -552,6 +562,7 @@ adminProductRoutes.patch("/:id", async (c) => {
         .optional(),
       price_vnd: z.number().int().nonnegative().optional(),
       compare_at_price_vnd: z.number().int().nonnegative().nullable().optional(),
+      cost_vnd: z.number().int().nonnegative().nullable().optional(),
     })
     .safeParse(await c.req.json());
   if (!body.success) throw new ApiError(400, "validation_error", "Dữ liệu không hợp lệ");
@@ -629,7 +640,7 @@ adminProductRoutes.patch("/:id", async (c) => {
     }
   }
 
-  if (body.data.price_vnd !== undefined || body.data.compare_at_price_vnd !== undefined) {
+  if (body.data.price_vnd !== undefined || body.data.compare_at_price_vnd !== undefined || body.data.cost_vnd !== undefined) {
     const variants = await db.select().from(productVariants).where(eq(productVariants.productId, existing[0].id));
     for (const v of variants) {
       await db
@@ -638,6 +649,8 @@ adminProductRoutes.patch("/:id", async (c) => {
           priceVnd: body.data.price_vnd ?? v.priceVnd,
           compareAtPriceVnd:
             body.data.compare_at_price_vnd !== undefined ? body.data.compare_at_price_vnd : v.compareAtPriceVnd,
+          costVnd:
+            body.data.cost_vnd !== undefined ? body.data.cost_vnd : v.costVnd,
           updatedAt: new Date(),
         })
         .where(eq(productVariants.id, v.id));
@@ -656,6 +669,12 @@ adminProductRoutes.patch("/:id", async (c) => {
       : (variantsForPrice.find((v) => v.status === "active")?.compareAtPriceVnd ??
         variantsForPrice[0]?.compareAtPriceVnd ??
         null);
+  const cost =
+    body.data.cost_vnd !== undefined
+      ? body.data.cost_vnd
+      : (variantsForPrice.find((v) => v.status === "active")?.costVnd ??
+        variantsForPrice[0]?.costVnd ??
+        (price > 0 ? Math.round(price * 0.3) : null));
 
   if (body.data.colorway_sizes) {
     for (const entry of body.data.colorway_sizes) {
@@ -673,6 +692,7 @@ adminProductRoutes.patch("/:id", async (c) => {
         entry.size_ids,
         price,
         compare,
+        cost,
       );
     }
   } else {
@@ -684,7 +704,7 @@ adminProductRoutes.patch("/:id", async (c) => {
         .from(productColorways)
         .where(eq(productColorways.productId, existing[0].id));
       for (const cw of colorways) {
-        await syncColorwaySizes(db, existing[0].id, row!.slug, cw.id, syncSizeIds, price, compare);
+        await syncColorwaySizes(db, existing[0].id, row!.slug, cw.id, syncSizeIds, price, compare, cost);
       }
     }
   }
@@ -698,7 +718,7 @@ adminProductRoutes.patch("/:id", async (c) => {
     afterRedacted: { slug: row!.slug, name: row!.name, status: row!.status },
     requestId: requestId(c),
   });
-  return c.json(await mapProduct(db, row!, user.permissions.includes("cost.read")));
+  return c.json(await mapProduct(db, row!, canReadCost(user)));
 });
 
 adminProductRoutes.post("/:id/publish", async (c) => {
@@ -719,7 +739,7 @@ adminProductRoutes.post("/:id/publish", async (c) => {
     resourceId: row!.id,
     requestId: requestId(c),
   });
-  return c.json(await mapProduct(db, row!, user.permissions.includes("cost.read")));
+  return c.json(await mapProduct(db, row!, canReadCost(user)));
 });
 
 adminProductRoutes.delete("/:id", async (c) => {

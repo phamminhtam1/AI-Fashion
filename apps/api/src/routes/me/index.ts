@@ -203,12 +203,26 @@ meRoutes.get("/orders", async (c) => {
     .from(orderItems)
     .where(inArray(orderItems.orderId, orderIds));
 
+  const variantIds = Array.from(new Set(items.map((i) => i.variantId)));
+  const variants =
+    variantIds.length > 0
+      ? await db
+          .select({
+            id: productVariants.id,
+            colorwayId: productVariants.colorwayId,
+          })
+          .from(productVariants)
+          .where(inArray(productVariants.id, variantIds))
+      : [];
+  const variantColorwayMap = new Map(variants.map((v) => [v.id, v.colorwayId]));
+
   const productIds = Array.from(new Set(items.map((i) => i.productId)));
   const covers =
     productIds.length > 0
       ? await db
           .select({
             productId: productMedia.productId,
+            colorwayId: productMedia.colorwayId,
             objectKey: mediaAssets.objectKey,
           })
           .from(productMedia)
@@ -217,10 +231,15 @@ meRoutes.get("/orders", async (c) => {
           .orderBy(desc(productMedia.isCover), productMedia.sortOrder)
       : [];
 
+  const colorwayMap = new Map<string, string>();
   const coverMap = new Map<string, string>();
   for (const cov of covers) {
+    const url = mediaPublicUrl(cov.objectKey);
+    if (cov.colorwayId && !colorwayMap.has(cov.colorwayId)) {
+      colorwayMap.set(cov.colorwayId, url);
+    }
     if (!coverMap.has(cov.productId)) {
-      coverMap.set(cov.productId, mediaPublicUrl(cov.objectKey));
+      coverMap.set(cov.productId, url);
     }
   }
 
@@ -244,17 +263,20 @@ meRoutes.get("/orders", async (c) => {
         paid_at: o.paidAt,
         placed_at: o.placedAt,
         items_count: orderIts.reduce((sum, i) => sum + i.qty, 0),
-        items_preview: orderIts.map((it) => ({
-          id: it.id,
-          product_id: it.productId,
-          product_name: it.productName,
-          size_label: it.sizeLabel,
-          color_label: it.colorLabel,
-          unit_price_vnd: it.unitPriceVnd,
-          qty: it.qty,
-          line_total_vnd: it.lineTotalVnd,
-          image_url: coverMap.get(it.productId) ?? null,
-        })),
+        items_preview: orderIts.map((it) => {
+          const cwId = variantColorwayMap.get(it.variantId);
+          return {
+            id: it.id,
+            product_id: it.productId,
+            product_name: it.productName,
+            size_label: it.sizeLabel,
+            color_label: it.colorLabel,
+            unit_price_vnd: it.unitPriceVnd,
+            qty: it.qty,
+            line_total_vnd: it.lineTotalVnd,
+            image_url: (cwId ? colorwayMap.get(cwId) : null) ?? coverMap.get(it.productId) ?? null,
+          };
+        }),
       };
     }),
   });
@@ -274,12 +296,26 @@ meRoutes.get("/orders/:id", async (c) => {
   if (!order) throw new ApiError(404, "not_found", "Không tìm thấy đơn hàng");
   const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
 
+  const variantIds = Array.from(new Set(items.map((i) => i.variantId)));
+  const variants =
+    variantIds.length > 0
+      ? await db
+          .select({
+            id: productVariants.id,
+            colorwayId: productVariants.colorwayId,
+          })
+          .from(productVariants)
+          .where(inArray(productVariants.id, variantIds))
+      : [];
+  const variantColorwayMap = new Map(variants.map((v) => [v.id, v.colorwayId]));
+
   const productIds = Array.from(new Set(items.map((i) => i.productId)));
   const covers =
     productIds.length > 0
       ? await db
           .select({
             productId: productMedia.productId,
+            colorwayId: productMedia.colorwayId,
             objectKey: mediaAssets.objectKey,
           })
           .from(productMedia)
@@ -288,10 +324,15 @@ meRoutes.get("/orders/:id", async (c) => {
           .orderBy(desc(productMedia.isCover), productMedia.sortOrder)
       : [];
 
+  const colorwayMap = new Map<string, string>();
   const coverMap = new Map<string, string>();
   for (const cov of covers) {
+    const url = mediaPublicUrl(cov.objectKey);
+    if (cov.colorwayId && !colorwayMap.has(cov.colorwayId)) {
+      colorwayMap.set(cov.colorwayId, url);
+    }
     if (!coverMap.has(cov.productId)) {
-      coverMap.set(cov.productId, mediaPublicUrl(cov.objectKey));
+      coverMap.set(cov.productId, url);
     }
   }
 
@@ -312,19 +353,22 @@ meRoutes.get("/orders/:id", async (c) => {
     recipient: order.recipientSnapshot,
     shipping_address: order.shippingAddressSnapshot,
     placed_at: order.placedAt,
-    items: items.map((it) => ({
-      id: it.id,
-      variant_id: it.variantId,
-      product_id: it.productId,
-      sku: it.sku,
-      product_name: it.productName,
-      size_label: it.sizeLabel,
-      color_label: it.colorLabel,
-      unit_price_vnd: it.unitPriceVnd,
-      qty: it.qty,
-      line_total_vnd: it.lineTotalVnd,
-      image_url: coverMap.get(it.productId) ?? null,
-    })),
+    items: items.map((it) => {
+      const cwId = variantColorwayMap.get(it.variantId);
+      return {
+        id: it.id,
+        variant_id: it.variantId,
+        product_id: it.productId,
+        sku: it.sku,
+        product_name: it.productName,
+        size_label: it.sizeLabel,
+        color_label: it.colorLabel,
+        unit_price_vnd: it.unitPriceVnd,
+        qty: it.qty,
+        line_total_vnd: it.lineTotalVnd,
+        image_url: (cwId ? colorwayMap.get(cwId) : null) ?? coverMap.get(it.productId) ?? null,
+      };
+    }),
   });
 });
 

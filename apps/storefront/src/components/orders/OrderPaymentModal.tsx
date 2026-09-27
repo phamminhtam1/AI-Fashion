@@ -3,6 +3,7 @@ import { CheckCircle2, Copy, Loader2, QrCode, ShieldCheck, X } from "lucide-reac
 import { formatVND } from "@/lib/products";
 import { fetchBankInfo, storeApi, type BankInfo } from "@/lib/api";
 import { toast } from "sonner";
+import { fireCheckoutCelebration } from "@/lib/celebrate";
 
 function copyText(label: string, value: string) {
   void navigator.clipboard.writeText(value).then(
@@ -72,6 +73,7 @@ export function OrderPaymentModal({ order, onClose, onPaid }: OrderPaymentModalP
         if (o.payment_status === "paid") {
           stopped = true;
           setPaidSuccess(true);
+          fireCheckoutCelebration();
           toast.success("Thanh toán thành công! Hệ thống đã ghi nhận.");
           setTimeout(() => {
             onPaidRef.current();

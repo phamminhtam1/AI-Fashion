@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Clock,
   CreditCard,
@@ -17,6 +17,14 @@ import { OrderDetailModal } from "@/components/orders/OrderDetailModal";
 import { OrderPaymentModal } from "@/components/orders/OrderPaymentModal";
 
 export const Route = createFileRoute("/tai-khoan")({
+  validateSearch: (s: Record<string, unknown>): { orderId?: string; tab?: "overview" | "orders" | "profile" } => {
+    const res: { orderId?: string; tab?: "overview" | "orders" | "profile" } = {};
+    if (typeof s.orderId === "string" && s.orderId.length > 0) res.orderId = s.orderId;
+    if (typeof s.tab === "string" && ["overview", "orders", "profile"].includes(s.tab)) {
+      res.tab = s.tab as "overview" | "orders" | "profile";
+    }
+    return res;
+  },
   head: () =>
     seo(
       "Tài khoản của tôi — ÉLANE",
@@ -30,14 +38,56 @@ type OrderFilter = "all" | "awaiting" | "processing" | "shipping" | "completed" 
 
 function Account() {
   const { user, logout, orders, wishlist, sessionReady, refreshOrders } = useStore();
-  const [tab, setTab] = useState<"overview" | "orders" | "profile">("orders");
+  const search = Route.useSearch();
+  const [tab, setTab] = useState<"overview" | "orders" | "profile">(search.tab || "orders");
   const [orderFilter, setOrderFilter] = useState<OrderFilter>("all");
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(search.orderId || null);
   const [payingOrder, setPayingOrder] = useState<{
     id: string;
     order_number: string;
     grand_total_vnd: number;
   } | null>(null);
+
+  // Sync selectedOrderId if search param changes
+  useEffect(() => {
+    if (search.orderId) {
+      setSelectedOrderId(search.orderId);
+      setTab("orders");
+    }
+  }, [search.orderId]);
+
+  // Always refresh orders on mount
+  useEffect(() => {
+    void refreshOrders();
+  }, [refreshOrders]);
+
+  // Refresh when returning to tab / window focus
+  useEffect(() => {
+    const handleSync = () => {
+      if (document.visibilityState === "visible") {
+        void refreshOrders();
+      }
+    };
+    window.addEventListener("focus", handleSync);
+    document.addEventListener("visibilitychange", handleSync);
+    return () => {
+      window.removeEventListener("focus", handleSync);
+      document.removeEventListener("visibilitychange", handleSync);
+    };
+  }, [refreshOrders]);
+
+  // Real-time polling if any bank order is awaiting payment
+  const hasAwaitingOrders = useMemo(() => {
+    return orders.some((o) => o.paymentMethod === "bank" && o.paymentStatus === "awaiting");
+  }, [orders]);
+
+  useEffect(() => {
+    if (!hasAwaitingOrders) return;
+    const interval = setInterval(() => {
+      void refreshOrders();
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [hasAwaitingOrders, refreshOrders]);
 
   const awaitingCount = useMemo(() => {
     return orders.filter(
@@ -332,6 +382,7 @@ function Account() {
         <OrderDetailModal
           orderId={selectedOrderId}
           onClose={() => setSelectedOrderId(null)}
+          onOrderUpdated={() => void refreshOrders()}
           onPayNow={(order) => {
             setSelectedOrderId(null);
             setPayingOrder({
@@ -347,7 +398,10 @@ function Account() {
       {payingOrder && (
         <OrderPaymentModal
           order={payingOrder}
-          onClose={() => setPayingOrder(null)}
+          onClose={() => {
+            setPayingOrder(null);
+            void refreshOrders();
+          }}
           onPaid={() => {
             setPayingOrder(null);
             void refreshOrders();

@@ -44,12 +44,16 @@ function requireStorage() {
 
 /** Public URL for an object_key. Falls back to local /media when Supabase unset. */
 export function mediaPublicUrl(objectKey: string): string {
+  if (objectKey.startsWith("http://") || objectKey.startsWith("https://")) {
+    return objectKey;
+  }
   if (env.supabaseUrl) {
     const base = env.supabaseUrl.replace(/\/$/, "");
     return `${base}/storage/v1/object/public/${env.supabaseMediaBucket}/${objectKey}`;
   }
   return `/media/${objectKey}`;
 }
+
 
 export async function uploadMediaObject(
   objectKey: string,

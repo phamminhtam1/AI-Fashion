@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Minus, Plus, X } from "lucide-react";
 import { formatVND, products } from "@/lib/products";
-import { FREE_SHIP, useStore } from "@/lib/store";
+import { FREE_SHIP, useStore, getCartItemImage } from "@/lib/store";
 
 export const Route = createFileRoute("/gio-hang")({
   head: () => ({
@@ -34,12 +34,13 @@ function CartPage() {
         <ul className="divide-y divide-border border-y border-border">
           {cart.map((it, i) => {
             const p = products.find((x) => x.id === it.productId)!;
+            const itemImg = getCartItemImage(it, p);
             return (
               <li key={i} className="flex gap-5 py-6">
-                <Link to="/san-pham/$slug" params={{ slug: p.slug }}><img src={p.images[0]} alt={p.name} className="h-36 w-27 object-cover" /></Link>
+                <Link to="/san-pham/$slug" params={{ slug: p.slug }}><img src={itemImg} alt={p.name} className="h-36 w-27 object-cover" /></Link>
                 <div className="flex flex-1 flex-col">
                   <div className="flex justify-between gap-4">
-                    <div><p>{p.name}</p><p className="mt-1 text-sm text-muted-foreground">{it.sku} · Size {it.size}</p></div>
+                    <div><p>{p.name}</p><p className="mt-1 text-sm text-muted-foreground">{it.colorName ? `${it.colorName} · ` : ""}{it.sku} · Size {it.size}</p></div>
                     <button onClick={() => removeItem(i)} aria-label="Xóa"><X className="h-4 w-4" /></button>
                   </div>
                   <div className="mt-auto flex items-center justify-between">

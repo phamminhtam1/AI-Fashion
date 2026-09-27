@@ -51,9 +51,10 @@ import { adminApi } from "@/lib/api";
 import { CategoriesManager } from "@/components/CategoriesManager";
 import { ProductsManager } from "@/components/ProductsManager";
 import { SizesManager } from "@/components/SizesManager";
-import { InventoryManager } from "@/components/InventoryManager";
+import { InventoryManager, type InventorySeed } from "@/components/InventoryManager";
 import { CustomersManager } from "@/components/CustomersManager";
 import { DiscountCodesManager } from "@/components/DiscountCodesManager";
+import { OrdersManager } from "@/components/OrdersManager";
 import type { Overview } from "@/lib/api";
 
 export const Route = createFileRoute("/")({
@@ -207,10 +208,7 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
     Record<string, { id: string; payment_method: string; payment_status: string }>
   >({});
   const [liveConfigs, setLiveConfigs] = useState(configs);
-  const [inventorySeed, setInventorySeed] = useState<{
-    productId: string;
-    productName?: string;
-  } | null>(null);
+  const [inventorySeed, setInventorySeed] = useState<InventorySeed | null>(null);
   const title = allItems.find((item) => item.id === active)?.label ?? "Tổng quan";
   const currentConfig = liveConfigs[active] ?? productConfig;
 
@@ -376,8 +374,17 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
 
   const goInventoryForProduct = (opts?: { productId?: string; productName?: string }) => {
     if (opts?.productId) {
-      setInventorySeed({ productId: opts.productId, productName: opts.productName });
+      setInventorySeed({
+        productId: opts.productId,
+        productName: opts.productName,
+        docType: "receipt",
+      });
     }
+    choose("inventory");
+  };
+
+  const goInventoryWithSeed = (seed: InventorySeed) => {
+    setInventorySeed(seed);
     choose("inventory");
   };
 
@@ -422,6 +429,8 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
 
         {active === "overview" ? (
           <Dashboard onNavigate={choose} onCreate={() => setCreateOpen(true)} onDetail={openDetail} />
+        ) : active === "orders" ? (
+          <OrdersManager onNavigateToInventory={goInventoryWithSeed} />
         ) : active === "categories" ? (
           <CategoriesManager />
         ) : active === "products" ? (
@@ -433,7 +442,7 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
           />
         ) : active === "inventory" ? (
           <InventoryManager
-            seedProduct={inventorySeed}
+            seed={inventorySeed}
             onSeedConsumed={() => setInventorySeed(null)}
           />
         ) : active === "sizes" ? (

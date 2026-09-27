@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
   Clock,
@@ -15,6 +15,7 @@ import {
 import { formatVND } from "@/lib/products";
 import { storeApi, type StoreOrderDetail } from "@/lib/api";
 import { toast } from "sonner";
+import { fireCheckoutCelebration } from "@/lib/celebrate";
 
 function copyText(label: string, value: string) {
   void navigator.clipboard.writeText(value).then(
@@ -27,12 +28,16 @@ interface OrderDetailModalProps {
   orderId: string;
   onClose: () => void;
   onPayNow?: (order: StoreOrderDetail) => void;
+  onOrderUpdated?: () => void;
 }
 
-export function OrderDetailModal({ orderId, onClose, onPayNow }: OrderDetailModalProps) {
+export function OrderDetailModal({ orderId, onClose, onPayNow, onOrderUpdated }: OrderDetailModalProps) {
   const [order, setOrder] = useState<StoreOrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const onOrderUpdatedRef = useRef(onOrderUpdated);
+  onOrderUpdatedRef.current = onOrderUpdated;
 
   useEffect(() => {
     let active = true;
@@ -53,6 +58,31 @@ export function OrderDetailModal({ orderId, onClose, onPayNow }: OrderDetailModa
       active = false;
     };
   }, [orderId]);
+
+  // Real-time polling when order is awaiting bank payment
+  useEffect(() => {
+    if (!order || order.payment_status !== "awaiting") return;
+    let stopped = false;
+    const interval = setInterval(async () => {
+      try {
+        const fresh = await storeApi.order(orderId);
+        if (stopped) return;
+        if (fresh.payment_status === "paid") {
+          setOrder(fresh);
+          fireCheckoutCelebration();
+          toast.success("Đơn hàng đã được xác nhận thanh toán thành công!");
+          onOrderUpdatedRef.current?.();
+          clearInterval(interval);
+        }
+      } catch {
+        /* ignore polling errors */
+      }
+    }, 2500);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }, [order?.payment_status, orderId]);
 
   // Lock body scroll when modal is open
   useEffect(() => {

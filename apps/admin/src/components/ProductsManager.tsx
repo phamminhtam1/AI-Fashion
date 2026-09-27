@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   MoreHorizontal,
+  PackagePlus,
   Plus,
   Search,
   SlidersHorizontal,
@@ -54,6 +55,7 @@ type FormState = {
   status: "draft" | "published" | "archived";
   price_vnd: string;
   compare_at_price_vnd: string;
+  cost_vnd: string;
 };
 
 const emptyForm: FormState = {
@@ -67,6 +69,7 @@ const emptyForm: FormState = {
   status: "draft",
   price_vnd: "",
   compare_at_price_vnd: "",
+  cost_vnd: "",
 };
 
 type DraftColorway = {
@@ -378,6 +381,7 @@ export function ProductsManager({
       "";
     const occId = meta?.occasions.find((o) => o.slug === p.occasion)?.id ?? "";
     const chartId = p.size_chart?.id ?? "";
+    const costVnd = p.cost_vnd ?? p.variants?.find((v) => v.cost_vnd != null)?.cost_vnd ?? null;
     setForm({
       name: p.name,
       slug: p.slug,
@@ -389,6 +393,7 @@ export function ProductsManager({
       status: (p.status as FormState["status"]) || "draft",
       price_vnd: String(p.price_vnd || ""),
       compare_at_price_vnd: p.sale_compare_vnd ? String(p.sale_compare_vnd) : "",
+      cost_vnd: costVnd != null ? String(costVnd) : "",
     });
     setView("form");
   }
@@ -424,6 +429,9 @@ export function ProductsManager({
     try {
       const price = form.price_vnd ? Number(form.price_vnd) : undefined;
       const compare = form.compare_at_price_vnd ? Number(form.compare_at_price_vnd) : null;
+      const cost = form.cost_vnd
+        ? Number(form.cost_vnd)
+        : (price ? Math.round(price * 0.3) : null);
       if (editing) {
         await adminApi.updateProduct(editing.id, {
           name: form.name.trim(),
@@ -440,6 +448,7 @@ export function ProductsManager({
           status: form.status,
           price_vnd: price,
           compare_at_price_vnd: compare,
+          cost_vnd: cost,
         });
         toast.success("Đã cập nhật sản phẩm");
       } else {
@@ -455,6 +464,7 @@ export function ProductsManager({
           status: form.status,
           price_vnd: price ?? 0,
           compare_at_price_vnd: compare,
+          cost_vnd: cost,
         });
         // Product starts with 1 colorway; upload draft[0], then create+upload rest
         for (let i = 0; i < draftColorways.length; i++) {
@@ -1170,14 +1180,34 @@ export function ProductsManager({
                 onChange={(e) => setForm((f) => ({ ...f, material: e.target.value }))}
               />
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <label className="block">
                 <span className="text-xs font-medium">Giá bán (VND)</span>
                 <Input
                   className="mt-2"
                   type="number"
                   value={form.price_vnd}
-                  onChange={(e) => setForm((f) => ({ ...f, price_vnd: e.target.value }))}
+                  onChange={(e) => {
+                    const nextPrice = e.target.value;
+                    setForm((f) => {
+                      const nextCost =
+                        !f.cost_vnd && nextPrice
+                          ? String(Math.round(Number(nextPrice) * 0.3))
+                          : f.cost_vnd;
+                      return { ...f, price_vnd: nextPrice, cost_vnd: nextCost };
+                    });
+                  }}
+                  placeholder="VD: 350000"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium">Giá nhập / Giá vốn (₫)</span>
+                <Input
+                  className="mt-2"
+                  type="number"
+                  value={form.cost_vnd}
+                  onChange={(e) => setForm((f) => ({ ...f, cost_vnd: e.target.value }))}
+                  placeholder="30% giá bán mặc định"
                 />
               </label>
               <label className="block">
@@ -1556,6 +1586,7 @@ export function ProductsManager({
                   "Size",
                   "Tồn",
                   "Giá bán",
+                  "Giá nhập",
                   "SKU",
                   "Trạng thái",
                   "",
@@ -1622,6 +1653,13 @@ export function ProductsManager({
                         </span>
                       ) : null}
                     </td>
+                    <td className="px-4 py-3.5 text-muted-foreground tabular-nums">
+                      {p.cost_vnd != null ? (
+                        `${Number(p.cost_vnd).toLocaleString("vi-VN")}₫`
+                      ) : (
+                        <span className="text-muted-foreground/50">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground">
                       {p.variants?.[0]?.sku ?? "—"}
                       {p.variants && p.variants.length > 1 ? ` +${p.variants.length - 1}` : ""}
@@ -1645,6 +1683,20 @@ export function ProductsManager({
                             Publish
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Nhập kho ${p.name}`}
+                          title="Tạo phiếu nhập kho cho sản phẩm này"
+                          onClick={() =>
+                            onNavigate?.("inventory", {
+                              productId: p.id,
+                              productName: p.name,
+                            })
+                          }
+                        >
+                          <PackagePlus className="size-4 text-emerald-600" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"

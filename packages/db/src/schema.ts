@@ -472,6 +472,10 @@ export const orders = pgTable("orders", {
   paymentRef: text("payment_ref"),
   recipientSnapshot: jsonb("recipient_snapshot").$type<Record<string, string>>().notNull(),
   shippingAddressSnapshot: jsonb("shipping_address_snapshot").$type<Record<string, string>>().notNull(),
+  fulfillmentStatus: text("fulfillment_status").notNull().default("unfulfilled"), // unfulfilled|fulfilled|partial
+  fulfilledAt: ts("fulfilled_at"),
+  inventoryDocId: uuid("inventory_doc_id").references(() => inventoryDocuments.id),
+  inventoryDocCode: text("inventory_doc_code"),
   placedAt: ts("placed_at").notNull().defaultNow(),
   createdAt: createdAt(),
   updatedAt: updatedAt(),

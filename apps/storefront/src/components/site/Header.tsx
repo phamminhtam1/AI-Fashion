@@ -3,7 +3,7 @@ import { Heart, Menu, Search, ShoppingBag, User, X, Minus, Plus } from "lucide-r
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { categories, formatVND, ensureCatalog, getNavItems, products, type NavItem } from "@/lib/products";
-import { FREE_SHIP, useStore } from "@/lib/store";
+import { FREE_SHIP, useStore, getCartItemImage } from "@/lib/store";
 import heroImg from "@/assets/hero.jpg";
 
 const announcements = [
@@ -289,12 +289,13 @@ function MiniCart() {
             <ul className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
               {cart.map((it, i) => {
                 const p = products.find((x) => x.id === it.productId)!;
+                const itemImg = getCartItemImage(it, p);
                 return (
                   <li key={i} className="flex gap-4">
-                    <img src={p.images[0]} alt={p.name} className="h-28 w-21 object-cover" />
+                    <img src={itemImg} alt={p.name} className="h-28 w-21 object-cover" />
                     <div className="flex flex-1 flex-col text-sm">
                       <p>{p.name}</p>
-                      <p className="text-xs text-muted-foreground">{it.sku} · {it.size}</p>
+                      <p className="text-xs text-muted-foreground">{it.colorName ? `${it.colorName} · ` : ""}{it.sku} · Size {it.size}</p>
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex items-center border border-border">
                           <button className="p-1.5" onClick={() => updateQty(i, it.qty - 1)} aria-label="Giảm"><Minus className="h-3 w-3" /></button>

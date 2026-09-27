@@ -94,8 +94,10 @@ async function mapProduct(db: AppVars["Variables"]["db"], p: typeof products.$in
 
   const prices = sizeSource.map((v) => v.price_vnd);
   const compare = sizeSource.map((v) => v.compare_at_price_vnd).filter((x): x is number => x != null);
+  const costs = sizeSource.map((v) => v.cost_vnd).filter((x): x is number => x != null);
   const minPrice = prices.length ? Math.min(...prices) : 0;
   const maxCompare = compare.length ? Math.max(...compare) : null;
+  const minCost = costs.length ? Math.min(...costs) : null;
 
   let sizeChart: { id: string; name: string; unit: string } | null = null;
   if (p.sizeChartId) {
@@ -159,6 +161,7 @@ async function mapProduct(db: AppVars["Variables"]["db"], p: typeof products.$in
     best_seller: topSellers.has(p.id),
     price_vnd: minPrice,
     sale_compare_vnd: maxCompare && maxCompare > minPrice ? maxCompare : null,
+    ...(includeCost ? { cost_vnd: minCost } : {}),
     images,
     media: media.map((m) => ({
       asset_id: m.asset_id,
@@ -188,6 +191,8 @@ async function mapProduct(db: AppVars["Variables"]["db"], p: typeof products.$in
     variants: variants.map((v) => {
       const stock = variantStockMap.get(v.id);
       const label = `Màu ${v.colorway_sort + 1}`;
+      const pubCw = publicById.get(v.colorway_id);
+      const variantImage = pubCw?.thumbnail ?? pubCw?.images?.[0] ?? images[0] ?? null;
       return {
         id: v.id,
         sku: v.sku,
@@ -197,6 +202,7 @@ async function mapProduct(db: AppVars["Variables"]["db"], p: typeof products.$in
         status: v.status,
         colorway_id: v.colorway_id,
         size_id: v.size_id,
+        image_url: variantImage,
         color: { code: v.colorway_id, name: label, hex: null as string | null },
         size: { code: v.size_code, label: v.size_label },
         on_hand: stock?.on_hand ?? 0,

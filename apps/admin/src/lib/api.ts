@@ -30,6 +30,7 @@ export type AdminProduct = {
   best_seller: boolean;
   price_vnd: number;
   sale_compare_vnd: number | null;
+  cost_vnd?: number | null;
   images: string[];
   media?: Array<{
     asset_id: string;
@@ -48,9 +49,11 @@ export type AdminProduct = {
     id: string;
     sku: string;
     price_vnd: number;
+    cost_vnd?: number | null;
     status?: string;
     colorway_id?: string;
     size_id?: string;
+    image_url?: string | null;
     color?: { code: string; name: string; hex?: string | null };
     size?: { code: string; label: string };
     color_name?: string;
@@ -70,6 +73,10 @@ export type InventoryItem = {
   warehouse_id: string;
   variant_id: string;
   sku: string;
+  barcode?: string | null;
+  price_vnd?: number;
+  cost_vnd?: number | null;
+  image_url?: string | null;
   product_id: string;
   product_name: string;
   color_name: string;
@@ -88,6 +95,7 @@ export type InventoryDocumentListItem = {
   status: string;
   reason: string;
   line_count: number;
+  total_qty?: number;
   created_at: string;
   posted_at: string | null;
 };
@@ -105,6 +113,9 @@ export type InventoryDocumentDetail = {
   lines: Array<{
     id: string;
     variant_id: string;
+    product_id?: string;
+    barcode?: string | null;
+    image_url?: string | null;
     qty: number;
     direction: string;
     unit_cost_vnd: number | null;
@@ -304,8 +315,13 @@ export const adminApi = {
     }),
   deleteAddress: (customerId: string, addressId: string) =>
     req<{ ok: boolean }>(`/admin/customers/${customerId}/addresses/${addressId}`, { method: "DELETE" }),
-  orders: () =>
-    req<{
+  orders: (params?: { status?: string; q?: string; fulfillment_status?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.status) q.set("status", params.status);
+    if (params?.q) q.set("q", params.q);
+    if (params?.fulfillment_status) q.set("fulfillment_status", params.fulfillment_status);
+    const qs = q.toString();
+    return req<{
       items: Array<{
         id: string;
         order_number: string;
@@ -317,12 +333,90 @@ export const adminApi = {
         payment_ref: string | null;
         placed_at: string;
         customer_name: string;
+        fulfillment_status: "unfulfilled" | "fulfilled" | "partial";
+        fulfilled_at: string | null;
+        inventory_doc_id: string | null;
+        inventory_doc_code: string | null;
       }>;
-    }>("/admin/orders"),
-  patchOrder: (id: string, body: { status: "pending" | "confirmed" | "cancelled" }) =>
-    req<{ id: string; order_number: string; status: string }>(`/admin/orders/${id}`, {
+    }>(`/admin/orders${qs ? `?${qs}` : ""}`);
+  },
+  orderDetail: (id: string) =>
+    req<{
+      id: string;
+      order_number: string;
+      status: string;
+      customer: { id: string; full_name: string; email: string | null; phone: string | null } | null;
+      subtotal_vnd: number;
+      shipping_vnd: number;
+      discount_vnd: number;
+      discount_code: string | null;
+      grand_total_vnd: number;
+      payment_method: string;
+      payment_status: string;
+      paid_at: string | null;
+      payment_ref: string | null;
+      fulfillment_status: "unfulfilled" | "fulfilled" | "partial";
+      fulfilled_at: string | null;
+      inventory_doc_id: string | null;
+      inventory_doc_code: string | null;
+      recipient: Record<string, string> | null;
+      shipping_address: Record<string, string> | null;
+      placed_at: string;
+      items: Array<{
+        id?: string;
+        product_id?: string;
+        variant_id?: string;
+        sku: string;
+        barcode?: string | null;
+        product_name: string;
+        size_label: string | null;
+        color_label?: string | null;
+        image_url?: string | null;
+        qty: number;
+        unit_price_vnd: number;
+        line_total_vnd: number;
+      }>;
+    }>(`/admin/orders/${id}`),
+  patchOrder: (
+    id: string,
+    body: {
+      status?: "pending" | "confirmed" | "cancelled";
+      fulfillment_status?: "unfulfilled" | "fulfilled" | "partial";
+      inventory_doc_id?: string | null;
+      inventory_doc_code?: string | null;
+    },
+  ) =>
+    req<{
+      id: string;
+      order_number: string;
+      status: string;
+      fulfillment_status: string;
+      fulfilled_at: string | null;
+      inventory_doc_id: string | null;
+      inventory_doc_code: string | null;
+    }>(`/admin/orders/${id}`, {
       method: "PATCH",
       body: JSON.stringify(body),
+    }),
+  fulfillOrder: (
+    id: string,
+    body?: {
+      status?: "unfulfilled" | "fulfilled";
+      inventory_doc_id?: string | null;
+      inventory_doc_code?: string | null;
+    },
+  ) =>
+    req<{
+      id: string;
+      order_number: string;
+      status: string;
+      fulfillment_status: "unfulfilled" | "fulfilled" | "partial";
+      fulfilled_at: string | null;
+      inventory_doc_id: string | null;
+      inventory_doc_code: string | null;
+    }>(`/admin/orders/${id}/fulfill`, {
+      method: "POST",
+      body: JSON.stringify(body ?? {}),
     }),
   markOrderPaid: (id: string) =>
     req<{ id: string; order_number: string; status: string; payment_status: string }>(
@@ -472,6 +566,17 @@ export const adminApi = {
   createDoc: (body: {
     type: "receipt" | "issue" | "adjustment";
     reason?: string;
+    order_id?: string;
+    lines: Array<{ variant_id: string; qty: number; direction?: "in" | "out"; unit_cost_vnd?: number }>;
+  }) =>
+    req<{ id: string; code: string; status: string }>("/admin/inventory/documents", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  createInventoryDocument: (body: {
+    type: "receipt" | "issue" | "adjustment";
+    reason?: string;
+    order_id?: string;
     lines: Array<{ variant_id: string; qty: number; direction?: "in" | "out"; unit_cost_vnd?: number }>;
   }) =>
     req<{ id: string; code: string; status: string }>("/admin/inventory/documents", {

@@ -1,18 +1,26 @@
 import { Link } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
+import { useState } from "react";
 import { formatVND, type Product } from "@/lib/products";
 import { useStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 export function ProductCard({ product: p }: { product: Product }) {
   const { wishlist, toggleWishlist, addToCart } = useStore();
+  const [selectedCwId, setSelectedCwId] = useState<string>(p.colorways[0]?.id ?? "");
   const liked = wishlist.includes(p.id);
   const discount = p.salePrice ? Math.round((1 - p.salePrice / p.price) * 100) : 0;
+
+  const activeCw = p.colorways.find((c) => c.id === selectedCwId) ?? p.colorways[0];
+  const primaryImg = activeCw?.images?.[0] ?? activeCw?.thumbnail ?? p.images[0];
+  const hoverImg = activeCw?.images?.[1] ?? p.images[1] ?? primaryImg;
+
   return (
     <article className="group">
       <div className="relative aspect-[3/4] overflow-hidden bg-secondary">
         <Link to="/san-pham/$slug" params={{ slug: p.slug }} aria-label={p.name}>
-          <img src={p.images[0]} alt={p.name} loading="lazy" width={768} height={1024} className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500 group-hover:opacity-0" />
-          <img src={p.images[1]} alt="" loading="lazy" width={768} height={1024} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-700 group-hover:scale-105 group-hover:opacity-100" />
+          <img src={primaryImg} alt={p.name} loading="lazy" width={768} height={1024} className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500 group-hover:opacity-0" />
+          <img src={hoverImg} alt="" loading="lazy" width={768} height={1024} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-700 group-hover:scale-105 group-hover:opacity-100" />
         </Link>
         <div className="pointer-events-none absolute left-3 top-3 flex flex-col gap-1">
           {p.isNew && <span className="bg-background px-2 py-1 text-[10px] font-semibold uppercase tracking-widest">Mới</span>}
@@ -29,7 +37,7 @@ export function ProductCard({ product: p }: { product: Product }) {
           <div className="flex flex-wrap justify-center gap-1 bg-background/95 p-2 backdrop-blur">
             {p.sizes.map((s) => {
               const v =
-                p.variants.find((x) => x.size === s && (!p.colorways[0] || x.colorwayId === p.colorways[0].id)) ??
+                p.variants.find((x) => x.size === s && (!selectedCwId || x.colorwayId === selectedCwId)) ??
                 p.variants.find((x) => x.size === s);
               return (
                 <button
@@ -63,11 +71,26 @@ export function ProductCard({ product: p }: { product: Product }) {
           )}
         </div>
         <div className="flex gap-1.5 pt-1">
-          {p.colorways.map((c) => (
-            <span key={c.id} className="h-8 w-6 overflow-hidden border border-border">
-              <img src={c.thumbnail} alt="" className="h-full w-full object-cover" />
-            </span>
-          ))}
+          {p.colorways.map((c) => {
+            const isSelected = c.id === (activeCw?.id ?? selectedCwId);
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onMouseEnter={() => setSelectedCwId(c.id)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSelectedCwId(c.id);
+                }}
+                className={cn(
+                  "h-8 w-6 overflow-hidden border transition-all",
+                  isSelected ? "border-foreground ring-1 ring-foreground" : "border-border opacity-70 hover:opacity-100",
+                )}
+              >
+                <img src={c.thumbnail} alt="" className="h-full w-full object-cover" />
+              </button>
+            );
+          })}
         </div>
       </div>
     </article>

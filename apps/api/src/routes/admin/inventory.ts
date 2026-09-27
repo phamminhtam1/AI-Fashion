@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   inventoryBalances,
@@ -11,6 +11,9 @@ import {
   productColorways,
   products,
   sizes,
+  productMedia,
+  mediaAssets,
+  orders,
   idempotencyRecords,
   auditLogs,
 } from "@elane/db";
@@ -19,6 +22,7 @@ import { requireAuth } from "../../middleware/auth.js";
 import { ApiError, requestId } from "../../lib/errors.js";
 import { requirePerm } from "../../lib/session.js";
 import { defaultDirection, type DocType } from "../../lib/inventory-doc.js";
+import { mediaPublicUrl } from "../../lib/media-storage.js";
 import { createHash } from "node:crypto";
 
 export const adminInventoryRoutes = new Hono<AppVars>();
@@ -34,7 +38,11 @@ adminInventoryRoutes.get("/", async (c) => {
       warehouse_id: inventoryBalances.warehouseId,
       variant_id: inventoryBalances.variantId,
       sku: productVariants.sku,
+      barcode: productVariants.barcode,
+      price_vnd: productVariants.priceVnd,
+      cost_vnd: productVariants.costVnd,
       product_id: products.id,
+      colorway_id: productVariants.colorwayId,
       product_name: products.name,
       color_name: sql<string>`'Màu ' || (${productColorways.sortOrder} + 1)`,
       size_code: sizes.code,
@@ -57,7 +65,42 @@ adminInventoryRoutes.get("/", async (c) => {
     )
     .orderBy(products.name, productVariants.sku)
     .limit(500);
-  return c.json({ warehouse: wh[0], items: rows });
+
+  // Fetch product and colorway images
+  const productIds = Array.from(new Set(rows.map((r) => r.product_id)));
+  const covers =
+    productIds.length > 0
+      ? await db
+          .select({
+            productId: productMedia.productId,
+            colorwayId: productMedia.colorwayId,
+            objectKey: mediaAssets.objectKey,
+          })
+          .from(productMedia)
+          .innerJoin(mediaAssets, eq(mediaAssets.id, productMedia.assetId))
+          .where(inArray(productMedia.productId, productIds))
+          .orderBy(desc(productMedia.isCover), productMedia.sortOrder)
+      : [];
+
+  const colorwayMap = new Map<string, string>();
+  const coverMap = new Map<string, string>();
+  for (const cov of covers) {
+    const url = mediaPublicUrl(cov.objectKey);
+    if (cov.colorwayId && !colorwayMap.has(cov.colorwayId)) {
+      colorwayMap.set(cov.colorwayId, url);
+    }
+    if (!coverMap.has(cov.productId)) {
+      coverMap.set(cov.productId, url);
+    }
+  }
+
+  return c.json({
+    warehouse: wh[0],
+    items: rows.map((r) => ({
+      ...r,
+      image_url: (r.colorway_id ? colorwayMap.get(r.colorway_id) : null) ?? coverMap.get(r.product_id) ?? null,
+    })),
+  });
 });
 
 adminInventoryRoutes.get("/documents", async (c) => {
@@ -81,6 +124,10 @@ adminInventoryRoutes.get("/documents", async (c) => {
         select count(*)::int from inventory_document_lines l
         where l.document_id = ${inventoryDocuments.id}
       )`,
+      total_qty: sql<number>`(
+        select coalesce(sum(l.qty), 0)::int from inventory_document_lines l
+        where l.document_id = ${inventoryDocuments.id}
+      )`,
     })
     .from(inventoryDocuments)
     .where(conds.length ? and(...conds) : undefined)
@@ -102,6 +149,9 @@ adminInventoryRoutes.get("/documents/:id", async (c) => {
     .select({
       id: inventoryDocumentLines.id,
       variant_id: inventoryDocumentLines.variantId,
+      product_id: products.id,
+      colorway_id: productVariants.colorwayId,
+      barcode: productVariants.barcode,
       qty: inventoryDocumentLines.qty,
       direction: inventoryDocumentLines.direction,
       unit_cost_vnd: inventoryDocumentLines.unitCostVnd,
@@ -116,6 +166,34 @@ adminInventoryRoutes.get("/documents/:id", async (c) => {
     .innerJoin(productColorways, eq(productColorways.id, productVariants.colorwayId))
     .innerJoin(sizes, eq(sizes.id, productVariants.sizeId))
     .where(eq(inventoryDocumentLines.documentId, docs[0].id));
+
+  const pIds = Array.from(new Set(lines.map((l) => l.product_id)));
+  const covers =
+    pIds.length > 0
+      ? await db
+          .select({
+            productId: productMedia.productId,
+            colorwayId: productMedia.colorwayId,
+            objectKey: mediaAssets.objectKey,
+          })
+          .from(productMedia)
+          .innerJoin(mediaAssets, eq(mediaAssets.id, productMedia.assetId))
+          .where(inArray(productMedia.productId, pIds))
+          .orderBy(desc(productMedia.isCover), productMedia.sortOrder)
+      : [];
+
+  const colorwayMap = new Map<string, string>();
+  const coverMap = new Map<string, string>();
+  for (const cov of covers) {
+    const url = mediaPublicUrl(cov.objectKey);
+    if (cov.colorwayId && !colorwayMap.has(cov.colorwayId)) {
+      colorwayMap.set(cov.colorwayId, url);
+    }
+    if (!coverMap.has(cov.productId)) {
+      coverMap.set(cov.productId, url);
+    }
+  }
+
   const d = docs[0];
   return c.json({
     id: d.id,
@@ -127,7 +205,10 @@ adminInventoryRoutes.get("/documents/:id", async (c) => {
     posted_at: d.postedAt,
     requested_by: d.requestedBy,
     approved_by: d.approvedBy,
-    lines,
+    lines: lines.map((l) => ({
+      ...l,
+      image_url: (l.colorway_id ? colorwayMap.get(l.colorway_id) : null) ?? coverMap.get(l.product_id) ?? null,
+    })),
   });
 });
 
@@ -138,6 +219,7 @@ adminInventoryRoutes.post("/documents", async (c) => {
     .object({
       type: z.enum(["receipt", "issue", "adjustment"]),
       reason: z.string().default(""),
+      order_id: z.string().uuid().optional(),
       lines: z
         .array(
           z.object({
@@ -153,6 +235,24 @@ adminInventoryRoutes.post("/documents", async (c) => {
   if (!body.success) throw new ApiError(400, "validation_error", "Dữ liệu phiếu không hợp lệ");
 
   const db = c.get("db");
+
+  if (body.data.order_id && body.data.type === "issue") {
+    const [linkedOrder] = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, body.data.order_id))
+      .limit(1);
+    if (linkedOrder) {
+      if (linkedOrder.status === "cancelled") {
+        throw new ApiError(400, "invalid_state", "Không thể tạo phiếu xuất kho cho đơn hàng đã bị hủy");
+      }
+      const isPaidOrCod = linkedOrder.paymentStatus === "paid" || linkedOrder.paymentMethod === "cod";
+      if (!isPaidOrCod) {
+        throw new ApiError(400, "unpaid_order", "Chỉ những đơn hàng thanh toán thành công hoặc COD mới được xuất kho");
+      }
+    }
+  }
+
   const wh = await db.select().from(warehouses).where(eq(warehouses.code, "MAIN")).limit(1);
   const code = `INV-${Date.now()}`;
   const [doc] = await db
@@ -177,6 +277,18 @@ adminInventoryRoutes.post("/documents", async (c) => {
       unitCostVnd: line.unit_cost_vnd,
     });
   }
+
+  if (body.data.order_id) {
+    await db
+      .update(orders)
+      .set({
+        inventoryDocId: doc!.id,
+        inventoryDocCode: doc!.code,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, body.data.order_id));
+  }
+
   return c.json({ id: doc!.id, code: doc!.code, status: doc!.status }, 201);
 });
 
@@ -233,8 +345,8 @@ adminInventoryRoutes.post("/documents/:id/post", async (c) => {
 
   await db.transaction(async (tx) => {
     for (const line of lines) {
-      const delta =
-        docs[0]!.type === "issue" || line.direction === "out" ? -line.qty : line.qty;
+      const isIssue = docs[0]!.type === "issue" || line.direction === "out";
+      const delta = isIssue ? -line.qty : line.qty;
       const bal = await tx
         .select()
         .from(inventoryBalances)
@@ -253,10 +365,14 @@ adminInventoryRoutes.post("/documents/:id/post", async (c) => {
         });
       } else {
         const next = bal[0].onHand + delta;
-        if (next < 0 || bal[0].reserved > next) throw new ApiError(409, "insufficient_stock", "Không đủ tồn");
+        if (next < 0) throw new ApiError(409, "insufficient_stock", "Không đủ tồn kho");
+        // When issuing/exporting goods for an order, release the corresponding reserved stock
+        const nextReserved = isIssue ? Math.max(0, bal[0].reserved - line.qty) : bal[0].reserved;
+        if (nextReserved > next) throw new ApiError(409, "insufficient_stock", "Không đủ tồn kho");
+
         await tx
           .update(inventoryBalances)
-          .set({ onHand: next, updatedAt: new Date() })
+          .set({ onHand: next, reserved: nextReserved, updatedAt: new Date() })
           .where(and(eq(inventoryBalances.warehouseId, warehouseId), eq(inventoryBalances.variantId, line.variantId)));
       }
 
@@ -279,6 +395,24 @@ adminInventoryRoutes.post("/documents/:id/post", async (c) => {
         updatedAt: new Date(),
       })
       .where(eq(inventoryDocuments.id, docs[0]!.id));
+
+    if (docs[0]!.type === "issue") {
+      await tx
+        .update(orders)
+        .set({
+          fulfillmentStatus: "fulfilled",
+          fulfilledAt: new Date(),
+          inventoryDocId: docs[0]!.id,
+          inventoryDocCode: docs[0]!.code,
+          updatedAt: new Date(),
+        })
+        .where(
+          or(
+            eq(orders.inventoryDocId, docs[0]!.id),
+            sql`POSITION(${orders.orderNumber} IN ${docs[0]!.reason}) > 0`,
+          ),
+        );
+    }
 
     await tx.insert(idempotencyRecords).values({
       scope,
