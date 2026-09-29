@@ -38,10 +38,33 @@ app.use("*", async (c, next) => {
   await next();
 });
 
+const staticAllowedOrigins = [
+  env.storefrontOrigin,
+  env.adminOrigin,
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:8090",
+  "http://127.0.0.1:8090",
+  "http://localhost:8081",
+  "http://127.0.0.1:8081",
+  ...env.corsOrigins,
+];
+
 app.use(
   "*",
   cors({
-    origin: [env.storefrontOrigin, env.adminOrigin, "http://localhost:5173", "http://127.0.0.1:5173"],
+    origin: (origin) => {
+      if (!origin) return "*";
+      if (
+        staticAllowedOrigins.includes(origin) ||
+        origin.startsWith("http://192.168.56.") ||
+        origin.startsWith("http://localhost:") ||
+        origin.startsWith("http://127.0.0.1:")
+      ) {
+        return origin;
+      }
+      return staticAllowedOrigins[0] ?? "*";
+    },
     credentials: true,
   }),
 );
@@ -89,5 +112,5 @@ app.onError((err, c) => {
   return c.json({ code: "internal_error", message: "Lỗi máy chủ", request_id: rid }, 500);
 });
 
-console.log(`ÉLANE API listening on :${env.apiPort}`);
-serve({ fetch: app.fetch, port: env.apiPort });
+console.log(`ÉLANE API listening on ${env.apiHost}:${env.apiPort}`);
+serve({ fetch: app.fetch, port: env.apiPort, hostname: env.apiHost });

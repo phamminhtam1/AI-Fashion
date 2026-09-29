@@ -16,6 +16,10 @@ export const env = {
   sessionSecret: process.env.SESSION_SECRET ?? "dev-change-me-elane-phase1-secret",
   apiPort: Number(process.env.API_PORT ?? 3001),
   uploadDir: path.resolve(root, process.env.UPLOAD_DIR ?? "uploads"),
+  apiHost: process.env.API_HOST ?? "0.0.0.0",
+  corsOrigins: process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(",").map((s) => s.trim()).filter(Boolean)
+    : [],
   storefrontOrigin: process.env.STOREFRONT_ORIGIN ?? "http://localhost:8090",
   adminOrigin: process.env.ADMIN_ORIGIN ?? "http://localhost:8081",
   supabaseUrl: normalizeSupabaseUrl(process.env.SUPABASE_URL),

@@ -11,6 +11,7 @@ COPY apps/api/package.json apps/api/
 COPY apps/storefront/package.json apps/storefront/
 COPY apps/admin/package.json apps/admin/
 
+# Install dependencies (includes tsx which is used by start script)
 RUN npm ci
 
 COPY packages/db packages/db
@@ -20,16 +21,15 @@ RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 RUN mkdir -p /app/uploads
 
-ENV NODE_ENV=development
+ENV NODE_ENV=production
 ENV API_PORT=3001
 ENV API_HOST=0.0.0.0
 ENV UPLOAD_DIR=/app/uploads
-ENV DATABASE_URL=postgres://elane:elane@postgres:5432/elane
-ENV STOREFRONT_ORIGIN=http://localhost:8090
-ENV ADMIN_ORIGIN=http://localhost:8081
-ENV COOKIE_SECURE=false
 
 EXPOSE 3001
 VOLUME ["/app/uploads"]
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=5 \
+  CMD node -e "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 ENTRYPOINT ["/entrypoint.sh"]

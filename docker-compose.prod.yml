@@ -1,0 +1,127 @@
+# ==========================================================
+# PRODUCTION CLOUD LAB OVERRIDE (VM1: app-server - 192.168.56.10)
+# - No local PostgreSQL container (PostgreSQL runs on VM2: 192.168.56.20)
+# - Multi-stage production builds (Nitro node-server + Nginx reverse proxy)
+# - No bind mounts / hot reload
+# - Healthchecks and restart: unless-stopped on all services
+#
+# Usage:
+#   docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+# ==========================================================
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.prod.Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      SESSION_SECRET: ${SESSION_SECRET}
+      API_PORT: "3001"
+      API_HOST: "0.0.0.0"
+      UPLOAD_DIR: /app/uploads
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_MEDIA_BUCKET: ${SUPABASE_MEDIA_BUCKET:-products}
+      SEPAY_WEBHOOK_SECRET: ${SEPAY_WEBHOOK_SECRET:-}
+      SEPAY_BANK_ACCOUNT: ${SEPAY_BANK_ACCOUNT:-}
+      SEPAY_ACCOUNT_NAME: ${SEPAY_ACCOUNT_NAME:-}
+      SEPAY_BANK_NAME: ${SEPAY_BANK_NAME:-}
+      SEPAY_BANK_BIN: ${SEPAY_BANK_BIN:-}
+      STOREFRONT_ORIGIN: ${STOREFRONT_ORIGIN:-http://192.168.56.10}
+      ADMIN_ORIGIN: ${ADMIN_ORIGIN:-http://192.168.56.10:8081}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      NODE_ENV: production
+    ports:
+      - "3001:3001"
+    volumes:
+      - elane_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+
+  storefront:
+    build:
+      context: .
+      dockerfile: docker/storefront.prod.Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+    restart: unless-stopped
+    environment:
+      API_INTERNAL_URL: http://api:3001
+      HOST: "0.0.0.0"
+      PORT: "8090"
+      NODE_ENV: production
+    expose:
+      - "8090"
+    ports:
+      - "8090:8090"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8090/').then(r=>process.exit(r.ok||r.status<500?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  admin:
+    build:
+      context: .
+      dockerfile: docker/admin.prod.Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+    restart: unless-stopped
+    environment:
+      API_INTERNAL_URL: http://api:3001
+      HOST: "0.0.0.0"
+      PORT: "8081"
+      NODE_ENV: production
+    expose:
+      - "8081"
+    ports:
+      # Expose container port internally to network; Nginx proxies host:8081
+      - "8082:8081"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8081/').then(r=>process.exit(r.ok||r.status<500?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    container_name: elane-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8081:8081"
+    depends_on:
+      api:
+        condition: service_healthy
+      storefront:
+        condition: service_healthy
+      admin:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - elane_network
+
+volumes:
+  elane_uploads:

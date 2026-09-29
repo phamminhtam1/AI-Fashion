@@ -6,9 +6,16 @@ dist/
 .tanstack/
 uploads/
 .env
+.env.*
+!.env.example
+!.env.*.example
 .env.local
 *.log
 .DS_Store
 .superpowers/
 apps/*/.env
+apps/*/.env.*
+!apps/*/.env.example
 packages/*/.env
+packages/*/.env.*
+!packages/*/.env.example
