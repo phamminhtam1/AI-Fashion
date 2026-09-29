@@ -58,16 +58,17 @@ function Account() {
     }
   }, [search.orderId]);
 
-  // Always refresh orders on mount
+  // Always refresh orders on mount if user is logged in
   useEffect(() => {
-    void refreshOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (user) {
+      void refreshOrders();
+    }
+  }, [user, refreshOrders]);
 
   // Refresh when returning to tab / window focus
   useEffect(() => {
     const handleSync = () => {
-      if (document.visibilityState === "visible") {
+      if (document.visibilityState === "visible" && user) {
         void refreshOrders();
       }
     };
@@ -77,7 +78,7 @@ function Account() {
       window.removeEventListener("focus", handleSync);
       document.removeEventListener("visibilitychange", handleSync);
     };
-  }, [refreshOrders]);
+  }, [user, refreshOrders]);
 
   // Real-time polling if any bank order is awaiting payment
   const hasAwaitingOrders = useMemo(() => {

@@ -1,5 +1,5 @@
 import { createMiddleware } from "hono/factory";
-import { getCookie } from "hono/cookie";
+import { getCookie, deleteCookie } from "hono/cookie";
 import type { Db } from "@elane/db";
 import { ApiError } from "../lib/errors.js";
 import {
@@ -29,6 +29,9 @@ export const attachDb = (db: Db) =>
 export const attachUser = createMiddleware<AppVars>(async (c, next) => {
   const token = getCookie(c, SESSION_COOKIE);
   const user = await resolveSession(c.get("db"), token);
+  if (token && !user) {
+    deleteCookie(c, SESSION_COOKIE, { path: "/" });
+  }
   c.set("user", user);
   await next();
 });
@@ -36,6 +39,9 @@ export const attachUser = createMiddleware<AppVars>(async (c, next) => {
 export const attachCustomer = createMiddleware<AppVars>(async (c, next) => {
   const token = getCookie(c, CUSTOMER_SESSION_COOKIE);
   const customer = await resolveCustomerSession(c.get("db"), token);
+  if (token && !customer) {
+    deleteCookie(c, CUSTOMER_SESSION_COOKIE, { path: "/" });
+  }
   c.set("customer", customer);
   await next();
 });

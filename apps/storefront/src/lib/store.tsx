@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { toast } from "sonner";
 import { products, type Product } from "./products";
-import { storeApi, type StoreOrderItem, type StoreOrderSummary } from "./api";
+import { storeApi, ApiError, type StoreOrderItem, type StoreOrderSummary } from "./api";
 
 /** Free-shipping threshold (VND) — matches announcement bar. */
 export const FREE_SHIP = 1_000_000;
@@ -156,6 +156,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const lastOrdersFetchRef = useRef<number>(0);
 
   const refreshOrders = useCallback(async () => {
+    if (!user) {
+      setOrders([]);
+      return;
+    }
     const now = Date.now();
     if (inFlightOrdersRef.current) {
       return inFlightOrdersRef.current;
@@ -169,15 +173,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       try {
         const res = await storeApi.orders();
         setOrders(mapOrders(res.items));
-      } catch {
-        /* ignore */
+      } catch (err: unknown) {
+        if (
+          (err instanceof ApiError && err.status === 401) ||
+          (typeof err === "object" && err !== null && "status" in err && (err as { status: number }).status === 401)
+        ) {
+          setUser(null);
+          setOrders([]);
+        }
       } finally {
         inFlightOrdersRef.current = null;
       }
     })();
     inFlightOrdersRef.current = p;
     return p;
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     try {
@@ -206,6 +216,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (ready) localStorage.setItem("elane-wish", JSON.stringify(wishlist));
   }, [wishlist, ready]);
+
+  useEffect(() => {
+    if (ready && products.length > 0 && cart.length > 0) {
+      const validCart = cart.filter((it) => products.some((p) => p.id === it.productId));
+      if (validCart.length !== cart.length) {
+        setCart(validCart);
+      }
+    }
+  }, [ready, cart]);
 
   useEffect(() => {
     if (!sessionReady || !user) return;

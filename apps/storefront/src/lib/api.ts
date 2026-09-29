@@ -116,11 +116,13 @@ export type BankInfo = {
 
 export class ApiError extends Error {
   status: number;
-  code?: string;
+  code?: string | undefined;
   constructor(status: number, message: string, code?: string) {
     super(message);
+    this.name = "ApiError";
     this.status = status;
     this.code = code;
+    Object.setPrototypeOf(this, ApiError.prototype);
   }
 }
 
@@ -226,8 +228,13 @@ export const storeApi = {
   me: async (): Promise<StoreMe | null> => {
     try {
       return await storeReq<StoreMe>("/store/auth/me");
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 401) return null;
+    } catch (e: unknown) {
+      if (
+        (e instanceof ApiError && e.status === 401) ||
+        (typeof e === "object" && e !== null && "status" in e && (e as { status: number }).status === 401)
+      ) {
+        return null;
+      }
       throw e;
     }
   },

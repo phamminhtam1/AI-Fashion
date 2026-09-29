@@ -1187,13 +1187,19 @@ function Checkout() {
           <h2 className="text-xl">Đơn hàng ({cart.length})</h2>
           <ul className="mt-6 space-y-4">
             {cart.map((it, i) => {
-              const p = products.find((x) => x.id === it.productId)!;
+              const p = products.find((x) => x.id === it.productId);
               const itemImg = getCartItemImage(it, p);
+              const itemName = p?.name ?? "Sản phẩm";
+              const itemPrice = p ? (p.salePrice ?? p.price) * it.qty : 0;
               return (
                 <li key={i} className="flex gap-3 text-sm">
-                  <img src={itemImg} alt={p.name} className="h-20 w-15 object-cover" />
-                  <div className="flex-1"><p>{p.name}</p><p className="text-xs text-muted-foreground">{it.colorName ? `${it.colorName} · ` : ""}{it.sku} · Size {it.size} · x{it.qty}</p></div>
-                  <span>{formatVND((p.salePrice ?? p.price) * it.qty)}</span>
+                  {itemImg ? (
+                    <img src={itemImg} alt={itemName} className="h-20 w-15 object-cover" />
+                  ) : (
+                    <div className="h-20 w-15 bg-secondary" />
+                  )}
+                  <div className="flex-1"><p>{itemName}</p><p className="text-xs text-muted-foreground">{it.colorName ? `${it.colorName} · ` : ""}{it.sku} · Size {it.size} · x{it.qty}</p></div>
+                  <span>{formatVND(itemPrice)}</span>
                 </li>
               );
             })}

@@ -33,14 +33,25 @@ function CartPage() {
       <div className="mt-10 grid gap-12 lg:grid-cols-[1fr_360px]">
         <ul className="divide-y divide-border border-y border-border">
           {cart.map((it, i) => {
-            const p = products.find((x) => x.id === it.productId)!;
+            const p = products.find((x) => x.id === it.productId);
             const itemImg = getCartItemImage(it, p);
+            const itemName = p?.name ?? "Sản phẩm";
+            const itemPrice = p ? (p.salePrice ?? p.price) * it.qty : 0;
             return (
               <li key={i} className="flex gap-5 py-6">
-                <Link to="/san-pham/$slug" params={{ slug: p.slug }}><img src={itemImg} alt={p.name} className="h-36 w-27 object-cover" /></Link>
+                {p ? (
+                  <Link to="/san-pham/$slug" params={{ slug: p.slug }}>
+                    <img src={itemImg} alt={itemName} className="h-36 w-27 object-cover" />
+                  </Link>
+                ) : (
+                  <div className="h-36 w-27 bg-secondary" />
+                )}
                 <div className="flex flex-1 flex-col">
                   <div className="flex justify-between gap-4">
-                    <div><p>{p.name}</p><p className="mt-1 text-sm text-muted-foreground">{it.colorName ? `${it.colorName} · ` : ""}{it.sku} · Size {it.size}</p></div>
+                    <div>
+                      <p>{itemName}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{it.colorName ? `${it.colorName} · ` : ""}{it.sku} · Size {it.size}</p>
+                    </div>
                     <button onClick={() => removeItem(i)} aria-label="Xóa"><X className="h-4 w-4" /></button>
                   </div>
                   <div className="mt-auto flex items-center justify-between">
@@ -49,7 +60,7 @@ function CartPage() {
                       <span className="w-8 text-center text-sm">{it.qty}</span>
                       <button className="p-2" onClick={() => updateQty(i, it.qty + 1)} aria-label="Tăng"><Plus className="h-3 w-3" /></button>
                     </div>
-                    <span>{formatVND((p.salePrice ?? p.price) * it.qty)}</span>
+                    <span>{formatVND(itemPrice)}</span>
                   </div>
                 </div>
               </li>

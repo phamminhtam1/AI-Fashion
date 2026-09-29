@@ -288,13 +288,19 @@ function MiniCart() {
             </div>
             <ul className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
               {cart.map((it, i) => {
-                const p = products.find((x) => x.id === it.productId)!;
+                const p = products.find((x) => x.id === it.productId);
                 const itemImg = getCartItemImage(it, p);
+                const itemName = p?.name ?? "Sản phẩm";
+                const itemPrice = p ? (p.salePrice ?? p.price) * it.qty : 0;
                 return (
                   <li key={i} className="flex gap-4">
-                    <img src={itemImg} alt={p.name} className="h-28 w-21 object-cover" />
+                    {itemImg ? (
+                      <img src={itemImg} alt={itemName} className="h-28 w-21 object-cover" />
+                    ) : (
+                      <div className="h-28 w-21 bg-secondary" />
+                    )}
                     <div className="flex flex-1 flex-col text-sm">
-                      <p>{p.name}</p>
+                      <p>{itemName}</p>
                       <p className="text-xs text-muted-foreground">{it.colorName ? `${it.colorName} · ` : ""}{it.sku} · Size {it.size}</p>
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex items-center border border-border">
@@ -302,7 +308,7 @@ function MiniCart() {
                           <span className="w-6 text-center text-xs">{it.qty}</span>
                           <button className="p-1.5" onClick={() => updateQty(i, it.qty + 1)} aria-label="Tăng"><Plus className="h-3 w-3" /></button>
                         </div>
-                        <span>{formatVND((p.salePrice ?? p.price) * it.qty)}</span>
+                        <span>{formatVND(itemPrice)}</span>
                       </div>
                       <button onClick={() => removeItem(i)} className="mt-1 self-start text-xs text-muted-foreground underline">Xóa</button>
                     </div>
