@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "../env.js";
 import { ApiError } from "./errors.js";
@@ -60,6 +62,12 @@ export async function uploadMediaObject(
   body: Buffer,
   contentType: string,
 ): Promise<void> {
+  if (!env.supabaseUrl || !env.supabaseServiceRoleKey) {
+    const filePath = path.resolve(env.uploadDir, objectKey);
+    await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+    await fs.promises.writeFile(filePath, body);
+    return;
+  }
   const { client, bucket } = requireStorage();
   const { error } = await client.storage.from(bucket).upload(objectKey, body, {
     contentType,
@@ -78,7 +86,15 @@ export async function deleteMediaObject(objectKey: string): Promise<void> {
 /** Batch remove — one round-trip instead of N sequential deletes. */
 export async function deleteMediaObjects(objectKeys: string[]): Promise<void> {
   if (!objectKeys.length) return;
-  if (!env.supabaseUrl || !env.supabaseServiceRoleKey) return;
+  if (!env.supabaseUrl || !env.supabaseServiceRoleKey) {
+    for (const key of objectKeys) {
+      try {
+        const filePath = path.resolve(env.uploadDir, key);
+        await fs.promises.unlink(filePath);
+      } catch {}
+    }
+    return;
+  }
   const { client, bucket } = requireStorage();
   const { error } = await client.storage.from(bucket).remove(objectKeys);
   if (error) {

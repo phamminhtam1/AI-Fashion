@@ -230,12 +230,83 @@ const RAW: Raw[] = [
   ["Khuyên tai ngọc trai Perle", "phu-kien", 490000, 390000, ["trang"], "Ngọc trai nhân tạo", "du-tiec"],
 ];
 
+async function ensureElaneWomanPosts() {
+  try {
+    const existing = await db.select().from(s.elaneWomanPosts).limit(1);
+    if (existing.length > 0) return;
+
+    const prods = await db.select().from(s.products).where(eq(s.products.status, "published")).limit(10);
+    const samplePosts = [
+      {
+        title: "ÉLANE lookbook · La Parisienne",
+        imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80",
+        sortOrder: 1,
+        status: "published",
+        productId: prods[0]?.id ?? null,
+        linkUrl: prods[0] ? `/san-pham/${prods[0].slug}` : null,
+        instagramUrl: "https://instagram.com/elane.official",
+      },
+      {
+        title: "Autumn Elegance · Bộ sưu tập Thu Đông",
+        imageUrl: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800&auto=format&fit=crop&q=80",
+        sortOrder: 2,
+        status: "published",
+        productId: prods[1]?.id ?? null,
+        linkUrl: prods[1] ? `/san-pham/${prods[1].slug}` : null,
+        instagramUrl: "https://instagram.com/elane.official",
+      },
+      {
+        title: "Urban Chic · Quý cô công sở",
+        imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&auto=format&fit=crop&q=80",
+        sortOrder: 3,
+        status: "published",
+        productId: prods[2]?.id ?? null,
+        linkUrl: prods[2] ? `/san-pham/${prods[2].slug}` : null,
+        instagramUrl: "https://instagram.com/elane.official",
+      },
+      {
+        title: "Satin Mood · Đầm lụa dạ tiệc",
+        imageUrl: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800&auto=format&fit=crop&q=80",
+        sortOrder: 4,
+        status: "published",
+        productId: prods[3]?.id ?? null,
+        linkUrl: prods[3] ? `/san-pham/${prods[3].slug}` : null,
+        instagramUrl: "https://instagram.com/elane.official",
+      },
+      {
+        title: "Minimalist Modern · Tinh giản & Sang trọng",
+        imageUrl: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&auto=format&fit=crop&q=80",
+        sortOrder: 5,
+        status: "published",
+        productId: prods[4]?.id ?? null,
+        linkUrl: prods[4] ? `/san-pham/${prods[4].slug}` : null,
+        instagramUrl: "https://instagram.com/elane.official",
+      },
+      {
+        title: "Cozy Cashmere · Ấm áp ngày se lạnh",
+        imageUrl: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&auto=format&fit=crop&q=80",
+        sortOrder: 6,
+        status: "published",
+        productId: prods[5]?.id ?? null,
+        linkUrl: prods[5] ? `/san-pham/${prods[5].slug}` : null,
+        instagramUrl: "https://instagram.com/elane.official",
+      },
+    ];
+
+    await db.insert(s.elaneWomanPosts).values(samplePosts);
+    console.log("Seeded 6 sample posts for elane_woman_posts.");
+  } catch (err) {
+    console.warn("ensureElaneWomanPosts failed:", err);
+  }
+}
+
 async function main() {
   const existing = await db.select().from(s.accounts).where(eq(s.accounts.email, "admin@elane.local")).limit(1);
   if (existing.length) {
     await ensureDefaultSizeChart();
     await ensureCustomerModule();
-    console.log("Seed already applied (admin exists). Ensured size chart + customer perms. Skipping full seed.");
+    await ensureElaneWomanPosts();
+    console.log("Seed already applied (admin exists). Ensured size chart + customer perms + elane woman posts. Skipping full seed.");
     process.exit(0);
   }
 
@@ -490,6 +561,7 @@ async function main() {
   await db.insert(s.productCategories).values({ productId: draft!.id, categoryId: catBySlug["dam-suong"]!.id });
 
   await ensureCustomerModule();
+  await ensureElaneWomanPosts();
 
   console.log("Seed complete. admin@elane.local / ElaneAdmin1!");
   process.exit(0);

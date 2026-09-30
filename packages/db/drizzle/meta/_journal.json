@@ -57,6 +57,13 @@
       "when": 1790385000000,
       "tag": "0007_order_fulfillment",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790390000000,
+      "tag": "0008_elane_woman_posts",
+      "breakpoints": true
     }
   ]
 }

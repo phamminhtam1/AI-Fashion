@@ -24,6 +24,7 @@ export function ProductCard({ product: p }: { product: Product }) {
         </Link>
         <div className="pointer-events-none absolute left-3 top-3 flex flex-col gap-1">
           {p.isNew && <span className="bg-background px-2 py-1 text-[10px] font-semibold uppercase tracking-widest">Mới</span>}
+          {p.bestSeller && !p.isNew && <span className="bg-foreground text-background px-2 py-1 text-[10px] font-semibold uppercase tracking-widest">Bán chạy</span>}
           {discount > 0 && <span className="bg-sale px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-primary-foreground">-{discount}%</span>}
         </div>
         <button
@@ -70,7 +71,7 @@ export function ProductCard({ product: p }: { product: Product }) {
             <span className="font-medium">{formatVND(p.price)}</span>
           )}
         </div>
-        <div className="flex gap-1.5 pt-1">
+        <div className="flex items-center gap-2 pt-2 pb-1">
           {p.colorways.map((c) => {
             const isSelected = c.id === (activeCw?.id ?? selectedCwId);
             return (
@@ -83,8 +84,10 @@ export function ProductCard({ product: p }: { product: Product }) {
                   setSelectedCwId(c.id);
                 }}
                 className={cn(
-                  "h-8 w-6 overflow-hidden border transition-all",
-                  isSelected ? "border-foreground ring-1 ring-foreground" : "border-border opacity-70 hover:opacity-100",
+                  "relative h-[34px] w-[26px] overflow-hidden rounded-[3px] transition-all duration-200",
+                  isSelected
+                    ? "z-10 -translate-y-1 scale-110 opacity-100 shadow-[0_4px_12px_rgba(0,0,0,0.28)]"
+                    : "opacity-50 hover:opacity-85 hover:-translate-y-0.5 hover:shadow-sm",
                 )}
               >
                 <img src={c.thumbnail} alt="" className="h-full w-full object-cover" />

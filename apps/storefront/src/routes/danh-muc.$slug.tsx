@@ -41,7 +41,7 @@ function Listing() {
     let r = data.items.filter((p) => price(p) <= maxPrice && (!size || p.sizes.includes(size)));
     if (sort === "asc") r = [...r].sort((a, b) => price(a) - price(b));
     if (sort === "desc") r = [...r].sort((a, b) => price(b) - price(a));
-    if (sort === "best") r = [...r].sort((a, b) => b.reviews - a.reviews);
+    if (sort === "best") r = [...r].sort((a, b) => Number(!!b.bestSeller) - Number(!!a.bestSeller) || b.reviews - a.reviews);
     if (sort === "new") r = [...r].sort((a, b) => Number(!!b.isNew) - Number(!!a.isNew));
     return r;
   }, [data.items, sort, size, maxPrice]);

@@ -558,6 +558,19 @@ export const banners = pgTable("banners", {
   updatedAt: updatedAt(),
 });
 
+export const elaneWomanPosts = pgTable("elane_woman_posts", {
+  id: id(),
+  title: text("title"),
+  imageUrl: text("image_url").notNull(),
+  linkUrl: text("link_url"),
+  productId: uuid("product_id").references(() => products.id, { onDelete: "set null" }),
+  instagramUrl: text("instagram_url"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  status: text("status").notNull().default("published"),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
 export const faqs = pgTable("faqs", {
   id: id(),
   groupName: text("group_name").notNull(),

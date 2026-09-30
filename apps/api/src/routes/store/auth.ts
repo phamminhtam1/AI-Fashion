@@ -100,8 +100,11 @@ storeAuthRoutes.post("/logout", async (c) => {
   return c.json({ ok: true });
 });
 
-storeAuthRoutes.get("/me", requireCustomer, async (c) => {
-  const u = c.get("customer")!;
+storeAuthRoutes.get("/me", async (c) => {
+  const u = c.get("customer");
+  if (!u) {
+    return c.json(null);
+  }
   return c.json({
     customer_id: u.customerId,
     full_name: u.fullName,

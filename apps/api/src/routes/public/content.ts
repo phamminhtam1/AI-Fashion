@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { and, eq, or, sql, isNull } from "drizzle-orm";
-import { banners, contentPages, contentRevisions, faqs, settings } from "@elane/db";
+import { and, asc, desc, eq, or, sql, isNull } from "drizzle-orm";
+import { banners, contentPages, contentRevisions, elaneWomanPosts, faqs, products, settings } from "@elane/db";
 import type { AppVars } from "../../middleware/auth.js";
 import { ApiError } from "../../lib/errors.js";
 
@@ -86,3 +86,38 @@ publicContentRoutes.get("/faqs", async (c) => {
     })),
   });
 });
+
+publicContentRoutes.get("/elane-woman", async (c) => {
+  const db = c.get("db");
+  const rows = await db
+    .select({
+      id: elaneWomanPosts.id,
+      title: elaneWomanPosts.title,
+      image_url: elaneWomanPosts.imageUrl,
+      link_url: elaneWomanPosts.linkUrl,
+      product_id: elaneWomanPosts.productId,
+      instagram_url: elaneWomanPosts.instagramUrl,
+      sort_order: elaneWomanPosts.sortOrder,
+      product_slug: products.slug,
+      product_name: products.name,
+    })
+    .from(elaneWomanPosts)
+    .leftJoin(products, eq(products.id, elaneWomanPosts.productId))
+    .where(eq(elaneWomanPosts.status, "published"))
+    .orderBy(asc(elaneWomanPosts.sortOrder), desc(elaneWomanPosts.createdAt));
+
+  return c.json({
+    items: rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      image_url: r.image_url,
+      link_url: r.link_url || (r.product_slug ? `/san-pham/${r.product_slug}` : null),
+      product_id: r.product_id,
+      product_slug: r.product_slug,
+      product_name: r.product_name,
+      instagram_url: r.instagram_url,
+      sort_order: r.sort_order,
+    })),
+  });
+});
+

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import dress from "@/assets/p-dress.jpg";
 import top from "@/assets/p-top.jpg";
 import set from "@/assets/p-set.jpg";
@@ -124,8 +125,52 @@ async function fetchAllPublishedProducts() {
   return items;
 }
 
-function rootCategoriesList() {
+export function rootCategoriesList() {
   return categoriesCache.filter((c) => !c.parent_id);
+}
+
+export function allCategoriesList() {
+  return categoriesCache;
+}
+
+export function allProductsList() {
+  return cache;
+}
+
+type CatalogListener = () => void;
+const listeners = new Set<CatalogListener>();
+
+export function subscribeCatalog(listener: CatalogListener) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function notifyCatalog() {
+  for (const fn of listeners) {
+    try {
+      fn();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+}
+
+export function hydrateCatalog(p?: Product[], c?: Category[]) {
+  let updated = false;
+  if (p && p.length > 0 && cache.length === 0) {
+    cache = [...p];
+    updated = true;
+  }
+  if (c && c.length > 0 && categoriesCache.length === 0) {
+    categoriesCache = [...c];
+    updated = true;
+  }
+  if (updated) {
+    loadedAt = Date.now();
+    notifyCatalog();
+  }
 }
 
 /** Slugs of this category and all descendants (for listing). */
@@ -146,25 +191,156 @@ export function categorySubtreeSlugs(slug: string): Set<string> {
   return out;
 }
 
+/** Walk up to root category slug (for ranking new-arrivals). */
+export function rootCategorySlug(slug: string): string {
+  let cur = categoriesCache.find((c) => c.slug === slug);
+  if (!cur) return slug;
+  while (cur.parent_id) {
+    const parent = categoriesCache.find((c) => c.id === cur!.parent_id);
+    if (!parent) break;
+    cur = parent;
+  }
+  return cur.slug;
+}
+
+/** Check if a product belongs to the accessories category (phụ kiện). */
+export function isAccessory(p: Product): boolean {
+  const root = rootCategorySlug(p.category);
+  return root === "phu-kien" || p.category === "phu-kien";
+}
+
+/** 0 = áo/quần first, 1 = other apparel, 2 = phụ kiện last. */
+export function newArrivalRank(p: Product): number {
+  const root = rootCategorySlug(p.category);
+  if (root === "ao" || root === "quan") return 0;
+  if (root === "phu-kien") return 2;
+  return 1;
+}
+
+/** Prefer áo/quần over phụ kiện; stable within each band. */
+export function prioritizeApparel(items: Product[]) {
+  const buckets: [Product[], Product[], Product[]] = [[], [], []];
+  for (const p of items) buckets[newArrivalRank(p)].push(p);
+  return buckets[0].concat(buckets[1], buckets[2]);
+}
+
+/**
+ * Lấy danh sách hàng mới về:
+ * - Nếu có sản phẩm được đánh dấu isNew -> lấy các sản phẩm đó.
+ * - Nếu không có -> lấy ngẫu nhiên 10-20 sản phẩm trang phục (loại trừ phụ kiện).
+ */
+export function getNewArrivalProducts(prods: Product[] = cache): Product[] {
+  const marked = prods.filter((p) => p.isNew);
+  if (marked.length > 0) {
+    return prioritizeApparel(marked);
+  }
+  const apparel = prods.filter((p) => !isAccessory(p));
+  const pool = apparel.length > 0 ? apparel : prods;
+  return prioritizeApparel(pool).slice(0, 20);
+}
+
+/**
+ * Lấy danh sách sản phẩm bán chạy nhất:
+ * - Nếu có sản phẩm bán chạy thực tế -> lấy các sản phẩm đó.
+ * - Nếu chưa có -> lấy ngẫu nhiên 8-16 sản phẩm trang phục (loại trừ phụ kiện, tránh trùng lặp với hàng mới về).
+ */
+export function getBestSellerProducts(prods: Product[] = cache): Product[] {
+  const marked = prods.filter((p) => p.bestSeller);
+  if (marked.length > 0) {
+    return prioritizeApparel(marked);
+  }
+  const apparel = prods.filter((p) => !isAccessory(p) && !p.isNew);
+  const pool = apparel.length >= 8 ? apparel : prods.filter((p) => !isAccessory(p));
+  return prioritizeApparel(pool.length > 0 ? pool : prods).slice(0, 16);
+}
+
 export async function ensureCatalog(force = false) {
   if (!force && loadedAt > 0 && Date.now() - loadedAt < CATALOG_TTL_MS) return;
-  const [prods, cats] = await Promise.all([fetchAllPublishedProducts(), fetchCategories()]);
-  cache = prods.map(mapApiProduct);
-  categoriesCache = cats.items.map((c) => ({
-    id: c.id,
-    slug: c.slug,
-    name: c.name,
-    description: c.description ?? "",
-    parent_id: c.parent_id,
-    image: catImage[c.slug] ?? dress,
-  }));
-  loadedAt = Date.now();
+  try {
+    const [prods, cats] = await Promise.all([fetchAllPublishedProducts(), fetchCategories()]);
+    categoriesCache = (cats?.items ?? []).map((c) => ({
+      id: c.id,
+      slug: c.slug,
+      name: c.name,
+      description: c.description ?? "",
+      parent_id: c.parent_id,
+      image: catImage[c.slug] ?? dress,
+    }));
+
+    let mappedProds = prods.map(mapApiProduct);
+
+    // 1. Hàng mới về: Nếu không có sản phẩm nào được đánh dấu là mới (isNew)
+    // -> random 10-20 sản phẩm (loại trừ phụ kiện) làm hàng mới về
+    const hasExplicitNew = mappedProds.some((p) => p.isNew);
+    const newArrivalIds = new Set<string>();
+    if (!hasExplicitNew && mappedProds.length > 0) {
+      const eligible = mappedProds.filter((p) => !isAccessory(p));
+      const pool = eligible.length > 0 ? eligible : mappedProds;
+      const targetCount = Math.min(pool.length, Math.floor(Math.random() * 11) + 10);
+      const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, targetCount);
+      for (const item of shuffled) newArrivalIds.add(item.id);
+      mappedProds = mappedProds.map((p) => (newArrivalIds.has(p.id) ? { ...p, isNew: true } : p));
+    } else {
+      for (const item of mappedProds) if (item.isNew) newArrivalIds.add(item.id);
+    }
+
+    // 2. Bán chạy nhất: Nếu chưa có sản phẩm bán chạy từ đơn hàng thực tế
+    // -> random 8-16 sản phẩm trang phục (loại trừ phụ kiện, tránh trùng với Hàng mới về)
+    const hasExplicitBestSeller = mappedProds.some((p) => p.bestSeller);
+    if (!hasExplicitBestSeller && mappedProds.length > 0) {
+      const apparelOnly = mappedProds.filter((p) => !isAccessory(p));
+      const nonNewApparel = apparelOnly.filter((p) => !newArrivalIds.has(p.id));
+      const candidatePool = nonNewApparel.length >= 8 ? nonNewApparel : apparelOnly;
+      const targetCount = Math.min(candidatePool.length, Math.floor(Math.random() * 9) + 8);
+      const shuffled = [...candidatePool].sort(() => Math.random() - 0.5).slice(0, targetCount);
+      const bestSellerIds = new Set(shuffled.map((p) => p.id));
+      mappedProds = mappedProds.map((p) => (bestSellerIds.has(p.id) ? { ...p, bestSeller: true } : p));
+    }
+
+    cache = mappedProds;
+    loadedAt = Date.now();
+    notifyCatalog();
+  } catch (err) {
+    console.warn("ensureCatalog failed to load products/categories:", err);
+  }
 }
 
 export function invalidateCatalog() {
   loadedAt = 0;
   cache = [];
   categoriesCache = [];
+  notifyCatalog();
+}
+
+/** React hook for components to reactively re-render when catalog data arrives */
+export function useCatalog() {
+  const [data, setData] = useState(() => ({
+    products: [...products],
+    categories: [...categories],
+    ready: categories.length > 0,
+  }));
+
+  useEffect(() => {
+    const unsub = subscribeCatalog(() => {
+      setData({
+        products: [...products],
+        categories: [...categories],
+        ready: categories.length > 0,
+      });
+    });
+    if (categories.length === 0 || products.length === 0) {
+      ensureCatalog().then(() => {
+        setData({
+          products: [...products],
+          categories: [...categories],
+          ready: categories.length > 0,
+        });
+      });
+    }
+    return unsub;
+  }, []);
+
+  return data;
 }
 
 /** Sync accessors — call ensureCatalog() in route loaders first. */
@@ -208,33 +384,6 @@ export function categoryBreadcrumb(slug: string): Array<{ slug: string; name: st
   return chain;
 }
 
-/** Walk up to root category slug (for ranking new-arrivals). */
-function rootCategorySlug(slug: string): string {
-  let cur = categoriesCache.find((c) => c.slug === slug);
-  if (!cur) return slug;
-  while (cur.parent_id) {
-    const parent = categoriesCache.find((c) => c.id === cur!.parent_id);
-    if (!parent) break;
-    cur = parent;
-  }
-  return cur.slug;
-}
-
-/** 0 = áo/quần first, 1 = other apparel, 2 = phụ kiện last. */
-function newArrivalRank(p: Product): number {
-  const root = rootCategorySlug(p.category);
-  if (root === "ao" || root === "quan") return 0;
-  if (root === "phu-kien") return 2;
-  return 1;
-}
-
-/** Prefer áo/quần over phụ kiện; stable within each band. */
-export function prioritizeApparel(items: Product[]) {
-  const buckets: [Product[], Product[], Product[]] = [[], [], []];
-  for (const p of items) buckets[newArrivalRank(p)].push(p);
-  return buckets[0].concat(buckets[1], buckets[2]);
-}
-
 export async function loadProduct(slug: string) {
   await ensureCatalog();
   const hit = getProduct(slug);
@@ -253,7 +402,7 @@ export function productsForListing(slug: string): { title: string; description: 
     return {
       title: "Hàng mới",
       description: "Những thiết kế mới nhất từ bộ sưu tập Thu Đông 2026.",
-      items: prioritizeApparel(cache.filter((p) => p.isNew)),
+      items: getNewArrivalProducts(cache),
     };
   }
   if (slug === "sale") {
@@ -267,7 +416,7 @@ export function productsForListing(slug: string): { title: string; description: 
     return {
       title: "Bán chạy",
       description: "Những thiết kế được yêu thích nhất tại ÉLANE.",
-      items: cache.filter((p) => p.bestSeller),
+      items: getBestSellerProducts(cache),
     };
   }
   if (slug === "cong-so" || slug === "du-tiec" || slug === "casual") {

@@ -695,6 +695,60 @@ export const adminApi = {
     req<DiscountCode>(`/admin/discount-codes/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteDiscountCode: (id: string) =>
     req<DiscountCode>(`/admin/discount-codes/${id}`, { method: "DELETE" }),
+  elaneWomanPosts: () => req<{ items: ElaneWomanPost[] }>("/admin/elane-woman"),
+  createElaneWomanPost: (body: FormData | ElaneWomanInput) => {
+    if (body instanceof FormData) {
+      return fetch(`${API_URL}/api/v1/admin/elane-woman`, {
+        method: "POST",
+        credentials: "include",
+        body,
+      }).then(async (res) => {
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || "Tạo bài đăng thất bại");
+        }
+        return res.json() as Promise<ElaneWomanPost>;
+      });
+    }
+    return req<ElaneWomanPost>("/admin/elane-woman", { method: "POST", body: JSON.stringify(body) });
+  },
+  patchElaneWomanPost: (id: string, body: FormData | Partial<ElaneWomanInput>) => {
+    if (body instanceof FormData) {
+      return fetch(`${API_URL}/api/v1/admin/elane-woman/${id}`, {
+        method: "PATCH",
+        credentials: "include",
+        body,
+      }).then(async (res) => {
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || "Cập nhật bài đăng thất bại");
+        }
+        return res.json() as Promise<ElaneWomanPost>;
+      });
+    }
+    return req<ElaneWomanPost>(`/admin/elane-woman/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+  },
+  deleteElaneWomanPost: (id: string) =>
+    req<{ id: string; success: boolean }>(`/admin/elane-woman/${id}`, { method: "DELETE" }),
+  uploadElaneWomanImage: async (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`${API_URL}/api/v1/admin/elane-woman/upload`, {
+      method: "POST",
+      credentials: "include",
+      body: fd,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Upload ảnh thất bại");
+    }
+    return (await res.json()) as { url: string; object_key: string };
+  },
+  reorderElaneWomanPosts: (items: Array<{ id: string; sort_order: number }>) =>
+    req<{ success: boolean; count: number }>("/admin/elane-woman/reorder", {
+      method: "POST",
+      body: JSON.stringify({ items }),
+    }),
 };
 
 export type DiscountCode = {
@@ -725,6 +779,31 @@ export type DiscountCodeInput = {
   ends_at?: string | null;
   usage_limit?: number | null;
   status?: "active" | "disabled";
+};
+
+export type ElaneWomanPost = {
+  id: string;
+  title: string | null;
+  image_url: string;
+  link_url: string | null;
+  product_id: string | null;
+  instagram_url: string | null;
+  sort_order: number;
+  status: "published" | "draft" | string;
+  created_at: string;
+  updated_at: string;
+  product_name?: string | null;
+  product_slug?: string | null;
+};
+
+export type ElaneWomanInput = {
+  title?: string | null;
+  image_url?: string;
+  link_url?: string | null;
+  product_id?: string | null;
+  instagram_url?: string | null;
+  sort_order?: number;
+  status?: "published" | "draft";
 };
 
 export { API_URL };

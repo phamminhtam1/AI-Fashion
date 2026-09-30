@@ -1,9 +1,17 @@
-const PUBLIC_API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+const PUBLIC_API_URL = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "http://localhost:3001";
 
-/** Browser → localhost; SSR trong Docker → http://api:3001 */
+/** Browser → localhost in dev or relative /api in prod; SSR trong Docker → http://api:3001 */
 function apiBase() {
   if (typeof window === "undefined") {
-    return process.env.API_INTERNAL_URL ?? PUBLIC_API_URL;
+    return process.env["API_INTERNAL_URL"] ?? (PUBLIC_API_URL || "http://localhost:3001");
+  }
+  if (
+    PUBLIC_API_URL.includes("localhost") ||
+    PUBLIC_API_URL.includes("127.0.0.1")
+  ) {
+    if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+      return "";
+    }
   }
   return PUBLIC_API_URL;
 }
@@ -195,6 +203,22 @@ export async function fetchHomepage() {
   return get<{ brand: Record<string, unknown>; blocks: Record<string, unknown> }>("/homepage");
 }
 
+export type ElaneWomanPost = {
+  id: string;
+  title: string | null;
+  image_url: string;
+  link_url: string | null;
+  product_id: string | null;
+  product_slug: string | null;
+  product_name: string | null;
+  instagram_url: string | null;
+  sort_order: number;
+};
+
+export async function fetchElaneWomanPosts() {
+  return get<{ items: ElaneWomanPost[] }>("/elane-woman").catch(() => ({ items: [] }));
+}
+
 export type ApiSizeChart = {
   id: string;
   name: string;
@@ -227,15 +251,10 @@ export const storeApi = {
   logout: () => storeReq<{ ok: boolean }>("/store/auth/logout", { method: "POST" }),
   me: async (): Promise<StoreMe | null> => {
     try {
-      return await storeReq<StoreMe>("/store/auth/me");
-    } catch (e: unknown) {
-      if (
-        (e instanceof ApiError && e.status === 401) ||
-        (typeof e === "object" && e !== null && "status" in e && (e as { status: number }).status === 401)
-      ) {
-        return null;
-      }
-      throw e;
+      const res = await storeReq<StoreMe | null>("/store/auth/me");
+      return res ?? null;
+    } catch {
+      return null;
     }
   },
   patchMe: (body: { full_name?: string; phone?: string | null }) =>

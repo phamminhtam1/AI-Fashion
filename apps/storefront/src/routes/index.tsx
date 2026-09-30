@@ -1,14 +1,39 @@
+import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, RefreshCw, ShieldCheck, Truck } from "lucide-react";
 import hero from "@/assets/hero.jpg";
 import setImg from "@/assets/p-set.jpg";
 import coatImg from "@/assets/p-coat.jpg";
 import dressImg from "@/assets/p-dress.jpg";
-import { categories, prioritizeApparel, products } from "@/lib/products";
+import {
+  categories,
+  getBestSellerProducts,
+  getNewArrivalProducts,
+  isAccessory,
+  prioritizeApparel,
+  products,
+  rootCategoriesList,
+  allProductsList,
+  ensureCatalog,
+  hydrateCatalog,
+  useCatalog,
+} from "@/lib/products";
+import { fetchElaneWomanPosts, type ElaneWomanPost } from "@/lib/api";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Newsletter } from "@/components/site/Footer";
 
 export const Route = createFileRoute("/")({
+  loader: async () => {
+    const [_, elaneWomanRes] = await Promise.all([
+      ensureCatalog(),
+      fetchElaneWomanPosts(),
+    ]);
+    return {
+      categories: rootCategoriesList().map((c) => ({ ...c })),
+      products: allProductsList().map((p) => ({ ...p })),
+      elaneWomanPosts: elaneWomanRes.items,
+    };
+  },
   head: () => ({
     meta: [
       { title: "ÉLANE — Thời trang nữ cao cấp | Bộ sưu tập Thu Đông 2026" },
@@ -37,8 +62,47 @@ function SectionHead({ eyebrow, title, to }: { eyebrow: string; title: string; t
 }
 
 function Home() {
-  const newIn = prioritizeApparel(products.filter((p) => p.isNew)).slice(0, 8);
-  const best = products.filter((p) => p.bestSeller).slice(0, 4);
+  const loaderData = Route.useLoaderData();
+  const catalog = useCatalog();
+
+  useEffect(() => {
+    if (loaderData?.categories?.length || loaderData?.products?.length) {
+      hydrateCatalog(loaderData.products, loaderData.categories);
+    }
+  }, [loaderData]);
+
+  const cats =
+    catalog.categories.length > 0
+      ? catalog.categories
+      : (loaderData?.categories?.length ? loaderData.categories : categories);
+
+  const prods =
+    catalog.products.length > 0
+      ? catalog.products
+      : (loaderData?.products?.length ? loaderData.products : products);
+
+  const newIn = getNewArrivalProducts(prods).slice(0, 8);
+  const best = getBestSellerProducts(prods).slice(0, 8);
+
+  const womanPosts: ElaneWomanPost[] = loaderData?.elaneWomanPosts ?? [];
+  const womanItems =
+    womanPosts.length > 0
+      ? womanPosts.slice(0, 6).map((p) => ({
+          id: p.id,
+          title: p.title,
+          image: p.image_url,
+          link: p.link_url || (p.product_slug ? `/san-pham/${p.product_slug}` : null),
+        }))
+      : prods
+          .filter((p) => !isAccessory(p))
+          .slice(0, 6)
+          .map((p) => ({
+            id: p.id,
+            title: p.name,
+            image: p.images[0] ?? "",
+            link: `/san-pham/${p.slug}`,
+          }));
+
   return (
     <>
       <section className="relative h-[calc(100svh-7rem)] min-h-[520px] overflow-hidden bg-secondary">
@@ -73,7 +137,7 @@ function Home() {
       <section className="mx-auto max-w-[1440px] px-6 py-20 md:px-8">
         <SectionHead eyebrow="Danh mục" title="Mua sắm theo danh mục" />
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-7">
-          {categories.map((c) => (
+          {cats.map((c) => (
             <Link key={c.slug} to="/danh-muc/$slug" params={{ slug: c.slug }} className="group">
               <div className="aspect-[3/4] overflow-hidden bg-secondary">
                 <img src={c.image} alt={c.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
@@ -136,10 +200,8 @@ function Home() {
         <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">@elane.official</p>
         <h2 className="mt-2 text-3xl md:text-4xl">#ÉLANEwoman</h2>
         <div className="mt-10 grid grid-cols-3 gap-2 md:grid-cols-6">
-          {products.slice(0, 6).map((p, i) => (
-            <Link key={p.id} to="/san-pham/$slug" params={{ slug: p.slug }} className="group aspect-square overflow-hidden bg-secondary">
-              <img src={p.images[i % 2]} alt={p.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
-            </Link>
+          {womanItems.map((item) => (
+            <LookbookItem key={item.id} post={item} />
           ))}
         </div>
       </section>
@@ -147,4 +209,46 @@ function Home() {
       <Newsletter />
     </>
   );
+}
+
+function LookbookItem({
+  post,
+}: {
+  post: { id: string; title?: string | null; image: string; link?: string | null };
+}) {
+  const isInternal = post.link && post.link.startsWith("/") && !post.link.startsWith("//");
+
+  const inner = (
+    <div className="group relative aspect-square overflow-hidden bg-secondary">
+      <img
+        src={post.image}
+        alt={post.title || "ÉLANEwoman"}
+        loading="lazy"
+        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+      />
+      {post.title && (
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-end p-3">
+          <p className="text-xs text-white line-clamp-2 text-left font-light leading-snug">{post.title}</p>
+        </div>
+      )}
+    </div>
+  );
+
+  if (isInternal && post.link) {
+    return (
+      <Link to={post.link} className="block">
+        {inner}
+      </Link>
+    );
+  }
+
+  if (post.link) {
+    return (
+      <a href={post.link} target="_blank" rel="noopener noreferrer" className="block">
+        {inner}
+      </a>
+    );
+  }
+
+  return <div>{inner}</div>;
 }

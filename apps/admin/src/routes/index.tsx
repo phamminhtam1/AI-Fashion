@@ -55,6 +55,7 @@ import { InventoryManager, type InventorySeed } from "@/components/InventoryMana
 import { CustomersManager } from "@/components/CustomersManager";
 import { DiscountCodesManager } from "@/components/DiscountCodesManager";
 import { OrdersManager } from "@/components/OrdersManager";
+import { ElaneWomanManager } from "@/components/ElaneWomanManager";
 import type { Overview } from "@/lib/api";
 
 export const Route = createFileRoute("/")({
@@ -160,6 +161,7 @@ const operations: NavItem[] = [
   { id: "promotions", label: "Khuyến mãi", icon: Tag },
 ];
 const content: NavItem[] = [
+  { id: "elanewoman", label: "ÉLANEwoman", icon: GalleryVerticalEnd },
   { id: "collections", label: "Bộ sưu tập", icon: Sparkles },
   { id: "lookbook", label: "Lookbook", icon: GalleryVerticalEnd },
   { id: "journal", label: "Tạp chí", icon: BookOpen, count: 3 },
@@ -461,6 +463,8 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
           />
         ) : active === "promotions" ? (
           <DiscountCodesManager />
+        ) : active === "elanewoman" || active === "lookbook" ? (
+          <ElaneWomanManager />
         ) : currentConfig ? (
           <ModulePage config={currentConfig} query={query} setQuery={setQuery} onCreate={() => setCreateOpen(true)} onDetail={openDetail} />
         ) : null}

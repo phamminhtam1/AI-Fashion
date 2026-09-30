@@ -78,10 +78,15 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async () => {
-    const { ensureCatalog, getNavItems } = await import("@/lib/products");
-    await ensureCatalog();
-    // Return nav so client hydrates with children (module cache is server-only).
-    return { navItems: getNavItems() };
+    try {
+      const { ensureCatalog, getNavItems } = await import("@/lib/products");
+      await ensureCatalog();
+      // Return nav so client hydrates with children (module cache is server-only).
+      return { navItems: getNavItems() };
+    } catch (e) {
+      console.error("Failed to load catalog in root loader:", e);
+      return { navItems: [] };
+    }
   },
   head: () => ({
     meta: [
