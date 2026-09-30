@@ -36,13 +36,14 @@ adminOrderRoutes.get("/", async (c) => {
       paymentRef: orders.paymentRef,
       placedAt: orders.placedAt,
       customerName: customers.fullName,
+      recipientSnapshot: orders.recipientSnapshot,
       fulfillmentStatus: orders.fulfillmentStatus,
       fulfilledAt: orders.fulfilledAt,
       inventoryDocId: orders.inventoryDocId,
       inventoryDocCode: orders.inventoryDocCode,
     })
     .from(orders)
-    .innerJoin(customers, eq(customers.id, orders.customerId))
+    .leftJoin(customers, eq(customers.id, orders.customerId))
     .orderBy(desc(orders.placedAt))
     .limit(limitParam);
 
@@ -57,7 +58,10 @@ adminOrderRoutes.get("/", async (c) => {
       paid_at: o.paidAt,
       payment_ref: o.paymentRef,
       placed_at: o.placedAt,
-      customer_name: o.customerName,
+      customer_name:
+        o.customerName ??
+        (o.recipientSnapshot as { full_name?: string } | null)?.full_name ??
+        "Khách vãng lai",
       fulfillment_status: o.fulfillmentStatus ?? "unfulfilled",
       fulfilled_at: o.fulfilledAt,
       inventory_doc_id: o.inventoryDocId,
