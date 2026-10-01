@@ -298,6 +298,80 @@ export const storeApi = {
       payment_method: string;
       payment_status: string;
     }>("/me/orders", { method: "POST", body: JSON.stringify(body) }),
+  createTryOn: async (formData: FormData): Promise<{ id: string; status: string }> => {
+    const res = await fetch(`${apiBase()}/api/v1/store/try-ons`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new ApiError(
+        res.status,
+        (data as { message?: string }).message ?? `API ${res.status}`,
+        (data as { code?: string }).code,
+      );
+    }
+    return data as { id: string; status: string };
+  },
+  getTryOn: (id: string): Promise<StoreTryOnJob> =>
+    storeReq<StoreTryOnJob>(`/store/try-ons/${id}`),
+  listTryOns: (): Promise<{ items: StoreTryOnHistoryItem[] }> =>
+    storeReq<{ items: StoreTryOnHistoryItem[] }>("/store/try-ons"),
+  deleteTryOn: (id: string): Promise<{ ok: boolean }> =>
+    storeReq<{ ok: boolean }>(`/store/try-ons/${id}`, { method: "DELETE" }),
+};
+
+export type StoreTryOnHistoryItem = {
+  id: string;
+  status: string;
+  created_at: string;
+  completed_at?: string | null;
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    price_vnd: number;
+    price?: number;
+    compare_at_price_vnd?: number | null;
+    image_url?: string | null;
+    imageUrl?: string | null;
+  };
+  variant: {
+    id: string;
+    sku: string;
+    size?: string | null;
+  };
+  result_url?: string | null;
+  resultUrl?: string | null;
+  resultImageUrl?: string | null;
+  user_image_url?: string | null;
+  userImageUrl?: string | null;
+  userPhotoUrl?: string | null;
+};
+
+export type StoreTryOnJob = {
+  id: string;
+  status:
+    | "CREATED"
+    | "QUEUED"
+    | "CLASSIFYING_USER"
+    | "USER_CLASSIFIED"
+    | "PREPARING_GARMENT"
+    | "SUBMITTING"
+    | "PROCESSING"
+    | "COMPLETED"
+    | "FAILED"
+    | "CANCELLED"
+    | "EXPIRED";
+  visibility_flag?: string | null;
+  result?: { url: string } | null;
+  user_image?: { url: string } | null;
+  error_code?: string | null;
+  error_message?: string | null;
+  created_at: string;
+  started_at?: string | null;
+  completed_at?: string | null;
 };
 
 export type OrderPaymentStatus = {

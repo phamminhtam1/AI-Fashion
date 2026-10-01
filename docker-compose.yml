@@ -22,6 +22,16 @@ services:
     networks:
       - elane_network
 
+  redis:
+    container_name: elane-redis
+    networks:
+      - elane_network
+
+  ai-worker:
+    container_name: elane-ai-worker
+    networks:
+      - elane_network
+
 networks:
   elane_network:
     driver: bridge

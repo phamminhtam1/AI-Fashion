@@ -12,6 +12,7 @@
     "db:generate": "npm run generate -w @elane/db",
     "db:migrate": "npm run migrate -w @elane/db",
     "db:seed": "npm run seed -w @elane/db",
+    "worker:tryon": "npm run worker:tryon -w @elane/api",
     "acceptance": "node scripts/phase1-acceptance.mjs"
   }
 }

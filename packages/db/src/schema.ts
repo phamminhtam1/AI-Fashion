@@ -254,6 +254,9 @@ export const productVariants = pgTable(
     costVnd: bigint("cost_vnd", { mode: "number" }),
     weightG: integer("weight_g"),
     status: text("status").notNull().default("active"),
+    tryonAssetId: uuid("tryon_asset_id").references(() => aiAssets.id),
+    tryonMetadata: jsonb("tryon_metadata").$type<Record<string, unknown>>(),
+    tryonSourceSha256: text("tryon_source_sha256"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -625,3 +628,56 @@ export const idempotencyRecords = pgTable(
   },
   (t) => [uniqueIndex("idempotency_scope_key_uq").on(t.scope, t.key)],
 );
+
+// --- AI Virtual Try-On ---
+export const aiAssets = pgTable("ai_assets", {
+  id: id(),
+  customerId: uuid("customer_id").references(() => customers.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // USER_INPUT | GARMENT_EXTRACTED | TRYON_RESULT
+  storageKey: text("storage_key").notNull().unique(),
+  mimeType: text("mime_type").notNull(),
+  bytes: integer("bytes").notNull(),
+  width: integer("width"),
+  height: integer("height"),
+  sha256: text("sha256"),
+  sourceSha256: text("source_sha256"),
+  createdAt: createdAt(),
+  expiresAt: ts("expires_at"),
+});
+
+export const aiTryonJobs = pgTable(
+  "ai_tryon_jobs",
+  {
+    id: id(),
+    customerId: uuid("customer_id")
+      .notNull()
+      .references(() => customers.id),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id),
+    variantId: uuid("variant_id")
+      .notNull()
+      .references(() => productVariants.id),
+    status: text("status").notNull().default("CREATED"),
+    visibilityFlag: text("visibility_flag"),
+    classifierConfidence: numeric("classifier_confidence"),
+    provider: text("provider").notNull().default("krea"),
+    providerJobId: text("provider_job_id"),
+    userImageAssetId: uuid("user_image_asset_id").references(() => aiAssets.id),
+    garmentAssetId: uuid("garment_asset_id").references(() => aiAssets.id),
+    resultAssetId: uuid("result_asset_id").references(() => aiAssets.id),
+    generationPromptVersion: text("generation_prompt_version").notNull().default("v1"),
+    errorCode: text("error_code"),
+    errorMessage: text("error_message"),
+    retryCount: integer("retry_count").notNull().default(0),
+    idempotencyKey: text("idempotency_key"),
+    createdAt: createdAt(),
+    startedAt: ts("started_at"),
+    completedAt: ts("completed_at"),
+    expiresAt: ts("expires_at"),
+  },
+  (t) => [
+    uniqueIndex("ai_tryon_cust_idemp_uq").on(t.customerId, t.idempotencyKey),
+  ],
+);
+

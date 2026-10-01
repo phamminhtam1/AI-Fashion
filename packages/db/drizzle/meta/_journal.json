@@ -64,6 +64,13 @@
       "when": 1790390000000,
       "tag": "0008_elane_woman_posts",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790400000000,
+      "tag": "0009_ai_virtual_tryon",
+      "breakpoints": true
     }
   ]
 }

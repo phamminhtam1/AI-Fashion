@@ -1,14 +1,16 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
-import { categoryBreadcrumb, productsForListing } from "@/lib/products";
+import { categoryBreadcrumb, productsForListing, type Product } from "@/lib/products";
 import { ProductCard } from "@/components/site/ProductCard";
 
 export const Route = createFileRoute("/danh-muc/$slug")({
-  loader: ({ params }) => {
+  loader: async ({ params }) => {
+    const { ensureCatalog, productsForListing } = await import("@/lib/products");
+    await ensureCatalog();
     const data = productsForListing(params.slug);
     if (!data) throw notFound();
-    return { title: data.title, description: data.description };
+    return { title: data.title, description: data.description, items: data.items };
   },
   head: ({ loaderData }) => {
     if (!loaderData) return { meta: [{ title: "Không tìm thấy — ÉLANE" }, { name: "robots", content: "noindex" }] };
@@ -29,7 +31,40 @@ const sorts = { new: "Mới nhất", asc: "Giá tăng dần", desc: "Giá giảm
 
 function Listing() {
   const { slug } = Route.useParams();
-  const data = productsForListing(slug)!;
+  const loaderData = Route.useLoaderData();
+  const data = productsForListing(slug) ?? (loaderData?.items ? {
+    title: loaderData.title,
+    description: loaderData.description,
+    items: loaderData.items,
+  } : null);
+
+  if (!data) {
+    return (
+      <div className="mx-auto max-w-[1440px] px-6 py-24 text-center">
+        <h1 className="text-2xl font-serif">Danh mục không tồn tại</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Danh mục bạn đang tìm kiếm không tồn tại hoặc đã được thay đổi.
+        </p>
+        <Link
+          to="/"
+          className="mt-6 inline-block bg-primary px-6 py-2.5 text-xs uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          Về trang chủ
+        </Link>
+      </div>
+    );
+  }
+
+  return <ListingContent data={data} slug={slug} />;
+}
+
+function ListingContent({
+  data,
+  slug,
+}: {
+  data: { title: string; description: string; items: Product[] };
+  slug: string;
+}) {
   const crumbs = categoryBreadcrumb(slug);
   const [sort, setSort] = useState<keyof typeof sorts>("new");
   const [size, setSize] = useState<string | null>(null);

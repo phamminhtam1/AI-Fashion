@@ -52,15 +52,20 @@ services:
       ADMIN_ORIGIN: ${ADMIN_ORIGIN:-http://localhost:8081}
       COOKIE_SECURE: "false"
       NODE_ENV: development
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      AI_WORKER_URL: ${AI_WORKER_URL:-http://ai-worker:8000}
+      AI_TRYON_MAX_DAILY: ${AI_TRYON_MAX_DAILY:-5}
     ports:
       - "3001:3001"
     volumes:
-      - elane_uploads:/app/uploads
+      - ./uploads:/app/uploads
       - ./apps/api:/app/apps/api
       - ./packages/db:/app/packages/db
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s
@@ -120,6 +125,44 @@ services:
     networks:
       - elane_network
 
+  redis:
+    image: redis:7-alpine
+    container_name: elane-redis
+    restart: unless-stopped
+    volumes:
+      - elane_redis:/data
+    networks:
+      - elane_network
+
+  ai-worker:
+    build:
+      context: ./apps/ai-worker
+      dockerfile: Dockerfile
+    container_name: elane-ai-worker
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_AI_BUCKET: ${SUPABASE_AI_BUCKET:-AI}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_VISION_MODEL: ${OPENAI_VISION_MODEL:-gp-5.6-sol-max}
+      AI_MOCK_MODE: ${AI_MOCK_MODE:-false}
+      KIE_API_KEY: ${KIE_API_KEY:-3be328131d756ade9d66be961f354971}
+      KIE_BASE_URL: ${KIE_BASE_URL:-https://api.kie.ai}
+      KIE_MODEL: ${KIE_MODEL:-gpt-image-2-5-sunburst-image-to-image}
+      TRYON_PROVIDER: ${TRYON_PROVIDER:-kie}
+      KIE_TIMEOUT_SECONDS: ${KIE_TIMEOUT_SECONDS:-0}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/ai-worker/app:/app/app
+      - ./apps/ai-worker/tests:/app/tests
+    restart: unless-stopped
+    networks:
+      - elane_network
+
 volumes:
   elane_pg:
   elane_uploads:
+  elane_redis:
+

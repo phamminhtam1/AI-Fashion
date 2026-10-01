@@ -177,3 +177,44 @@
   animation: qr-scan 2.6s ease-in-out infinite;
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* =========================================================================
+   Interactive Controls & Buttons Pointer Cursor
+   Overrides Tailwind CSS preflight cursor: default
+   ========================================================================= */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]):not(:disabled),
+[type="button"]:not(:disabled),
+[type="submit"]:not(:disabled),
+[type="reset"]:not(:disabled),
+a[href],
+select:not(:disabled),
+summary,
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+label[for],
+[data-radix-collection-item],
+.cursor-pointer {
+  cursor: pointer !important;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+[role="button"]:disabled,
+[type="button"]:disabled,
+[type="submit"]:disabled,
+[type="reset"]:disabled,
+select:disabled,
+input:disabled,
+[aria-disabled="true"],
+.cursor-not-allowed {
+  cursor: not-allowed !important;
+}
+

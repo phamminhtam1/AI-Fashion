@@ -30,4 +30,9 @@ export const env = {
   sepayAccountName: process.env.SEPAY_ACCOUNT_NAME ?? "",
   sepayBankName: process.env.SEPAY_BANK_NAME ?? "",
   sepayBankBin: process.env.SEPAY_BANK_BIN ?? "",
+  redisUrl: process.env.REDIS_URL ?? "redis://localhost:6379",
+  aiWorkerUrl: process.env.AI_WORKER_URL ?? "http://localhost:8000",
+  aiTryonMaxDaily: Number(process.env.AI_TRYON_MAX_DAILY ?? 5),
+  aiInputRetentionHours: Number(process.env.AI_INPUT_RETENTION_HOURS ?? 72),
+  aiResultRetentionDays: Number(process.env.AI_RESULT_RETENTION_DAYS ?? 30),
 };

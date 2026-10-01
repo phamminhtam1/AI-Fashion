@@ -1,19 +1,24 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState, type MouseEvent } from "react";
-import { Heart, Minus, Plus, RefreshCw, Star, Truck } from "lucide-react";
+import { Heart, Minus, Plus, RefreshCw, Sparkles, Star, Truck } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { formatVND, getCategory, getProduct, products } from "@/lib/products";
+import { formatVND, getCategory, getProduct, products, type Product } from "@/lib/products";
 import { useStore } from "@/lib/store";
 import { ProductCard } from "@/components/site/ProductCard";
 import { colorwayHasStock, findVariant, isSizeInStock } from "@/lib/variant-stock";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { VirtualTryOnDialog } from "@/components/tryon/VirtualTryOnDialog";
 
 export const Route = createFileRoute("/san-pham/$slug")({
-  loader: ({ params }) => {
-    const p = getProduct(params.slug);
+  loader: async ({ params }) => {
+    const { loadProduct, getProduct } = await import("@/lib/products");
+    let p = getProduct(params.slug);
+    if (!p) {
+      p = await loadProduct(params.slug);
+    }
     if (!p) throw notFound();
-    return { name: p.name, description: p.description, price: p.salePrice ?? p.price };
+    return { product: p, name: p.name, description: p.description, price: p.salePrice ?? p.price };
   },
   head: ({ loaderData }) => {
     if (!loaderData) return { meta: [{ title: "Không tìm thấy sản phẩm — ÉLANE" }, { name: "robots", content: "noindex" }] };
@@ -71,7 +76,30 @@ function normalizeStripIndex(index: number, n: number) {
 
 function ProductPage() {
   const { slug } = Route.useParams();
-  const p = getProduct(slug)!;
+  const loaderData = Route.useLoaderData();
+  const p = getProduct(slug) || loaderData?.product;
+
+  if (!p) {
+    return (
+      <div className="mx-auto max-w-[1440px] px-6 py-24 text-center">
+        <h1 className="text-2xl font-serif">Không tìm thấy sản phẩm</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Sản phẩm này có thể đã ngừng kinh doanh hoặc đường dẫn không đúng.
+        </p>
+        <Link
+          to="/"
+          className="mt-6 inline-block bg-primary px-6 py-2.5 text-xs uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          Về trang chủ
+        </Link>
+      </div>
+    );
+  }
+
+  return <ProductDetail product={p} slug={slug} />;
+}
+
+function ProductDetail({ product: p, slug }: { product: Product; slug: string }) {
   const cat = getCategory(p.category);
   const { addToCart, toggleWishlist, wishlist } = useStore();
 
@@ -92,6 +120,7 @@ function ProductPage() {
     return isSizeInStock(p.variants, colorwayId, only) ? only : null;
   });
   const [qty, setQty] = useState(1);
+  const [tryOnOpen, setTryOnOpen] = useState(false);
   const liked = wishlist.includes(p.id);
   const related = products
     .filter((x) => x.category === p.category && x.id !== p.id)
@@ -115,7 +144,7 @@ function ProductPage() {
 
   useEffect(() => {
     gallery.forEach((src) => {
-      void preloadImage(src).catch(() => {});
+      void preloadImage(src).catch(() => { });
     });
   }, [gallery]);
 
@@ -287,9 +316,9 @@ function ProductPage() {
                       style={
                         logical === img && i === stripIndex
                           ? {
-                              transformOrigin: `${zoomOrigin.x}% ${zoomOrigin.y}%`,
-                              transform: zooming ? "scale(1.35)" : "scale(1)",
-                            }
+                            transformOrigin: `${zoomOrigin.x}% ${zoomOrigin.y}%`,
+                            transform: zooming ? "scale(1.35)" : "scale(1)",
+                          }
                           : undefined
                       }
                     />
@@ -406,6 +435,21 @@ function ProductPage() {
             </button>
           </div>
 
+          {/* AI Virtual Try-On Button */}
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={() => setTryOnOpen(true)}
+              className="group relative flex w-full items-center justify-center gap-2.5 overflow-hidden border border-[#8B1E2D]/40 bg-gradient-to-r from-[#8B1E2D]/10 via-secondary/70 to-[#8B1E2D]/10 px-4 py-3.5 text-xs font-medium uppercase tracking-[0.2em] text-foreground transition-all duration-300 hover:border-[#8B1E2D] hover:bg-[#8B1E2D]/15 hover:shadow-md active:scale-[0.99]"
+            >
+              <Sparkles className="h-4 w-4 text-[#8B1E2D] transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
+              <span className="font-semibold tracking-[0.18em]">THỬ NGAY TRÊN ẢNH CỦA BẠN</span>
+              <span className="rounded bg-[#8B1E2D]/20 px-1.5 py-0.5 text-[9px] font-bold text-[#8B1E2D]">
+                AI
+              </span>
+            </button>
+          </div>
+
           <div className="mt-6 space-y-2 text-sm text-muted-foreground">
             <p className="flex items-center gap-2"><Truck className="h-4 w-4" strokeWidth={1.5} /> Miễn phí vận chuyển cho đơn từ 1.000.000₫</p>
             <p className="flex items-center gap-2"><RefreshCw className="h-4 w-4" strokeWidth={1.5} /> Đổi trả miễn phí trong 30 ngày</p>
@@ -418,6 +462,15 @@ function ProductPage() {
           </Accordion>
         </div>
       </div>
+
+      <VirtualTryOnDialog
+        open={tryOnOpen}
+        onOpenChange={setTryOnOpen}
+        product={p}
+        selectedColorwayId={colorwayId}
+        selectedSize={size}
+        onSelectSize={setSize}
+      />
 
       <section className="mt-24">
         <h2 className="mb-8 text-3xl">Có thể bạn cũng thích</h2>

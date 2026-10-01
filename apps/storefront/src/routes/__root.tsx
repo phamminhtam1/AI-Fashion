@@ -13,6 +13,7 @@ import { StoreProvider } from "@/lib/store";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { Toaster } from "@/components/ui/sonner";
+import { hydrateCatalog } from "@/lib/products";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -79,13 +80,16 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async () => {
     try {
-      const { ensureCatalog, getNavItems } = await import("@/lib/products");
+      const { ensureCatalog, getNavItems, allProductsList, allCategoriesList } = await import("@/lib/products");
       await ensureCatalog();
-      // Return nav so client hydrates with children (module cache is server-only).
-      return { navItems: getNavItems() };
+      return {
+        navItems: getNavItems(),
+        products: allProductsList().map((p) => ({ ...p })),
+        categories: allCategoriesList().map((c) => ({ ...c })),
+      };
     } catch (e) {
       console.error("Failed to load catalog in root loader:", e);
-      return { navItems: [] };
+      return { navItems: [], products: [], categories: [] };
     }
   },
   head: () => ({
@@ -133,7 +137,21 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const { navItems } = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  const navItems = loaderData?.navItems ?? [];
+  const rootProducts = loaderData?.products ?? [];
+  const rootCategories = loaderData?.categories ?? [];
+
+  // Synchronously hydrate catalog into in-memory cache as soon as RootComponent mounts
+  if (rootProducts.length || rootCategories.length) {
+    hydrateCatalog(rootProducts, rootCategories);
+  }
+
+  useEffect(() => {
+    if (rootProducts.length || rootCategories.length) {
+      hydrateCatalog(rootProducts, rootCategories);
+    }
+  }, [rootProducts, rootCategories]);
 
   return (
     <QueryClientProvider client={queryClient}>
