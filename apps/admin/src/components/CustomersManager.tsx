@@ -644,16 +644,8 @@ export function CustomersManager({
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Top Bar Header & View Switcher */}
-      <div className="mt-7 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="section-label text-primary">Quan hệ khách hàng · CRM Atelier</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Hồ sơ 360°, thói quen mua sắm, giá trị vòng đời và quản lý danh sách khách hàng ÉLANE.
-          </p>
-        </div>
-
-        {/* View Switcher Tabs (Consistent border-b tab strip) */}
+      {/* View Switcher Tabs (Consistent border-b tab strip) */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-1 border-b border-border pb-px">
           <button
             type="button"

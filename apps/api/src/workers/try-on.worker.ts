@@ -9,7 +9,8 @@ import { mediaPublicUrl, uploadMediaObject } from "../lib/media-storage.js";
 import { getRedisConnection, TRY_ON_QUEUE_NAME } from "../lib/queue.js";
 import { AiWorkerClient } from "../modules/ai/try-on/ai-worker.client.js";
 import { TryOnRepository } from "../modules/ai/try-on/try-on.repository.js";
-import type { TryOnJobPayload } from "../modules/ai/try-on/try-on.types.js";
+import { AiKeyManagerService } from "../modules/ai/keys/ai-key-manager.service.js";
+import type { AiWorkerGenerateResponse, TryOnJobPayload } from "../modules/ai/try-on/try-on.types.js";
 
 const db = createDb(env.databaseUrl);
 const repo = new TryOnRepository(db);
@@ -71,25 +72,95 @@ export async function processTryOnJob(job: Job<TryOnJobPayload>) {
       cachedGarmentMetadata = variantInfo.variant.tryonMetadata;
     }
 
-    // 4. Request Python AI Worker
-    const aiResponse = await aiClient.generate({
-      job_id: jobId,
-      user_image_path: fs.existsSync(userImagePath) ? userImagePath : undefined,
-      user_image_url: userImageUrl,
-      product_image_path: fs.existsSync(productImagePath) ? productImagePath : undefined,
-      product_image_url: productImageUrl,
-      variant_id: tryonJob.variantId,
-      visibility_flag: (tryonJob.visibilityFlag as any) || null,
-      cached_garment_path: cachedGarmentPath && fs.existsSync(cachedGarmentPath) ? cachedGarmentPath : null,
-      cached_garment_url: cachedGarmentUrl,
-      cached_garment_metadata: cachedGarmentMetadata as any,
-    });
+    // 4. Request Python AI Worker with Key Rotation & Failover
+    const keyManager = new AiKeyManagerService(db);
+    let aiResponse: AiWorkerGenerateResponse | null = null;
+    let attempts = 0;
+    const maxKeyAttempts = 3;
 
-    if (aiResponse.status === "failed") {
+    while (attempts < maxKeyAttempts) {
+      attempts++;
+      const activeKey = await keyManager.acquireActiveKey("kie");
+      console.log(
+        `[tryon-worker] Attempt ${attempts}: Using AI key '${activeKey ? activeKey.label : "ENV_DEFAULT"}' for job ${jobId}`,
+      );
+
+      try {
+        aiResponse = await aiClient.generate({
+          job_id: jobId,
+          user_image_path: fs.existsSync(userImagePath) ? userImagePath : undefined,
+          user_image_url: userImageUrl,
+          product_image_path: fs.existsSync(productImagePath) ? productImagePath : undefined,
+          product_image_url: productImageUrl,
+          variant_id: tryonJob.variantId,
+          visibility_flag: (tryonJob.visibilityFlag as any) || null,
+          cached_garment_path: cachedGarmentPath && fs.existsSync(cachedGarmentPath) ? cachedGarmentPath : null,
+          cached_garment_url: cachedGarmentUrl,
+          cached_garment_metadata: cachedGarmentMetadata as any,
+          api_key: activeKey?.rawKey,
+        });
+
+        if (aiResponse.status === "failed") {
+          throw new ApiError(
+            500,
+            aiResponse.error_code || "tryon_generation_failed",
+            aiResponse.error_message || "Sinh ảnh thử đồ thất bại",
+          );
+        }
+
+        // Successfully generated: update success count and decrement remaining credits
+        if (activeKey) {
+          await keyManager.recordSuccess(activeKey.id);
+        }
+        break;
+      } catch (err: unknown) {
+        if (err instanceof ApiError && activeKey) {
+          const errMsg = err.message || "";
+          const isRateLimit =
+            err.status === 429 ||
+            err.code === "ai_worker_rate_limited" ||
+            errMsg.includes("429") ||
+            errMsg.includes("rate limit") ||
+            errMsg.includes("too many requests");
+
+          const isQuotaExhausted =
+            err.status === 402 ||
+            err.code === "credits_insufficient" ||
+            errMsg.toLowerCase().includes("credit") ||
+            errMsg.toLowerCase().includes("quota") ||
+            errMsg.toLowerCase().includes("insufficient");
+
+          const isRevoked = err.status === 401 || err.code === "unauthorized";
+
+          if (isRateLimit) {
+            console.warn(`[tryon-worker] Key '${activeKey.label}' is RATE LIMITED. Switching to next active key...`);
+            await keyManager.recordFailure(activeKey.id, "RATE_LIMITED", errMsg);
+            continue;
+          }
+
+          if (isQuotaExhausted) {
+            console.warn(`[tryon-worker] Key '${activeKey.label}' has EXHAUSTED credits. Switching to next active key...`);
+            await keyManager.recordFailure(activeKey.id, "EXHAUSTED", errMsg);
+            continue;
+          }
+
+          if (isRevoked) {
+            console.warn(`[tryon-worker] Key '${activeKey.label}' is REVOKED/INVALID. Switching to next active key...`);
+            await keyManager.recordFailure(activeKey.id, "REVOKED", errMsg);
+            continue;
+          }
+        }
+
+        // For non-key errors (e.g. invalid user body pose), or if no keys left to retry, throw
+        throw err;
+      }
+    }
+
+    if (!aiResponse) {
       throw new ApiError(
-        500,
-        aiResponse.error_code || "tryon_generation_failed",
-        aiResponse.error_message || "Sinh ảnh thử đồ thất bại",
+        503,
+        "ai_keys_exhausted",
+        "Hệ thống AI hiện đang hết lượt credit hoặc quá tải. Vui lòng thử lại sau ít phút.",
       );
     }
 

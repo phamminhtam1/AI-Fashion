@@ -587,12 +587,10 @@ export function CategoriesManager() {
   return (
     <>
       {confirmDialog}
-      <div className="mt-7 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="section-label text-primary">Cấu trúc cửa hàng</p>
-        </div>
-        <Button onClick={() => openCreate()}>
-          <Plus /> Thêm danh mục
+      <div className="mt-6 flex items-center justify-between gap-4">
+        <span className="text-xs text-muted-foreground">{items.length} danh mục trong hệ thống</span>
+        <Button onClick={() => openCreate()} size="sm">
+          <Plus className="mr-1.5 size-4" /> Thêm danh mục
         </Button>
       </div>
 

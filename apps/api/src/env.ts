@@ -35,4 +35,8 @@ export const env = {
   aiTryonMaxDaily: Number(process.env.AI_TRYON_MAX_DAILY ?? 5),
   aiInputRetentionHours: Number(process.env.AI_INPUT_RETENTION_HOURS ?? 72),
   aiResultRetentionDays: Number(process.env.AI_RESULT_RETENTION_DAYS ?? 30),
+  aiKeyEncryptionSecret:
+    process.env.AI_KEY_ENCRYPTION_SECRET ??
+    process.env.SESSION_SECRET ??
+    "elane-ai-key-encryption-secret-default-32B!",
 };

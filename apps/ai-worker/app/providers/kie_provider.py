@@ -82,11 +82,13 @@ class KieTryOnProvider(TryOnProvider):
         aspect_ratio: str = "auto",
         resolution: str = "1K",
         background: str = "auto",
+        api_key: Optional[str] = None,
     ) -> str:
         """Submits a new generation task to Kie.ai."""
+        active_key = api_key or self.api_key
         endpoint = f"{self.base_url}/api/v1/jobs/createTask"
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {active_key}",
             "Content-Type": "application/json",
         }
         payload = {
@@ -118,11 +120,12 @@ class KieTryOnProvider(TryOnProvider):
             logger.info(f"[kie-provider] Task created successfully. Task ID: {task_id}")
             return task_id
 
-    async def poll_task(self, task_id: str) -> dict:
+    async def poll_task(self, task_id: str, api_key: Optional[str] = None) -> dict:
         """Polls Kie.ai /api/v1/jobs/recordInfo until task completes or fails."""
+        active_key = api_key or self.api_key
         endpoint = f"{self.base_url}/api/v1/jobs/recordInfo"
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"Bearer {active_key}",
             "Accept": "application/json",
         }
         params = {"taskId": task_id}
@@ -193,13 +196,15 @@ class KieTryOnProvider(TryOnProvider):
         garment_metadata: Optional[GarmentMetadata] = None,
         custom_prompt: Optional[str] = None,
         target_output_path: Optional[str] = None,
+        api_key: Optional[str] = None,
     ) -> Tuple[str, str]:
         """
         Executes virtual try-on using Kie.ai GPT Image 2.5 Sunburst.
         Returns: (target_output_path, public_url)
         """
+        active_key = api_key or self.api_key
         # Mock Mode handling
-        if settings.ai_mock_mode or not self.api_key:
+        if settings.ai_mock_mode or not active_key:
             logger.info(f"[kie-provider] Running in MOCK mode for job '{job_id}'")
             return await self._generate_mock_fallback(
                 job_id=job_id,
@@ -242,10 +247,11 @@ class KieTryOnProvider(TryOnProvider):
             aspect_ratio="auto",
             resolution="1K",
             background="auto",
+            api_key=active_key,
         )
 
         # 4. Poll until completed
-        data = await self.poll_task(task_id)
+        data = await self.poll_task(task_id, api_key=active_key)
         result_img_url = self._extract_output_image_url(data)
         logger.info(f"[kie-provider] Received generated image URL: {result_img_url}")
 

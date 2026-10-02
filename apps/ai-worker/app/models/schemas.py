@@ -61,6 +61,7 @@ class TryOnGenerateRequest(BaseModel):
     garment_image_url: Optional[str] = None
     garment_metadata: Optional[GarmentMetadata] = None
     prompt: Optional[str] = None
+    api_key: Optional[str] = None
 
 
 class TryOnGenerateResponse(BaseModel):

@@ -105,6 +105,7 @@ class TryOnPipeline:
                     product_image_url=req.product_image_url,
                     product_image_path=req.product_image_path,
                     variant_id=req.variant_id or "default",
+                    api_key=req.api_key,
                 )
             except Exception as e:
                 logger.error(f"[pipeline] Step 2 Garment extraction failed: {e}")
@@ -130,6 +131,7 @@ class TryOnPipeline:
                 garment_metadata=garment_result.metadata if garment_result else None,
                 custom_prompt=req.prompt,
                 target_output_path=None,
+                api_key=req.api_key,
             )
         except Exception as e:
             logger.error(f"[pipeline] Step 3 Generation provider failed: {e}")

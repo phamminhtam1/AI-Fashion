@@ -930,16 +930,8 @@ export function InventoryManager({
         onClose={() => setPrintDocModalOpen(false)}
       />
 
-      {/* Top Header Bar (Unified with ÉLANE Atelier style) */}
-      <div className="mt-7 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="section-label text-primary">Kho vận & Xuất nhập tồn</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Kiểm soát luồng hàng hóa, phân loại màu size, lập phiếu nhập xuất và theo dõi tồn khả dụng.
-          </p>
-        </div>
-
-        {/* View Switcher Tabs Strip */}
+      {/* View Switcher Tabs Strip */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-1 border-b border-border pb-px">
           <button
             type="button"

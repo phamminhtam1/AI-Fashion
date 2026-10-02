@@ -284,23 +284,17 @@ export function DiscountCodesManager() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">Tăng trưởng</p>
-          <h1 className="mt-1 font-serif text-3xl font-normal">Mã giảm giá</h1>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Tạo mã phần trăm hoặc số tiền cố định, giới hạn đơn tối thiểu và lượt dùng.
-          </p>
-        </div>
+    <div className="space-y-6 mt-6">
+      {/* Action Bar */}
+      <div className="flex items-center justify-between gap-4">
+        <span className="text-xs text-muted-foreground">{items.length} mã khuyến mãi</span>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => void load()} className="gap-1.5">
             <RefreshCw className="size-3.5" />
             Làm mới
           </Button>
-          <Button onClick={openCreate}>
-            <Plus className="mr-2 h-4 w-4" /> Tạo mã
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="mr-1.5 size-4" /> Tạo mã
           </Button>
         </div>
       </div>

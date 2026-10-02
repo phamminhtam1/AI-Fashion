@@ -508,28 +508,23 @@ export function ElaneWomanManager() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header & Metrics */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-serif tracking-tight">#ÉLANEwoman Lookbook</h2>
-            <Badge variant="outline" className="text-xs">
-              Instagram & Khách hàng
-            </Badge>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Quản lý những khung hình outfit và lookbook của quý cô ÉLANE xuất hiện trực tiếp ở chân trang chủ.
-          </p>
+    <div className="space-y-6 mt-6">
+      {/* Action Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>{items.length} hình ảnh lookbook</span>
+          <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+            Trang chủ & Instagram
+          </Badge>
         </div>
 
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={loadData} disabled={loading || reordering}>
-            <RefreshCw className={`size-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`size-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} />
             Làm mới
           </Button>
           <Button onClick={openCreateDialog} size="sm" className="bg-primary text-primary-foreground">
-            <Plus className="size-4 mr-2" />
+            <Plus className="size-3.5 mr-1.5" />
             Thêm ảnh mới
           </Button>
         </div>

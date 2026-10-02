@@ -214,15 +214,10 @@ export function ColorsManager() {
   return (
     <>
       {confirmDialog}
-      <div className="mt-7 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="section-label text-primary">Thuộc tính catalog</p>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Danh sách màu dùng khi tạo biến thể sản phẩm.
-          </p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus /> Thêm màu
+      <div className="mt-6 flex items-center justify-between gap-4">
+        <span className="text-xs text-muted-foreground">{items.length} màu trong catalog</span>
+        <Button size="sm" onClick={openCreate}>
+          <Plus className="mr-1.5 size-4" /> Thêm màu
         </Button>
       </div>
 

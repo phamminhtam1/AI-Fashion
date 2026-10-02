@@ -681,3 +681,23 @@ export const aiTryonJobs = pgTable(
   ],
 );
 
+// --- AI API Keys Pool & Failover Management ---
+export const aiApiKeys = pgTable("ai_api_keys", {
+  id: id(),
+  provider: text("provider").notNull().default("kie"), // 'kie' | 'openai'
+  label: text("label").notNull(),                      // e.g. "Kie Free 01 (tam@...)"
+  encryptedKey: text("encrypted_key").notNull(),       // AES-256-GCM encrypted ciphertext
+  maskedKey: text("masked_key").notNull(),             // e.g. "kie_4a9b••••••••12ef"
+  status: text("status").notNull().default("ACTIVE"),  // ACTIVE | RATE_LIMITED | EXHAUSTED | REVOKED | DISABLED
+  creditsRemaining: integer("credits_remaining"),      // Remaining credits from provider
+  cooldownUntil: ts("cooldown_until"),                 // Cooldown for 429 rate limit
+  priority: integer("priority").notNull().default(1),  // Higher priority keys are used first
+  successCount: integer("success_count").notNull().default(0),
+  errorCount: integer("error_count").notNull().default(0),
+  lastErrorMessage: text("last_error_message"),
+  lastUsedAt: ts("last_used_at"),
+  lastCheckedAt: ts("last_checked_at"),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+

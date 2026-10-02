@@ -37,6 +37,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://elane:elane@postgres:5432/elane}
       SESSION_SECRET: ${SESSION_SECRET:-dev-change-me-elane-phase1-secret}
+      AI_KEY_ENCRYPTION_SECRET: ${AI_KEY_ENCRYPTION_SECRET:-elane-ai-encryption-master-secret-key-2026}
       API_PORT: "3001"
       API_HOST: "0.0.0.0"
       UPLOAD_DIR: /app/uploads

@@ -749,6 +749,34 @@ export const adminApi = {
       method: "POST",
       body: JSON.stringify({ items }),
     }),
+  aiKeys: () => req<{ items: AiApiKey[] }>("/admin/ai-keys"),
+  testAiKey: (rawKey: string) =>
+    req<{ ok: boolean; credits?: number; error?: string; statusCode?: number }>("/admin/ai-keys/test", {
+      method: "POST",
+      body: JSON.stringify({ rawKey }),
+    }),
+  createAiKey: (body: CreateAiKeyInput) =>
+    req<AiApiKey>("/admin/ai-keys", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  updateAiKey: (id: string, body: Partial<{ label: string; priority: number; status: string; rawKey: string }>) =>
+    req<AiApiKey>(`/admin/ai-keys/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  refreshAiKeyCredits: (id: string) =>
+    req<AiApiKey>(`/admin/ai-keys/${id}/refresh`, {
+      method: "POST",
+    }),
+  refreshAllAiKeyCredits: () =>
+    req<{ items: AiApiKey[] }>("/admin/ai-keys/refresh-all", {
+      method: "POST",
+    }),
+  deleteAiKey: (id: string) =>
+    req<{ success: boolean; id: string }>(`/admin/ai-keys/${id}`, {
+      method: "DELETE",
+    }),
 };
 
 export type DiscountCode = {
@@ -804,6 +832,31 @@ export type ElaneWomanInput = {
   instagram_url?: string | null;
   sort_order?: number;
   status?: "published" | "draft";
+};
+
+export type AiApiKey = {
+  id: string;
+  provider: string;
+  label: string;
+  maskedKey: string;
+  status: "ACTIVE" | "RATE_LIMITED" | "EXHAUSTED" | "REVOKED" | "DISABLED" | string;
+  creditsRemaining: number | null;
+  cooldownUntil: string | null;
+  priority: number;
+  successCount: number;
+  errorCount: number;
+  lastErrorMessage: string | null;
+  lastUsedAt: string | null;
+  lastCheckedAt: string | null;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+export type CreateAiKeyInput = {
+  provider?: string;
+  label: string;
+  rawKey: string;
+  priority?: number;
 };
 
 export { API_URL };

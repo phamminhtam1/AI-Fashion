@@ -11,6 +11,7 @@ import {
   FileText,
   GalleryVerticalEnd,
   Home,
+  KeyRound,
   LayoutGrid,
   LogOut,
   Mail,
@@ -56,6 +57,7 @@ import { CustomersManager } from "@/components/CustomersManager";
 import { DiscountCodesManager } from "@/components/DiscountCodesManager";
 import { OrdersManager } from "@/components/OrdersManager";
 import { ElaneWomanManager } from "@/components/ElaneWomanManager";
+import { AiKeysManager } from "@/components/AiKeysManager";
 import type { Overview } from "@/lib/api";
 
 export const Route = createFileRoute("/")({
@@ -170,6 +172,7 @@ const content: NavItem[] = [
   { id: "newsletter", label: "Bản tin", icon: Mail },
 ];
 const system: NavItem[] = [
+  { id: "ai_keys", label: "Quản lý AI Keys", icon: KeyRound },
   { id: "reports", label: "Báo cáo", icon: BarChart3 },
   { id: "settings", label: "Cài đặt", icon: Settings },
   { id: "roles", label: "Phân quyền", icon: ShieldCheck },
@@ -409,19 +412,19 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
         close={() => setMobileOpen(false)}
       />
       <main className="min-w-0 px-4 py-5 sm:px-6 lg:px-10 lg:py-8 xl:px-12">
-        <header className="flex items-center justify-between gap-3">
+        <header className="flex items-center justify-between gap-3 border-b border-border/60 pb-5">
           <div className="flex min-w-0 items-center gap-3">
             <Button variant="outline" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Mở menu">
               <Menu />
             </Button>
             <div className="min-w-0">
-              <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-primary">ÉLANE · ADMIN</p>
-              <h1 className="mt-1 truncate font-serif text-2xl sm:text-3xl">{active === "overview" ? "Trung tâm điều hành" : title}</h1>
+              <p className="text-[10px] font-medium uppercase tracking-[0.25em] text-primary">ÉLANE · ADMIN</p>
+              <h1 className="mt-0.5 truncate font-serif text-2xl font-normal sm:text-3xl">{active === "overview" ? "Trung tâm điều hành" : title}</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="hidden items-center gap-2 rounded-full border border-border px-3 py-2 text-xs text-muted-foreground md:flex">
-              <span className="size-1.5 rounded-full bg-primary" /> Trực tuyến
+            <div className="hidden items-center gap-2 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground md:flex">
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" /> Trực tuyến
             </div>
             <Button variant="outline" size="icon" aria-label="Thông báo" className="relative">
               <Bell />
@@ -465,6 +468,8 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
           <DiscountCodesManager />
         ) : active === "elanewoman" || active === "lookbook" ? (
           <ElaneWomanManager />
+        ) : active === "ai_keys" ? (
+          <AiKeysManager />
         ) : currentConfig ? (
           <ModulePage config={currentConfig} query={query} setQuery={setQuery} onCreate={() => setCreateOpen(true)} onDetail={openDetail} />
         ) : null}
@@ -844,7 +849,12 @@ function ModulePage({config,query,setQuery,onCreate,onDetail}:{config:ModuleConf
  const [tab,setTab]=useState(config.tabs[0] ?? "");
  const filtered=useMemo(()=>config.rows.filter(r=>r.join(" ").toLowerCase().includes(query.toLowerCase())),[config.rows,query]);
  return <>
-  <div className="mt-7 flex flex-wrap items-end justify-between gap-4"><div><p className="section-label text-primary">{config.eyebrow}</p><p className="mt-2 max-w-2xl text-sm text-muted-foreground">{config.description}</p></div><Button onClick={onCreate}><Plus/>{config.action}</Button></div>
+  <div className="mt-6 flex items-center justify-between gap-4">
+    <span className="text-xs text-muted-foreground">{filtered.length} mục dữ liệu</span>
+    <Button size="sm" onClick={onCreate}>
+      <Plus className="mr-1.5 size-4" />{config.action}
+    </Button>
+  </div>
   <section className="mt-6 grid gap-4 sm:grid-cols-3">{config.metrics.map((m,i)=><div key={m.label} className={cn("rounded-md border p-5",i===0?"border-accent bg-accent/25":"border-border")}><p className="section-label">{m.label}</p><p className="mt-3 font-serif text-3xl">{m.value}</p><p className={cn("mt-1 text-xs",i===0?"text-primary":"text-muted-foreground")}>{m.note}</p></div>)}</section>
   <section className="mt-6 overflow-hidden rounded-md border border-border">
    <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between"><div className="flex gap-1 overflow-x-auto pb-1 lg:pb-0">{config.tabs.map(t=><Button key={t} variant={tab===t?"default":"ghost"} size="sm" onClick={()=>setTab(t)}>{t}</Button>)}</div><div className="flex gap-2"><div className="relative flex-1 lg:w-64"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground"/><Input value={query} onChange={e=>setQuery(e.target.value)} className="pl-9" placeholder="Tìm kiếm…"/></div><Button variant="outline" size="icon" aria-label="Bộ lọc"><Archive/></Button></div></div>

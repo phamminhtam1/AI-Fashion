@@ -1349,15 +1349,10 @@ export function ProductsManager({
   return (
     <>
       {confirmDialog}
-      <div className="mt-7 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="section-label text-primary">Danh mục thương mại</p>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Quản lý thông tin, giá, danh mục và trạng thái.
-          </p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus /> Thêm sản phẩm
+      <div className="mt-6 flex items-center justify-between gap-4">
+        <span className="text-xs text-muted-foreground">{items.length} sản phẩm trong catalog</span>
+        <Button onClick={openCreate} size="sm">
+          <Plus className="mr-1.5 size-4" /> Thêm sản phẩm
         </Button>
       </div>
 

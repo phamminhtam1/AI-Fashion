@@ -37,6 +37,7 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       AI_WORKER_URL: ${AI_WORKER_URL:-http://ai-worker:8000}
       AI_TRYON_MAX_DAILY: ${AI_TRYON_MAX_DAILY:-5}
+      AI_KEY_ENCRYPTION_SECRET: ${AI_KEY_ENCRYPTION_SECRET}
     ports:
       - "3001:3001"
     volumes:

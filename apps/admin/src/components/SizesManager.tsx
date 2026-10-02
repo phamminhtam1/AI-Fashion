@@ -379,15 +379,10 @@ export function SizesManager() {
   return (
     <>
       {confirmDialog}
-      <div className="mt-7 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="section-label text-primary">Thuộc tính catalog</p>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Quản lý mã size (XS–XL, Free size) và bảng đo gắn vào sản phẩm.
-          </p>
-        </div>
-        <Button onClick={tab === "sizes" ? openCreateSize : openCreateChart}>
-          <Plus /> {tab === "sizes" ? "Thêm size" : "Thêm bảng size"}
+      <div className="mt-6 flex items-center justify-between gap-4">
+        <span className="text-xs text-muted-foreground">{sizes.length} mã size · {charts.length} bảng đo chuẩn</span>
+        <Button size="sm" onClick={tab === "sizes" ? openCreateSize : openCreateChart}>
+          <Plus className="mr-1.5 size-4" /> {tab === "sizes" ? "Thêm size" : "Thêm bảng size"}
         </Button>
       </div>
 

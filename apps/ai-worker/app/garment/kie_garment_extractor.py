@@ -76,13 +76,15 @@ class KieGarmentExtractor:
         product_image_url: Optional[str] = None,
         product_image_path: Optional[str] = None,
         variant_id: str = "default",
+        api_key: Optional[str] = None,
     ) -> GarmentAssetResult:
         """
         Submits product image to Kie.ai to extract the isolated garment with transparent background.
         Returns GarmentAssetResult with output_path, image_url, and metadata.
         """
+        active_key = api_key or self.kie_provider.api_key
         # Mock Mode
-        if settings.ai_mock_mode or not self.kie_provider.api_key:
+        if settings.ai_mock_mode or not active_key:
             logger.info(f"[kie-garment] Running in MOCK mode for variant '{variant_id}'")
             return await self._mock_extraction(
                 product_image_path=product_image_path,
@@ -110,10 +112,11 @@ class KieGarmentExtractor:
             aspect_ratio="auto",
             resolution="1K",
             background="transparent",
+            api_key=active_key,
         )
 
         # 3. Poll until completed
-        data = await self.kie_provider.poll_task(task_id)
+        data = await self.kie_provider.poll_task(task_id, api_key=active_key)
         result_img_url = self.kie_provider._extract_output_image_url(data)
         logger.info(f"[kie-garment] Extraction succeeded -> {result_img_url}")
 
