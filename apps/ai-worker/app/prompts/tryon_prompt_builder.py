@@ -42,18 +42,12 @@ Photorealistic fashion e-commerce virtual try-on."""
 PROMPT_THREE_QUARTER = """
 Perform a three-quarter-body virtual try-on.
 
-Image 1 is the person/background reference.
-Image 2 is the garment design reference.
+REFERENCE ROLES:
+- Image 1 = person, identity, pose, body, framing, and background reference.
+- Image 2 = garment design and garment shape reference.
 
-Preserve the original framing of Image 1.
-Do not extend the body beyond the original frame.
-Do not invent missing body parts.
-
-Replace only the clothing regions required by the garment in Image 2.
-
-Preserve from Image 1:
-- face
-- identity
+PRESERVE FROM IMAGE 1:
+- face and identity
 - hairstyle
 - body proportions
 - pose
@@ -61,48 +55,81 @@ Preserve from Image 1:
 - background
 - camera framing
 
-CRITICAL GARMENT PRESERVATION:
-Treat Image 2 as the source of truth for garment geometry.
+GARMENT TRANSFER:
+Replace the original clothing in Image 1 with the garment from Image 2.
 
-Preserve the garment's:
-- category
+Use Image 2 as the source of truth for:
+- garment category
+- construction
 - silhouette
-- overall proportions
-- relative length
-- hemline position relative to the body
-- waistline position
+- length
+- waist placement
 - neckline
 - sleeve length
 - fit
 - volume
 - cut
-- layering structure
-- colors
-- patterns
+- materials
+- color
+- seams
 - trims
 - decorative details
 
-Do NOT reshape, lengthen, shorten, widen, narrow, or restyle the garment
-to resemble the clothing originally worn in Image 1.
+CRITICAL SHAPE PRESERVATION:
+Preserve the garment’s contour and width progression across the body.
 
-The original clothes in Image 1 must not influence the new garment's
-length, silhouette, or proportions.
+Match the garment’s relative width and fit at:
+- bust
+- waist
+- high hip
+- full hip
+- upper thigh
+- knee
+- calf
+- hem
 
-Fit the garment naturally to the person's body while preserving the
-design geometry of Image 2.
+Preserve whether each garment area is:
+- body-hugging
+- slim-fit
+- straight
+- softly relaxed
+- flared
+- voluminous
 
-If the garment from Image 2 reveals body regions that were previously
-covered by the original clothing, reconstruct only those newly visible
-body regions in a realistic and anatomically consistent way.
+Do not reinterpret a fitted garment as a looser garment.
+Do not reinterpret a straight garment as a flared garment.
+Do not add extra drape, flare, or outward volume.
 
-Do not extend the image canvas.
-Do not invent body parts outside the existing frame.
+For lower-body garments, preserve the hem circumference relative to the hip and knee width from Image 2.
 
-Priority order:
-1. preserve identity and pose
-2. preserve garment design and proportions from Image 2
-3. maintain realistic body anatomy
-4. preserve background and framing
+Do not use the original clothing silhouette in Image 1 as a guide.
+
+BODY RECONSTRUCTION:
+If the new garment exposes body regions that were covered in Image 1,
+reconstruct those newly visible regions realistically and anatomically.
+
+Do not change the person's body shape to fit the garment.
+Fit the garment to the body, not the body to the garment.
+
+FRAMING:
+Preserve the original framing of Image 1.
+Do not extend the canvas.
+Do not invent body parts outside the frame.
+
+EDIT SCOPE:
+Modify only the pixels necessary to render:
+- the new garment
+- natural garment-body interaction
+- newly exposed body regions
+
+Keep unrelated regions unchanged.
+
+PRIORITY:
+1. identity and pose
+2. garment shape fidelity
+3. garment design fidelity
+4. realistic anatomy
+5. background and framing
 """
 
 PROMPT_UPPER_BODY = """Perform an upper-body virtual try-on.
