@@ -36,6 +36,7 @@ export function ProductCombobox({
   const [search, setSearch] = useState("");
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<AdminProduct | null>(null);
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -45,6 +46,11 @@ export function ProductCombobox({
   useEffect(() => {
     if (!selectedId) {
       setSelectedProduct(null);
+      return;
+    }
+
+    // If currently selected product matches, avoid redundant work
+    if (selectedProduct && selectedProduct.id === selectedId) {
       return;
     }
 
@@ -109,7 +115,7 @@ export function ProductCombobox({
     return () => {
       active = false;
     };
-  }, [selectedId, initialProduct, products]);
+  }, [selectedId, initialProduct?.id, initialProduct?.name, initialProduct?.slug]);
 
   // Load initial 20 products when opening for the first time
   useEffect(() => {
@@ -127,7 +133,7 @@ export function ProductCombobox({
     }
   }, [open, products.length, search]);
 
-  // Debounced search query: 1s (1000ms) without typing triggers the API query
+  // Debounced search query
   const handleSearchChange = (value: string) => {
     setSearch(value);
 
@@ -135,12 +141,30 @@ export function ProductCombobox({
       clearTimeout(debounceTimerRef.current);
     }
 
+    const q = value.trim();
+    if (!q) {
+      setIsTyping(false);
+      setLoading(true);
+      adminApi
+        .products({ limit: 20 })
+        .then((res) => {
+          setProducts(Array.isArray(res?.items) ? res.items : []);
+        })
+        .catch(() => {})
+        .finally(() => {
+          setLoading(false);
+        });
+      return;
+    }
+
+    setIsTyping(true);
+
     debounceTimerRef.current = setTimeout(async () => {
+      setIsTyping(false);
       setLoading(true);
       try {
-        const q = value.trim();
         const res = await adminApi.products({
-          q: q || undefined,
+          q,
           limit: 30,
         });
         setProducts(Array.isArray(res?.items) ? res.items : []);
@@ -149,7 +173,7 @@ export function ProductCombobox({
       } finally {
         setLoading(false);
       }
-    }, 1000); // 1s debounce
+    }, 400);
   };
 
   // Cleanup debounce timer on unmount
