@@ -77,8 +77,8 @@ export function BeforeAfterSlider({
         }
       }}
       className={cn(
-        "group relative mx-auto aspect-[3/4] max-w-md select-none overflow-hidden rounded-xl border border-border/80 bg-secondary/30 shadow-lg",
-        hasComparison ? "cursor-ew-resize" : onImageClick ? "cursor-zoom-in" : "",
+        "group relative mx-auto aspect-[3/4] w-full max-w-sm sm:max-w-md select-none overflow-hidden rounded-xl border border-border/80 bg-secondary/30 shadow-lg",
+        hasComparison ? "cursor-ew-resize touch-none" : onImageClick ? "cursor-zoom-in" : "",
         className,
       )}
     >
@@ -120,12 +120,12 @@ export function BeforeAfterSlider({
           {/* Centered Draggable Handle */}
           <div
             className={cn(
-              "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-9 w-9 rounded-full bg-white text-zinc-900 shadow-2xl border-2 border-zinc-200/90 flex items-center justify-center cursor-ew-resize transition-transform pointer-events-auto",
+              "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-white text-zinc-900 shadow-2xl border-2 border-zinc-200/90 flex items-center justify-center cursor-ew-resize transition-transform pointer-events-auto",
               isDragging ? "scale-110 shadow-emerald-500/20" : "hover:scale-105",
             )}
           >
-            <ChevronLeft className="h-3.5 w-3.5 -mr-1 stroke-[2.5]" />
-            <ChevronRight className="h-3.5 w-3.5 stroke-[2.5]" />
+            <ChevronLeft className="h-3 w-3 sm:h-3.5 sm:w-3.5 -mr-1 stroke-[2.5]" />
+            <ChevronRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 stroke-[2.5]" />
           </div>
         </div>
       )}
@@ -135,7 +135,7 @@ export function BeforeAfterSlider({
         <>
           <span
             className={cn(
-              "absolute top-3 left-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-medium tracking-wide text-white backdrop-blur-sm pointer-events-none transition-opacity duration-200",
+              "absolute top-2.5 left-2.5 sm:top-3 sm:left-3 rounded-full bg-black/60 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-medium tracking-wide text-white backdrop-blur-sm pointer-events-none transition-opacity duration-200",
               sliderPos < 12 ? "opacity-0" : "opacity-100",
             )}
           >
@@ -143,18 +143,18 @@ export function BeforeAfterSlider({
           </span>
           <span
             className={cn(
-              "absolute top-3 right-3 rounded-full bg-primary/90 px-2.5 py-1 text-[10px] font-medium tracking-wide text-primary-foreground backdrop-blur-sm pointer-events-none transition-opacity duration-200",
+              "absolute top-2.5 right-2.5 sm:top-3 sm:right-3 rounded-full bg-primary/90 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-medium tracking-wide text-primary-foreground backdrop-blur-sm pointer-events-none transition-opacity duration-200",
               sliderPos > 88 ? "opacity-0" : "opacity-100",
             )}
           >
             Ảnh AI Thử Đồ
           </span>
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[10px] text-white/90 backdrop-blur-sm pointer-events-none select-none">
+          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 max-w-[85%] truncate rounded-full bg-black/60 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[9px] sm:text-[10px] text-white/90 backdrop-blur-sm pointer-events-none select-none">
             Kéo thanh trượt để so sánh
           </div>
         </>
       ) : (
-        <div className="absolute bottom-3 right-3 rounded bg-black/60 px-2.5 py-1 text-[11px] font-medium tracking-wide text-white backdrop-blur-sm pointer-events-none">
+        <div className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 rounded bg-black/60 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-medium tracking-wide text-white backdrop-blur-sm pointer-events-none">
           AI Virtual Try-On
         </div>
       )}

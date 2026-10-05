@@ -33,8 +33,11 @@ export function Footer() {
     <footer className="border-t border-border">
       <div className="mx-auto grid max-w-[1440px] gap-10 px-6 py-16 md:grid-cols-5 md:px-8">
         <div className="md:col-span-2">
-          <p className="font-serif text-3xl tracking-[0.3em]">ÉLANE</p>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.4em] text-muted-foreground">Modern Femininity</p>
+          <img
+            src="/images/elane-logo.png"
+            alt="ÉLANE - Modern Femininity"
+            className="h-14 md:h-16 w-auto object-contain"
+          />
           <p className="mt-6 max-w-sm text-sm leading-relaxed text-muted-foreground">Thời trang nữ tinh tế cho người phụ nữ hiện đại. Thiết kế tại Việt Nam, may đo tỉ mỉ từ chất liệu chọn lọc.</p>
           <div className="mt-6 flex gap-4">
             {[Instagram, Facebook, Youtube].map((I, i) => <a key={i} href="#" aria-label="Mạng xã hội" className="hover:opacity-60"><I className="h-5 w-5" strokeWidth={1.5} /></a>)}
@@ -62,7 +65,15 @@ export function Footer() {
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li><Link to="/gioi-thieu" className={lk}>Về chúng tôi</Link></li>
             <li><Link to="/bo-suu-tap" className={lk}>Bộ sưu tập</Link></li>
-            <li><Link to="/lookbook" className={lk}>Lookbook</Link></li>
+            <li>
+              <Link to="/lookbook" search={{ collection: undefined }} className={lk}>Lookbook Runway</Link>
+              <ul className="mt-1.5 space-y-1.5 pl-2.5 text-xs text-muted-foreground/80">
+                <li><Link to="/lookbook" search={{ collection: "autumn-winter-2026" }} className="hover:text-foreground transition-colors">· Thu Đông 2026</Link></li>
+                <li><Link to="/lookbook" search={{ collection: "la-parisienne" }} className="hover:text-foreground transition-colors">· La Parisienne</Link></li>
+                <li><Link to="/lookbook" search={{ collection: "the-office-edit" }} className="hover:text-foreground transition-colors">· The Office Edit</Link></li>
+                <li><Link to="/lookbook" search={{ collection: "evening-noir" }} className="hover:text-foreground transition-colors">· Evening Noir</Link></li>
+              </ul>
+            </li>
             <li><Link to="/blog" className={lk}>Tạp chí</Link></li>
             <li><Link to="/cua-hang" className={lk}>Hệ thống cửa hàng</Link></li>
             <li><Link to="/tai-khoan" className={lk}>Tài khoản</Link></li>

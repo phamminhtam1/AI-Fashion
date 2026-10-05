@@ -78,6 +78,13 @@
       "when": 1790410000000,
       "tag": "0010_ai_api_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790420000000,
+      "tag": "0011_lookbooks",
+      "breakpoints": true
     }
   ]
 }

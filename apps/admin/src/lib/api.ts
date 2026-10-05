@@ -531,6 +531,7 @@ export const adminApi = {
     }
     return { items };
   },
+  product: (id: string) => req<AdminProduct>(`/admin/products/${id}`),
   productMeta: () => req<ProductMeta>("/admin/products/meta"),
   createProduct: (body: Record<string, unknown>) =>
     req<AdminProduct>("/admin/products", { method: "POST", body: JSON.stringify(body) }),
@@ -777,6 +778,44 @@ export const adminApi = {
     req<{ success: boolean; id: string }>(`/admin/ai-keys/${id}`, {
       method: "DELETE",
     }),
+  lookbooks: () => req<{ items: AdminLookbook[] }>("/admin/lookbooks"),
+  lookbook: (id: string) => req<AdminLookbook>(`/admin/lookbooks/${id}`),
+  createLookbook: (body: Partial<AdminLookbook>) =>
+    req<AdminLookbook>("/admin/lookbooks", { method: "POST", body: JSON.stringify(body) }),
+  updateLookbook: (id: string, body: Partial<AdminLookbook>) =>
+    req<AdminLookbook>(`/admin/lookbooks/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteLookbook: (id: string) =>
+    req<{ id: string; success: boolean }>(`/admin/lookbooks/${id}`, { method: "DELETE" }),
+  reorderLookbooks: (items: Array<{ id: string; sort_order: number }>) =>
+    req<{ success: boolean; count: number }>("/admin/lookbooks/reorder", {
+      method: "POST",
+      body: JSON.stringify({ items }),
+    }),
+  addLookbookItem: (lookbookId: string, body: Partial<AdminLookbookItem>) =>
+    req<AdminLookbookItem>(`/admin/lookbooks/${lookbookId}/items`, { method: "POST", body: JSON.stringify(body) }),
+  updateLookbookItem: (itemId: string, body: Partial<AdminLookbookItem>) =>
+    req<AdminLookbookItem>(`/admin/lookbooks/items/${itemId}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteLookbookItem: (itemId: string) =>
+    req<{ id: string; success: boolean }>(`/admin/lookbooks/items/${itemId}`, { method: "DELETE" }),
+  reorderLookbookItems: (lookbookId: string, items: Array<{ id: string; sort_order: number }>) =>
+    req<{ success: boolean; count: number }>(`/admin/lookbooks/${lookbookId}/items/reorder`, {
+      method: "POST",
+      body: JSON.stringify({ items }),
+    }),
+  uploadLookbookImage: async (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`${API_URL}/api/v1/admin/lookbooks/upload`, {
+      method: "POST",
+      credentials: "include",
+      body: fd,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Upload ảnh thất bại");
+    }
+    return (await res.json()) as { url: string; object_key: string };
+  },
 };
 
 export type DiscountCode = {
@@ -857,6 +896,39 @@ export type CreateAiKeyInput = {
   label: string;
   rawKey: string;
   priority?: number;
+};
+
+export type AdminLookbookItem = {
+  id: string;
+  lookbook_id: string;
+  title: string | null;
+  caption: string | null;
+  image_url: string;
+  product_id: string | null;
+  link_url: string | null;
+  sort_order: number;
+  status: "published" | "draft" | string;
+  created_at: string;
+  updated_at: string;
+  product_name?: string | null;
+  product_slug?: string | null;
+  product_price?: number | null;
+};
+
+export type AdminLookbook = {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  season: string | null;
+  cover_image_url: string;
+  sort_order: number;
+  status: "published" | "draft" | "archived" | string;
+  created_at: string;
+  updated_at: string;
+  item_count?: number;
+  items?: AdminLookbookItem[];
 };
 
 export { API_URL };

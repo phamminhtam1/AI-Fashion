@@ -19,6 +19,7 @@ export type Category = {
 
 const catImage: Record<string, string> = {
   "vay-dam": dress,
+  dam: dress,
   ao: top,
   quan: pants,
   "chan-vay": skirt,
@@ -175,9 +176,10 @@ export function hydrateCatalog(p?: Product[], c?: Category[]) {
 
 /** Slugs of this category and all descendants (for listing). */
 export function categorySubtreeSlugs(slug: string): Set<string> {
-  const root = categoriesCache.find((c) => c.slug === slug);
-  if (!root) return new Set([slug]);
-  const out = new Set<string>([root.slug]);
+  const norm = slug === "vay-dam" ? "dam" : slug;
+  const root = categoriesCache.find((c) => c.slug === norm || c.slug === slug);
+  if (!root) return new Set([slug, norm]);
+  const out = new Set<string>([root.slug, slug, norm]);
   const queue = [root.id];
   while (queue.length) {
     const id = queue.shift()!;
@@ -366,9 +368,13 @@ export const categories: Category[] = new Proxy([] as Category[], {
   },
 });
 
-export const formatVND = (n: number) => n.toLocaleString("vi-VN") + "₫";
+export const formatVND = (n?: number | null) =>
+  typeof n === "number" && !isNaN(n) ? n.toLocaleString("vi-VN") + "₫" : "0₫";
 
-export const getCategory = (slug: string) => categoriesCache.find((c) => c.slug === slug);
+export const getCategory = (slug: string) => {
+  const norm = slug === "vay-dam" ? "dam" : slug;
+  return categoriesCache.find((c) => c.slug === norm || c.slug === slug);
+};
 export const getProduct = (slug: string) => cache.find((p) => p.slug === slug);
 
 /** Ancestor chain root → … → leaf for breadcrumbs. Empty if slug is not a DB category. */

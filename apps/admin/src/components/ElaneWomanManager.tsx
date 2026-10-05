@@ -36,219 +36,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { adminApi, type AdminProduct, type ElaneWomanPost } from "@/lib/api";
 import { useConfirmDialog } from "@/components/ConfirmDialog";
-
-function ProductCombobox({
-  products,
-  selectedId,
-  onSelect,
-}: {
-  products: AdminProduct[];
-  selectedId: string;
-  onSelect: (productId: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const listRef = useRef<HTMLDivElement>(null);
-
-  const selectedProduct = useMemo(
-    () => products.find((p) => p.id === selectedId),
-    [products, selectedId],
-  );
-
-  const filtered = useMemo(() => {
-    if (!search.trim()) return products;
-    const q = search.trim().toLowerCase();
-    return products.filter((p) => {
-      const nameMatch = p.name.toLowerCase().includes(q);
-      const catMatch = p.category?.name?.toLowerCase().includes(q);
-      const slugMatch = p.slug?.toLowerCase().includes(q);
-      const skuMatch = (p.variants as Array<{ sku?: string }> | undefined)?.some((v) =>
-        v.sku?.toLowerCase().includes(q),
-      );
-      return nameMatch || catMatch || slugMatch || skuMatch;
-    });
-  }, [products, search]);
-
-  // Fix: Radix Dialog locks wheel events on document body.
-  // Using capture phase wheel listener + direct scrollTop ensures mouse wheel always scrolls smoothly!
-  useEffect(() => {
-    const el = listRef.current;
-    if (!el || !open) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      e.stopPropagation();
-      const delta = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
-      el.scrollTop += delta;
-    };
-
-    el.addEventListener("wheel", handleWheel, { passive: true, capture: true });
-    return () => {
-      el.removeEventListener("wheel", handleWheel, { capture: true });
-    };
-  }, [open, filtered]);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <div
-          role="combobox"
-          aria-expanded={open}
-          className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-xs cursor-pointer hover:bg-muted/50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {selectedProduct ? (
-            <div className="flex items-center gap-2 min-w-0 pr-1">
-              {selectedProduct.images?.[0] ? (
-                <img
-                  src={selectedProduct.images[0]}
-                  alt=""
-                  className="size-6 rounded object-cover border border-border shrink-0 bg-secondary"
-                />
-              ) : (
-                <div className="size-6 rounded bg-muted flex items-center justify-center text-[10px] shrink-0 font-medium">
-                  SP
-                </div>
-              )}
-              <span className="truncate font-medium">{selectedProduct.name}</span>
-              {selectedProduct.category?.name && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0 font-normal">
-                  {selectedProduct.category.name}
-                </Badge>
-              )}
-            </div>
-          ) : (
-            <span className="text-muted-foreground flex items-center gap-1.5">
-              <Search className="size-3.5" />
-              Tìm kiếm và chọn sản phẩm...
-            </span>
-          )}
-          <div className="flex items-center gap-1 shrink-0 ml-1">
-            {selectedProduct && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelect("");
-                }}
-                className="size-5 rounded-full hover:bg-muted-foreground/20 flex items-center justify-center text-muted-foreground hover:text-foreground"
-                title="Bỏ chọn sản phẩm"
-              >
-                <X className="size-3" />
-              </button>
-            )}
-            <ChevronDown className="size-3.5 opacity-50" />
-          </div>
-        </div>
-      </PopoverTrigger>
-
-      <PopoverContent
-        portal={false}
-        align="start"
-        className="w-[360px] p-0 shadow-xl border-border z-50 overflow-hidden"
-      >
-        <div className="p-2 border-b border-border bg-card">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Nhập tên sản phẩm, danh mục, SKU..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-7 h-8 text-xs bg-background"
-              autoFocus
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div
-          ref={listRef}
-          className="max-h-60 overflow-y-auto p-1 divide-y divide-border/30 overscroll-contain"
-        >
-          <button
-            type="button"
-            onClick={() => {
-              onSelect("");
-              setOpen(false);
-              setSearch("");
-            }}
-            className={`w-full flex items-center justify-between px-2.5 py-2 text-xs rounded hover:bg-muted text-left transition ${
-              !selectedId ? "bg-muted font-medium text-primary" : "text-muted-foreground"
-            }`}
-          >
-            <span>-- Không gắn sản phẩm --</span>
-            {!selectedId && <Check className="size-3.5 text-primary" />}
-          </button>
-
-          {filtered.length === 0 ? (
-            <div className="p-4 text-center text-xs text-muted-foreground">
-              Không tìm thấy sản phẩm nào khớp với "{search}"
-            </div>
-          ) : (
-            filtered.map((prod) => {
-              const isSelected = prod.id === selectedId;
-              const img = prod.images?.[0] || prod.media?.[0]?.url;
-              return (
-                <button
-                  key={prod.id}
-                  type="button"
-                  onClick={() => {
-                    onSelect(prod.id);
-                    setOpen(false);
-                    setSearch("");
-                  }}
-                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 text-xs rounded hover:bg-muted text-left transition ${
-                    isSelected ? "bg-primary/10 text-primary font-medium" : ""
-                  }`}
-                >
-                  {img ? (
-                    <img
-                      src={img}
-                      alt=""
-                      className="size-8 rounded object-cover border border-border shrink-0 bg-secondary"
-                    />
-                  ) : (
-                    <div className="size-8 rounded bg-secondary flex items-center justify-center text-[10px] text-muted-foreground shrink-0 font-medium">
-                      SP
-                    </div>
-                  )}
-
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{prod.name}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-muted-foreground">
-                      {prod.category?.name && <span>{prod.category.name}</span>}
-                      {prod.price_vnd ? (
-                        <>
-                          <span>·</span>
-                          <span>{Number(prod.price_vnd).toLocaleString("vi-VN")}₫</span>
-                        </>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  {isSelected && <Check className="size-4 text-primary shrink-0 ml-1" />}
-                </button>
-              );
-            })
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
+import { ProductCombobox } from "@/components/ProductCombobox";
 
 export function ElaneWomanManager() {
   const [posts, setPosts] = useState<ElaneWomanPost[]>([]);
-  const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Drag and drop state
@@ -273,17 +66,13 @@ export function ElaneWomanManager() {
   const [status, setStatus] = useState<"published" | "draft">("published");
   const [saving, setSaving] = useState(false);
 
-  const { confirm, ConfirmDialogComponent } = useConfirmDialog();
+  const { confirm, ConfirmDialogElement } = useConfirmDialog();
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [resPosts, resProducts] = await Promise.all([
-        adminApi.elaneWomanPosts(),
-        adminApi.productsAll(),
-      ]);
-      setPosts(resPosts.items);
-      setProducts(resProducts.items);
+      const resPosts = await adminApi.elaneWomanPosts();
+      setPosts(Array.isArray(resPosts?.items) ? resPosts.items : []);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Không tải được danh sách bài đăng");
     } finally {
@@ -313,7 +102,7 @@ export function ElaneWomanManager() {
     setProductId("");
     setInstagramUrl("");
     // Next sort order
-    const nextOrder = posts.length > 0 ? Math.max(...posts.map((p) => p.sort_order)) + 1 : 1;
+    const nextOrder = posts.length > 0 ? Math.max(0, ...posts.map((p) => p.sort_order || 0)) + 1 : 1;
     setSortOrder(nextOrder);
     setStatus("published");
     setDialogOpen(true);
@@ -334,17 +123,14 @@ export function ElaneWomanManager() {
     setDialogOpen(true);
   };
 
-  const handleProductChange = (prodId: string) => {
+  const handleProductChange = (prodId: string, selected?: AdminProduct) => {
     setProductId(prodId);
-    if (prodId) {
-      const selected = products.find((p) => p.id === prodId);
-      if (selected) {
-        if (!linkUrl || linkUrl.startsWith("/san-pham/")) {
-          setLinkUrl(`/san-pham/${selected.slug}`);
-        }
-        if (!title) {
-          setTitle(`ÉLANEwoman · ${selected.name}`);
-        }
+    if (prodId && selected) {
+      if (!linkUrl || linkUrl.startsWith("/san-pham/")) {
+        setLinkUrl(`/san-pham/${selected.slug}`);
+      }
+      if (!title) {
+        setTitle(`ÉLANEwoman · ${selected.name}`);
       }
     }
   };
@@ -387,7 +173,7 @@ export function ElaneWomanManager() {
         } else {
           await adminApi.patchElaneWomanPost(editingPost.id, {
             title: title || null,
-            image_url: finalImage || undefined,
+            image_url: finalImage || "",
             link_url: linkUrl || null,
             product_id: productId || null,
             instagram_url: instagramUrl || null,
@@ -436,7 +222,6 @@ export function ElaneWomanManager() {
       title: "Xóa ảnh ÉLANEwoman?",
       description: `Bạn có chắc chắn muốn xóa bài đăng "${post.title || "này"}" khỏi thư viện lookbook?`,
       confirmLabel: "Xóa bài đăng",
-      variant: "destructive",
       onConfirm: async () => {
         try {
           await adminApi.deleteElaneWomanPost(post.id);
@@ -512,7 +297,7 @@ export function ElaneWomanManager() {
       {/* Action Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{items.length} hình ảnh lookbook</span>
+          <span>{posts.length} hình ảnh lookbook</span>
           <Badge variant="outline" className="text-[10px] py-0 px-1.5">
             Trang chủ & Instagram
           </Badge>
@@ -881,9 +666,17 @@ export function ElaneWomanManager() {
                   Gắn sản phẩm liên quan
                 </label>
                 <ProductCombobox
-                  products={products}
                   selectedId={productId}
                   onSelect={handleProductChange}
+                  initialProduct={
+                    editingPost?.product_id
+                      ? {
+                          id: editingPost.product_id,
+                          name: editingPost.product_name || "Sản phẩm đã gắn",
+                          slug: editingPost.product_slug ?? null,
+                        }
+                      : null
+                  }
                 />
               </div>
 
@@ -968,7 +761,7 @@ export function ElaneWomanManager() {
         </DialogContent>
       </Dialog>
 
-      {ConfirmDialogComponent}
+      {ConfirmDialogElement}
     </div>
   );
 }

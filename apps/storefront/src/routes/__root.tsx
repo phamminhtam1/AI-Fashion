@@ -14,6 +14,7 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { Toaster } from "@/components/ui/sonner";
 import { hydrateCatalog } from "@/lib/products";
+import ElaneLoader from "@/components/common/ElaneLoader";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -155,6 +156,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ElaneLoader />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <StoreProvider>
         <Header navItems={navItems} />

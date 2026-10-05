@@ -57,6 +57,7 @@ import { CustomersManager } from "@/components/CustomersManager";
 import { DiscountCodesManager } from "@/components/DiscountCodesManager";
 import { OrdersManager } from "@/components/OrdersManager";
 import { ElaneWomanManager } from "@/components/ElaneWomanManager";
+import { LookbookManager } from "@/components/LookbookManager";
 import { AiKeysManager } from "@/components/AiKeysManager";
 import type { Overview } from "@/lib/api";
 
@@ -466,8 +467,10 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
           />
         ) : active === "promotions" ? (
           <DiscountCodesManager />
-        ) : active === "elanewoman" || active === "lookbook" ? (
+        ) : active === "elanewoman" ? (
           <ElaneWomanManager />
+        ) : active === "lookbook" ? (
+          <LookbookManager />
         ) : active === "ai_keys" ? (
           <AiKeysManager />
         ) : currentConfig ? (

@@ -218,3 +218,266 @@ input:disabled,
   cursor: not-allowed !important;
 }
 
+/* =========================================================================
+   Infinite Auto-Scroll Masonry Keyframes & Classes
+   ========================================================= */
+@keyframes masonryScrollUp {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes masonryScrollDown {
+  0% {
+    transform: translateY(-50%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-masonry-up-slow {
+  animation: masonryScrollUp 45s linear infinite;
+  will-change: transform;
+}
+
+.animate-masonry-up-fast {
+  animation: masonryScrollUp 32s linear infinite;
+  will-change: transform;
+}
+
+.animate-masonry-down-slow {
+  animation: masonryScrollDown 52s linear infinite;
+  will-change: transform;
+}
+
+.animate-masonry-down-fast {
+  animation: masonryScrollDown 38s linear infinite;
+  will-change: transform;
+}
+
+/* Individual column pause on hover: hovering into a column freezes ONLY that column while others continue moving */
+.runway-column:hover .animate-masonry-up-slow,
+.runway-column:hover .animate-masonry-up-fast,
+.runway-column:hover .animate-masonry-down-slow,
+.runway-column:hover .animate-masonry-down-fast {
+  animation-play-state: paused !important;
+}
+
+.animation-paused .animate-masonry-up-slow,
+.animation-paused .animate-masonry-up-fast,
+.animation-paused .animate-masonry-down-slow,
+.animation-paused .animate-masonry-down-fast,
+.animation-paused {
+  animation-play-state: paused !important;
+}
+
+.mask-gradient-y {
+  mask-image: linear-gradient(to bottom, transparent, black 4%, black 96%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 4%, black 96%, transparent);
+}
+
+/* ==========================================================================
+   ÉLANE Page Loader Luxury Animations (Exact Match to Reference HTML)
+   ========================================================================== */
+
+.loader,
+.elane-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: grid;
+  place-items: center;
+  background: #faf9f7;
+  transition:
+    opacity .7s ease,
+    transform .75s cubic-bezier(.76,0,.24,1),
+    filter .75s ease;
+}
+
+.loader.leave,
+.elane-loader.leave {
+  opacity: 0;
+  transform: scale(1.025);
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+.loader .loader-inner,
+.elane-loader .loader-inner {
+  width: min(76vw, 420px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.loader .logo-wrap,
+.elane-loader .logo-wrap {
+  position: relative;
+  width: min(62vw, 290px);
+  overflow: hidden;
+  padding: 10px 12px;
+}
+
+.loader .logo,
+.elane-loader .logo {
+  display: block;
+  width: 100%;
+  height: auto;
+  opacity: 0;
+  transform: translateY(12px) scale(.965);
+  filter: blur(7px);
+  animation: logoReveal 1s cubic-bezier(.22,1,.36,1) .10s forwards;
+}
+
+.loader .shimmer,
+.elane-loader .shimmer {
+  pointer-events: none;
+  position: absolute;
+  inset: 8px auto 8px -45%;
+  width: 30%;
+  transform: skewX(-20deg);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+  filter: blur(5px);
+  opacity: 0;
+  animation: shimmer 1.65s ease-in-out .70s infinite;
+}
+
+.loader .line,
+.elane-loader .line {
+  margin-top: 10px;
+  width: 150px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.loader .line::before,
+.elane-loader .line::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: center;
+  background: linear-gradient(90deg, transparent, #b78962, transparent);
+  animation: lineOpen 1.05s cubic-bezier(.22,1,.36,1) .35s forwards;
+}
+
+.loader .tagline,
+.elane-loader .tagline {
+  margin-top: 15px;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #766f69;
+  opacity: 0;
+  transform: translateY(6px);
+  letter-spacing: .52em;
+  animation: taglineIn 1.05s ease-out .5s forwards;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+}
+
+.loader .progress,
+.elane-loader .progress {
+  margin-top: 28px;
+  width: 52px;
+  height: 1px;
+  background: rgba(0,0,0,.08);
+  overflow: hidden;
+  opacity: 0;
+  animation: fadeIn .4s ease .75s forwards;
+}
+
+.loader .progress::after,
+.elane-loader .progress::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #1a1a1a;
+  transform: translateX(-100%);
+  animation: progress 1.45s cubic-bezier(.65,0,.35,1) .75s forwards;
+}
+
+@keyframes logoReveal {
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes shimmer {
+  0% { left: -45%; opacity: 0; }
+  15% { opacity: .9; }
+  60% { opacity: .55; }
+  100% { left: 125%; opacity: 0; }
+}
+
+@keyframes lineOpen {
+  to { transform: scaleX(1); }
+}
+
+@keyframes taglineIn {
+  to { opacity: 1; transform: translateY(0); letter-spacing: .34em; }
+}
+
+@keyframes progress {
+  to { transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+/* ==========================================================================
+   Header Logo Recurring Shimmer Effect (Every 3 Seconds)
+   ========================================================================== */
+
+.header-logo-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 4px 8px;
+}
+
+.header-logo-shimmer {
+  pointer-events: none;
+  position: absolute;
+  inset: -12px auto -12px -55%;
+  width: 35%;
+  transform: skewX(-22deg);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 20%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(255, 255, 255, 0.25) 80%,
+    transparent 100%
+  );
+  filter: blur(4px);
+  opacity: 0;
+  animation: headerShimmer 3s ease-in-out infinite;
+}
+
+@keyframes headerShimmer {
+  0% {
+    left: -55%;
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.95;
+  }
+  24% {
+    opacity: 0.65;
+  }
+  38% {
+    left: 135%;
+    opacity: 0;
+  }
+  100% {
+    left: 135%;
+    opacity: 0;
+  }
+}

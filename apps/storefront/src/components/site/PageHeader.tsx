@@ -4,8 +4,10 @@ import type { ReactNode } from "react";
 export function PageHeader({ title, eyebrow, crumb, children }: { title: string; eyebrow?: string; crumb?: string; children?: ReactNode }) {
   return (
     <header className="mx-auto max-w-[1440px] px-6 pt-10 md:px-8">
-      <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground">
-        <Link to="/" className="hover:text-foreground">Trang chủ</Link> / <span className="text-foreground">{crumb ?? title}</span>
+      <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+        <Link to="/" className="hover:text-foreground transition-colors">Trang chủ</Link>
+        <span className="opacity-40">/</span>
+        <span className="text-foreground font-medium">{crumb ?? title}</span>
       </nav>
       {eyebrow && <p className="mt-8 text-[11px] uppercase tracking-[0.3em] text-muted-foreground">{eyebrow}</p>}
       <h1 className={`${eyebrow ? "mt-2" : "mt-8"} text-4xl md:text-5xl`}>{title}</h1>

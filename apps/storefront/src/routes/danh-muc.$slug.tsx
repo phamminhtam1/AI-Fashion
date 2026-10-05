@@ -83,7 +83,7 @@ function ListingContent({
 
   return (
     <div className="mx-auto max-w-[1440px] px-6 py-10 md:px-8">
-      <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground">
+      <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground">
         <Link to="/" className="hover:text-foreground">
           Trang chủ
         </Link>

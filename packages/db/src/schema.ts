@@ -574,6 +574,36 @@ export const elaneWomanPosts = pgTable("elane_woman_posts", {
   updatedAt: updatedAt(),
 });
 
+export const lookbooks = pgTable("lookbooks", {
+  id: id(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  subtitle: text("subtitle"),
+  description: text("description"),
+  season: text("season"),
+  coverImageUrl: text("cover_image_url").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  status: text("status").notNull().default("published"), // published | draft | archived
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export const lookbookItems = pgTable("lookbook_items", {
+  id: id(),
+  lookbookId: uuid("lookbook_id")
+    .notNull()
+    .references(() => lookbooks.id, { onDelete: "cascade" }),
+  title: text("title"),
+  caption: text("caption"),
+  imageUrl: text("image_url").notNull(),
+  productId: uuid("product_id").references(() => products.id, { onDelete: "set null" }),
+  linkUrl: text("link_url"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  status: text("status").notNull().default("published"), // published | draft
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
 export const faqs = pgTable("faqs", {
   id: id(),
   groupName: text("group_name").notNull(),

@@ -300,13 +300,196 @@ async function ensureElaneWomanPosts() {
   }
 }
 
+async function ensureLookbooks() {
+  try {
+    const existing = await db.select().from(s.lookbooks).limit(1);
+    if (existing.length > 0) return;
+
+    const allProds = await db.select().from(s.products);
+    const prodBySlug = new Map(allProds.map((p) => [p.slug, p]));
+
+    const lookbookData = [
+      {
+        slug: "autumn-winter-2026",
+        title: "Thu Đông 2026",
+        subtitle: "Timeless femininity, redefined.",
+        season: "AW26",
+        description: "Gam màu camel, kem và đen — những lớp áo dạ mềm mại, len cashmere và phom dáng thanh lịch cho mùa lạnh.",
+        coverImageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1200&auto=format&fit=crop&q=85",
+        sortOrder: 1,
+        status: "published",
+        items: [
+          {
+            title: "Camel Hour",
+            caption: "Áo len Cashmere Soft · Quần linen ống rộng Dune",
+            imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80",
+            productSlug: "ao-len-cashmere-soft",
+            sortOrder: 1,
+          },
+          {
+            title: "Cashmere Soft",
+            caption: "Chất liệu cashmere tuyển chọn, mềm mại tựa đám mây",
+            imageUrl: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&auto=format&fit=crop&q=80",
+            productSlug: "ao-len-cashmere-soft",
+            sortOrder: 2,
+          },
+          {
+            title: "Minimal Dune",
+            caption: "Quần linen cạp cao ống rộng Dune phối sơ mi tối giản",
+            imageUrl: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&auto=format&fit=crop&q=80",
+            productSlug: "quan-linen-ong-rong-dune",
+            sortOrder: 3,
+          },
+          {
+            title: "Autumn Silhouette",
+            caption: "Phom dáng tự do, phóng khoáng nhưng đầy quyến rũ",
+            imageUrl: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800&auto=format&fit=crop&q=80",
+            productSlug: "ao-blazer-oversize-noir",
+            sortOrder: 4,
+          },
+        ],
+      },
+      {
+        slug: "la-parisienne",
+        title: "La Parisienne",
+        subtitle: "Chiều Paris, nắng nhẹ.",
+        season: "Editorial",
+        description: "Tweed, ngọc trai và những chi tiết vàng tinh xảo — cảm hứng từ phong cách quý cô Pháp cổ điển thanh lịch.",
+        coverImageUrl: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=1200&auto=format&fit=crop&q=85",
+        sortOrder: 2,
+        status: "published",
+        items: [
+          {
+            title: "Parisienne Tweed",
+            caption: "Set tweed Parisienne tinh tế với đường dệt thủ công sắc sảo",
+            imageUrl: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800&auto=format&fit=crop&q=80",
+            productSlug: "set-tweed-parisienne",
+            sortOrder: 1,
+          },
+          {
+            title: "Perle Earring",
+            caption: "Khuyên tai ngọc trai Perle — điểm xuyết nét kiêu sa nhẹ nhàng",
+            imageUrl: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&auto=format&fit=crop&q=80",
+            productSlug: "khuyen-tai-ngoc-trai-perle",
+            sortOrder: 2,
+          },
+          {
+            title: "Café de Flore",
+            caption: "Nét duyên dáng thanh lịch tại những góc phố thơ mộng",
+            imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&auto=format&fit=crop&q=80",
+            productSlug: "ao-so-mi-lua-ivory",
+            sortOrder: 3,
+          },
+        ],
+      },
+      {
+        slug: "the-office-edit",
+        title: "The Office Edit",
+        subtitle: "Quyền lực trong sự tinh tế.",
+        season: "Essentials",
+        description: "Blazer oversize, sơ mi lụa và quần âu — tủ đồ công sở hoàn hảo cho người phụ nữ đương đại tự tin.",
+        coverImageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&auto=format&fit=crop&q=85",
+        sortOrder: 3,
+        status: "published",
+        items: [
+          {
+            title: "Power Blazer",
+            caption: "Áo blazer oversize Noir tạo nét quyền lực mềm mại",
+            imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&auto=format&fit=crop&q=80",
+            productSlug: "ao-blazer-oversize-noir",
+            sortOrder: 1,
+          },
+          {
+            title: "Ivory Silk",
+            caption: "Áo sơ mi lụa Ivory — chất liệu lụa tơ tự nhiên óng ả",
+            imageUrl: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&auto=format&fit=crop&q=80",
+            productSlug: "ao-so-mi-lua-ivory",
+            sortOrder: 2,
+          },
+          {
+            title: "Modern Tailoring",
+            caption: "Cắt may sắc sảo tôn lên vóc dáng thanh mảnh",
+            imageUrl: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&auto=format&fit=crop&q=80",
+            productSlug: "quan-linen-ong-rong-dune",
+            sortOrder: 3,
+          },
+        ],
+      },
+      {
+        slug: "evening-noir",
+        title: "Evening Noir",
+        subtitle: "Khi màn đêm buông xuống.",
+        season: "Holiday",
+        description: "Lụa satin và những đường cắt tối giản cho các buổi tiệc tối sang trọng và quyến rũ.",
+        coverImageUrl: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1200&auto=format&fit=crop&q=85",
+        sortOrder: 4,
+        status: "published",
+        items: [
+          {
+            title: "Silk Slip Dress",
+            caption: "Đầm lụa hai dây Noir — gợi cảm trong sự tiết chế đỉnh cao",
+            imageUrl: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800&auto=format&fit=crop&q=80",
+            productSlug: "dam-lua-hai-day-noir",
+            sortOrder: 1,
+          },
+          {
+            title: "Champagne Glow",
+            caption: "Chân váy xếp ly Champagne bắt sáng lung linh dưới ánh đèn tiệc",
+            imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80",
+            productSlug: "chan-vay-xep-ly-champagne",
+            sortOrder: 2,
+          },
+        ],
+      },
+    ];
+
+    for (const lb of lookbookData) {
+      const [inserted] = await db
+        .insert(s.lookbooks)
+        .values({
+          slug: lb.slug,
+          title: lb.title,
+          subtitle: lb.subtitle,
+          description: lb.description,
+          season: lb.season,
+          coverImageUrl: lb.coverImageUrl,
+          sortOrder: lb.sortOrder,
+          status: lb.status,
+        })
+        .returning();
+
+      if (inserted && lb.items.length) {
+        const itemValues = lb.items.map((it) => {
+          const matchedProd = it.productSlug ? prodBySlug.get(it.productSlug) : null;
+          return {
+            lookbookId: inserted.id,
+            title: it.title,
+            caption: it.caption,
+            imageUrl: it.imageUrl,
+            productId: matchedProd?.id ?? null,
+            linkUrl: matchedProd ? `/san-pham/${matchedProd.slug}` : null,
+            sortOrder: it.sortOrder,
+            status: "published",
+          };
+        });
+        await db.insert(s.lookbookItems).values(itemValues);
+      }
+    }
+
+    console.log("Seeded 4 editorial lookbooks with lookbook items.");
+  } catch (err) {
+    console.warn("ensureLookbooks failed:", err);
+  }
+}
+
 async function main() {
   const existing = await db.select().from(s.accounts).where(eq(s.accounts.email, "admin@elane.local")).limit(1);
   if (existing.length) {
     await ensureDefaultSizeChart();
     await ensureCustomerModule();
     await ensureElaneWomanPosts();
-    console.log("Seed already applied (admin exists). Ensured size chart + customer perms + elane woman posts. Skipping full seed.");
+    await ensureLookbooks();
+    console.log("Seed already applied (admin exists). Ensured size chart + customer perms + elane woman + lookbooks. Skipping full seed.");
     process.exit(0);
   }
 

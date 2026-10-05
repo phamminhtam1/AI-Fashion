@@ -339,7 +339,7 @@ export function VirtualTryOnDialog({
         }}
       >
         <DialogContent
-          className="max-h-[92vh] max-w-3xl overflow-y-auto overflow-x-hidden p-0 sm:max-w-4xl border border-border/80 bg-background shadow-2xl"
+          className="w-[calc(100vw-1.5rem)] sm:w-full max-w-3xl sm:max-w-4xl max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto overflow-x-hidden p-0 rounded-2xl border border-border/80 bg-background shadow-2xl my-auto"
           onPointerDownOutside={(e) => {
             if (lightboxOpen) e.preventDefault();
           }}
@@ -354,24 +354,24 @@ export function VirtualTryOnDialog({
           }}
         >
         {/* Header with Luxury Brand Accent */}
-        <div className="relative border-b border-border bg-gradient-to-r from-secondary/50 via-background to-secondary/30 px-6 py-5 sm:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="relative border-b border-border bg-gradient-to-r from-secondary/50 via-background to-secondary/30 px-4 py-4 sm:px-6 sm:py-5 md:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pr-7 sm:pr-0">
             <div>
-              <DialogTitle className="mt-2 text-xl font-normal tracking-wide sm:text-2xl font-serif">
+              <DialogTitle className="text-lg sm:text-xl md:text-2xl font-normal tracking-wide font-serif">
                 Phòng Thử Đồ ÉLANE
               </DialogTitle>
-              <DialogDescription className="mt-1 text-xs text-muted-foreground sm:text-sm">
+              <DialogDescription className="mt-1 text-xs text-muted-foreground leading-relaxed sm:text-sm">
                 Xem trước form dáng thực tế của trang phục trên chính hình ảnh của bạn với công nghệ AI thế hệ mới.
               </DialogDescription>
             </div>
 
             {/* Mode Switcher: Try-on vs History */}
-            <div className="inline-flex shrink-0 items-center rounded-full border border-border/80 bg-secondary/50 p-1 text-xs shadow-xs">
+            <div className="inline-flex w-full sm:w-auto items-center rounded-full border border-border/80 bg-secondary/50 p-1 text-xs shadow-xs">
               <button
                 type="button"
                 onClick={() => setDialogMode("tryon")}
                 className={cn(
-                  "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 font-medium tracking-wide transition-all",
+                  "flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 sm:px-4 py-2 font-medium tracking-wide transition-all",
                   dialogMode === "tryon"
                     ? "bg-background text-foreground shadow-sm font-semibold"
                     : "text-muted-foreground hover:text-foreground",
@@ -384,7 +384,7 @@ export function VirtualTryOnDialog({
                 type="button"
                 onClick={() => setDialogMode("history")}
                 className={cn(
-                  "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 font-medium tracking-wide transition-all",
+                  "flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 sm:px-4 py-2 font-medium tracking-wide transition-all",
                   dialogMode === "history"
                     ? "bg-background text-foreground shadow-sm font-semibold"
                     : "text-muted-foreground hover:text-foreground",
@@ -409,13 +409,13 @@ export function VirtualTryOnDialog({
           </div>
         </div>
 
-        <div className="p-6 sm:p-8">
+        <div className="p-4 sm:p-6 md:p-8">
           {dialogMode === "history" ? (
             /* HISTORY TAB VIEW */
             <div className="space-y-6">
-              <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 border-b border-border pb-3">
                 <div>
-                  <h3 className="text-base font-serif font-medium">Lịch sử ảnh đã thử đồ</h3>
+                  <h3 className="text-sm sm:text-base font-serif font-medium">Lịch sử ảnh đã thử đồ</h3>
                   <p className="text-xs text-muted-foreground">
                     Các bức ảnh thử đồ đã tạo được lưu trữ an toàn để bạn dễ dàng xem lại và so sánh.
                   </p>
@@ -429,7 +429,7 @@ export function VirtualTryOnDialog({
                         setHistoryList([]);
                       }
                     }}
-                    className="inline-flex items-center gap-1 text-xs text-destructive hover:underline"
+                    className="self-start sm:self-auto inline-flex items-center gap-1.5 text-xs text-destructive hover:underline"
                   >
                     <Trash2 className="h-3.5 w-3.5" /> Xóa tất cả
                   </button>
@@ -548,9 +548,9 @@ export function VirtualTryOnDialog({
             /* TRY-ON TAB VIEW */
             <>
               {/* Product Snapshot Bar */}
-              <div className="mb-6 flex items-center justify-between gap-4 rounded-lg border border-border bg-secondary/30 p-4">
+              <div className="mb-4 sm:mb-6 flex items-center justify-between gap-3 sm:gap-4 rounded-xl border border-border bg-secondary/30 p-3 sm:p-4">
                 <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
-                  <div className="h-16 w-12 shrink-0 overflow-hidden rounded border border-border bg-secondary">
+                  <div className="h-14 w-11 sm:h-16 sm:w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-secondary">
                     <img
                       src={cw?.thumbnail || cw?.images?.[0] || product.images[0]}
                       alt={product.name}
@@ -558,11 +558,11 @@ export function VirtualTryOnDialog({
                     />
                   </div>
                   <div className="min-w-0 flex-1 overflow-hidden">
-                    <h4 className="text-sm font-medium leading-snug truncate" title={product.name}>
+                    <h4 className="text-xs sm:text-sm font-medium leading-snug line-clamp-2 sm:truncate" title={product.name}>
                       {product.name}
                     </h4>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span>Màu sắc: <strong>{cw?.id ? `Mẫu ${cw.id}` : "Tiêu chuẩn"}</strong></span>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] sm:text-xs text-muted-foreground">
+                      <span>Màu: <strong>{cw?.id ? `Mẫu ${cw.id}` : "Tiêu chuẩn"}</strong></span>
                       <span>•</span>
                       <span>
                         Giá: <strong className="text-foreground">{formatVND(product.salePrice ?? product.price)}</strong>
@@ -599,11 +599,11 @@ export function VirtualTryOnDialog({
                 </div>
               ) : job?.status === "COMPLETED" && job.result?.url ? (
                 /* COMPLETED RESULT VIEW WITH BEFORE/AFTER SLIDER */
-                <div className="space-y-6 animate-in fade-in duration-300">
-                  <div className="flex items-center justify-between border-b border-border pb-3">
+                <div className="space-y-5 sm:space-y-6 animate-in fade-in duration-300">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-border pb-3">
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                      <span className="text-sm font-medium">Kết quả thử đồ AI đã hoàn thành</span>
+                      <CheckCircle2 className="h-4 sm:h-5 w-4 sm:w-5 shrink-0 text-emerald-600" />
+                      <span className="text-xs sm:text-sm font-medium">Kết quả thử đồ AI đã hoàn thành</span>
                     </div>
 
                     <button
@@ -618,7 +618,7 @@ export function VirtualTryOnDialog({
                         });
                         setLightboxOpen(true);
                       }}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-1.5 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition"
+                      className="self-start sm:self-auto inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 sm:px-3.5 sm:py-1.5 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition"
                     >
                       <Maximize2 className="h-3.5 w-3.5" />
                       <span>Xem toàn màn hình HD</span>
@@ -626,32 +626,32 @@ export function VirtualTryOnDialog({
                   </div>
 
                   {/* Interactive Before/After Comparison Slider */}
-                  <BeforeAfterSlider
-                    resultUrl={job.result.url}
-                    originalUrl={job.user_image?.url || previewUrl}
-                    alt={product.name}
-                    className="max-w-md shadow-xl"
-                    onImageClick={() => {
-                      setLightboxItem({
-                        url: job.result!.url,
-                        originalUrl: job.user_image?.url || previewUrl,
-                        name: product.name,
-                        price: variant ? (product.salePrice ?? product.price) : product.price,
-                        slug: product.slug,
-                      });
-                      setLightboxOpen(true);
-                    }}
-                    overlayButton={
-                      <span className="flex items-center gap-2 rounded-full bg-black/75 px-4 py-2 text-xs font-medium text-white shadow-xl backdrop-blur">
-                        <Maximize2 className="h-4 w-4" /> Bấm để phóng to xem ảnh HD
-                      </span>
-                    }
-                  />
-
-
+                  <div className="flex justify-center w-full py-1">
+                    <BeforeAfterSlider
+                      resultUrl={job.result.url}
+                      originalUrl={job.user_image?.url || previewUrl}
+                      alt={product.name}
+                      className="w-full max-w-[280px] xs:max-w-xs sm:max-w-md shadow-xl"
+                      onImageClick={() => {
+                        setLightboxItem({
+                          url: job.result!.url,
+                          originalUrl: job.user_image?.url || previewUrl,
+                          name: product.name,
+                          price: variant ? (product.salePrice ?? product.price) : product.price,
+                          slug: product.slug,
+                        });
+                        setLightboxOpen(true);
+                      }}
+                      overlayButton={
+                        <span className="flex items-center gap-2 rounded-full bg-black/75 px-3.5 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-medium text-white shadow-xl backdrop-blur">
+                          <Maximize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Bấm để phóng to HD
+                        </span>
+                      }
+                    />
+                  </div>
 
                   {/* Action Buttons */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                     <button
                       type="button"
                       onClick={() => {
@@ -661,27 +661,27 @@ export function VirtualTryOnDialog({
                         setPreviewUrl(null);
                         setElapsedSeconds(0);
                       }}
-                      className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition hover:text-foreground"
+                      className="inline-flex items-center justify-center gap-1.5 py-1.5 text-xs text-muted-foreground transition hover:text-foreground order-2 sm:order-1"
                     >
                       <RefreshCw className="h-3.5 w-3.5" /> Thử lại với ảnh khác
                     </button>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3 order-1 sm:order-2 w-full sm:w-auto">
                       <a
                         href={job.result.url}
                         download={`elane_tryon_${product.slug}.png`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded border border-border px-4 py-2.5 text-xs uppercase tracking-wider text-foreground transition hover:bg-secondary"
+                        className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl border border-border px-3.5 sm:px-4 py-2.5 text-xs uppercase tracking-wider text-foreground transition hover:bg-secondary text-center"
                       >
                         <Download className="h-3.5 w-3.5" /> Tải về
                       </a>
                       <button
                         type="button"
                         onClick={handleAddToCart}
-                        className="inline-flex items-center gap-2 rounded bg-primary px-6 py-2.5 text-xs uppercase tracking-widest text-primary-foreground shadow transition hover:opacity-90"
+                        className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-primary px-4 sm:px-6 py-2.5 text-xs uppercase tracking-widest text-primary-foreground shadow transition hover:opacity-90 whitespace-nowrap text-center"
                       >
-                        <ShoppingBag className="h-3.5 w-3.5" /> Thêm vào giỏ hàng
+                        <ShoppingBag className="h-3.5 w-3.5" /> Thêm vào giỏ
                       </button>
                     </div>
                   </div>
@@ -874,11 +874,11 @@ export function VirtualTryOnDialog({
                   </div>
 
                   {/* Submit CTA */}
-                  <div className="flex items-center justify-end gap-3 pt-2">
+                  <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 pt-2">
                     <button
                       type="button"
                       onClick={() => onOpenChange(false)}
-                      className="rounded border border-border px-5 py-2.5 text-xs uppercase tracking-wider text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      className="w-full sm:w-auto rounded-xl border border-border px-5 py-2.5 text-xs uppercase tracking-wider text-muted-foreground hover:bg-secondary hover:text-foreground text-center"
                     >
                       Hủy
                     </button>
@@ -887,7 +887,7 @@ export function VirtualTryOnDialog({
                       disabled={!selectedFile || isSubmitting}
                       onClick={handleStartTryOn}
                       className={cn(
-                        "inline-flex items-center gap-2 rounded px-7 py-3 text-xs uppercase tracking-widest text-primary-foreground shadow transition cursor-pointer",
+                        "inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl px-6 sm:px-7 py-3 text-xs uppercase tracking-widest text-primary-foreground shadow transition cursor-pointer font-medium",
                         selectedFile && !isSubmitting
                           ? "bg-primary hover:opacity-90 active:scale-[0.98]"
                           : "cursor-not-allowed bg-muted text-muted-foreground",

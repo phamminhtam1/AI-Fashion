@@ -20,6 +20,7 @@ import { adminCustomerRoutes } from "./routes/admin/customers.js";
 import { adminOrderRoutes } from "./routes/admin/orders.js";
 import { adminDiscountCodeRoutes } from "./routes/admin/discount-codes.js";
 import { adminElaneWomanRoutes } from "./routes/admin/elane-woman.js";
+import { adminLookbookRoutes } from "./routes/admin/lookbooks.js";
 import { adminAiKeyRoutes } from "./routes/admin/ai-keys.js";
 import { storeAuthRoutes } from "./routes/store/auth.js";
 import { storeCouponRoutes } from "./routes/store/coupons.js";
@@ -99,6 +100,7 @@ app.route("/api/v1/admin/customers", adminCustomerRoutes);
 app.route("/api/v1/admin/orders", adminOrderRoutes);
 app.route("/api/v1/admin/discount-codes", adminDiscountCodeRoutes);
 app.route("/api/v1/admin/elane-woman", adminElaneWomanRoutes);
+app.route("/api/v1/admin/lookbooks", adminLookbookRoutes);
 app.route("/api/v1/admin/ai-keys", adminAiKeyRoutes);
 app.route("/api/v1/admin", adminOpsRoutes);
 

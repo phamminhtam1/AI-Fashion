@@ -219,6 +219,38 @@ export async function fetchElaneWomanPosts() {
   return get<{ items: ElaneWomanPost[] }>("/elane-woman").catch(() => ({ items: [] }));
 }
 
+export type StoreLookbookItem = {
+  id: string;
+  title: string | null;
+  caption: string | null;
+  image_url: string;
+  product_id: string | null;
+  product_slug: string | null;
+  product_name: string | null;
+  link_url: string | null;
+  sort_order: number;
+};
+
+export type StoreLookbook = {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  season: string | null;
+  cover_image_url: string;
+  sort_order: number;
+  items: StoreLookbookItem[];
+};
+
+export async function fetchLookbooks() {
+  return get<{ items: StoreLookbook[] }>("/lookbooks").catch(() => ({ items: [] }));
+}
+
+export async function fetchLookbookBySlug(slug: string) {
+  return get<StoreLookbook>(`/lookbooks/${slug}`).catch(() => null);
+}
+
 export type ApiSizeChart = {
   id: string;
   name: string;

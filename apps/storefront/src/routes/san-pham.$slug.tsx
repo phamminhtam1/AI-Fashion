@@ -237,7 +237,7 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-6 md:px-8 md:py-10">
-      <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground">
+      <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground">
         <Link to="/" className="hover:text-foreground">Trang chủ</Link> /{" "}
         {cat && <><Link to="/danh-muc/$slug" params={{ slug: cat.slug }} className="hover:text-foreground">{cat.name}</Link> / </>}
         <span className="text-foreground">{p.name}</span>
@@ -440,11 +440,34 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
             <button
               type="button"
               onClick={() => setTryOnOpen(true)}
-              className="group relative flex w-full items-center justify-center gap-2.5 overflow-hidden border border-[#8B1E2D]/40 bg-gradient-to-r from-[#8B1E2D]/10 via-secondary/70 to-[#8B1E2D]/10 px-4 py-3.5 text-xs font-medium uppercase tracking-[0.2em] text-foreground transition-all duration-300 hover:border-[#8B1E2D] hover:bg-[#8B1E2D]/15 hover:shadow-md active:scale-[0.99]"
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect()
+                e.currentTarget.style.setProperty("--x", `${e.clientX - rect.left}px`)
+                e.currentTarget.style.setProperty("--y", `${e.clientY - rect.top}px`)
+              }}
+              className="group/tryon relative flex w-full items-center justify-center gap-2.5 overflow-hidden rounded-xl bg-gradient-to-r from-[#07111f] via-[#4b5361] to-[#d6c2aa] px-4 py-3.5 text-xs font-medium uppercase tracking-[0.18em] text-white shadow-sm hover:shadow-lg hover:shadow-black/20 transition-all duration-300 active:scale-[0.99] cursor-pointer"
             >
-              <Sparkles className="h-4 w-4 text-[#8B1E2D] transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
-              <span className="font-semibold tracking-[0.18em]">THỬ NGAY TRÊN ẢNH CỦA BẠN</span>
-              <span className="rounded bg-[#8B1E2D]/20 px-1.5 py-0.5 text-[9px] font-bold text-[#8B1E2D]">
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 bg-gradient-to-r from-[#020617] via-[#7b6858] to-[#ead8c2] opacity-0 transition-opacity duration-300 ease-out group-hover/tryon:opacity-100 pointer-events-none"
+              />
+
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 opacity-0 group-hover/tryon:opacity-100 transition-opacity duration-300 pointer-events-none"
+                style={{
+                  background:
+                    "radial-gradient(120px circle at var(--x) var(--y), rgba(255,255,255,0.32), transparent 65%)",
+                }}
+              />
+
+              <Sparkles className="relative z-10 h-4 w-4 text-[#f4e8da] transition-transform duration-300 group-hover/tryon:scale-110 group-hover/tryon:rotate-12 group-hover/tryon:text-white" />
+
+              <span className="relative z-10 font-semibold tracking-[0.18em]">
+                THỬ NGAY TRÊN ẢNH CỦA BẠN
+              </span>
+
+              <span className="relative z-10 rounded bg-white/20 px-1.5 py-0.5 text-[9px] font-bold text-white tracking-normal">
                 AI
               </span>
             </button>

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Heart, Menu, Search, ShoppingBag, User, X, Minus, Plus } from "lucide-react";
+import { Heart, Menu, Search, ShoppingBag, User, X, Minus, Plus, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { categories, formatVND, ensureCatalog, getNavItems, products, type NavItem } from "@/lib/products";
@@ -44,21 +44,59 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
   const openNav = open ? navItems.find((n) => n.slug === open && (n.children?.length ?? 0) > 0) : undefined;
   const megaCols = openNav?.children?.length ? chunk(openNav.children, 6) : [];
 
+  const [scrolled, setScrolled] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const y = window.scrollY;
+          // Hysteresis threshold to eliminate scroll bounce:
+          // Scroll down past 120px: collapse category bar
+          // Scroll back up to the top (< 25px): expand category bar
+          if (y > 120) {
+            setScrolled(true);
+          } else if (y < 25) {
+            setScrolled(false);
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   useEffect(() => {
     const t = setInterval(() => setAnn((a) => (a + 1) % announcements.length), 4000);
     return () => clearInterval(t);
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 overflow-visible bg-background">
+    <header
+      className={`sticky top-0 z-50 overflow-visible transition-all duration-300 group/header ${
+        scrolled ? "bg-background/95 backdrop-blur-md shadow-sm" : "bg-background"
+      }`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setOpen(null);
+      }}
+    >
       <div className="bg-primary py-2 text-center text-[11px] uppercase tracking-[0.2em] text-primary-foreground">
         <span key={ann} className="inline-block animate-in fade-in duration-700">{announcements[ann]}</span>
       </div>
       <div
         className="relative overflow-visible border-b border-border"
-        onMouseLeave={() => setOpen(null)}
       >
-        <div className="mx-auto grid h-16 max-w-[1440px] grid-cols-3 items-center px-4 md:px-8">
+        <div className="mx-auto grid min-h-18 md:min-h-22 lg:min-h-26 max-w-[1440px] grid-cols-3 items-center px-4 py-1.5 md:py-2 md:px-8">
           <div className="flex items-center gap-4">
             <button className="lg:hidden" onClick={() => setMobile(true)} aria-label="Mở menu">
               <Menu className="h-5 w-5" strokeWidth={1.5} />
@@ -66,15 +104,73 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
             <button className="lg:hidden" onClick={() => setSearch(true)} aria-label="Tìm kiếm">
               <Search className="h-5 w-5" strokeWidth={1.5} />
             </button>
-            <div className="hidden gap-6 lg:flex">
+            <div className="hidden gap-6 lg:flex items-center">
               <Link to="/bo-suu-tap" className="text-xs uppercase tracking-widest hover:opacity-60">Bộ sưu tập</Link>
-              <Link to="/lookbook" className="text-xs uppercase tracking-widest hover:opacity-60">Lookbook</Link>
+              <div className="relative group/lb py-2">
+                <Link
+                  to="/lookbook"
+                  search={{ collection: undefined }}
+                  className="text-xs uppercase tracking-widest hover:opacity-60 flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Lookbook</span>
+                  <ChevronDown className="size-3 opacity-60 transition-transform group-hover/lb:rotate-180" />
+                </Link>
+                <div className="absolute left-0 top-full hidden group-hover/lb:block pt-1 z-50">
+                  <div className="w-56 rounded-xl border border-border bg-background/95 backdrop-blur-md p-2 shadow-xl">
+                    <Link
+                      to="/lookbook"
+                      search={{ collection: undefined }}
+                      className="block rounded-lg px-3 py-2 text-xs uppercase tracking-wider hover:bg-secondary font-medium transition"
+                    >
+                      Tất cả Runway (Thác ảnh)
+                    </Link>
+                    <div className="my-1 border-t border-border/60" />
+                    <div className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                      Bộ sưu tập Lookbook
+                    </div>
+                    <Link
+                      to="/lookbook"
+                      search={{ collection: "autumn-winter-2026" }}
+                      className="block rounded-lg px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition"
+                    >
+                      Thu Đông 2026
+                    </Link>
+                    <Link
+                      to="/lookbook"
+                      search={{ collection: "la-parisienne" }}
+                      className="block rounded-lg px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition"
+                    >
+                      La Parisienne
+                    </Link>
+                    <Link
+                      to="/lookbook"
+                      search={{ collection: "the-office-edit" }}
+                      className="block rounded-lg px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition"
+                    >
+                      The Office Edit
+                    </Link>
+                    <Link
+                      to="/lookbook"
+                      search={{ collection: "evening-noir" }}
+                      className="block rounded-lg px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition"
+                    >
+                      Evening Noir
+                    </Link>
+                  </div>
+                </div>
+              </div>
               <Link to="/blog" className="text-xs uppercase tracking-widest hover:opacity-60">Tạp chí</Link>
             </div>
           </div>
-          <Link to="/" className="justify-self-center text-center">
-            <span className="font-serif text-2xl tracking-[0.3em] md:text-3xl">ÉLANE</span>
-            <span className="hidden text-[9px] uppercase tracking-[0.4em] text-muted-foreground md:block">Modern Femininity</span>
+          <Link to="/" className="justify-self-center flex items-center justify-center py-1 group/logo">
+            <div className="header-logo-wrap">
+              <img
+                src="/images/elane-logo.png"
+                alt="ÉLANE - Modern Femininity"
+                className="h-[50px] sm:h-[58px] md:h-[72px] lg:h-[86px] w-auto object-contain transition-transform duration-300"
+              />
+              <span className="header-logo-shimmer" aria-hidden="true" />
+            </div>
           </Link>
           <div className="flex items-center justify-end gap-4 md:gap-5">
             <button className="hidden lg:block" onClick={() => setSearch(true)} aria-label="Tìm kiếm">
@@ -91,7 +187,19 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
             </button>
           </div>
         </div>
-        <nav className="hidden justify-center gap-7 pb-3 lg:flex" aria-label="Danh mục">
+        <nav
+          className={`
+            hidden justify-center gap-7 lg:flex overflow-hidden
+            transition-all duration-300 ease-out
+            ${
+              scrolled && !isHovered && !open
+                ? "max-h-0 opacity-0 pb-0 pointer-events-none -translate-y-2"
+                : "max-h-16 opacity-100 pb-3 translate-y-0 pointer-events-auto"
+            }
+            group-hover/header:max-h-16 group-hover/header:opacity-100 group-hover/header:pb-3 group-hover/header:pointer-events-auto group-hover/header:translate-y-0
+          `}
+          aria-label="Danh mục"
+        >
           {navItems.map((n) => {
             const hasKids = (n.children?.length ?? 0) > 0;
             return (
@@ -203,7 +311,60 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
                 ) : null}
               </div>
             ))}
-            {([["/bo-suu-tap", "Bộ sưu tập"], ["/lookbook", "Lookbook"], ["/blog", "Tạp chí"], ["/tai-khoan", "Tài khoản"], ["/yeu-thich", "Yêu thích"], ["/cua-hang", "Cửa hàng"], ["/gioi-thieu", "Về chúng tôi"], ["/lien-he", "Liên hệ"]] as const).map(([to, l]) => (
+            <div className="py-2 border-b border-border/40">
+              <Link
+                to="/lookbook"
+                search={{ collection: undefined }}
+                onClick={() => setMobile(false)}
+                className="py-2 text-sm font-medium uppercase tracking-wider text-foreground flex items-center justify-between"
+              >
+                <span>Lookbook Runway</span>
+                <span className="text-[10px] font-mono text-primary font-normal">ARCHIVE</span>
+              </Link>
+              <div className="pl-3 space-y-2 pt-1 pb-2">
+                <Link
+                  to="/lookbook"
+                  search={{ collection: undefined }}
+                  onClick={() => setMobile(false)}
+                  className="block text-xs text-muted-foreground hover:text-foreground"
+                >
+                  · Tất cả bộ ảnh (Thác ảnh)
+                </Link>
+                <Link
+                  to="/lookbook"
+                  search={{ collection: "autumn-winter-2026" }}
+                  onClick={() => setMobile(false)}
+                  className="block text-xs text-muted-foreground hover:text-foreground"
+                >
+                  · Thu Đông 2026
+                </Link>
+                <Link
+                  to="/lookbook"
+                  search={{ collection: "la-parisienne" }}
+                  onClick={() => setMobile(false)}
+                  className="block text-xs text-muted-foreground hover:text-foreground"
+                >
+                  · La Parisienne
+                </Link>
+                <Link
+                  to="/lookbook"
+                  search={{ collection: "the-office-edit" }}
+                  onClick={() => setMobile(false)}
+                  className="block text-xs text-muted-foreground hover:text-foreground"
+                >
+                  · The Office Edit
+                </Link>
+                <Link
+                  to="/lookbook"
+                  search={{ collection: "evening-noir" }}
+                  onClick={() => setMobile(false)}
+                  className="block text-xs text-muted-foreground hover:text-foreground"
+                >
+                  · Evening Noir
+                </Link>
+              </div>
+            </div>
+            {([["/bo-suu-tap", "Bộ sưu tập"], ["/blog", "Tạp chí"], ["/tai-khoan", "Tài khoản"], ["/yeu-thich", "Yêu thích"], ["/cua-hang", "Cửa hàng"], ["/gioi-thieu", "Về chúng tôi"], ["/lien-he", "Liên hệ"]] as const).map(([to, l]) => (
               <Link key={to} to={to} onClick={() => setMobile(false)} className="py-3 text-sm text-muted-foreground">{l}</Link>
             ))}
           </nav>
