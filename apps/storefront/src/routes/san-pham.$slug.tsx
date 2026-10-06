@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type MouseEvent } from "react";
 import { Heart, Minus, Plus, RefreshCw, Sparkles, Star, Truck } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -101,7 +101,8 @@ function ProductPage() {
 
 function ProductDetail({ product: p, slug }: { product: Product; slug: string }) {
   const cat = getCategory(p.category);
-  const { addToCart, toggleWishlist, wishlist } = useStore();
+  const { addToCart, toggleWishlist, wishlist, cart } = useStore();
+  const navigate = useNavigate();
 
   const initialCw = p.colorways[0];
   const initialGallery = initialCw?.images?.length ? initialCw.images : p.images;
@@ -121,6 +122,16 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
   });
   const [qty, setQty] = useState(1);
   const [tryOnOpen, setTryOnOpen] = useState(false);
+
+  const currentVariant = size ? findVariant(p.variants, colorwayId, size) : null;
+  const currentStock = currentVariant ? currentVariant.available : null;
+
+  // Auto-clamp qty if chosen size has lower stock than current qty
+  useEffect(() => {
+    if (currentStock !== null && currentStock > 0 && qty > currentStock) {
+      setQty(currentStock);
+    }
+  }, [currentStock, qty]);
   const liked = wishlist.includes(p.id);
   const related = products
     .filter((x) => x.category === p.category && x.id !== p.id)
@@ -207,14 +218,65 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
     }
     const variant = findVariant(p.variants, colorwayId, size);
     if (!variant) {
-      toast.error("Không tìm thấy SKU");
+      toast.error("Không tìm thấy biến thể sản phẩm");
       return;
     }
     if (variant.available <= 0) {
-      toast.error("Size này tạm hết hàng");
+      toast.error("Size này tạm thời đã hết hàng");
+      return;
+    }
+    if (qty > variant.available) {
+      toast.error(`Kho chỉ còn ${variant.available} sản phẩm, bạn không thể chọn số lượng ${qty}`);
+      return;
+    }
+    const inCart = cart.find((x) => x.variantId === variant.id);
+    const currentInCart = inCart ? inCart.qty : 0;
+    if (currentInCart + qty > variant.available) {
+      const remaining = Math.max(0, variant.available - currentInCart);
+      if (remaining <= 0) {
+        toast.error(`Bạn đã có ${currentInCart} sản phẩm trong giỏ hàng (kho chỉ còn tối đa ${variant.available} sản phẩm)`);
+      } else {
+        toast.error(`Kho chỉ còn ${variant.available} sản phẩm. Bạn đã có ${currentInCart} trong giỏ và chỉ có thể thêm tối đa ${remaining} sản phẩm nữa.`);
+      }
       return;
     }
     addToCart(p, variant.id, qty);
+  };
+
+  const buyNow = () => {
+    if (!hasStock) return;
+    if (!size) {
+      toast.error("Vui lòng chọn kích cỡ");
+      return;
+    }
+    const variant = findVariant(p.variants, colorwayId, size);
+    if (!variant) {
+      toast.error("Không tìm thấy biến thể sản phẩm");
+      return;
+    }
+    if (variant.available <= 0) {
+      toast.error("Size này tạm thời đã hết hàng");
+      return;
+    }
+    if (qty > variant.available) {
+      toast.error(`Kho chỉ còn ${variant.available} sản phẩm, bạn không thể chọn số lượng ${qty}`);
+      return;
+    }
+    const inCart = cart.find((x) => x.variantId === variant.id);
+    const currentInCart = inCart ? inCart.qty : 0;
+    if (currentInCart + qty > variant.available) {
+      const remaining = Math.max(0, variant.available - currentInCart);
+      if (remaining <= 0) {
+        toast.error(`Bạn đã có ${currentInCart} sản phẩm trong giỏ hàng (kho chỉ còn tối đa ${variant.available} sản phẩm)`);
+      } else {
+        toast.error(`Kho chỉ còn ${variant.available} sản phẩm. Bạn đã có ${currentInCart} trong giỏ và chỉ có thể mua thêm tối đa ${remaining} sản phẩm.`);
+      }
+      return;
+    }
+    const ok = addToCart(p, variant.id, qty);
+    if (ok !== false) {
+      void navigate({ to: "/thanh-toan" });
+    }
   };
 
   const renderThumb = (src: string, logical: number, key: string) => (
@@ -413,26 +475,89 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
             </div>
           </div>
 
-          <div className="mt-8 flex gap-3">
-            <div className="flex items-center border border-border">
-              <button className="px-3 py-3" onClick={() => setQty(Math.max(1, qty - 1))} aria-label="Giảm"><Minus className="h-4 w-4" /></button>
-              <span className="w-8 text-center">{qty}</span>
-              <button className="px-3 py-3" onClick={() => setQty(qty + 1)} aria-label="Tăng"><Plus className="h-4 w-4" /></button>
-            </div>
-            <button
-              type="button"
-              onClick={add}
-              disabled={!hasStock}
-              className={cn(
-                "flex-1 bg-primary text-xs uppercase tracking-widest text-primary-foreground transition",
-                hasStock ? "hover:opacity-90" : "cursor-not-allowed opacity-50",
+          {/* Stock status indicator */}
+          {size && currentStock !== null && (
+            <div className="mt-4 text-xs">
+              {currentStock <= 0 ? (
+                <span className="font-medium text-destructive">Size {size} hiện tại đã hết hàng</span>
+              ) : currentStock <= 5 ? (
+                <span className="font-medium text-amber-600">
+                  Chỉ còn {currentStock} sản phẩm (Size {size}) trong kho, hãy nhanh tay nào
+                </span>
+              ) : (
+                <span className="text-muted-foreground">
+                  Còn {currentStock} sản phẩm sẵn có trong kho (Size {size})
+                </span>
               )}
-            >
-              {hasStock ? "Thêm vào giỏ hàng" : "Sản phẩm tạm hết hàng"}
-            </button>
-            <button onClick={() => toggleWishlist(p.id)} aria-label="Yêu thích" className="grid w-12 place-items-center border border-border hover:border-foreground">
-              <Heart className={`h-5 w-5 ${liked ? "fill-foreground" : ""}`} strokeWidth={1.5} />
-            </button>
+            </div>
+          )}
+
+          <div className="mt-6 flex flex-col gap-3">
+            <div className="flex gap-2.5 sm:gap-3">
+              <div className="flex items-center border border-border shrink-0">
+                <button
+                  className="px-2.5 sm:px-3 py-3 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  disabled={qty <= 1}
+                  onClick={() => setQty(Math.max(1, qty - 1))}
+                  aria-label="Giảm"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="w-7 sm:w-8 text-center text-xs sm:text-sm font-medium">{qty}</span>
+                <button
+                  className="px-2.5 sm:px-3 py-3 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  disabled={currentStock !== null && qty >= currentStock}
+                  onClick={() => {
+                    if (currentStock !== null && qty >= currentStock) {
+                      toast.error(`Kho chỉ còn tối đa ${currentStock} sản phẩm cho kích cỡ này`);
+                      return;
+                    }
+                    setQty(qty + 1);
+                  }}
+                  aria-label="Tăng"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={add}
+                disabled={!hasStock || (currentStock !== null && currentStock <= 0)}
+                className={cn(
+                  "flex-1 border border-foreground/80 bg-background px-3 sm:px-4 py-3 text-xs uppercase tracking-wider sm:tracking-widest font-medium transition cursor-pointer text-foreground hover:bg-secondary/50",
+                  (!hasStock || (currentStock !== null && currentStock <= 0)) && "cursor-not-allowed opacity-50",
+                )}
+              >
+                {!hasStock || (currentStock !== null && currentStock <= 0)
+                  ? "Sản phẩm tạm hết hàng"
+                  : "Thêm vào giỏ hàng"}
+              </button>
+
+              {hasStock && (currentStock === null || currentStock > 0) && (
+                <button
+                  type="button"
+                  onClick={buyNow}
+                  className="hidden sm:flex flex-1 items-center justify-center bg-primary px-4 py-3 text-xs uppercase tracking-widest font-semibold text-primary-foreground transition hover:opacity-90 active:scale-[0.99] cursor-pointer shadow-xs text-center"
+                >
+                  Mua ngay
+                </button>
+              )}
+
+              <button onClick={() => toggleWishlist(p.id)} aria-label="Yêu thích" className="grid w-11 sm:w-12 shrink-0 place-items-center border border-border hover:border-foreground cursor-pointer">
+                <Heart className={`h-5 w-5 ${liked ? "fill-foreground" : ""}`} strokeWidth={1.5} />
+              </button>
+            </div>
+
+            {hasStock && (currentStock === null || currentStock > 0) && (
+              <button
+                type="button"
+                onClick={buyNow}
+                className="sm:hidden w-full bg-primary py-3.5 text-xs uppercase tracking-widest font-semibold text-primary-foreground transition hover:opacity-90 active:scale-[0.99] cursor-pointer shadow-xs text-center"
+              >
+                Mua ngay
+              </button>
+            )}
           </div>
 
           {/* AI Virtual Try-On Button */}

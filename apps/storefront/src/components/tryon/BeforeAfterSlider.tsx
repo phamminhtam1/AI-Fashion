@@ -77,7 +77,7 @@ export function BeforeAfterSlider({
         }
       }}
       className={cn(
-        "group relative mx-auto aspect-[3/4] w-full max-w-sm sm:max-w-md select-none overflow-hidden rounded-xl border border-border/80 bg-secondary/30 shadow-lg",
+        "group relative mx-auto aspect-[3/4] w-full select-none overflow-hidden rounded-xl border border-border/80 bg-secondary/30 shadow-lg",
         hasComparison ? "cursor-ew-resize touch-none" : onImageClick ? "cursor-zoom-in" : "",
         className,
       )}

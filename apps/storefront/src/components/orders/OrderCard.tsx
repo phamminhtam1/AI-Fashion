@@ -3,18 +3,15 @@ import {
   CheckCircle2,
   Clock,
   Copy,
-  CreditCard,
   Eye,
   Package,
   QrCode,
-  RotateCcw,
   Trash2,
-  Truck,
   XCircle,
 } from "lucide-react";
 import { formatVND } from "@/lib/products";
 import type { Order } from "@/lib/store";
-import { storeApi, type StoreOrderDetail } from "@/lib/api";
+import { storeApi } from "@/lib/api";
 import { toast } from "sonner";
 
 function copyText(label: string, value: string) {
@@ -27,11 +24,20 @@ function copyText(label: string, value: string) {
 interface OrderCardProps {
   order: Order;
   onViewDetail: (orderId: string) => void;
-  onPayNow: (order: { id: string; order_number: string; grand_total_vnd: number }) => void;
+  onPayNow: (order: {
+    id: string;
+    order_number: string;
+    grand_total_vnd: number;
+  }) => void;
   onOrderUpdated: () => void;
 }
 
-export function OrderCard({ order, onViewDetail, onPayNow, onOrderUpdated }: OrderCardProps) {
+export function OrderCard({
+  order,
+  onViewDetail,
+  onPayNow,
+  onOrderUpdated,
+}: OrderCardProps) {
   const [cancelling, setCancelling] = useState(false);
 
   const isBankAwaiting =
@@ -44,37 +50,69 @@ export function OrderCard({ order, onViewDetail, onPayNow, onOrderUpdated }: Ord
 
   const handleCancel = async () => {
     if (!confirm(`Bạn có chắc muốn hủy đơn hàng #${order.orderNumber}?`)) return;
+
     setCancelling(true);
     try {
       await storeApi.cancelOrder(order.id);
       toast.success(`Đã hủy đơn hàng #${order.orderNumber}`);
       onOrderUpdated();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Không hủy được đơn");
+      toast.error(
+        err instanceof Error ? err.message : "Không hủy được đơn",
+      );
     } finally {
       setCancelling(false);
     }
   };
 
+  const fulfillmentLabel =
+    order.status === "completed"
+      ? "Hoàn thành"
+      : order.status === "shipping"
+        ? "Đang giao"
+        : order.status === "processing"
+          ? "Đang đóng gói"
+          : order.status === "confirmed"
+            ? "Đã xác nhận"
+            : order.status === "cancelled"
+              ? "Đã hủy"
+              : "Chờ xử lý";
+
+  const fulfillmentTone =
+    order.status === "completed"
+      ? "bg-emerald-500"
+      : order.status === "shipping"
+        ? "bg-blue-500"
+        : order.status === "processing" || order.status === "confirmed"
+          ? "bg-amber-500"
+          : order.status === "cancelled"
+            ? "bg-rose-500"
+            : "bg-neutral-400";
+
   return (
-    <div className="group border border-border bg-background transition-all hover:border-foreground/30 hover:shadow-md">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary/30 px-5 py-3.5 text-xs">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 font-mono font-medium text-foreground">
-            <Package className="h-4 w-4 text-muted-foreground" />
-            <span>#{order.orderNumber}</span>
+    <article className="group border-b border-border/60 pb-7 transition-colors">
+      {/* ORDER META */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/75">
+              Order
+            </p>
+
+            <span className="h-px w-5 bg-border" />
+
+            <button
+              type="button"
+              onClick={() => copyText("mã đơn", order.orderNumber)}
+              className="group/copy inline-flex cursor-pointer items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] text-foreground"
+              title="Sao chép mã đơn"
+            >
+              #{order.orderNumber}
+              <Copy className="size-3 stroke-[1.4] text-foreground/60 transition-colors group-hover/copy:text-foreground" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => copyText("mã đơn", order.orderNumber)}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            title="Sao chép mã đơn"
-          >
-            <Copy className="h-3 w-3" />
-          </button>
-          <span className="text-muted-foreground">•</span>
-          <span className="text-muted-foreground">
+
+          <p className="mt-2 text-[11px] font-medium text-foreground/75">
             {new Date(order.date).toLocaleDateString("vi-VN", {
               day: "2-digit",
               month: "2-digit",
@@ -82,101 +120,121 @@ export function OrderCard({ order, onViewDetail, onPayNow, onOrderUpdated }: Ord
               hour: "2-digit",
               minute: "2-digit",
             })}
-          </span>
+          </p>
         </div>
 
-        {/* Badges */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Payment Status */}
+        {/* Status */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <div className="flex items-center gap-2">
+            <span className={`size-1.5 rounded-full ${fulfillmentTone}`} />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">
+              {fulfillmentLabel}
+            </span>
+          </div>
+
+          <span className="hidden h-4 w-px bg-border sm:block" />
+
           {isPaid ? (
-            <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 text-[11px] font-medium">
-              <CheckCircle2 className="h-3 w-3" />
-              Đã thanh toán {order.paymentMethod === "bank" ? "(QR)" : "(COD)"}
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+              <CheckCircle2 className="size-3.5 stroke-[1.6]" />
+              Đã thanh toán
+              {order.paymentMethod === "bank" ? " · QR" : " · COD"}
             </span>
           ) : isBankAwaiting ? (
-            <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 px-2.5 py-0.5 text-[11px] font-medium">
-              <Clock className="h-3 w-3 animate-pulse" />
-              Chờ chuyển khoản VietQR
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+              <Clock className="size-3.5 stroke-[1.6] animate-pulse" />
+              Chờ thanh toán VietQR
             </span>
           ) : isCancelled ? (
-            <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 px-2.5 py-0.5 text-[11px] font-medium">
-              <XCircle className="h-3 w-3" />
-              Đã hủy
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-rose-700 dark:text-rose-400">
+              <XCircle className="size-3.5 stroke-[1.6]" />
+              Đơn đã hủy
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 bg-secondary text-muted-foreground px-2.5 py-0.5 text-[11px]">
+            <span className="text-[11px] font-medium text-foreground/75">
               Chưa thanh toán
             </span>
           )}
-
-          {/* Fulfillment Status */}
-          <span className="bg-foreground text-background px-2.5 py-0.5 text-[11px] uppercase tracking-wider font-medium">
-            {order.status === "completed"
-              ? "Hoàn thành"
-              : order.status === "shipping"
-                ? "Đang giao"
-                : order.status === "processing"
-                  ? "Đang đóng gói"
-                  : order.status === "confirmed"
-                    ? "Đã xác nhận"
-                    : order.status === "cancelled"
-                      ? "Đã hủy"
-                      : "Chờ xử lý"}
-          </span>
         </div>
       </div>
 
-      {/* Items Preview */}
-      <div className="p-5 space-y-3">
+      {/* PRODUCT ITEMS */}
+      <div className="mt-6">
         {order.itemsPreview && order.itemsPreview.length > 0 ? (
-          <div className="divide-y divide-border/60">
+          <div className="divide-y divide-border/50">
             {order.itemsPreview.map((it) => (
-              <div key={it.id} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
-                {it.image_url ? (
-                  <img
-                    src={it.image_url}
-                    alt={it.product_name}
-                    className="h-16 w-12 object-cover bg-secondary flex-shrink-0 border border-border/50"
-                  />
-                ) : (
-                  <div className="flex h-16 w-12 items-center justify-center bg-secondary text-muted-foreground flex-shrink-0">
-                    <Package className="h-5 w-5 stroke-[1.2]" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-foreground truncate">{it.product_name}</p>
-                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    {it.size_label && <span className="bg-secondary px-2 py-0.5">Size {it.size_label}</span>}
-                    {it.color_label && <span className="bg-secondary px-2 py-0.5">{it.color_label}</span>}
-                    <span>Số lượng: {it.qty}</span>
+              <div
+                key={it.id}
+                className="grid grid-cols-[72px_minmax(0,1fr)_auto] gap-4 py-4 first:pt-0 last:pb-0"
+              >
+                {/* Image */}
+                <div className="aspect-[3/4] w-[72px] overflow-hidden bg-secondary/40">
+                  {it.image_url ? (
+                    <img
+                      src={it.image_url}
+                      alt={it.product_name}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Package className="size-5 stroke-[1.2] text-foreground/60" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Product info */}
+                <div className="min-w-0 self-center">
+                  <p className="line-clamp-2 font-serif text-[16px] font-medium leading-[1.3] tracking-[-0.01em] text-foreground">
+                    {it.product_name}
+                  </p>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-medium text-foreground/75">
+                    {it.size_label && (
+                      <span className="font-semibold">Size {it.size_label}</span>
+                    )}
+                    {it.color_label && (
+                      <span>{it.color_label}</span>
+                    )}
+                    <span>Số lượng {it.qty}</span>
                   </div>
                 </div>
-                <div className="text-right text-sm">
-                  <p className="font-medium text-foreground">{formatVND(it.line_total_vnd)}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {it.qty > 1 ? `${it.qty} × ${formatVND(it.unit_price_vnd)}` : null}
+
+                {/* Price */}
+                <div className="self-center text-right">
+                  <p className="text-[14px] font-bold text-foreground">
+                    {formatVND(it.line_total_vnd)}
                   </p>
+                  {it.qty > 1 && (
+                    <p className="mt-1 text-[10px] font-medium text-foreground/60">
+                      {it.qty} × {formatVND(it.unit_price_vnd)}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="py-2 text-xs text-muted-foreground flex items-center justify-between">
-            <span>Chi tiết các sản phẩm trong đơn</span>
-            <span className="font-medium">{order.itemsCount ? `${order.itemsCount} sản phẩm` : ""}</span>
+          <div className="flex items-center justify-between py-3 text-[11px] font-medium text-foreground/75">
+            <span>Chi tiết sản phẩm trong đơn</span>
+            <span className="font-semibold text-foreground">
+              {order.itemsCount ? `${order.itemsCount} sản phẩm` : ""}
+            </span>
           </div>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border bg-secondary/10 px-5 py-3.5">
-        <div className="flex items-baseline gap-2">
-          <span className="text-xs uppercase tracking-wider text-muted-foreground">Tổng thanh toán:</span>
-          <span className="font-serif text-lg font-bold text-foreground">{formatVND(order.total)}</span>
+      {/* ORDER SUMMARY / ACTIONS */}
+      <div className="mt-6 flex flex-col gap-5 border-t border-border/60 pt-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/75">
+            Tổng thanh toán
+          </p>
+          <p className="mt-1  text-[26px] font-medium tracking-[-0.02em] text-foreground">
+            {formatVND(order.total)}
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Action: Pay Now if awaiting */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
           {isBankAwaiting && (
             <button
               type="button"
@@ -187,37 +245,45 @@ export function OrderCard({ order, onViewDetail, onPayNow, onOrderUpdated }: Ord
                   grand_total_vnd: order.total,
                 })
               }
-              className="inline-flex items-center gap-1.5 bg-foreground text-background px-4 py-2 text-xs uppercase tracking-wider font-medium hover:bg-foreground/90 transition-all shadow-sm"
+              className="group/pay inline-flex cursor-pointer items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground"
             >
-              <QrCode className="h-3.5 w-3.5" />
-              Thanh toán ngay
+              <QrCode className="size-3.5 stroke-[1.5]" />
+              <span className="border-b border-foreground pb-0.5">
+                Thanh toán ngay
+              </span>
+              <span className="transition-transform duration-300 group-hover/pay:translate-x-1">
+                →
+              </span>
             </button>
           )}
 
-          {/* Action: Cancel Order if pending bank */}
           {isBankAwaiting && (
             <button
               type="button"
               disabled={cancelling}
               onClick={() => void handleCancel()}
-              className="inline-flex items-center gap-1.5 border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground hover:text-destructive hover:border-destructive transition-colors disabled:opacity-50"
+              className="inline-flex cursor-pointer items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-foreground/60 transition-colors hover:text-destructive disabled:opacity-40"
             >
-              <Trash2 className="h-3.5 w-3.5" />
-              Hủy đơn
+              <Trash2 className="size-3.5 stroke-[1.4]" />
+              {cancelling ? "Đang hủy..." : "Hủy đơn"}
             </button>
           )}
 
-          {/* Action: View Detail */}
           <button
             type="button"
             onClick={() => onViewDetail(order.id)}
-            className="inline-flex items-center gap-1.5 border border-border px-4 py-2 text-xs uppercase tracking-wider text-foreground hover:bg-secondary transition-colors"
+            className="group/detail inline-flex cursor-pointer items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground"
           >
-            <Eye className="h-3.5 w-3.5" />
-            Chi tiết hóa đơn
+            <Eye className="size-3.5 stroke-[1.4]" />
+            <span className="border-b border-foreground pb-0.5">
+              Xem chi tiết
+            </span>
+            <span className="transition-transform duration-300 group-hover/detail:translate-x-1">
+              →
+            </span>
           </button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

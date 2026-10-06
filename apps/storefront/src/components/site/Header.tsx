@@ -1,9 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Heart, Menu, Search, ShoppingBag, User, X, Minus, Plus, ChevronDown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { categories, formatVND, ensureCatalog, getNavItems, products, type NavItem } from "@/lib/products";
+import { categories, formatVND, ensureCategories, getNavItems, products, type NavItem } from "@/lib/products";
 import { FREE_SHIP, useStore, getCartItemImage } from "@/lib/store";
+import { toast } from "sonner";
 import heroImg from "@/assets/hero.jpg";
 
 const announcements = [
@@ -25,27 +26,57 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
   const [search, setSearch] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const [navItems, setNavItems] = useState<NavItem[]>(navItemsProp);
+  const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setNavItems(navItemsProp);
   }, [navItemsProp]);
 
-  // Always rebuild nav on client so mega-menu children aren't lost after SSR hydrate.
+  // Rebuild nav on client only if categories weren't hydrated from SSR
   useEffect(() => {
     let cancelled = false;
-    ensureCatalog(true).then(() => {
-      if (!cancelled) setNavItems(getNavItems());
-    });
+    if (navItems.length === 0) {
+      ensureCategories().then(() => {
+        if (!cancelled) setNavItems(getNavItems());
+      });
+    }
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [navItems.length]);
 
   const openNav = open ? navItems.find((n) => n.slug === open && (n.children?.length ?? 0) > 0) : undefined;
   const megaCols = openNav?.children?.length ? chunk(openNav.children, 6) : [];
 
   const [scrolled, setScrolled] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+
+  // Sync header height to CSS custom property --header-height
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+
+    const updateHeaderHeight = () => {
+      const height = Math.ceil(el.getBoundingClientRect().height);
+      if (height > 0) {
+        document.documentElement.style.setProperty("--header-height", `${height}px`);
+      }
+    };
+
+    updateHeaderHeight();
+
+    const ro = new ResizeObserver(() => {
+      updateHeaderHeight();
+    });
+    ro.observe(el);
+
+    window.addEventListener("resize", updateHeaderHeight, { passive: true });
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", updateHeaderHeight);
+    };
+  }, []);
 
   useEffect(() => {
     let ticking = false;
@@ -81,6 +112,7 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
 
   return (
     <header
+      ref={headerRef}
       className={`sticky top-0 z-50 overflow-visible transition-all duration-300 group/header ${
         scrolled ? "bg-background/95 backdrop-blur-md shadow-sm" : "bg-background"
       }`}
@@ -192,11 +224,10 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
             hidden justify-center gap-7 lg:flex overflow-hidden
             transition-all duration-300 ease-out
             ${
-              scrolled && !isHovered && !open
+              scrolled
                 ? "max-h-0 opacity-0 pb-0 pointer-events-none -translate-y-2"
                 : "max-h-16 opacity-100 pb-3 translate-y-0 pointer-events-auto"
             }
-            group-hover/header:max-h-16 group-hover/header:opacity-100 group-hover/header:pb-3 group-hover/header:pointer-events-auto group-hover/header:translate-y-0
           `}
           aria-label="Danh mục"
         >
@@ -418,7 +449,7 @@ function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }
             {results.map((p) => (
               <Link key={p.id} to="/san-pham/$slug" params={{ slug: p.slug }} onClick={onClose} className="flex gap-3">
                 <img src={p.images[0]} alt={p.name} className="h-24 w-18 object-cover" />
-                <div className="text-sm"><p>{p.name}</p><p className="mt-1 text-muted-foreground">{formatVND(p.salePrice ?? p.price)}</p></div>
+                <div className="text-sm"><p className="line-clamp-2 font-medium">{p.name}</p><p className="mt-1 text-muted-foreground">{formatVND(p.salePrice ?? p.price)}</p></div>
               </Link>
             ))}
           </div>
@@ -461,13 +492,27 @@ function MiniCart() {
                       <div className="h-28 w-21 bg-secondary" />
                     )}
                     <div className="flex flex-1 flex-col text-sm">
-                      <p>{itemName}</p>
+                      <p className="line-clamp-2 font-medium leading-snug" title={itemName}>{itemName}</p>
                       <p className="text-xs text-muted-foreground">{it.colorName ? `${it.colorName} · ` : ""}{it.sku} · Size {it.size}</p>
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex items-center border border-border">
-                          <button className="p-1.5" onClick={() => updateQty(i, it.qty - 1)} aria-label="Giảm"><Minus className="h-3 w-3" /></button>
-                          <span className="w-6 text-center text-xs">{it.qty}</span>
-                          <button className="p-1.5" onClick={() => updateQty(i, it.qty + 1)} aria-label="Tăng"><Plus className="h-3 w-3" /></button>
+                          <button className="p-1.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed" onClick={() => updateQty(i, it.qty - 1)} aria-label="Giảm"><Minus className="h-3 w-3" /></button>
+                          <span className="w-6 text-center text-xs font-medium">{it.qty}</span>
+                          <button
+                            className="p-1.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                            disabled={it.qty >= (products.find((x) => x.id === it.productId)?.variants.find((x) => x.id === it.variantId)?.available ?? it.maxStock ?? 99)}
+                            onClick={() => {
+                              const maxAvail = products.find((x) => x.id === it.productId)?.variants.find((x) => x.id === it.variantId)?.available ?? it.maxStock ?? 99;
+                              if (it.qty >= maxAvail) {
+                                toast.error(`Kho chỉ còn tối đa ${maxAvail} sản phẩm`);
+                                return;
+                              }
+                              updateQty(i, it.qty + 1);
+                            }}
+                            aria-label="Tăng"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
                         </div>
                         <span>{formatVND(itemPrice)}</span>
                       </div>

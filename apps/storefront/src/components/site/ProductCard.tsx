@@ -16,7 +16,7 @@ export function ProductCard({ product: p }: { product: Product }) {
   const hoverImg = activeCw?.images?.[1] ?? p.images[1] ?? primaryImg;
 
   return (
-    <article className="group">
+    <article className="group flex flex-col justify-between h-full">
       <div className="relative aspect-[3/4] overflow-hidden bg-secondary">
         <Link to="/san-pham/$slug" params={{ slug: p.slug }} aria-label={p.name}>
           <img src={primaryImg} alt={p.name} loading="lazy" width={768} height={1024} className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500 group-hover:opacity-0" />
@@ -40,15 +40,17 @@ export function ProductCard({ product: p }: { product: Product }) {
               const v =
                 p.variants.find((x) => x.size === s && (!selectedCwId || x.colorwayId === selectedCwId)) ??
                 p.variants.find((x) => x.size === s);
+              const inStock = v && v.available > 0;
               return (
                 <button
                   key={s}
                   type="button"
-                  disabled={!v}
+                  disabled={!inStock}
                   onClick={() => {
-                    if (v) addToCart(p, v.id);
+                    if (v && inStock) addToCart(p, v.id);
                   }}
-                  className="min-w-9 px-2 py-1 text-xs hover:bg-primary hover:text-primary-foreground disabled:opacity-40"
+                  className="min-w-9 px-2 py-1 text-xs hover:bg-primary hover:text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  title={!inStock ? `Size ${s} hết hàng` : `Chọn size ${s}`}
                 >
                   {s}
                 </button>
@@ -57,21 +59,28 @@ export function ProductCard({ product: p }: { product: Product }) {
           </div>
         </div>
       </div>
-      <div className="mt-3 space-y-1">
-        <Link to="/san-pham/$slug" params={{ slug: p.slug }} className="block truncate text-sm leading-snug hover:underline" title={p.name}>
-          {p.name}
-        </Link>
-        <div className="flex items-baseline gap-2 text-sm">
-          {p.salePrice ? (
-            <>
-              <span className="font-medium text-sale">{formatVND(p.salePrice)}</span>
-              <span className="text-xs text-muted-foreground line-through">{formatVND(p.price)}</span>
-            </>
-          ) : (
-            <span className="font-medium">{formatVND(p.price)}</span>
-          )}
+      <div className="flex flex-1 flex-col justify-between">
+        <div>
+          <Link
+            to="/san-pham/$slug"
+            params={{ slug: p.slug }}
+            className="mt-3 line-clamp-2 h-[2.6em] font-serif text-[18px] font-medium leading-[1.3] tracking-[-0.015em] text-foreground transition-opacity hover:opacity-70"
+            title={p.name}
+          >
+            {p.name}
+          </Link>
+          <div className="mt-1 flex items-baseline gap-2 text-sm">
+            {p.salePrice ? (
+              <>
+                <span className="font-semibold text-sale">{formatVND(p.salePrice)}</span>
+                <span className="text-xs text-muted-foreground line-through">{formatVND(p.price)}</span>
+              </>
+            ) : (
+              <span className="font-semibold text-foreground">{formatVND(p.price)}</span>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2 pt-2 pb-1">
+        <div className="flex items-center gap-2 pt-2 pb-1 min-h-[44px]">
           {p.colorways.map((c) => {
             const isSelected = c.id === (activeCw?.id ?? selectedCwId);
             return (

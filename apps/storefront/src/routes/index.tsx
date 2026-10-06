@@ -6,31 +6,38 @@ import setImg from "@/assets/p-set.jpg";
 import coatImg from "@/assets/p-coat.jpg";
 import dressImg from "@/assets/p-dress.jpg";
 import {
-  categories,
-  getBestSellerProducts,
-  getNewArrivalProducts,
+  ensureCategories,
+  mapApiProduct,
   isAccessory,
-  prioritizeApparel,
-  products,
-  rootCategoriesList,
-  allProductsList,
-  ensureCatalog,
-  hydrateCatalog,
-  useCatalog,
+  type Product,
 } from "@/lib/products";
-import { fetchElaneWomanPosts, type ElaneWomanPost } from "@/lib/api";
+import { fetchProducts, fetchElaneWomanPosts, type ElaneWomanPost } from "@/lib/api";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Newsletter } from "@/components/site/Footer";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    const [_, elaneWomanRes] = await Promise.all([
-      ensureCatalog(),
+    const [cats, newArrivalsRes, bestSellersRes, elaneWomanRes] = await Promise.all([
+      ensureCategories(),
+      fetchProducts({ listing: "hang-moi", limit: "16", exclude_category: "phu-kien" }),
+      fetchProducts({ listing: "ban-chay", limit: "16", exclude_category: "phu-kien" }),
       fetchElaneWomanPosts(),
     ]);
+
+    const newArrivals = (newArrivalsRes.items ?? [])
+      .map(mapApiProduct)
+      .filter((p) => !isAccessory(p))
+      .slice(0, 8);
+
+    const bestSellers = (bestSellersRes.items ?? [])
+      .map(mapApiProduct)
+      .filter((p) => !isAccessory(p))
+      .slice(0, 8);
+
     return {
-      categories: rootCategoriesList().map((c) => ({ ...c })),
-      products: allProductsList().map((p) => ({ ...p })),
+      categories: cats.filter((c) => !c.parent_id),
+      newArrivals,
+      bestSellers,
       elaneWomanPosts: elaneWomanRes.items,
     };
   },
@@ -53,7 +60,7 @@ function SectionHead({ eyebrow, title, to }: { eyebrow: string; title: string; t
         <h2 className="mt-2 text-3xl md:text-4xl">{title}</h2>
       </div>
       {to && (
-        <Link to="/danh-muc/$slug" params={{ slug: to }} className="group hidden items-center gap-2 text-xs uppercase tracking-widest md:flex">
+        <Link to="/danh-muc/$slug" params={{ slug: to }} className="group flex items-center gap-2 text-xs uppercase tracking-widest text-foreground transition-opacity hover:opacity-80">
           Xem tất cả <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" strokeWidth={1.5} />
         </Link>
       )}
@@ -63,26 +70,9 @@ function SectionHead({ eyebrow, title, to }: { eyebrow: string; title: string; t
 
 function Home() {
   const loaderData = Route.useLoaderData();
-  const catalog = useCatalog();
-
-  useEffect(() => {
-    if (loaderData?.categories?.length || loaderData?.products?.length) {
-      hydrateCatalog(loaderData.products, loaderData.categories);
-    }
-  }, [loaderData]);
-
-  const cats =
-    catalog.categories.length > 0
-      ? catalog.categories
-      : (loaderData?.categories?.length ? loaderData.categories : categories);
-
-  const prods =
-    catalog.products.length > 0
-      ? catalog.products
-      : (loaderData?.products?.length ? loaderData.products : products);
-
-  const newIn = getNewArrivalProducts(prods).slice(0, 8);
-  const best = getBestSellerProducts(prods).slice(0, 8);
+  const cats = loaderData?.categories ?? [];
+  const newIn = loaderData?.newArrivals ?? [];
+  const best = loaderData?.bestSellers ?? [];
 
   const womanPosts: ElaneWomanPost[] = loaderData?.elaneWomanPosts ?? [];
   const womanItems =
@@ -93,7 +83,7 @@ function Home() {
           image: p.image_url,
           link: p.link_url || (p.product_slug ? `/san-pham/${p.product_slug}` : null),
         }))
-      : prods
+      : newIn
           .filter((p) => !isAccessory(p))
           .slice(0, 6)
           .map((p) => ({

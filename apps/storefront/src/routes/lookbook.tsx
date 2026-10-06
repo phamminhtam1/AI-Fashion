@@ -11,14 +11,41 @@ import {
   ZoomIn,
 } from "lucide-react";
 import { seo } from "@/components/site/PageHeader";
-import { ensureCatalog, allProductsList, formatVND, getCategory, type Product } from "@/lib/products";
-import { fetchLookbooks, type StoreLookbook, type StoreLookbookItem } from "@/lib/api";
+import {
+  ensureCategories,
+  allProductsList,
+  registerProducts,
+  mapApiProduct,
+  formatVND,
+  getCategory,
+  type Product,
+} from "@/lib/products";
+import {
+  fetchLookbooks,
+  fetchProducts,
+  fetchProduct,
+  type StoreLookbook,
+  type StoreLookbookItem,
+} from "@/lib/api";
 import { VirtualTryOnDialog } from "@/components/tryon/VirtualTryOnDialog";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 const lookbookSearchSchema = z.object({
   collection: z.string().optional(),
 });
+
+function getMatchedProduct(
+  item: { product_id?: string | null; product_slug?: string | null; link_url?: string | null },
+  map: Map<string, Product>
+): Product | undefined {
+  if (item.product_id && map.has(item.product_id)) return map.get(item.product_id);
+  if (item.product_slug && map.has(item.product_slug)) return map.get(item.product_slug);
+  if (item.link_url) {
+    const match = item.link_url.match(/\/san-pham\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1] && map.has(match[1])) return map.get(match[1]);
+  }
+  return undefined;
+}
 
 function matchLookbookSlug(itemSlug: string, querySlug?: string): boolean {
   if (!querySlug || querySlug === "all") return false;
@@ -62,12 +89,83 @@ export const Route = createFileRoute("/lookbook")({
   validateSearch: lookbookSearchSchema,
   loader: async () => {
     const [_, lookbooksRes] = await Promise.all([
-      ensureCatalog(),
+      ensureCategories(),
       fetchLookbooks(),
     ]);
+
+    // Extract all product IDs and slugs referenced by lookbook items
+    const productSlugs = new Set<string>();
+    const productIds = new Set<string>();
+    for (const lb of lookbooksRes.items) {
+      for (const it of lb.items) {
+        if (it.product_slug) productSlugs.add(it.product_slug);
+        if (it.product_id) productIds.add(it.product_id);
+        if (it.link_url) {
+          const match = it.link_url.match(/\/san-pham\/([a-zA-Z0-9_-]+)/);
+          if (match && match[1]) productSlugs.add(match[1]);
+        }
+      }
+    }
+
+    let attachedProducts: Product[] = [];
+    if (productIds.size > 0 || productSlugs.size > 0) {
+      try {
+        const idList = Array.from(productIds);
+        const slugList = Array.from(productSlugs);
+        const res = await fetchProducts({
+          ids: idList.length > 0 ? idList.join(",") : undefined,
+          slugs: slugList.length > 0 ? slugList.join(",") : undefined,
+          limit: "100",
+        });
+        attachedProducts = (res.items ?? []).map(mapApiProduct);
+      } catch (err) {
+        console.warn("Batch fetch lookbook products failed, falling back to individual fetches:", err);
+      }
+
+      // Check for any missing products and fetch individually if needed
+      const fetchedIds = new Set(attachedProducts.map((p) => p.id));
+      const fetchedSlugs = new Set(attachedProducts.map((p) => p.slug));
+
+      const missingSlugs = Array.from(productSlugs).filter((s) => !fetchedSlugs.has(s));
+      const missingIds = Array.from(productIds).filter((id) => !fetchedIds.has(id));
+      const missingIdentifiers = [
+        ...missingSlugs,
+        ...missingIds.filter((id) => !missingSlugs.includes(id)),
+      ];
+
+      if (missingIdentifiers.length > 0) {
+        const fallbackRes = await Promise.all(
+          missingIdentifiers.map((ident) =>
+            fetchProduct(ident)
+              .then(mapApiProduct)
+              .catch(() => null)
+          )
+        );
+        for (const p of fallbackRes) {
+          if (p && !fetchedIds.has(p.id)) {
+            attachedProducts.push(p);
+            fetchedIds.add(p.id);
+          }
+        }
+      }
+    }
+
+    if (attachedProducts.length > 0) {
+      registerProducts(attachedProducts);
+    }
+
+    const combinedProducts = [...attachedProducts];
+    const seenMap = new Set(combinedProducts.map((p) => p.id));
+    for (const p of allProductsList()) {
+      if (!seenMap.has(p.id)) {
+        seenMap.add(p.id);
+        combinedProducts.push(p);
+      }
+    }
+
     return {
       lookbooks: lookbooksRes.items,
-      products: allProductsList(),
+      products: combinedProducts,
     };
   },
   head: () =>
@@ -156,9 +254,7 @@ function LookbookPage() {
     const prods: Product[] = [];
     const seenIds = new Set<string>();
     for (const it of activeLookbook.items) {
-      const p =
-        (it.product_id && productMap.get(it.product_id)) ||
-        (it.product_slug && productMap.get(it.product_slug));
+      const p = getMatchedProduct(it, productMap);
       if (p && !seenIds.has(p.id)) {
         seenIds.add(p.id);
         prods.push(p);
@@ -269,14 +365,7 @@ function LookbookPage() {
   // Get matched product for active item
   const matchedProduct = useMemo(() => {
     if (!activeItem) return null;
-    const { item } = activeItem;
-    if (item.product_id && productMap.has(item.product_id)) {
-      return productMap.get(item.product_id)!;
-    }
-    if (item.product_slug && productMap.has(item.product_slug)) {
-      return productMap.get(item.product_slug)!;
-    }
-    return null;
+    return getMatchedProduct(activeItem.item, productMap) ?? null;
   }, [activeItem, productMap]);
 
   const handleOpenTryOn = (prod: Product) => {
@@ -286,9 +375,7 @@ function LookbookPage() {
 
   // Reusable card renderer
   const renderLookbookCard = (item: LookbookCardItem, idx: number, isRunway = false) => {
-    const matchedProd =
-      (item.product_id && productMap.get(item.product_id)) ||
-      (item.product_slug && productMap.get(item.product_slug));
+    const matchedProd = getMatchedProduct(item, productMap);
 
     return (
       <figure
@@ -351,7 +438,7 @@ function LookbookPage() {
                   <span>Shop The Look</span>
                 </div>
               )}
-              <p className="text-[11px] text-white font-medium line-clamp-1">
+              <p className="text-[11px] text-white font-medium line-clamp-2 leading-snug" title={item.title || item.lookbookTitle}>
                 {item.title || item.lookbookTitle}
               </p>
               {item.caption && (
@@ -366,7 +453,7 @@ function LookbookPage() {
         {/* Caption Footer */}
         <figcaption className="p-3">
           <div className="flex items-baseline justify-between gap-1.5">
-            <h3 className="font-serif text-xs md:text-sm text-foreground font-medium truncate">
+            <h3 className="font-serif text-xs md:text-sm text-foreground font-medium line-clamp-2 min-h-[2.5em] leading-snug" title={item.title || item.lookbookTitle}>
               {item.title || item.lookbookTitle}
             </h3>
             {matchedProd && (
@@ -615,9 +702,7 @@ function LookbookPage() {
               const safeHeroIndex = Math.min(activeLookIndex, Math.max(0, displayItems.length - 1));
               const currentHeroItem = displayItems[safeHeroIndex] || displayItems[0];
               const currentHeroIndex = safeHeroIndex;
-              const matchedProd =
-                (currentHeroItem.product_id && productMap.get(currentHeroItem.product_id)) ||
-                (currentHeroItem.product_slug && productMap.get(currentHeroItem.product_slug));
+              const matchedProd = getMatchedProduct(currentHeroItem, productMap);
 
               return (
                 <div
@@ -1018,9 +1103,7 @@ function LookbookPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
                 {displayItems.map((item, idx) => {
                   const lookNumber = idx + 1;
-                  const matchedProd =
-                    (item.product_id && productMap.get(item.product_id)) ||
-                    (item.product_slug && productMap.get(item.product_slug));
+                  const matchedProd = getMatchedProduct(item, productMap);
                   const isCurrentHero = idx === Math.min(activeLookIndex, Math.max(0, displayItems.length - 1));
 
                   return (
@@ -1206,7 +1289,8 @@ function LookbookPage() {
                         <Link
                           to="/san-pham/$slug"
                           params={{ slug: prod.slug }}
-                          className="font-medium text-xs sm:text-sm text-foreground line-clamp-1 hover:text-primary transition"
+                          className="mt-1 line-clamp-2 h-[2.6em] font-serif text-[17px] sm:text-[18px] font-medium leading-[1.3] tracking-[-0.015em] text-foreground transition-opacity hover:opacity-70"
+                          title={prod.name}
                         >
                           {prod.name}
                         </Link>

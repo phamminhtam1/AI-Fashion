@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, desc, eq, sql, inArray } from "drizzle-orm";
+import { and, desc, eq, sql, inArray, notInArray, or } from "drizzle-orm";
 import {
   categories,
   occasions,
@@ -219,13 +219,51 @@ publicCatalogRoutes.get("/products", async (c) => {
   const category = c.req.query("category");
   const occasion = c.req.query("occasion");
   const listing = c.req.query("listing"); // hang-moi|sale|ban-chay
+  const excludeCategory = c.req.query("exclude_category");
   const page = Math.max(1, Number(c.req.query("page") ?? 1));
   const limit = Math.min(50, Math.max(1, Number(c.req.query("limit") ?? 24)));
   const offset = (page - 1) * limit;
 
+  const allCats = await db.select().from(categories);
+
+  // Identify accessory categories (phụ kiện and all its children)
+  const phuKienCat = allCats.find((r) => r.slug === "phu-kien");
+  let accessoryCatIds: string[] = [];
+  if (phuKienCat) {
+    accessoryCatIds = [phuKienCat.id];
+    const q = [phuKienCat.id];
+    while (q.length) {
+      const pid = q.shift()!;
+      for (const child of allCats) {
+        if (child.parentId === pid) {
+          accessoryCatIds.push(child.id);
+          q.push(child.id);
+        }
+      }
+    }
+  }
+
   let ids: string[] | null = null;
+  const idsQuery = c.req.query("ids");
+  if (idsQuery) {
+    const parsed = idsQuery.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parsed.length > 0) {
+      ids = parsed;
+    }
+  }
+  const slugsQuery = c.req.query("slugs");
+  if (slugsQuery) {
+    const parsedSlugs = slugsQuery.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parsedSlugs.length > 0) {
+      const slugProds = await db
+        .select({ id: products.id })
+        .from(products)
+        .where(inArray(products.slug, parsedSlugs));
+      const foundIds = slugProds.map((p) => p.id);
+      ids = ids ? [...new Set([...ids, ...foundIds])] : foundIds;
+    }
+  }
   if (category) {
-    const allCats = await db.select().from(categories);
     const cat = allCats.find((r) => r.slug === category);
     if (!cat) return c.json({ items: [], page, limit, total: 0 });
     const catIds = [cat.id];
@@ -261,22 +299,53 @@ publicCatalogRoutes.get("/products", async (c) => {
     if (!ids.length) return c.json({ items: [], page, limit, total: 0 });
     conditions.push(inArray(products.id, ids));
   }
+  if (excludeCategory === "phu-kien" && accessoryCatIds.length > 0) {
+    conditions.push(notInArray(products.primaryCategoryId, accessoryCatIds));
+  }
+
+  let topSellerIds: string[] = [];
   if (listing === "hang-moi") {
-    conditions.push(
-      sql`coalesce(${products.publishedAt}, ${products.createdAt}) >= now() - interval '3 days'`,
-    );
+    const recent = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(products)
+      .where(
+        and(
+          eq(products.status, "published"),
+          sql`coalesce(${products.publishedAt}, ${products.createdAt}) >= now() - interval '7 days'`,
+        ),
+      );
+    if ((recent[0]?.count ?? 0) > 0) {
+      conditions.push(
+        sql`coalesce(${products.publishedAt}, ${products.createdAt}) >= now() - interval '7 days'`,
+      );
+    }
   }
   if (listing === "ban-chay") {
     const top = await weeklyTopSellerIds(db);
-    if (!top.size) return c.json({ items: [], page, limit, total: 0 });
-    conditions.push(inArray(products.id, [...top]));
+    topSellerIds = [...top];
+    if (topSellerIds.length >= limit) {
+      conditions.push(inArray(products.id, topSellerIds));
+    }
+  }
+
+  let orderByClause = [desc(products.publishedAt)];
+  if (listing === "hang-moi" && accessoryCatIds.length > 0) {
+    orderByClause = [
+      sql`case when ${products.primaryCategoryId} in (${sql.join(accessoryCatIds.map((id) => sql`${id}`), sql`, `)}) then 1 else 0 end`,
+      desc(products.publishedAt),
+    ];
+  } else if (listing === "ban-chay" && topSellerIds.length > 0) {
+    orderByClause = [
+      sql`case when ${products.id} in (${sql.join(topSellerIds.map((id) => sql`${id}`), sql`, `)}) then 0 else 1 end`,
+      desc(products.publishedAt),
+    ];
   }
 
   const rows = await db
     .select()
     .from(products)
     .where(and(...conditions))
-    .orderBy(desc(products.publishedAt))
+    .orderBy(...orderByClause)
     .limit(listing === "sale" ? 200 : limit)
     .offset(listing === "sale" ? 0 : offset);
 
@@ -303,10 +372,14 @@ publicCatalogRoutes.get("/products", async (c) => {
 publicCatalogRoutes.get("/products/:slug", async (c) => {
   const db = c.get("db");
   const slug = c.req.param("slug");
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+  const condition = isUuid
+    ? or(eq(products.slug, slug), eq(products.id, slug))
+    : eq(products.slug, slug);
   const rows = await db
     .select()
     .from(products)
-    .where(and(eq(products.slug, slug), eq(products.status, "published")))
+    .where(and(condition, eq(products.status, "published")))
     .limit(1);
   if (!rows[0]) throw new ApiError(404, "not_found", "Không tìm thấy sản phẩm");
   const mapped = await mapProduct(db, rows[0]);

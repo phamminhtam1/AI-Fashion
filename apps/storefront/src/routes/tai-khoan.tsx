@@ -8,10 +8,7 @@ import {
   ShoppingBag,
   Maximize2,
   Trash2,
-  ExternalLink,
-  ChevronRight,
-  Layers,
-  Eye,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
@@ -19,8 +16,8 @@ import { btnCls, seo } from "@/components/site/PageHeader";
 import { OrderCard } from "@/components/orders/OrderCard";
 import { OrderDetailModal } from "@/components/orders/OrderDetailModal";
 import { OrderPaymentModal } from "@/components/orders/OrderPaymentModal";
-import { formatVND, products, type Product } from "@/lib/products";
-import { storeApi } from "@/lib/api";
+import { ProductCard } from "@/components/site/ProductCard";
+import { formatVND, products, fetchProductsByIds, type Product } from "@/lib/products";
 import {
   deleteTryOnRecord,
   fetchUnifiedTryOnHistory,
@@ -33,20 +30,20 @@ export const Route = createFileRoute("/tai-khoan")({
     s: Record<string, unknown>,
   ): {
     orderId?: string;
-    tab?: "overview" | "orders" | "tryon" | "profile";
+    tab?: "overview" | "orders" | "tryon" | "profile" | "wishlist";
   } => {
     const res: {
       orderId?: string;
-      tab?: "overview" | "orders" | "tryon" | "profile";
+      tab?: "overview" | "orders" | "tryon" | "profile" | "wishlist";
     } = {};
     const oId = s["orderId"];
     const tabVal = s["tab"];
     if (typeof oId === "string" && oId.length > 0) res.orderId = oId;
     if (
       typeof tabVal === "string" &&
-      ["overview", "orders", "tryon", "profile"].includes(tabVal)
+      ["overview", "orders", "tryon", "profile", "wishlist"].includes(tabVal)
     ) {
-      res.tab = tabVal as "overview" | "orders" | "tryon" | "profile";
+      res.tab = tabVal as "overview" | "orders" | "tryon" | "profile" | "wishlist";
     }
     return res;
   },
@@ -105,8 +102,9 @@ function Account() {
     addToCart,
     setCartOpen,
   } = useStore();
+
   const search = Route.useSearch();
-  const [tab, setTab] = useState<"overview" | "orders" | "tryon" | "profile">(
+  const [tab, setTab] = useState<"overview" | "orders" | "tryon" | "profile" | "wishlist">(
     search.tab || "orders",
   );
   const [orderFilter, setOrderFilter] = useState<OrderFilter>("all");
@@ -122,6 +120,10 @@ function Account() {
   // Try-on history state
   const [tryOnHistory, setTryOnHistory] = useState<TryOnDisplayItem[]>([]);
   const [loadingTryOns, setLoadingTryOns] = useState(false);
+
+  // Wishlist items state
+  const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
+  const [loadingWishlist, setLoadingWishlist] = useState(false);
 
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -167,6 +169,27 @@ function Account() {
     });
     return unsub;
   }, [loadTryOnData]);
+
+  // Load wishlist products
+  useEffect(() => {
+    let active = true;
+    if (wishlist.length === 0) {
+      setWishlistItems([]);
+      setLoadingWishlist(false);
+      return;
+    }
+    setLoadingWishlist(true);
+    fetchProductsByIds(wishlist)
+      .then((prods) => {
+        if (active) setWishlistItems(prods);
+      })
+      .finally(() => {
+        if (active) setLoadingWishlist(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [wishlist]);
 
   // Sync selectedOrderId if search param changes
   useEffect(() => {
@@ -254,8 +277,8 @@ function Account() {
         : null) ||
       (item.product.size
         ? p.variants.find(
-            (v) => v.size.toLowerCase() === item.product.size?.toLowerCase(),
-          )
+          (v) => v.size.toLowerCase() === item.product.size?.toLowerCase(),
+        )
         : null) ||
       p.variants[0];
 
@@ -292,9 +315,9 @@ function Account() {
   if (!user) {
     return (
       <div className="mx-auto max-w-md px-6 py-28 text-center">
-        <span className="font-serif text-3xl italic">É L A N E</span>
-        <h1 className="mt-4 text-4xl">Tài khoản</h1>
-        <p className="mt-3 text-muted-foreground">
+        <span className="font-serif text-3xl font-medium italic tracking-wider text-foreground">É L A N E</span>
+        <h1 className="mt-4 font-serif text-4xl font-medium tracking-tight text-foreground">Tài khoản</h1>
+        <p className="mt-3 text-sm font-medium leading-relaxed text-foreground/80">
           Đăng nhập để xem đơn hàng, lịch sử thử đồ AI và quyền lợi thành viên.
         </p>
         <div className="mt-8 flex justify-center gap-3">
@@ -303,7 +326,7 @@ function Account() {
           </Link>
           <Link
             to="/dang-ky"
-            className="border border-foreground px-10 py-4 text-xs uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors"
+            className="border border-foreground px-10 py-4 text-xs font-semibold uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors"
           >
             Đăng ký
           </Link>
@@ -320,6 +343,10 @@ function Account() {
     [
       "tryon",
       `Phòng thử đồ AI ${tryOnHistory.length > 0 ? `(${tryOnHistory.length})` : ""}`,
+    ],
+    [
+      "wishlist",
+      `Yêu thích ${wishlist.length > 0 ? `(${wishlist.length})` : ""}`,
     ],
     ["overview", "Tổng quan"],
     ["profile", "Thông tin cá nhân"],
@@ -355,69 +382,137 @@ function Account() {
   ];
 
   return (
-    <div className="mx-auto max-w-[1240px] px-6 py-12">
-      {/* Header Profile Info */}
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
-            Thành viên ÉLANE Haute Couture
-          </p>
-          <h1 className="mt-1 text-3xl sm:text-4xl font-serif">Xin chào, {user.name}</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1.5 bg-secondary px-3 py-1.5 text-xs tracking-wider uppercase">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            Hạng: Silver VIP
-          </span>
-          <button
-            type="button"
-            onClick={() => void logout()}
-            className="border border-border px-4 py-1.5 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Đăng xuất
-          </button>
-        </div>
-      </div>
+    <div className="mx-auto max-w-[1380px] px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
+      {/* ÉLANE Private Client header */}
+      <header className="border-b border-border/60 pb-8 lg:pb-10">
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-foreground/80">
+              ÉLANE / Private Client
+            </p>
+            <h1 className="max-w-3xl font-serif text-[38px] font-medium leading-[0.98] tracking-[-0.035em] sm:text-[48px] lg:text-[58px] text-foreground">
+              Xin chào, <span className="italic"> {user.name}.</span>
+            </h1>
+            <p className="mt-5 max-w-md text-[13px] font-medium leading-6 text-foreground/75">
+              Quản lý đơn hàng, những thiết kế bạn yêu thích và trải nghiệm thử đồ ảo
+              của riêng bạn.
+            </p>
+          </div>
 
-      <div className="mt-8 grid gap-10 md:grid-cols-[240px_1fr] items-start">
-        {/* Navigation Sidebar */}
-        <aside className="sticky top-[105px] lg:top-[152px] z-20 bg-background/95 backdrop-blur-sm flex gap-2 overflow-x-auto border-b border-border pb-3 pt-1 text-sm md:flex-col md:border-b-0 md:border-r md:pr-6 md:pb-4 md:pt-0">
-          {tabs.map(([k, l]) => (
+          <div className="flex items-center gap-5">
+            <div className="hidden text-right sm:block">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/75">
+                Membership
+              </p>
+              <p className="mt-1 font-serif text-[17px] font-medium text-foreground">Silver Member</p>
+            </div>
+
+            <span className="hidden h-8 w-px bg-border sm:block" />
+
             <button
-              key={k}
               type="button"
-              onClick={() => setTab(k as "overview" | "orders" | "tryon" | "profile")}
-              className={`flex items-center justify-between px-3 py-2.5 text-left text-xs uppercase tracking-wider transition-colors ${
-                tab === k
-                  ? "bg-foreground text-background font-medium"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-              }`}
+              onClick={() => void logout()}
+              className="group inline-flex cursor-pointer items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-foreground/80 transition-colors hover:text-foreground"
             >
-              <span>{l}</span>
-              {k === "orders" && awaitingCount > 0 && tab !== k && (
-                <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-              )}
-              {k === "tryon" && tryOnHistory.length > 0 && tab !== k && (
-                <span className="h-2 w-2 rounded-full bg-primary" />
-              )}
+              <span className="border-b border-transparent pb-0.5 transition-colors group-hover:border-foreground">
+                Đăng xuất
+              </span>
+              <span className="transition-transform duration-300 group-hover:translate-x-1">
+                →
+              </span>
             </button>
-          ))}
-          <Link
-            to="/yeu-thich"
-            className="flex items-center justify-between px-3 py-2.5 text-left text-xs uppercase tracking-wider text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-          >
-            <span>Yêu thích</span>
-            <span className="font-mono text-xs">({wishlist.length})</span>
-          </Link>
+          </div>
+        </div>
+      </header>
+
+      <div className="mt-8 grid gap-10 lg:mt-12 lg:grid-cols-[210px_minmax(0,1fr)] lg:gap-16">
+        {/* Editorial navigation without 01 02 03 04 05 */}
+        <aside
+          className="overflow-x-auto border-b border-border/60 pb-4 lg:sticky lg:self-start lg:overflow-visible lg:border-b-0 lg:pb-0"
+          style={{ top: "calc(var(--header-height, 148px) + 24px)" }}
+        >
+          <nav className="flex min-w-max gap-7 lg:min-w-0 lg:flex-col lg:gap-0">
+            {tabs.map(([k, l]) => {
+              const isActive = tab === k;
+
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() =>
+                    setTab(k as "overview" | "orders" | "tryon" | "profile" | "wishlist")
+                  }
+                  className={`group relative flex cursor-pointer items-center gap-3 py-3 text-left transition-all duration-300 lg:w-full lg:border-b lg:border-border/50 lg:py-4 ${isActive
+                    ? "text-foreground"
+                    : "text-foreground/75 hover:text-foreground"
+                    }`}
+                >
+                  <span
+                    className={`text-xs uppercase tracking-[0.14em] transition-all duration-300 ${isActive
+                      ? "font-bold text-foreground"
+                      : "font-semibold text-foreground/75 group-hover:translate-x-1"
+                      }`}
+                  >
+                    {l}
+                  </span>
+
+                  {isActive && (
+                    <span className="absolute bottom-[-1px] left-0 hidden h-[1.5px] w-12 bg-foreground lg:block" />
+                  )}
+
+                  {k === "orders" && awaitingCount > 0 && (
+                    <span className="ml-auto hidden size-1.5 rounded-full bg-amber-500 lg:block" />
+                  )}
+
+                  {k === "tryon" && tryOnHistory.length > 0 && (
+                    <span className="ml-auto hidden text-[10px] font-bold tabular-nums text-foreground/75 lg:block">
+                      {tryOnHistory.length}
+                    </span>
+                  )}
+
+                  {k === "wishlist" && wishlist.length > 0 && (
+                    <span className="ml-auto hidden text-[10px] font-bold tabular-nums text-foreground/75 lg:block">
+                      {wishlist.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="mt-10 hidden lg:block">
+            <div className="border-t border-border/60 pt-5">
+              <Sparkles className="mb-3 size-3.5 stroke-[1.4] text-foreground/80" />
+              <p className="font-serif text-[16px] font-medium text-foreground">Silver Member</p>
+              <p className="mt-1 text-[11px] font-medium leading-5 text-foreground/75">
+                Thành viên ÉLANE với những trải nghiệm được cá nhân hóa.
+              </p>
+            </div>
+          </div>
         </aside>
 
-        {/* Content Section */}
-        <section className="space-y-6 min-w-0">
-          {/* TAB 1: ORDERS */}
+        <section className="min-w-0">
+          {/* ORDERS */}
           {tab === "orders" && (
-            <div className="space-y-6">
-              {/* Filter Tabs */}
-              <div className="sticky top-[105px] lg:top-[152px] z-10 bg-background/95 backdrop-blur-sm py-2.5 flex flex-wrap gap-2 border-b border-border">
+            <div className="space-y-7">
+              <div className="flex flex-col gap-4 border-b border-border/60 pb-6 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-foreground/75">
+                    Purchase archive
+                  </p>
+                  <h2 className="font-serif text-[30px] font-medium tracking-[-0.025em] text-foreground sm:text-[36px]">
+                    Đơn hàng của bạn
+                  </h2>
+                </div>
+                <p className="text-[12px] font-semibold text-foreground/75">
+                  {orders.length} đơn hàng
+                </p>
+              </div>
+
+              <div
+                className="sticky z-10 flex items-center gap-7 overflow-x-auto border-b border-border/60 bg-background/95 py-1 backdrop-blur-md no-scrollbar"
+                style={{ top: "var(--header-height, 148px)" }}
+              >
                 {filterTabs.map((f) => {
                   const isActive = orderFilter === f.id;
                   return (
@@ -425,49 +520,53 @@ function Account() {
                       key={f.id}
                       type="button"
                       onClick={() => setOrderFilter(f.id)}
-                      className={`inline-flex items-center gap-2 border px-3.5 py-1.5 text-xs transition-colors ${
-                        isActive
-                          ? "border-foreground bg-foreground text-background font-medium"
-                          : "border-border bg-background text-muted-foreground hover:border-foreground/40 hover:text-foreground"
-                      }`}
+                      className={`group relative shrink-0 cursor-pointer py-4 text-[11px] uppercase tracking-[0.14em] transition-colors duration-300 ${isActive
+                        ? "font-bold text-foreground"
+                        : "font-semibold text-foreground/75 hover:text-foreground"
+                        }`}
                     >
                       <span>{f.label}</span>
                       {typeof f.count === "number" && f.count > 0 && (
-                        <span
-                          className={`rounded-full px-1.5 py-0.2 text-[10px] font-mono ${
-                            isActive
-                              ? "bg-background text-foreground"
-                              : f.id === "awaiting"
-                              ? "bg-amber-500 text-white font-bold"
-                              : "bg-secondary text-muted-foreground"
-                          }`}
+                        <sup
+                          className={`ml-1.5 text-[9px] font-bold tabular-nums ${f.id === "awaiting" && f.count > 0
+                            ? "text-amber-600"
+                            : "text-foreground/60"
+                            }`}
                         >
                           {f.count}
-                        </span>
+                        </sup>
                       )}
+                      <span
+                        className={`absolute bottom-0 left-0 h-[1.5px] bg-foreground transition-all duration-300 ${isActive ? "w-full" : "w-0 group-hover:w-full"
+                          }`}
+                      />
                     </button>
                   );
                 })}
               </div>
 
-              {/* Order List */}
               {filteredOrders.length === 0 ? (
-                <div className="py-20 text-center border border-dashed border-border/80 p-8 space-y-4">
-                  <Package className="mx-auto h-12 w-12 text-muted-foreground stroke-[1.2]" />
-                  <div>
-                    <h3 className="font-serif text-lg">Chưa có đơn hàng nào trong mục này</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {orderFilter === "awaiting"
-                        ? "Bạn không có đơn nào đang chờ thanh toán."
-                        : "Khám phá bộ sưu tập đầm dạ hội và thiết kế mới nhất của ÉLANE."}
-                    </p>
-                  </div>
+                <div className="py-20 text-center">
+                  <Package className="mx-auto h-10 w-10 stroke-[1.2] text-foreground/60" />
+                  <h3 className="mt-5 font-serif text-xl font-medium text-foreground">
+                    Chưa có đơn hàng trong mục này
+                  </h3>
+                  <p className="mx-auto mt-2 max-w-md text-[13px] font-medium leading-6 text-foreground/75">
+                    {orderFilter === "awaiting"
+                      ? "Bạn không có đơn nào đang chờ thanh toán."
+                      : "Khám phá những thiết kế mới nhất của ÉLANE."}
+                  </p>
                   <Link
                     to="/danh-muc/$slug"
                     params={{ slug: "hang-moi" }}
-                    className={`${btnCls} mt-2 inline-block`}
+                    className="group mt-6 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em]"
                   >
-                    Khám phá bộ sưu tập
+                    <span className="border-b border-foreground pb-1">
+                      Khám phá bộ sưu tập
+                    </span>
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      →
+                    </span>
                   </Link>
                 </div>
               ) : (
@@ -486,62 +585,352 @@ function Account() {
             </div>
           )}
 
-          {/* TAB 2: VIRTUAL TRY-ON HISTORY */}
+          {/* VIRTUAL TRY-ON */}
           {tab === "tryon" && (
-            <div className="space-y-6">
-              {/* Header Box */}
-              <div className="flex flex-wrap items-center justify-between gap-4 border border-border bg-secondary/30 p-5 rounded">
+            <div className="space-y-8">
+              <div className="flex flex-col gap-5 border-b border-border/60 pb-7 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <h2 className="font-serif text-xl">Lịch sử phòng thử đồ ảo AI</h2>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Bộ sưu tập các mẫu trang phục bạn đã thử với AI. Bấm vào ảnh để xem độ phân giải cao HD hoặc thêm ngay vào giỏ hàng.
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-foreground/75">
+                    ÉLANE Virtual Atelier
+                  </p>
+                  <h2 className="font-serif text-[30px] font-medium tracking-[-0.025em] text-foreground sm:text-[36px]">
+                    Phòng thử đồ của bạn
+                  </h2>
+                  <p className="mt-2 max-w-lg text-[13px] font-medium leading-6 text-foreground/75">
+                    Những thiết kế bạn đã trải nghiệm với công nghệ thử đồ ảo ÉLANE.
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="rounded bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-medium text-primary">
-                    {tryOnHistory.length} hình ảnh đã thử
+
+                <div className="flex items-center gap-5">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground/75">
+                    {tryOnHistory.length} looks
                   </span>
                   <Link
                     to="/danh-muc/$slug"
                     params={{ slug: "hang-moi" }}
-                    className="border border-foreground bg-foreground text-background px-4 py-1.5 text-xs uppercase tracking-wider hover:opacity-90 transition"
+                    className="group inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em]"
                   >
-                    Thử đồ thêm
+                    <span className="border-b border-foreground pb-1">
+                      Thử thiết kế mới
+                    </span>
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      →
+                    </span>
                   </Link>
                 </div>
               </div>
 
-              {/* Try-on History Cards */}
-              {tryOnHistory.length === 0 ? (
-                <div className="py-20 text-center border border-dashed border-border/80 p-8 space-y-4 rounded">
-                  <Sparkles className="mx-auto h-12 w-12 text-primary stroke-[1.2] animate-pulse" />
-                  <div>
-                    <h3 className="font-serif text-lg">Bạn chưa thử đồ ảo mẫu nào</h3>
-                    <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-                      Hãy ghé qua trang chi tiết bất kỳ sản phẩm nào và bấm vào nút{" "}
-                      <strong>“Thử đồ ảo AI”</strong> để ướm thử trang phục chân thực cùng công nghệ tạo ảnh thời trang cao cấp.
-                    </p>
-                  </div>
+              {loadingTryOns ? (
+                <div className="py-20 text-center">
+                  <div className="mx-auto size-7 animate-spin rounded-full border border-foreground border-t-transparent" />
+                  <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/75">
+                    Đang tải phòng thử đồ
+                  </p>
+                </div>
+              ) : tryOnHistory.length === 0 ? (
+                <div className="py-20 text-center">
+                  <Sparkles className="mx-auto size-9 stroke-[1.2] text-foreground/70" />
+                  <h3 className="mt-5 font-serif text-xl font-medium text-foreground">
+                    Phòng thử đồ vẫn đang trống
+                  </h3>
+                  <p className="mx-auto mt-2 max-w-md text-[13px] font-medium leading-6 text-foreground/75">
+                    Chọn một thiết kế bất kỳ và sử dụng tính năng “Thử đồ ảo AI”
+                    để bắt đầu bộ sưu tập cá nhân của bạn.
+                  </p>
                   <Link
                     to="/danh-muc/$slug"
                     params={{ slug: "hang-moi" }}
-                    className={`${btnCls} mt-2 inline-block`}
+                    className="group mt-6 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em]"
                   >
-                    Khám phá sản phẩm ngay
+                    <span className="border-b border-foreground pb-1">
+                      Khám phá thiết kế
+                    </span>
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      →
+                    </span>
                   </Link>
                 </div>
               ) : (
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-x-5 gap-y-11 sm:grid-cols-2 xl:grid-cols-3">
                   {tryOnHistory.map((item) => (
-                    <div
-                      key={item.id}
-                      className="group flex flex-col sm:flex-row overflow-hidden rounded border border-border bg-card shadow-sm transition hover:shadow-md hover:border-foreground/30"
+                    <article key={item.id} className="group flex flex-col justify-between min-w-0">
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLightboxItem({
+                              imageUrl: item.resultImageUrl,
+                              originalUrl: item.userPhotoUrl,
+                              productName: item.product.name,
+                              productPrice:
+                                item.product.salePrice ?? item.product.price,
+                              productSlug: item.product.slug,
+                            });
+                            setLightboxOpen(true);
+                          }}
+                          className="relative block w-full cursor-zoom-in overflow-hidden bg-secondary/30 text-left"
+                        >
+                          <div className="aspect-[3/4] overflow-hidden">
+                            <img
+                              src={item.resultImageUrl}
+                              alt={`Thử đồ: ${item.product.name}`}
+                              className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.035]"
+                              loading="lazy"
+                            />
+                          </div>
+
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-black backdrop-blur">
+                              <Maximize2 className="size-3" />
+                              Xem ảnh
+                            </span>
+                          </div>
+
+                          <span className="absolute left-3 top-3 bg-black/75 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur">
+                            AI Try-On
+                          </span>
+
+                          {item.userPhotoUrl && (
+                            <div className="absolute bottom-3 left-3 size-10 overflow-hidden border border-white/80 bg-secondary shadow-sm">
+                              <img
+                                src={item.userPhotoUrl}
+                                alt="Ảnh gốc"
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          )}
+                        </button>
+
+                        <div className="pt-4">
+                          <div className="flex items-center justify-between gap-3 text-[11px] font-medium text-foreground/75">
+                            <span className="inline-flex items-center gap-1.5 font-medium">
+                              <Clock className="size-3 stroke-[1.5]" />
+                              {formatTryOnDate(item.createdAt)}
+                            </span>
+                            {item.product.size && (
+                              <span className="font-semibold uppercase tracking-[0.12em]">
+                                Size {item.product.size}
+                              </span>
+                            )}
+                          </div>
+
+                          <Link
+                            to="/san-pham/$slug"
+                            params={{ slug: item.product.slug }}
+                            title={item.product.name}
+                            className="mt-3 line-clamp-2 h-[2.6em] font-serif text-[18px] font-medium leading-[1.3] tracking-[-0.015em] text-foreground transition-opacity hover:opacity-70"
+                          >
+                            {item.product.name}
+                          </Link>
+
+                          <p className="mt-1.5 text-[14px] font-bold text-foreground">
+                            {formatVND(item.product.salePrice ?? item.product.price)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 flex items-center justify-between gap-4 border-t border-border/60 pt-4">
+                        <Link
+                          to="/san-pham/$slug"
+                          params={{ slug: item.product.slug }}
+                          className="group/link inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]"
+                        >
+                          <span className="border-b border-foreground pb-0.5">
+                            Xem thiết kế
+                          </span>
+                          <span className="transition-transform duration-300 group-hover/link:translate-x-1">
+                            →
+                          </span>
+                        </Link>
+
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => handleAddToCartItem(item)}
+                            className="inline-flex cursor-pointer items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] transition-opacity hover:opacity-70"
+                          >
+                            <ShoppingBag className="size-3.5 stroke-[1.6]" />
+                            Thêm giỏ
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void handleDeleteTryOn(item.id, item.resultImageUrl)
+                            }
+                            title="Xóa khỏi lịch sử"
+                            className="cursor-pointer text-foreground/60 transition-colors hover:text-destructive"
+                          >
+                            <Trash2 className="size-3.5 stroke-[1.5]" />
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* WISHLIST */}
+          {tab === "wishlist" && (
+            <div className="space-y-8">
+              <div className="flex flex-col gap-5 border-b border-border/60 pb-7 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-foreground/75">
+                    Saved curation
+                  </p>
+                  <h2 className="font-serif text-[30px] font-medium tracking-[-0.025em] text-foreground sm:text-[36px]">
+                    Danh sách yêu thích
+                  </h2>
+                  <p className="mt-2 max-w-lg text-[13px] font-medium leading-6 text-foreground/75">
+                    Những thiết kế ÉLANE bạn đã lưu lại để tham khảo hoặc mua sắm sau.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-5">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground/75">
+                    {wishlist.length} thiết kế
+                  </span>
+                  <Link
+                    to="/danh-muc/$slug"
+                    params={{ slug: "hang-moi" }}
+                    className="group inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em]"
+                  >
+                    <span className="border-b border-foreground pb-1">
+                      Khám phá hàng mới
+                    </span>
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      →
+                    </span>
+                  </Link>
+                </div>
+              </div>
+
+              {loadingWishlist ? (
+                <div className="py-20 text-center">
+                  <Loader2 className="mx-auto size-8 animate-spin text-foreground/70" />
+                  <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/75">
+                    Đang tải danh sách yêu thích
+                  </p>
+                </div>
+              ) : wishlistItems.length === 0 ? (
+                <div className="py-20 text-center">
+                  <Heart className="mx-auto size-9 stroke-[1.2] text-foreground/60" />
+                  <h3 className="mt-5 font-serif text-xl font-medium text-foreground">
+                    Danh sách yêu thích đang trống
+                  </h3>
+                  <p className="mx-auto mt-2 max-w-md text-[13px] font-medium leading-6 text-foreground/75">
+                    Hãy lưu lại những thiết kế bạn ấn tượng khi duyệt bộ sưu tập của ÉLANE.
+                  </p>
+                  <Link
+                    to="/danh-muc/$slug"
+                    params={{ slug: "hang-moi" }}
+                    className="group mt-6 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em]"
+                  >
+                    <span className="border-b border-foreground pb-1">
+                      Khám phá bộ sưu tập
+                    </span>
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      →
+                    </span>
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-3 xl:grid-cols-4">
+                  {wishlistItems.map((p) => (
+                    <ProductCard key={p.id} product={p} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* OVERVIEW */}
+          {tab === "overview" && (
+            <div className="space-y-10">
+              <div className="">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-foreground/75">
+                  Client overview
+                </p>
+                <h2 className="font-serif text-[30px] font-medium tracking-[-0.025em] text-foreground sm:text-[36px]">
+                  Tổng quan của bạn
+                </h2>
+              </div>
+
+              <div className="grid border-y border-border/60 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  ["Tổng đơn hàng", orders.length, Package, () => setTab("orders")],
+                  ["Chờ thanh toán", awaitingCount, Clock, () => setTab("orders")],
+                  ["Yêu thích", wishlist.length, Heart, () => setTab("wishlist")],
+                  [
+                    "Virtual looks",
+                    tryOnHistory.length,
+                    Sparkles,
+                    () => setTab("tryon"),
+                  ],
+                ].map(([l, v, Icon, onClick], index) => {
+                  const Comp = Icon as typeof Package;
+                  const clickHandler = onClick as (() => void) | undefined;
+
+                  return (
+                    <button
+                      key={String(l)}
+                      type="button"
+                      onClick={clickHandler ? () => clickHandler() : undefined}
+                      className={`group min-h-[150px] border-border/60 p-5 text-left transition-colors sm:border-r ${index > 1 ? "sm:border-t lg:border-t-0" : ""
+                        } ${clickHandler
+                          ? "cursor-pointer hover:bg-secondary/30"
+                          : "cursor-default"
+                        }`}
                     >
-                      {/* Left: AI Try-On Image */}
-                      <div
+                      <div className="flex items-center justify-between text-foreground/80">
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.16em]">
+                          {String(l)}
+                        </span>
+                        <Comp className="size-4 stroke-[1.6]" />
+                      </div>
+
+                      <p className="mt-7 font-serif text-[40px] font-medium leading-none text-foreground">
+                        {String(v)}
+                      </p>
+
+                      {clickHandler && (
+                        <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/75 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-foreground">
+                          Xem chi tiết →
+                        </p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {tryOnHistory.length > 0 && (
+                <div>
+                  <div className="mb-5 flex items-end justify-between">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/75">
+                        Virtual atelier
+                      </p>
+                      <h3 className="mt-1 font-serif text-[24px] font-medium text-foreground">
+                        Những lần thử gần đây
+                      </h3>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setTab("tryon")}
+                      className="text-[11px] font-semibold uppercase tracking-[0.12em] text-foreground/75 transition-colors hover:text-foreground"
+                    >
+                      Xem tất cả ({tryOnHistory.length})
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {tryOnHistory.slice(0, 4).map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
                         onClick={() => {
                           setLightboxItem({
                             imageUrl: item.resultImageUrl,
@@ -553,233 +942,49 @@ function Account() {
                           });
                           setLightboxOpen(true);
                         }}
-                        className="relative sm:w-44 md:w-48 aspect-[3/4] flex-shrink-0 cursor-pointer overflow-hidden bg-secondary/50"
-                      >
-                        <img
-                          src={item.resultImageUrl}
-                          alt={`Thử đồ: ${item.product.name}`}
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-3 text-center text-white">
-                          <Maximize2 className="h-6 w-6 stroke-[1.5]" />
-                          <span className="text-[11px] font-medium tracking-wide">
-                            Bấm để phóng to HD
-                          </span>
-                        </div>
-                        <span className="absolute top-2 left-2 rounded bg-black/70 backdrop-blur-sm px-2 py-0.5 text-[9px] uppercase tracking-wider text-white">
-                          AI Try-On
-                        </span>
-
-                        {/* Optional thumbnail of user photo */}
-                        {item.userPhotoUrl && (
-                          <div
-                            title="Ảnh người mẫu gốc"
-                            className="absolute bottom-2 left-2 h-9 w-9 rounded overflow-hidden border-2 border-white shadow-md bg-secondary"
-                          >
-                            <img
-                              src={item.userPhotoUrl}
-                              alt="Ảnh gốc"
-                              className="h-full w-full object-cover"
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Right: Product & Try-On Details */}
-                      <div className="flex flex-1 flex-col justify-between p-4 sm:p-5">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                            <span className="inline-flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formatTryOnDate(item.createdAt)}
-                            </span>
-                            {item.product.size && (
-                              <span className="rounded bg-secondary px-2 py-0.5 font-medium text-foreground">
-                                Size: {item.product.size}
-                              </span>
-                            )}
-                          </div>
-
-                          <div>
-                            <Link
-                              to="/san-pham/$slug"
-                              params={{ slug: item.product.slug }}
-                              className="font-serif text-base font-semibold text-foreground hover:underline line-clamp-2"
-                            >
-                              {item.product.name}
-                            </Link>
-                            <p className="mt-1 text-sm font-medium text-foreground">
-                              {formatVND(item.product.salePrice ?? item.product.price)}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="mt-4 pt-3 border-t border-border space-y-2">
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setLightboxItem({
-                                  imageUrl: item.resultImageUrl,
-                                  originalUrl: item.userPhotoUrl,
-                                  productName: item.product.name,
-                                  productPrice:
-                                    item.product.salePrice ?? item.product.price,
-                                  productSlug: item.product.slug,
-                                });
-                                setLightboxOpen(true);
-                              }}
-                              className="inline-flex items-center justify-center gap-1.5 rounded border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground hover:bg-secondary hover:text-foreground transition"
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                              Xem ảnh
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleAddToCartItem(item)}
-                              className="inline-flex items-center justify-center gap-1.5 rounded bg-primary px-3 py-2 text-xs uppercase tracking-wider text-primary-foreground hover:opacity-90 transition"
-                            >
-                              <ShoppingBag className="h-3.5 w-3.5" />
-                              Thêm giỏ
-                            </button>
-                          </div>
-
-                          <div className="flex items-center justify-between pt-1">
-                            <Link
-                              to="/san-pham/$slug"
-                              params={{ slug: item.product.slug }}
-                              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground hover:underline"
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                              Xem trang sản phẩm
-                            </Link>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteTryOn(item.id, item.resultImageUrl)}
-                              title="Xóa khỏi lịch sử"
-                              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive transition"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                              Xóa
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 3: OVERVIEW */}
-          {tab === "overview" && (
-            <div className="space-y-8">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {[
-                  ["Tổng đơn hàng", orders.length, Package, () => setTab("orders")],
-                  ["Đang chờ thanh toán", awaitingCount, Clock, () => setTab("orders")],
-                  ["Sản phẩm yêu thích", wishlist.length, Heart, null],
-                  [
-                    "Ảnh đã thử đồ AI",
-                    tryOnHistory.length,
-                    Sparkles,
-                    () => setTab("tryon"),
-                  ],
-                ].map(([l, v, Icon, onClick]) => {
-                  const Comp = Icon as typeof Package;
-                  const clickHandler = onClick as (() => void) | undefined;
-                  return (
-                    <div
-                      key={String(l)}
-                      onClick={clickHandler ? () => clickHandler() : undefined}
-                      className={`bg-secondary/40 p-6 border border-border transition ${
-                        clickHandler ? "cursor-pointer hover:border-foreground/40 hover:bg-secondary/60" : ""
-                      }`}
-                    >
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span className="text-[11px] uppercase tracking-widest">{String(l)}</span>
-                        <Comp className="h-4 w-4" />
-                      </div>
-                      <p className="mt-3 font-serif text-3xl font-bold">{String(v)}</p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Quick AI Try-on History Showcase */}
-              {tryOnHistory.length > 0 && (
-                <div className="border border-border p-6 space-y-4 rounded">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      <h3 className="text-xs uppercase tracking-widest font-semibold">
-                        Ảnh thử đồ AI gần đây
-                      </h3>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setTab("tryon")}
-                      className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4"
-                    >
-                      Xem tất cả ({tryOnHistory.length})
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {tryOnHistory.slice(0, 4).map((item) => (
-                      <div
-                        key={item.id}
-                        onClick={() => {
-                          setLightboxItem({
-                            imageUrl: item.resultImageUrl,
-                            originalUrl: item.userPhotoUrl,
-                            productName: item.product.name,
-                            productPrice: item.product.salePrice ?? item.product.price,
-                            productSlug: item.product.slug,
-                          });
-                          setLightboxOpen(true);
-                        }}
-                        className="group relative aspect-[3/4] cursor-pointer overflow-hidden rounded border border-border bg-secondary/30"
+                        className="group relative aspect-[3/4] cursor-zoom-in overflow-hidden bg-secondary/30"
                       >
                         <img
                           src={item.resultImageUrl}
                           alt={item.product.name}
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.035]"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2.5">
-                          <p className="text-[11px] font-medium text-white line-clamp-1">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                        <div className="absolute inset-x-3 bottom-3 translate-y-2 text-left opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                          <p className="line-clamp-2 font-serif text-sm font-medium text-white" title={item.product.name}>
                             {item.product.name}
                           </p>
-                          <p className="text-[10px] text-white/80">
+                          <p className="mt-0.5 text-[11px] font-bold text-white">
                             {formatVND(item.product.salePrice ?? item.product.price)}
                           </p>
                         </div>
-                        <span className="absolute top-2 right-2 rounded bg-black/60 backdrop-blur-sm px-1.5 py-0.5 text-[9px] font-mono text-white/90">
-                          Xem HD
-                        </span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Quick Recent Order */}
               {orders.length > 0 && (
-                <div className="border border-border p-6 space-y-4 rounded">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs uppercase tracking-widest font-semibold">
-                      Đơn hàng gần nhất
-                    </h3>
+                <div>
+                  <div className="mb-5 flex items-end justify-between border-t border-border/60 pt-8">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/75">
+                        Latest purchase
+                      </p>
+                      <h3 className="mt-1 font-serif text-[24px] font-medium text-foreground">
+                        Đơn hàng gần nhất
+                      </h3>
+                    </div>
+
                     <button
                       type="button"
                       onClick={() => setTab("orders")}
-                      className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4"
+                      className="text-[11px] font-semibold uppercase tracking-[0.12em] text-foreground/75 transition-colors hover:text-foreground"
                     >
                       Xem tất cả ({orders.length})
                     </button>
                   </div>
+
                   <OrderCard
                     order={orders[0]!}
                     onViewDetail={(id) => setSelectedOrderId(id)}
@@ -791,31 +996,47 @@ function Account() {
             </div>
           )}
 
-          {/* TAB 4: PROFILE */}
+          {/* PROFILE */}
           {tab === "profile" && (
-            <div className="border border-border p-6 space-y-6 rounded">
-              <h3 className="font-serif text-xl">Thông tin tài khoản</h3>
-              <dl className="divide-y divide-border text-sm">
+            <div className="space-y-8">
+              <div className="">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-foreground/75">
+                  Personal details
+                </p>
+                <h2 className="font-serif text-[30px] font-medium tracking-[-0.025em] text-foreground sm:text-[36px]">
+                  Thông tin cá nhân
+                </h2>
+              </div>
+
+              <dl className="border-t border-border/60">
                 {[
                   ["Họ và tên", user.name],
                   ["Email", user.email],
                   ["Số điện thoại", user.phone || "Chưa cập nhật"],
                   ["Trạng thái thành viên", "Đã kích hoạt"],
                 ].map(([k, v]) => (
-                  <div key={k} className="flex justify-between py-3.5">
-                    <dt className="text-muted-foreground text-xs uppercase tracking-wider">
+                  <div
+                    key={k}
+                    className="grid gap-2 border-b border-border/60 py-5 sm:grid-cols-[190px_1fr]"
+                  >
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground/75">
                       {k}
                     </dt>
-                    <dd className="font-medium text-foreground">{v}</dd>
+                    <dd className="font-serif text-[17px] font-medium text-foreground sm:text-right">{v}</dd>
                   </div>
                 ))}
               </dl>
+
+              <p className="max-w-lg pt-3 text-[12px] font-medium leading-6 text-foreground/75">
+                Thông tin này được sử dụng để cá nhân hóa trải nghiệm mua sắm và hỗ
+                trợ đơn hàng của bạn tại ÉLANE.
+              </p>
             </div>
           )}
         </section>
       </div>
 
-      {/* Order Detail Modal */}
+      {/* Modals */}
       {selectedOrderId && (
         <OrderDetailModal
           orderId={selectedOrderId}
@@ -832,7 +1053,6 @@ function Account() {
         />
       )}
 
-      {/* Quick VietQR Payment Modal */}
       {payingOrder && (
         <OrderPaymentModal
           order={payingOrder}
@@ -847,7 +1067,6 @@ function Account() {
         />
       )}
 
-      {/* Try-On HD Lightbox Modal */}
       <TryOnImageLightbox
         open={lightboxOpen}
         onOpenChange={setLightboxOpen}
@@ -859,13 +1078,11 @@ function Account() {
         onAddToCart={
           lightboxItem
             ? () => {
-                const matched = tryOnHistory.find(
-                  (x) => x.resultImageUrl === lightboxItem.imageUrl,
-                );
-                if (matched) {
-                  handleAddToCartItem(matched);
-                }
-              }
+              const matched = tryOnHistory.find(
+                (x) => x.resultImageUrl === lightboxItem.imageUrl,
+              );
+              if (matched) handleAddToCartItem(matched);
+            }
             : undefined
         }
       />

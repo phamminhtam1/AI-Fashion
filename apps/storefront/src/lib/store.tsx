@@ -30,6 +30,7 @@ export type CartItem = {
   colorwayId?: string;
   colorName?: string;
   image?: string;
+  maxStock?: number;
 };
 
 export function getCartItemImage(it: CartItem, p?: Product): string {
@@ -81,7 +82,7 @@ type Store = {
   wishlist: string[];
   cartOpen: boolean;
   setCartOpen: (v: boolean) => void;
-  addToCart: (p: Product, variantId: string, qty?: number) => void;
+  addToCart: (p: Product, variantId: string, qty?: number) => boolean;
   updateQty: (i: number, qty: number) => void;
   removeItem: (i: number) => void;
   clearCart: () => void;
@@ -297,11 +298,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     wishlist,
     cartOpen,
     setCartOpen,
-    addToCart: (p, variantId, qty = 1) => {
+    addToCart: (p, variantId, qty = 1): boolean => {
       const v = p.variants.find((x) => x.id === variantId);
       if (!v) {
-        toast.error("Không tìm thấy biến thể");
-        return;
+        toast.error("Không tìm thấy biến thể sản phẩm");
+        return false;
+      }
+      if (v.available <= 0) {
+        toast.error("Sản phẩm này tạm thời đã hết hàng");
+        return false;
+      }
+      const existing = cart.find((x) => x.variantId === variantId);
+      const currentQty = existing ? existing.qty : 0;
+      if (currentQty + qty > v.available) {
+        const remaining = Math.max(0, v.available - currentQty);
+        if (remaining <= 0) {
+          toast.error(`Bạn đã có ${currentQty} sản phẩm trong giỏ hàng (kho chỉ còn tối đa ${v.available} sản phẩm)`);
+        } else {
+          toast.error(`Kho chỉ còn ${v.available} sản phẩm. Bạn đã có ${currentQty} trong giỏ và chỉ có thể thêm tối đa ${remaining} sản phẩm.`);
+        }
+        return false;
       }
       const cw = p.colorways.find((c) => c.id === v.colorwayId);
       const cwIndex = p.colorways.findIndex((c) => c.id === v.colorwayId);
@@ -309,7 +325,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const image = cw?.thumbnail || cw?.images?.[0] || p.images[0];
       setCart((c) => {
         const i = c.findIndex((x) => x.variantId === variantId);
-        if (i >= 0) return c.map((x, j) => (j === i ? { ...x, qty: x.qty + qty } : x));
+        if (i >= 0) return c.map((x, j) => (j === i ? { ...x, qty: x.qty + qty, maxStock: v.available } : x));
         return [
           ...c,
           {
@@ -321,15 +337,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             colorwayId: v.colorwayId,
             colorName,
             image,
+            maxStock: v.available,
           },
         ];
       });
       toast.success("Đã thêm vào giỏ hàng", {
-        description: `${p.name}${colorName ? ` · ${colorName}` : ""} · Size ${v.size}`,
+        description: `${p.name}${colorName ? ` · ${colorName}` : ""} · Size ${v.size} (SL: ${qty})`,
       });
       setCartOpen(true);
+      return true;
     },
-    updateQty: (i, qty) => setCart((c) => c.map((x, j) => (j === i ? { ...x, qty: Math.max(1, qty) } : x))),
+    updateQty: (i, qty) => {
+      setCart((c) => {
+        const it = c[i];
+        if (!it) return c;
+        if (qty <= 0) return c.filter((_, j) => j !== i);
+        const p = products.find((x) => x.id === it.productId);
+        const v = p?.variants.find((x) => x.id === it.variantId);
+        const maxAvail = v?.available ?? it.maxStock ?? 99;
+        if (qty > maxAvail) {
+          toast.error(`Kho chỉ còn tối đa ${maxAvail} sản phẩm`);
+          return c.map((x, j) => (j === i ? { ...x, qty: maxAvail, maxStock: maxAvail } : x));
+        }
+        return c.map((x, j) => (j === i ? { ...x, qty, maxStock: maxAvail } : x));
+      });
+    },
     removeItem: (i) => setCart((c) => c.filter((_, j) => j !== i)),
     clearCart: () => setCart([]),
     toggleWishlist: (id) => {

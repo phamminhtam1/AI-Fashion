@@ -1198,7 +1198,7 @@ function Checkout() {
                   ) : (
                     <div className="h-20 w-15 bg-secondary" />
                   )}
-                  <div className="flex-1"><p>{itemName}</p><p className="text-xs text-muted-foreground">{it.colorName ? `${it.colorName} · ` : ""}{it.sku} · Size {it.size} · x{it.qty}</p></div>
+                  <div className="flex-1"><p className="line-clamp-2 font-medium leading-snug" title={itemName}>{itemName}</p><p className="text-xs text-muted-foreground">{it.colorName ? `${it.colorName} · ` : ""}{it.sku} · Size {it.size} · x{it.qty}</p></div>
                   <span>{formatVND(itemPrice)}</span>
                 </li>
               );

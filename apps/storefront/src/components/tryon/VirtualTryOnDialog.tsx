@@ -10,18 +10,15 @@ import {
   X,
   ShoppingBag,
   UserCheck,
-  ChevronRight,
   Info,
   Maximize2,
   History,
   Trash2,
-  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
@@ -328,7 +325,6 @@ export function VirtualTryOnDialog({
     onOpenChange(false);
   };
 
-
   return (
     <>
       <Dialog
@@ -339,7 +335,7 @@ export function VirtualTryOnDialog({
         }}
       >
         <DialogContent
-          className="w-[calc(100vw-1.5rem)] sm:w-full max-w-3xl sm:max-w-4xl max-h-[92dvh] sm:max-h-[90vh] overflow-y-auto overflow-x-hidden p-0 rounded-2xl border border-border/80 bg-background shadow-2xl my-auto"
+          className="w-[calc(100vw-1rem)] max-w-[1180px] overflow-hidden border border-border/70 bg-background p-0 shadow-2xl sm:w-[calc(100vw-2rem)] sm:rounded-[24px]"
           onPointerDownOutside={(e) => {
             if (lightboxOpen) e.preventDefault();
           }}
@@ -353,569 +349,666 @@ export function VirtualTryOnDialog({
             }
           }}
         >
-        {/* Header with Luxury Brand Accent */}
-        <div className="relative border-b border-border bg-gradient-to-r from-secondary/50 via-background to-secondary/30 px-4 py-4 sm:px-6 sm:py-5 md:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pr-7 sm:pr-0">
-            <div>
-              <DialogTitle className="text-lg sm:text-xl md:text-2xl font-normal tracking-wide font-serif">
-                Phòng Thử Đồ ÉLANE
-              </DialogTitle>
-              <DialogDescription className="mt-1 text-xs text-muted-foreground leading-relaxed sm:text-sm">
-                Xem trước form dáng thực tế của trang phục trên chính hình ảnh của bạn với công nghệ AI thế hệ mới.
-              </DialogDescription>
-            </div>
+          <DialogTitle className="sr-only">Phòng Thử Đồ ÉLANE</DialogTitle>
+          <DialogDescription className="sr-only">
+            Thử trang phục ÉLANE trên ảnh của bạn bằng công nghệ AI.
+          </DialogDescription>
 
-            {/* Mode Switcher: Try-on vs History */}
-            <div className="inline-flex w-full sm:w-auto items-center rounded-full border border-border/80 bg-secondary/50 p-1 text-xs shadow-xs">
-              <button
-                type="button"
-                onClick={() => setDialogMode("tryon")}
-                className={cn(
-                  "flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 sm:px-4 py-2 font-medium tracking-wide transition-all",
-                  dialogMode === "tryon"
-                    ? "bg-background text-foreground shadow-sm font-semibold"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <span>Thử đồ mới</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setDialogMode("history")}
-                className={cn(
-                  "flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 sm:px-4 py-2 font-medium tracking-wide transition-all",
-                  dialogMode === "history"
-                    ? "bg-background text-foreground shadow-sm font-semibold"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <History className="h-3.5 w-3.5" />
-                <span>Lịch sử</span>
-                {historyList.length > 0 && (
-                  <span
-                    className={cn(
-                      "ml-1 rounded-full px-2 py-0.5 text-[10px] font-mono font-bold leading-none",
-                      dialogMode === "history"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {historyList.length}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+          <div className="grid max-h-[92dvh] min-h-[680px] grid-cols-1 overflow-y-auto lg:max-h-[88vh] lg:grid-cols-[0.88fr_1.12fr] lg:overflow-hidden">
+            {/* LEFT — PRODUCT / VISUAL */}
+            <aside className="relative hidden overflow-hidden bg-[#eee9e2] lg:flex lg:min-h-[680px] lg:flex-col">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_10%,rgba(255,255,255,0.9),transparent_34%)]" />
 
-        <div className="p-4 sm:p-6 md:p-8">
-          {dialogMode === "history" ? (
-            /* HISTORY TAB VIEW */
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 border-b border-border pb-3">
+              <div className="relative z-10 flex items-center justify-between px-7 pt-7">
                 <div>
-                  <h3 className="text-sm sm:text-base font-serif font-medium">Lịch sử ảnh đã thử đồ</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Các bức ảnh thử đồ đã tạo được lưu trữ an toàn để bạn dễ dàng xem lại và so sánh.
+                  <p className="text-[9px] font-medium uppercase tracking-[0.24em] text-neutral-600">
+                    ÉLANE
+                  </p>
+                  <p className="mt-1 font-serif text-[18px] tracking-[-0.02em] text-neutral-900">
+                    Virtual Atelier
                   </p>
                 </div>
-                {historyList.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử thử đồ?")) {
-                        historyList.forEach((it) => deleteTryOnRecord(it.id));
-                        setHistoryList([]);
-                      }
-                    }}
-                    className="self-start sm:self-auto inline-flex items-center gap-1.5 text-xs text-destructive hover:underline"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" /> Xóa tất cả
-                  </button>
-                )}
+
+                <span className="text-[9px] uppercase tracking-[0.18em] text-neutral-500">
+                  Private fitting
+                </span>
               </div>
 
-              {historyList.length === 0 ? (
-                <div className="py-16 text-center border border-dashed border-border/80 rounded-xl space-y-3 p-8">
-                  <Sparkles className="mx-auto h-10 w-10 text-muted-foreground stroke-[1.2]" />
-                  <h4 className="font-serif text-base">Chưa có ảnh thử đồ nào</h4>
-                  <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                    Tải lên một bức ảnh của bạn ở tab "Thử đồ mới" để bắt đầu trải nghiệm ngắm nhìn trang phục chuẩn xác.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setDialogMode("tryon")}
-                    className="mt-3 inline-flex items-center gap-2 rounded bg-primary px-5 py-2.5 text-xs uppercase tracking-widest text-primary-foreground hover:opacity-90 transition"
-                  >
-                    Bắt đầu thử ngay
-                  </button>
-                </div>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {historyList.map((item) => (
-                    <div
-                      key={item.id}
-                      className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition hover:shadow-md hover:border-foreground/40"
-                    >
-                      {/* Image Thumbnail with Click-to-Zoom */}
-                      <div
-                        onClick={() => {
-                          setLightboxItem({
-                            url: item.resultUrl,
-                            originalUrl: item.userImageUrl,
-                            name: item.productName,
-                            price: item.productSalePrice ?? item.productPrice,
-                            slug: item.productSlug,
-                          });
-                          setLightboxOpen(true);
-                        }}
-                        className="relative aspect-[3/4] w-full cursor-zoom-in overflow-hidden bg-secondary"
-                      >
-                        <img
-                          src={item.resultUrl}
-                          alt={item.productName}
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                          <span className="flex items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-[11px] font-medium text-white backdrop-blur">
-                            <Maximize2 className="h-3 w-3" /> Xem ảnh lớn
-                          </span>
-                        </div>
-                        <span className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">
-                          AI Virtual Try-On
-                        </span>
-                      </div>
-
-                      {/* Item Info */}
-                      <div className="flex flex-1 flex-col justify-between p-3.5 text-xs">
-                        <div>
-                          <Link
-                            to="/san-pham/$slug"
-                            params={{ slug: item.productSlug }}
-                            onClick={() => onOpenChange(false)}
-                            className="line-clamp-1 font-medium hover:underline"
-                          >
-                            {item.productName}
-                          </Link>
-                          <div className="mt-1 flex items-center justify-between text-muted-foreground">
-                            <span>
-                              {formatVND(item.productSalePrice ?? item.productPrice)}
-                              {item.size ? ` · Size ${item.size}` : ""}
-                            </span>
-                            <span className="text-[10px]">
-                              {new Date(item.createdAt).toLocaleDateString("vi-VN")}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-2.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setLightboxItem({
-                                url: item.resultUrl,
-                                originalUrl: item.userImageUrl,
-                                name: item.productName,
-                                price: item.productSalePrice ?? item.productPrice,
-                                slug: item.productSlug,
-                              });
-                              setLightboxOpen(true);
-                            }}
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
-                          >
-                            <Eye className="h-3.5 w-3.5" /> Xem chi tiết
-                          </button>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              await deleteTryOnRecord(item.id, item.resultUrl);
-                              toast.success("Đã xóa ảnh thử đồ khỏi lịch sử");
-                            }}
-                            className="text-muted-foreground transition hover:text-destructive p-1"
-                            title="Xóa khỏi lịch sử"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            /* TRY-ON TAB VIEW */
-            <>
-              {/* Product Snapshot Bar */}
-              <div className="mb-4 sm:mb-6 flex items-center justify-between gap-3 sm:gap-4 rounded-xl border border-border bg-secondary/30 p-3 sm:p-4">
-                <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
-                  <div className="h-14 w-11 sm:h-16 sm:w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-secondary">
+              <div className="relative z-10 flex flex-1 items-center justify-center px-6 py-4">
+                <div className="relative flex h-full w-full max-w-[440px] items-center justify-center">
+                  <div className="aspect-[3/4] w-full overflow-hidden bg-[#ddd5cc] shadow-[0_28px_80px_rgba(50,40,30,0.12)]">
                     <img
-                      src={cw?.thumbnail || cw?.images?.[0] || product.images[0]}
+                      src={cw?.images?.[0] || cw?.thumbnail || product.images[0]}
                       alt={product.name}
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  <div className="min-w-0 flex-1 overflow-hidden">
-                    <h4 className="text-xs sm:text-sm font-medium leading-snug line-clamp-2 sm:truncate" title={product.name}>
-                      {product.name}
-                    </h4>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] sm:text-xs text-muted-foreground">
-                      <span>Màu: <strong>{cw?.id ? `Mẫu ${cw.id}` : "Tiêu chuẩn"}</strong></span>
-                      <span>•</span>
-                      <span>
-                        Giá: <strong className="text-foreground">{formatVND(product.salePrice ?? product.price)}</strong>
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </div>
+            </aside>
 
-              {/* User Authentication Gate Reminder */}
-              {!user ? (
-                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 text-center">
-                  <UserCheck className="mx-auto h-10 w-10 text-amber-600/80" />
-                  <h3 className="mt-3 text-base font-medium text-foreground">
-                    Cần đăng nhập tài khoản khách hàng
-                  </h3>
-                  <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-muted-foreground">
-                    Để bảo vệ quyền riêng tư hình ảnh cá nhân và lưu trữ tủ đồ ảo của bạn, quý khách vui lòng đăng nhập trước khi sử dụng.
-                  </p>
-                  <div className="mt-5 flex justify-center gap-3">
-                    <Link
-                      to="/dang-nhap"
-                      className="inline-flex items-center gap-2 rounded bg-primary px-5 py-2.5 text-xs uppercase tracking-widest text-primary-foreground hover:opacity-90"
-                    >
-                      Đăng nhập ngay <ChevronRight className="h-3.5 w-3.5" />
-                    </Link>
-                    <Link
-                      to="/dang-ky"
-                      className="inline-flex items-center rounded border border-border px-5 py-2.5 text-xs uppercase tracking-widest text-foreground hover:bg-secondary"
-                    >
-                      Đăng ký tài khoản
-                    </Link>
-                  </div>
-                </div>
-              ) : job?.status === "COMPLETED" && job.result?.url ? (
-                /* COMPLETED RESULT VIEW WITH BEFORE/AFTER SLIDER */
-                <div className="space-y-5 sm:space-y-6 animate-in fade-in duration-300">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-border pb-3">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 sm:h-5 w-4 sm:w-5 shrink-0 text-emerald-600" />
-                      <span className="text-xs sm:text-sm font-medium">Kết quả thử đồ AI đã hoàn thành</span>
-                    </div>
+            {/* RIGHT — INTERACTION */}
+            <section className="flex min-h-0 flex-col bg-background">
+              {/* HEADER */}
+              <header className="border-b border-border/60 px-5 py-5 sm:px-7 lg:px-9 lg:py-7">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="max-w-xl pr-8 sm:pr-0">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.23em] text-muted-foreground">
+                      ÉLANE / Virtual Atelier
+                    </p>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLightboxItem({
-                          url: job.result!.url,
-                          originalUrl: job.user_image?.url || previewUrl,
-                          name: product.name,
-                          price: variant ? (product.salePrice ?? product.price) : product.price,
-                          slug: product.slug,
-                        });
-                        setLightboxOpen(true);
-                      }}
-                      className="self-start sm:self-auto inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 sm:px-3.5 sm:py-1.5 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition"
-                    >
-                      <Maximize2 className="h-3.5 w-3.5" />
-                      <span>Xem toàn màn hình HD</span>
-                    </button>
-                  </div>
+                    <h2 className="mt-2 font-serif text-[28px] font-normal leading-[1.05] tracking-[-0.03em] sm:text-[34px]">
+                      {dialogMode === "tryon"
+                        ? "Thử thiết kế trên chính bạn."
+                        : "Your fitting archive."}
+                    </h2>
 
-                  {/* Interactive Before/After Comparison Slider */}
-                  <div className="flex justify-center w-full py-1">
-                    <BeforeAfterSlider
-                      resultUrl={job.result.url}
-                      originalUrl={job.user_image?.url || previewUrl}
-                      alt={product.name}
-                      className="w-full max-w-[280px] xs:max-w-xs sm:max-w-md shadow-xl"
-                      onImageClick={() => {
-                        setLightboxItem({
-                          url: job.result!.url,
-                          originalUrl: job.user_image?.url || previewUrl,
-                          name: product.name,
-                          price: variant ? (product.salePrice ?? product.price) : product.price,
-                          slug: product.slug,
-                        });
-                        setLightboxOpen(true);
-                      }}
-                      overlayButton={
-                        <span className="flex items-center gap-2 rounded-full bg-black/75 px-3.5 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-medium text-white shadow-xl backdrop-blur">
-                          <Maximize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Bấm để phóng to HD
-                        </span>
-                      }
-                    />
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setJob(null);
-                        setJobId(null);
-                        setSelectedFile(null);
-                        setPreviewUrl(null);
-                        setElapsedSeconds(0);
-                      }}
-                      className="inline-flex items-center justify-center gap-1.5 py-1.5 text-xs text-muted-foreground transition hover:text-foreground order-2 sm:order-1"
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" /> Thử lại với ảnh khác
-                    </button>
-
-                    <div className="flex items-center gap-2 sm:gap-3 order-1 sm:order-2 w-full sm:w-auto">
-                      <a
-                        href={job.result.url}
-                        download={`elane_tryon_${product.slug}.png`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl border border-border px-3.5 sm:px-4 py-2.5 text-xs uppercase tracking-wider text-foreground transition hover:bg-secondary text-center"
-                      >
-                        <Download className="h-3.5 w-3.5" /> Tải về
-                      </a>
-                      <button
-                        type="button"
-                        onClick={handleAddToCart}
-                        className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl bg-primary px-4 sm:px-6 py-2.5 text-xs uppercase tracking-widest text-primary-foreground shadow transition hover:opacity-90 whitespace-nowrap text-center"
-                      >
-                        <ShoppingBag className="h-3.5 w-3.5" /> Thêm vào giỏ
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : isSubmitting || (jobId && job?.status !== "FAILED") ? (
-                /* PROCESSING / GENERATING REAL % PROGRESS VIEW */
-                <div className="space-y-8 py-8 text-center animate-in fade-in duration-300">
-                  {/* Circular Radial Gauge with Percentage */}
-                  <div className="relative mx-auto flex h-32 w-32 items-center justify-center">
-                    <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="42"
-                        className="stroke-secondary"
-                        strokeWidth="7"
-                        fill="transparent"
-                      />
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="42"
-                        className="stroke-primary transition-all duration-700 ease-out"
-                        strokeWidth="7"
-                        strokeDasharray={263.89}
-                        strokeDashoffset={263.89 - (263.89 * progressData.percent) / 100}
-                        strokeLinecap="round"
-                        fill="transparent"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="font-serif text-3xl font-bold tracking-tight text-foreground">
-                        {progressData.percent}%
-                      </span>
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                        Tiến trình AI
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Stage Headline & Narrative */}
-                  <div>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1.5 text-xs font-medium text-primary shadow-sm">
-                      <RefreshCw className="h-3 w-3 animate-spin" />
-                      {progressData.title}
-                    </div>
-                    <p className="mx-auto mt-2.5 max-w-md text-xs leading-relaxed text-muted-foreground">
-                      {progressData.desc}
+                    <p className="mt-2 max-w-lg text-[11px] leading-5 text-muted-foreground sm:text-[12px]">
+                      {dialogMode === "tryon"
+                        ? "Một trải nghiệm fitting riêng tư, tối giản và tập trung hoàn toàn vào hình ảnh của bạn."
+                        : "Những lần thử đồ đã tạo trước đây, được lưu lại để bạn xem và so sánh."}
                     </p>
                   </div>
 
-                  {/* Horizontal Bar & Live Stats */}
-                  <div className="mx-auto max-w-md space-y-2">
-                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-primary/70 via-primary to-primary transition-all duration-700 ease-out"
-                        style={{ width: `${progressData.percent}%` }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between px-1 text-[11px] text-muted-foreground">
-                      <span>
-                        Thời gian xử lý: <strong className="font-mono text-foreground">{formatTime(elapsedSeconds)}</strong>
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="mx-auto max-w-sm text-[11px] text-muted-foreground/80 leading-normal">
-                    Quá trình xử lý không giới hạn thời gian chờ, xin vui lòng giữ nguyên cửa sổ này.
-                  </p>
-                </div>
-              ) : (
-                /* UPLOAD & FORM VIEW */
-                <div className="space-y-6">
-                  {(errorMsg || job?.status === "FAILED") && (
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-xs text-destructive animate-in fade-in duration-200">
-                      <div className="flex items-center gap-2.5">
-                        <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
-                        <span className="font-medium leading-relaxed">
-                          {(() => {
-                            const raw = errorMsg || job?.error_message;
-                            if (
-                              !raw ||
-                              raw.includes("{") ||
-                              raw.includes("code:") ||
-                              raw.includes("Kie") ||
-                              raw.includes("Krea") ||
-                              raw.includes("HTTP") ||
-                              raw.includes("当前服务繁忙")
-                            ) {
-                              return "Hệ thống AI hiện đang quá tải hoặc bận xử lý. Quý khách vui lòng thử lại sau ít phút.";
-                            }
-                            return raw;
-                          })()}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setErrorMsg(null);
-                          setJob(null);
-                          setJobId(null);
-                          if (selectedFile) handleStartTryOn();
-                        }}
-                        className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-destructive/30 bg-background px-3.5 py-1.5 text-xs font-semibold text-destructive shadow-xs transition hover:bg-destructive hover:text-white active:scale-95"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5" /> Thử lại
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Upload Dropzone */}
-                  <div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={onInputChange}
-                      className="hidden"
-                      id="tryon-photo-input"
-                    />
-
-                    {!previewUrl ? (
-                      <div
-                        onDragOver={onDragOver}
-                        onDragLeave={onDragLeave}
-                        onDrop={onDrop}
-                        onClick={() => fileInputRef.current?.click()}
+                  <nav className="flex shrink-0 items-center gap-6 border-b border-border/60">
+                    <button
+                      type="button"
+                      onClick={() => setDialogMode("tryon")}
+                      className={cn(
+                        "relative cursor-pointer pb-2.5 text-[9px] font-semibold uppercase tracking-[0.14em] transition-colors",
+                        dialogMode === "tryon"
+                          ? "text-foreground"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      Thử đồ mới
+                      <span
                         className={cn(
-                          "group flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition-all duration-200",
-                          isDragging
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:border-foreground/40 hover:bg-secondary/40",
+                          "absolute bottom-[-1px] left-0 h-px bg-foreground transition-all duration-300",
+                          dialogMode === "tryon" ? "w-full" : "w-0",
                         )}
-                      >
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary transition group-hover:scale-105">
-                          <Camera className="h-6 w-6 text-muted-foreground group-hover:text-foreground" />
-                        </div>
-                        <p className="mt-3 text-sm font-medium text-foreground">
-                          Kéo thả ảnh của bạn vào đây, hoặc <span className="text-primary underline">chọn từ thiết bị</span>
+                      />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setDialogMode("history")}
+                      className={cn(
+                        "relative cursor-pointer pb-2.5 text-[9px] font-semibold uppercase tracking-[0.14em] transition-colors",
+                        dialogMode === "history"
+                          ? "text-foreground"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      Lịch sử
+                      {historyList.length > 0 && (
+                        <sup className="ml-1 text-[8px] text-muted-foreground">
+                          {historyList.length}
+                        </sup>
+                      )}
+                      <span
+                        className={cn(
+                          "absolute bottom-[-1px] left-0 h-px bg-foreground transition-all duration-300",
+                          dialogMode === "history" ? "w-full" : "w-0",
+                        )}
+                      />
+                    </button>
+                  </nav>
+                </div>
+              </header>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6 lg:px-9 lg:py-7">
+                {dialogMode === "history" ? (
+                  /* HISTORY */
+                  <div>
+                    <div className="mb-6 flex items-end justify-between gap-4 border-b border-border/60 pb-4">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
+                          Archive
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Hỗ trợ JPG, PNG, WebP (Tối đa 15MB)
-                        </p>
+                        <h3 className="mt-1 font-serif text-[22px]">
+                          Lịch sử thử đồ
+                        </h3>
                       </div>
-                    ) : (
-                      <div className="relative mx-auto aspect-[3/4] max-w-xs overflow-hidden rounded-xl border border-border bg-secondary/40 shadow-sm">
-                        <img
-                          src={previewUrl}
-                          alt="Ảnh tải lên"
-                          className="h-full w-full object-cover"
-                        />
+
+                      {historyList.length > 0 && (
                         <button
                           type="button"
                           onClick={() => {
-                            setSelectedFile(null);
-                            if (previewUrl) URL.revokeObjectURL(previewUrl);
-                            setPreviewUrl(null);
+                            if (
+                              confirm(
+                                "Bạn có chắc chắn muốn xóa toàn bộ lịch sử thử đồ?",
+                              )
+                            ) {
+                              historyList.forEach((it) =>
+                                deleteTryOnRecord(it.id),
+                              );
+                              setHistoryList([]);
+                            }
                           }}
-                          className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur hover:bg-black/80"
-                          aria-label="Xóa ảnh"
+                          className="cursor-pointer text-[9px] uppercase tracking-[0.13em] text-muted-foreground transition-colors hover:text-destructive"
                         >
-                          <X className="h-4 w-4" />
+                          Xóa tất cả
                         </button>
-                        <div className="absolute bottom-2 left-2 right-2 rounded bg-black/60 px-2 py-1 text-center text-[11px] text-white backdrop-blur">
-                          Nhấn vào góc trên để chọn ảnh khác
-                        </div>
+                      )}
+                    </div>
+
+                    {historyList.length === 0 ? (
+                      <div className="py-16 text-center">
+                        <Sparkles className="mx-auto size-8 stroke-[1.1] text-muted-foreground/60" />
+                        <h4 className="mt-5 font-serif text-[20px]">
+                          Chưa có fitting nào
+                        </h4>
+                        <p className="mx-auto mt-2 max-w-sm text-[11px] leading-5 text-muted-foreground">
+                          Tải lên một bức ảnh ở tab “Thử đồ mới” để bắt đầu
+                          bộ sưu tập fitting cá nhân của bạn.
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={() => setDialogMode("tryon")}
+                          className="group mt-6 inline-flex cursor-pointer items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.14em]"
+                        >
+                          <span className="border-b border-foreground pb-1">
+                            Bắt đầu thử đồ
+                          </span>
+                          <span className="transition-transform duration-300 group-hover:translate-x-1">
+                            →
+                          </span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grid gap-x-4 gap-y-8 sm:grid-cols-2">
+                        {historyList.map((item) => (
+                          <article key={item.id} className="group">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLightboxItem({
+                                  url: item.resultUrl,
+                                  originalUrl: item.userImageUrl,
+                                  name: item.productName,
+                                  price:
+                                    item.productSalePrice ?? item.productPrice,
+                                  slug: item.productSlug,
+                                });
+                                setLightboxOpen(true);
+                              }}
+                              className="relative block w-full cursor-zoom-in overflow-hidden bg-secondary/30 text-left"
+                            >
+                              <div className="aspect-[3/4] overflow-hidden">
+                                <img
+                                  src={item.resultUrl}
+                                  alt={item.productName}
+                                  className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.035]"
+                                />
+                              </div>
+
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                                <span className="rounded-full bg-white/90 px-3.5 py-2 text-[9px] font-medium uppercase tracking-[0.12em] text-black backdrop-blur">
+                                  Xem fitting
+                                </span>
+                              </div>
+                            </button>
+
+                            <div className="pt-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <Link
+                                    to="/san-pham/$slug"
+                                    params={{ slug: item.productSlug }}
+                                    onClick={() => onOpenChange(false)}
+                                    className="line-clamp-1 font-serif text-[16px] leading-tight transition-opacity hover:opacity-60"
+                                  >
+                                    {item.productName}
+                                  </Link>
+
+                                  <p className="mt-1 text-[10px] text-muted-foreground">
+                                    {formatVND(
+                                      item.productSalePrice ??
+                                      item.productPrice,
+                                    )}
+                                    {item.size ? ` · Size ${item.size}` : ""}
+                                  </p>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    await deleteTryOnRecord(
+                                      item.id,
+                                      item.resultUrl,
+                                    );
+                                    toast.success(
+                                      "Đã xóa ảnh thử đồ khỏi lịch sử",
+                                    );
+                                  }}
+                                  className="cursor-pointer p-1 text-muted-foreground transition-colors hover:text-destructive"
+                                  title="Xóa khỏi lịch sử"
+                                >
+                                  <Trash2 className="size-3.5 stroke-[1.4]" />
+                                </button>
+                              </div>
+
+                              <p className="mt-2 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+                                {new Date(item.createdAt).toLocaleDateString(
+                                  "vi-VN",
+                                )}
+                              </p>
+                            </div>
+                          </article>
+                        ))}
                       </div>
                     )}
                   </div>
+                ) : (
+                  <>
+                    {/* CURRENT GARMENT */}
+                    <div className="mb-6 grid grid-cols-[60px_minmax(0,1fr)_auto] items-center gap-4 border-b border-border/60 pb-5">
+                      <div className="aspect-[3/4] overflow-hidden bg-secondary/40">
+                        <img
+                          src={
+                            cw?.thumbnail ||
+                            cw?.images?.[0] ||
+                            product.images[0]
+                          }
+                          alt={product.name}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
 
-                  {/* Guidelines / Tips */}
-                  <div className="rounded-lg border border-border/70 bg-secondary/20 p-4">
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-                      <Info className="h-3.5 w-3.5 text-primary" /> Mẹo để AI cho kết quả đẹp & chuẩn nhất:
+                      <div className="min-w-0">
+                        <p className="text-[8px] uppercase tracking-[0.18em] text-muted-foreground">
+                          Selected piece
+                        </p>
+                        <h4 className="mt-1 line-clamp-1 font-serif text-[17px] leading-tight">
+                          {product.name}
+                        </h4>
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          {size ? `Size ${size}` : "Chưa chọn size"}
+                          {cw?.name ? ` · ${cw.name}` : ""}
+                        </p>
+                      </div>
+
+                      <p className="text-[11px] font-medium">
+                        {formatVND(product.salePrice ?? product.price)}
+                      </p>
                     </div>
-                    <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
-                      <li className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        Chụp chính diện, đứng thẳng hoặc tạo dáng tự nhiên, đủ ánh sáng.
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        Rõ từ nửa người trên (Upper body) hoặc toàn thân (Full body).
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        Trang phục đang mặc gọn gàng, tránh bị che khuất bởi túi xách hay phụ kiện lớn.
-                      </li>
-                    </ul>
-                  </div>
 
-                  {/* Submit CTA */}
-                  <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => onOpenChange(false)}
-                      className="w-full sm:w-auto rounded-xl border border-border px-5 py-2.5 text-xs uppercase tracking-wider text-muted-foreground hover:bg-secondary hover:text-foreground text-center"
-                    >
-                      Hủy
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!selectedFile || isSubmitting}
-                      onClick={handleStartTryOn}
-                      className={cn(
-                        "inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl px-6 sm:px-7 py-3 text-xs uppercase tracking-widest text-primary-foreground shadow transition cursor-pointer font-medium",
-                        selectedFile && !isSubmitting
-                          ? "bg-primary hover:opacity-90 active:scale-[0.98]"
-                          : "cursor-not-allowed bg-muted text-muted-foreground",
-                      )}
-                    >
-                      <Sparkles className="h-3.5 w-3.5" /> Bắt đầu thử đồ ảo
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+                    {!user ? (
+                      /* AUTH GATE */
+                      <div className="py-10">
+                        <p className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                          Private fitting
+                        </p>
+                        <h3 className="mt-2 font-serif text-[26px]">
+                          Đăng nhập để bắt đầu.
+                        </h3>
+                        <p className="mt-2 max-w-md text-[11px] leading-5 text-muted-foreground">
+                          Hình ảnh của bạn được sử dụng cho trải nghiệm fitting
+                          cá nhân và lịch sử thử đồ trong tài khoản ÉLANE.
+                        </p>
 
-    {/* High-Resolution Image Lightbox Modal with Before/After Slider */}
-    <TryOnImageLightbox
-      open={lightboxOpen}
-      onOpenChange={setLightboxOpen}
-      imageUrl={lightboxItem?.url || (job?.result?.url ?? "")}
-      originalUrl={lightboxItem?.originalUrl ?? job?.user_image?.url ?? previewUrl}
-      productName={lightboxItem?.name ?? product.name}
-      productPrice={lightboxItem?.price ?? (product.salePrice ?? product.price)}
-      productSlug={lightboxItem?.slug ?? product.slug}
-      onAddToCart={handleAddToCart}
-    />
-  </>
+                        <div className="mt-7 flex flex-wrap items-center gap-5">
+                          <Link
+                            to="/dang-nhap"
+                            className="bg-foreground px-5 py-3 text-[9px] font-semibold uppercase tracking-[0.14em] text-background"
+                          >
+                            Đăng nhập
+                          </Link>
+
+                          <Link
+                            to="/dang-ky"
+                            className="group inline-flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.14em]"
+                          >
+                            <span className="border-b border-foreground pb-1">
+                              Tạo tài khoản
+                            </span>
+                            <span className="transition-transform duration-300 group-hover:translate-x-1">
+                              →
+                            </span>
+                          </Link>
+                        </div>
+                      </div>
+                    ) : job?.status === "COMPLETED" && job.result?.url ? (
+                      /* COMPLETED */
+                      <div className="animate-in fade-in duration-300">
+                        <div className="flex flex-col items-center justify-center py-1">
+                          <BeforeAfterSlider
+                            resultUrl={job.result.url}
+                            originalUrl={
+                              job.user_image?.url || previewUrl
+                            }
+                            alt={product.name}
+                            className="w-full max-w-[430px] shadow-[0_24px_70px_rgba(0,0,0,0.10)]"
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLightboxItem({
+                                url: job.result!.url,
+                                originalUrl:
+                                  job.user_image?.url || previewUrl,
+                                name: product.name,
+                                price:
+                                  product.salePrice ?? product.price,
+                                slug: product.slug,
+                              });
+                              setLightboxOpen(true);
+                            }}
+                            className="group mt-3.5 inline-flex cursor-pointer items-center gap-2 text-[9px] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:text-foreground"
+                          >
+                            <Maximize2 className="size-3.5 stroke-[1.4]" />
+                            <span className="border-b border-transparent pb-0.5 group-hover:border-foreground">
+                              Xem toàn màn hình
+                            </span>
+                          </button>
+                        </div>
+
+                        <div className="mt-6 flex flex-col gap-4 border-t border-border/60 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setJob(null);
+                              setJobId(null);
+                              setSelectedFile(null);
+                              setPreviewUrl(null);
+                              setElapsedSeconds(0);
+                            }}
+                            className="group inline-flex cursor-pointer items-center gap-2 text-[9px] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:text-foreground"
+                          >
+                            <RefreshCw className="size-3.5 stroke-[1.4]" />
+                            Thử ảnh khác
+                          </button>
+
+                          <div className="flex items-center gap-3">
+                            <a
+                              href={job.result.url}
+                              download={`elane_tryon_${product.slug}.png`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-2 border border-border px-4 py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] transition-colors hover:bg-secondary/50"
+                            >
+                              <Download className="size-3.5 stroke-[1.4]" />
+                              Tải ảnh
+                            </a>
+
+                            <button
+                              type="button"
+                              onClick={handleAddToCart}
+                              className="inline-flex cursor-pointer items-center gap-2 bg-foreground px-5 py-2.5 text-[9px] font-semibold uppercase tracking-[0.13em] text-background transition-opacity hover:opacity-80"
+                            >
+                              <ShoppingBag className="size-3.5 stroke-[1.4]" />
+                              Thêm vào giỏ
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : isSubmitting ||
+                      (jobId && job?.status !== "FAILED") ? (
+                      /* PROCESSING */
+                      <div className="animate-in fade-in py-8 duration-300">
+                        <div className="grid gap-8 sm:grid-cols-[150px_1fr] sm:items-center">
+                          <div>
+                            <p className="font-serif text-[58px] leading-none tracking-[-0.05em]">
+                              {progressData.percent}
+                              <span className="ml-1 text-[22px] text-muted-foreground">
+                                %
+                              </span>
+                            </p>
+                            <p className="mt-2 text-[8px] uppercase tracking-[0.18em] text-muted-foreground">
+                              Rendering
+                            </p>
+                          </div>
+
+                          <div>
+                            <div className="mb-5 grid grid-cols-3 gap-4">
+                              {[
+                                ["01", "Analyze", progressData.percent >= 18],
+                                ["02", "Fit", progressData.percent >= 42],
+                                ["03", "Render", progressData.percent >= 70],
+                              ].map(([n, label, active]) => (
+                                <div
+                                  key={String(n)}
+                                  className="border-t border-border/60 pt-2"
+                                >
+                                  <span
+                                    className={cn(
+                                      "text-[8px] uppercase tracking-[0.15em]",
+                                      active
+                                        ? "text-foreground"
+                                        : "text-muted-foreground/50",
+                                    )}
+                                  >
+                                    {n} · {label}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+
+                            <h3 className="font-serif text-[23px] leading-tight">
+                              {progressData.title}
+                            </h3>
+                            <p className="mt-2 max-w-md text-[11px] leading-5 text-muted-foreground">
+                              {progressData.desc}
+                            </p>
+
+                            <div className="mt-5 h-px w-full overflow-hidden bg-border">
+                              <div
+                                className="h-full bg-foreground transition-all duration-700 ease-out"
+                                style={{
+                                  width: `${progressData.percent}%`,
+                                }}
+                              />
+                            </div>
+
+                            <div className="mt-2 flex items-center justify-between text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+                              <span>AI processing</span>
+                              <span>{formatTime(elapsedSeconds)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <p className="mt-9 border-t border-border/60 pt-4 text-[10px] leading-5 text-muted-foreground">
+                          Vui lòng giữ cửa sổ này mở trong khi ÉLANE hoàn thiện
+                          fitting của bạn.
+                        </p>
+                      </div>
+                    ) : (
+                      /* UPLOAD */
+                      <div className="space-y-5">
+                        {(errorMsg || job?.status === "FAILED") && (
+                          <div className="flex flex-col gap-3 border-y border-destructive/20 py-4 text-[11px] text-destructive sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-start gap-2">
+                              <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                              <span className="leading-5">
+                                {(() => {
+                                  const raw =
+                                    errorMsg || job?.error_message;
+                                  if (
+                                    !raw ||
+                                    raw.includes("{") ||
+                                    raw.includes("code:") ||
+                                    raw.includes("Kie") ||
+                                    raw.includes("Krea") ||
+                                    raw.includes("HTTP") ||
+                                    raw.includes("当前服务繁忙")
+                                  ) {
+                                    return "Hệ thống AI hiện đang quá tải hoặc bận xử lý. Quý khách vui lòng thử lại sau ít phút.";
+                                  }
+                                  return raw;
+                                })()}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setErrorMsg(null);
+                                setJob(null);
+                                setJobId(null);
+                                if (selectedFile) handleStartTryOn();
+                              }}
+                              className="shrink-0 cursor-pointer text-[9px] font-semibold uppercase tracking-[0.12em] underline underline-offset-4"
+                            >
+                              Thử lại
+                            </button>
+                          </div>
+                        )}
+
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={onInputChange}
+                          className="hidden"
+                          id="tryon-photo-input"
+                        />
+
+                        {!previewUrl ? (
+                          <div
+                            onDragOver={onDragOver}
+                            onDragLeave={onDragLeave}
+                            onDrop={onDrop}
+                            onClick={() => fileInputRef.current?.click()}
+                            className={cn(
+                              "group flex min-h-[260px] cursor-pointer flex-col items-center justify-center border text-center transition-all duration-300",
+                              isDragging
+                                ? "border-foreground bg-secondary/35"
+                                : "border-border bg-[#fcfbf9] hover:border-foreground/40 hover:bg-secondary/20",
+                            )}
+                          >
+                            <div className="flex size-11 items-center justify-center rounded-full border border-border transition-transform duration-300 group-hover:scale-105">
+                              <Camera className="size-4 stroke-[1.3] text-muted-foreground" />
+                            </div>
+
+                            <h3 className="mt-4 font-serif text-[21px]">
+                              Thêm ảnh của bạn
+                            </h3>
+
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              Kéo thả hoặc chọn ảnh từ thiết bị
+                            </p>
+
+                            <p className="mt-4 text-[8px] uppercase tracking-[0.14em] text-muted-foreground/70">
+                              JPG · PNG · WebP · tối đa 15MB
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="relative mx-auto w-full max-w-[330px] overflow-hidden bg-secondary/30">
+                            <div className="aspect-[3/4]">
+                              <img
+                                src={previewUrl}
+                                alt="Ảnh tải lên"
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedFile(null);
+                                if (previewUrl)
+                                  URL.revokeObjectURL(previewUrl);
+                                setPreviewUrl(null);
+                              }}
+                              className="absolute right-3 top-3 flex size-8 cursor-pointer items-center justify-center rounded-full bg-black/65 text-white backdrop-blur transition-colors hover:bg-black"
+                              aria-label="Xóa ảnh"
+                            >
+                              <X className="size-4" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-white/90 px-4 py-2 text-[9px] font-medium uppercase tracking-[0.12em] text-black backdrop-blur"
+                            >
+                              Chọn ảnh khác
+                            </button>
+                          </div>
+                        )}
+
+                        {/* PHOTO GUIDELINES */}
+                        <div className="grid gap-3 border-t border-border/60 pt-4 sm:grid-cols-3">
+                          {[
+                            ["01", "Chính diện", "Tư thế tự nhiên, không che cơ thể."],
+                            ["02", "Đủ ánh sáng", "Ảnh rõ nét, hạn chế ngược sáng."],
+                            ["03", "Đủ khung hình", "Nửa người hoặc toàn thân đều được."],
+                          ].map(([n, title, desc]) => (
+                            <div key={String(n)}>
+                              <p className="text-[8px] uppercase tracking-[0.17em] text-muted-foreground">
+                                {n}
+                              </p>
+                              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.08em]">
+                                {title}
+                              </p>
+                              <p className="mt-1 text-[9px] leading-4 text-muted-foreground">
+                                {desc}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* FOOTER ACTION */}
+                        <div className="flex flex-col gap-3 border-t border-border/60 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                          <p className="max-w-sm text-[9px] leading-4 text-muted-foreground">
+                            Ảnh được dùng để tạo fitting cá nhân và lưu vào lịch sử
+                            thử đồ của bạn.
+                          </p>
+
+                          <div className="flex items-center gap-4">
+                            <button
+                              type="button"
+                              onClick={() => onOpenChange(false)}
+                              className="cursor-pointer text-[9px] font-medium uppercase tracking-[0.13em] text-muted-foreground transition-colors hover:text-foreground"
+                            >
+                              Hủy
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={!selectedFile || isSubmitting}
+                              onClick={handleStartTryOn}
+                              className={cn(
+                                "inline-flex cursor-pointer items-center justify-center gap-2 px-5 py-3 text-[9px] font-semibold uppercase tracking-[0.14em] transition-all",
+                                selectedFile && !isSubmitting
+                                  ? "bg-foreground text-background hover:opacity-80 active:scale-[0.98]"
+                                  : "cursor-not-allowed bg-secondary text-muted-foreground",
+                              )}
+                            >
+                              <Sparkles className="size-3.5 stroke-[1.4]" />
+                              Bắt đầu thử đồ
+                              <span>→</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </section>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <TryOnImageLightbox
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
+        imageUrl={lightboxItem?.url || (job?.result?.url ?? "")}
+        originalUrl={
+          lightboxItem?.originalUrl ??
+          job?.user_image?.url ??
+          previewUrl
+        }
+        productName={lightboxItem?.name ?? product.name}
+        productPrice={
+          lightboxItem?.price ?? (product.salePrice ?? product.price)
+        }
+        productSlug={lightboxItem?.slug ?? product.slug}
+        onAddToCart={handleAddToCart}
+      />
+    </>
   );
 }
-

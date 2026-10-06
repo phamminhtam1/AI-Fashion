@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { Link } from "@tanstack/react-router";
-import { Download, ShoppingBag, X, ZoomIn, ZoomOut } from "lucide-react";
-import { formatVND } from "@/lib/products";
+import { Download, X, ZoomIn, ZoomOut } from "lucide-react";
 import { BeforeAfterSlider } from "./BeforeAfterSlider";
 
 interface TryOnImageLightboxProps {
@@ -53,7 +51,7 @@ export function TryOnImageLightbox({
           </DialogPrimitive.Description>
 
           {/* Top Header Bar */}
-          <div className="z-10 flex w-full max-w-5xl items-center justify-between gap-3 px-1 py-1 text-zinc-900 shrink-0 overflow-hidden pointer-events-auto">
+          <div className="z-10 flex w-full max-w-7xl items-center justify-between gap-3 px-1 py-1 text-zinc-900 shrink-0 overflow-hidden pointer-events-auto">
             {/* Left: Product Name with strict max-width and ellipsis truncation */}
             <div className="min-w-0 max-w-[50%] sm:max-w-[60%] overflow-hidden">
               {productName && (
@@ -103,9 +101,9 @@ export function TryOnImageLightbox({
           </div>
 
           {/* Main Image View Area with Interactive Draggable Before/After Slider */}
-          <div className="relative flex flex-1 w-full max-w-5xl items-center justify-center overflow-hidden py-2 no-scrollbar pointer-events-auto">
+          <div className="relative flex flex-1 w-full items-center justify-center overflow-hidden py-1 sm:py-2 no-scrollbar pointer-events-auto">
             <div
-              className="relative flex items-center justify-center transition-transform duration-300 ease-out"
+              className="relative flex h-full max-h-[calc(100vh-100px)] w-full items-center justify-center transition-transform duration-300 ease-out"
               style={{
                 transform: `scale(${zoomLevel})`,
               }}
@@ -114,43 +112,9 @@ export function TryOnImageLightbox({
                 resultUrl={imageUrl}
                 originalUrl={originalUrl}
                 alt={productName || "Ảnh thử đồ AI"}
-                className="max-h-[calc(100vh-175px)] w-auto max-w-[88vw] aspect-[3/4] rounded-xl shadow-2xl border border-zinc-200/80 bg-zinc-50/50"
+                className="h-[calc(100vh-110px)] max-h-[920px] w-auto aspect-[3/4] max-w-[94vw] rounded-2xl shadow-2xl border border-zinc-200/80 bg-zinc-50/50"
               />
             </div>
-          </div>
-
-          {/* Bottom Bar (Product info & Add to cart) */}
-          <div className="z-10 flex w-full max-w-xl items-center justify-between gap-2.5 sm:gap-4 rounded-2xl border border-zinc-200/80 bg-white/90 px-3.5 sm:px-5 py-2 sm:py-3 text-zinc-900 shadow-lg backdrop-blur-md shrink-0 pointer-events-auto">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              {productPrice !== undefined && productPrice > 0 && (
-                <span className="font-serif text-sm sm:text-base font-bold text-rose-600 shrink-0">
-                  {formatVND(productPrice)}
-                </span>
-              )}
-              {productSlug && (
-                <Link
-                  to="/san-pham/$slug"
-                  params={{ slug: productSlug }}
-                  className="cursor-pointer truncate text-[11px] sm:text-xs font-medium text-zinc-600 underline underline-offset-4 hover:text-zinc-900 transition"
-                  onClick={() => onOpenChange(false)}
-                >
-                  Trang sản phẩm
-                </Link>
-              )}
-            </div>
-
-            {onAddToCart && (
-              <button
-                type="button"
-                onClick={() => {
-                  onAddToCart();
-                  onOpenChange(false);
-                }}
-                className="cursor-pointer inline-flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-full bg-zinc-900 px-3.5 sm:px-5 py-2 sm:py-2.5 text-xs font-semibold uppercase tracking-wider text-white shadow transition hover:bg-zinc-800 active:scale-95"
-              >
-                <ShoppingBag className="h-3.5 w-3.5" /> <span>Thêm vào giỏ</span>
-              </button>
-            )}
           </div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>

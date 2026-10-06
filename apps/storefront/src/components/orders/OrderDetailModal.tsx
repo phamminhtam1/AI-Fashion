@@ -251,8 +251,8 @@ export function OrderDetailModal({ orderId, onClose, onPayNow, onOrderUpdated }:
                           )}
                           <div
                             className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border transition-all ${isDone
-                                ? "bg-foreground text-background border-foreground shadow-sm"
-                                : "bg-background text-muted-foreground border-border"
+                              ? "bg-foreground text-background border-foreground shadow-sm"
+                              : "bg-background text-muted-foreground border-border"
                               } ${isCurrent ? "ring-4 ring-foreground/15 scale-105" : ""}`}
                           >
                             <Icon className="h-4 w-4" />
@@ -376,7 +376,7 @@ export function OrderDetailModal({ orderId, onClose, onPayNow, onOrderUpdated }:
                       <div className="flex flex-1 flex-col justify-between">
                         <div className="flex justify-between gap-2">
                           <div>
-                            <h4 className="font-medium text-sm text-foreground line-clamp-1">
+                            <h4 className="font-serif text-[16px] font-medium leading-[1.3] tracking-[-0.015em] text-foreground line-clamp-2" title={it.product_name}>
                               {it.product_name}
                             </h4>
                             <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
@@ -426,7 +426,7 @@ export function OrderDetailModal({ orderId, onClose, onPayNow, onOrderUpdated }:
                   <span className="font-semibold uppercase tracking-wider text-xs">
                     Tổng tiền thanh toán:
                   </span>
-                  <span className="font-serif text-xl sm:text-2xl font-bold text-foreground">
+                  <span className="text-xl sm:text-2xl font-bold text-foreground">
                     {formatVND(order.grand_total_vnd)}
                   </span>
                 </div>

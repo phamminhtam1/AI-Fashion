@@ -481,3 +481,32 @@ input:disabled,
     opacity: 0;
   }
 }
+
+/* Bulletproof line-clamp utility overrides (forces -webkit-box even if conflicting display classes exist) */
+.line-clamp-1,
+[class*="line-clamp-1"] {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 1 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.line-clamp-2,
+[class*="line-clamp-2"] {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.line-clamp-3,
+[class*="line-clamp-3"] {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+

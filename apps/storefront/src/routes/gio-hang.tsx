@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Minus, Plus, X } from "lucide-react";
 import { formatVND, products } from "@/lib/products";
 import { FREE_SHIP, useStore, getCartItemImage } from "@/lib/store";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/gio-hang")({
   head: () => ({
@@ -49,16 +50,30 @@ function CartPage() {
                 <div className="flex flex-1 flex-col">
                   <div className="flex justify-between gap-4">
                     <div>
-                      <p>{itemName}</p>
+                      <p className="font-medium line-clamp-2">{itemName}</p>
                       <p className="mt-1 text-sm text-muted-foreground">{it.colorName ? `${it.colorName} · ` : ""}{it.sku} · Size {it.size}</p>
                     </div>
                     <button onClick={() => removeItem(i)} aria-label="Xóa"><X className="h-4 w-4" /></button>
                   </div>
                   <div className="mt-auto flex items-center justify-between">
                     <div className="flex items-center border border-border">
-                      <button className="p-2" onClick={() => updateQty(i, it.qty - 1)} aria-label="Giảm"><Minus className="h-3 w-3" /></button>
-                      <span className="w-8 text-center text-sm">{it.qty}</span>
-                      <button className="p-2" onClick={() => updateQty(i, it.qty + 1)} aria-label="Tăng"><Plus className="h-3 w-3" /></button>
+                      <button className="p-2 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed" onClick={() => updateQty(i, it.qty - 1)} aria-label="Giảm"><Minus className="h-3 w-3" /></button>
+                      <span className="w-8 text-center text-sm font-medium">{it.qty}</span>
+                      <button
+                        className="p-2 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        disabled={it.qty >= (p?.variants.find((x) => x.id === it.variantId)?.available ?? it.maxStock ?? 99)}
+                        onClick={() => {
+                          const maxAvail = p?.variants.find((x) => x.id === it.variantId)?.available ?? it.maxStock ?? 99;
+                          if (it.qty >= maxAvail) {
+                            toast.error(`Kho chỉ còn tối đa ${maxAvail} sản phẩm`);
+                            return;
+                          }
+                          updateQty(i, it.qty + 1);
+                        }}
+                        aria-label="Tăng"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
                     </div>
                     <span>{formatVND(itemPrice)}</span>
                   </div>

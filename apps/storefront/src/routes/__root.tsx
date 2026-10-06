@@ -81,11 +81,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async () => {
     try {
-      const { ensureCatalog, getNavItems, allProductsList, allCategoriesList } = await import("@/lib/products");
-      await ensureCatalog();
+      const { ensureCategories, getNavItems, allCategoriesList } = await import("@/lib/products");
+      await ensureCategories();
       return {
         navItems: getNavItems(),
-        products: allProductsList().map((p) => ({ ...p })),
+        products: [],
         categories: allCategoriesList().map((c) => ({ ...c })),
       };
     } catch (e) {
