@@ -34,6 +34,7 @@ import { TablePagination } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
 import { useConfirmDialog } from "@/components/ConfirmDialog";
 import type {
+  AdminProduct,
   InventoryDocumentDetail,
   InventoryDocumentListItem,
   InventoryItem,
@@ -96,6 +97,54 @@ type CatalogProduct = {
   image_url?: string | null;
   variants: CatalogVariant[];
 };
+
+function mapAdminProductsToCatalog(
+  prods: AdminProduct[],
+  invByVariant: Map<string, InventoryItem>,
+): CatalogProduct[] {
+  const list: CatalogProduct[] = [];
+  for (const p of prods) {
+    const coverImg =
+      p.images?.[0] ||
+      p.media?.find((m) => (m as { isCover?: boolean; is_cover?: boolean }).isCover || (m as { isCover?: boolean; is_cover?: boolean }).is_cover)?.url ||
+      p.media?.[0]?.url ||
+      null;
+    const variants: CatalogVariant[] = [];
+    for (const v of p.variants ?? []) {
+      if (v.status === "archived" || v.status === "inactive") continue;
+      const inv = invByVariant.get(v.id);
+      const cwMedia =
+        p.media?.find((m) => m.colorway_id === v.colorway_id)?.url ||
+        p.colorways?.find((cw) => cw.id === v.colorway_id)?.thumbnail ||
+        p.colorways?.find((cw) => cw.id === v.colorway_id)?.images?.[0];
+      const variantImg = cwMedia || v.image_url || inv?.image_url || coverImg;
+
+      variants.push({
+        id: v.id,
+        color: v.color?.name ?? v.color_name ?? "—",
+        size: v.size?.label ?? v.size_label ?? "—",
+        sku: v.sku,
+        on_hand: inv?.on_hand ?? v.on_hand ?? 0,
+        reserved: inv?.reserved ?? v.reserved ?? 0,
+        available: inv?.available ?? v.available ?? 0,
+        price_vnd: inv?.price_vnd ?? v.price_vnd ?? p.price_vnd ?? 0,
+        cost_vnd:
+          inv?.cost_vnd ??
+          v.cost_vnd ??
+          p.cost_vnd ??
+          (v.price_vnd ? Math.round(v.price_vnd * 0.3) : null),
+        image_url: variantImg,
+      });
+    }
+    if (!variants.length) continue;
+    variants.sort((a, b) =>
+      `${a.color} ${a.size}`.localeCompare(`${b.color} ${b.size}`, "vi"),
+    );
+    list.push({ id: p.id, name: p.name, image_url: coverImg, variants });
+  }
+  list.sort((a, b) => a.name.localeCompare(b.name, "vi"));
+  return list;
+}
 
 export type InventorySeed = {
   productId?: string;
@@ -422,7 +471,9 @@ export function InventoryManager({
   const [reason, setReason] = useState("");
   const [lines, setLines] = useState<LineDraft[]>([]);
   const [catalog, setCatalog] = useState<CatalogProduct[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
   const [productQuery, setProductQuery] = useState("");
+  const isInitialFormSearch = useRef(true);
   const [matrixProductId, setMatrixProductId] = useState("");
   const [matrixQty, setMatrixQty] = useState<Record<string, string>>({});
   const [matrixDirection, setMatrixDirection] = useState<"in" | "out">("in");
@@ -430,6 +481,43 @@ export function InventoryManager({
   const [saving, setSaving] = useState(false);
 
   const { confirm, dialog: confirmDialog } = useConfirmDialog();
+
+  // Debounce search query from API instead of full catalog download
+  useEffect(() => {
+    if (view !== "form") {
+      isInitialFormSearch.current = true;
+      return;
+    }
+    if (isInitialFormSearch.current) {
+      isInitialFormSearch.current = false;
+      return;
+    }
+    const q = productQuery.trim();
+    const timer = setTimeout(async () => {
+      setCatalogLoading(true);
+      try {
+        const invByVariant = new Map(items.map((row) => [row.variant_id, row]));
+        const res = await adminApi.products({
+          q: q || undefined,
+          limit: 30,
+        });
+        const list = mapAdminProductsToCatalog(res.items, invByVariant);
+        setCatalog((prev) => {
+          if (matrixProductId && !list.some((p) => p.id === matrixProductId)) {
+            const currentSelected = prev.find((p) => p.id === matrixProductId);
+            if (currentSelected) return [currentSelected, ...list];
+          }
+          return list;
+        });
+      } catch (err) {
+        console.error("Lỗi tìm kiếm sản phẩm cho kho:", err);
+      } finally {
+        setCatalogLoading(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [productQuery, view, items, matrixProductId]);
 
   const loadStock = useCallback(async () => {
     const res = await adminApi.inventory();
@@ -530,50 +618,34 @@ export function InventoryManager({
     );
     setProductQuery(opts?.productName ?? "");
     setView("form");
+    isInitialFormSearch.current = true;
+    setCatalogLoading(true);
     try {
       const invByVariant = new Map(items.map((row) => [row.variant_id, row]));
-      const prods = await adminApi.productsAll();
-      const list: CatalogProduct[] = [];
-      for (const p of prods.items) {
-        const coverImg =
-          p.images?.[0] ||
-          p.media?.find((m) => (m as { isCover?: boolean; is_cover?: boolean }).isCover || (m as { isCover?: boolean; is_cover?: boolean }).is_cover)?.url ||
-          p.media?.[0]?.url ||
-          null;
-        const variants: CatalogVariant[] = [];
-        for (const v of p.variants ?? []) {
-          if (v.status === "archived" || v.status === "inactive") continue;
-          const inv = invByVariant.get(v.id);
-          const cwMedia =
-            p.media?.find((m) => m.colorway_id === v.colorway_id)?.url ||
-            p.colorways?.find((cw) => cw.id === v.colorway_id)?.thumbnail ||
-            p.colorways?.find((cw) => cw.id === v.colorway_id)?.images?.[0];
-          const variantImg = cwMedia || v.image_url || inv?.image_url || coverImg;
-
-          variants.push({
-            id: v.id,
-            color: v.color?.name ?? v.color_name ?? "—",
-            size: v.size?.label ?? v.size_label ?? "—",
-            sku: v.sku,
-            on_hand: inv?.on_hand ?? v.on_hand ?? 0,
-            reserved: inv?.reserved ?? v.reserved ?? 0,
-            available: inv?.available ?? v.available ?? 0,
-            price_vnd: inv?.price_vnd ?? v.price_vnd ?? p.price_vnd ?? 0,
-            cost_vnd:
-              inv?.cost_vnd ??
-              v.cost_vnd ??
-              p.cost_vnd ??
-              (v.price_vnd ? Math.round(v.price_vnd * 0.3) : null),
-            image_url: variantImg,
-          });
-        }
-        if (!variants.length) continue;
-        variants.sort((a, b) =>
-          `${a.color} ${a.size}`.localeCompare(`${b.color} ${b.size}`, "vi"),
-        );
-        list.push({ id: p.id, name: p.name, image_url: coverImg, variants });
+      
+      const neededProductIds = new Set<string>();
+      if (opts?.productId) neededProductIds.add(opts.productId);
+      if (opts?.lines?.length) {
+        opts.lines.forEach((l) => neededProductIds.add(l.product_id));
       }
-      list.sort((a, b) => a.name.localeCompare(b.name, "vi"));
+
+      // Query only first 30 products (or matching productName if seed provided)
+      const res = await adminApi.products({
+        q: opts?.productName || undefined,
+        limit: 30,
+      });
+
+      const fetchedProducts: AdminProduct[] = [...res.items];
+      for (const pId of neededProductIds) {
+        if (!fetchedProducts.some((p) => p.id === pId)) {
+          try {
+            const extra = await adminApi.product(pId);
+            if (extra) fetchedProducts.push(extra);
+          } catch {}
+        }
+      }
+
+      const list = mapAdminProductsToCatalog(fetchedProducts, invByVariant);
       setCatalog(list);
 
       if (opts?.lines && opts.lines.length > 0) {
@@ -678,6 +750,8 @@ export function InventoryManager({
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Không tải được danh mục sản phẩm");
       setLines([]);
+    } finally {
+      setCatalogLoading(false);
     }
   };
 
@@ -1982,8 +2056,9 @@ export function InventoryManager({
                     />
                   </div>
                   <div>
-                    <span className="text-[11px] text-muted-foreground">
-                      Chọn từ danh mục ({filteredCatalog.length})
+                    <span className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                      <span>Chọn từ danh mục ({filteredCatalog.length})</span>
+                      {catalogLoading && <Loader2 className="h-3 w-3 animate-spin text-primary inline" />}
                     </span>
                     <select
                       className="mt-1 flex h-8 w-full rounded-md border border-border bg-[#f7f4ef] px-2 text-xs outline-none"
@@ -1993,7 +2068,7 @@ export function InventoryManager({
                         setMatrixQty({});
                       }}
                     >
-                      <option value="">Chọn sản phẩm…</option>
+                      <option value="">{catalogLoading ? "Đang tìm kiếm..." : "Chọn sản phẩm…"}</option>
                       {filteredCatalog.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name} ({p.variants.length} SKU)

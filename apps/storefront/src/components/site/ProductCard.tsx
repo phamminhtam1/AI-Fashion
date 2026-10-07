@@ -132,35 +132,34 @@ export function ProductCard({ product: p }: { product: Product }) {
             {p.name}
           </Link>
 
-          {/* Price + color count */}
-          <div className="mt-2.5 flex items-end justify-between gap-3">
-            <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-              {p.salePrice ? (
-                <>
-                  <span className="text-[13px] font-semibold text-sale sm:text-[14.5px]">
-                    {formatVND(p.salePrice)}
-                  </span>
+          {/* Price */}
+          <div className="mt-2.5 flex items-baseline gap-x-2 whitespace-nowrap leading-tight">
+            {p.salePrice ? (
+              <>
+                <span className="text-[13px] font-semibold text-sale sm:text-[14.5px]">
+                  {formatVND(p.salePrice)}
+                </span>
 
-                  <span className="text-[10.5px] text-muted-foreground line-through sm:text-[12px]">
-                    {formatVND(p.price)}
-                  </span>
-                </>
-              ) : (
-                <span className="text-[13px] font-semibold text-foreground sm:text-[14.5px]">
+                <span className="text-[10.5px] text-muted-foreground line-through sm:text-[12px]">
                   {formatVND(p.price)}
                 </span>
-              )}
-            </div>
-
-            {p.colorways.length > 1 && (
-              <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                {p.colorways.length} màu
+              </>
+            ) : (
+              <span className="text-[13px] font-semibold text-foreground sm:text-[14.5px]">
+                {formatVND(p.price)}
               </span>
             )}
           </div>
 
+          {/* Color count - separate row */}
+          <div className="mt-0.5 flex items-center justify-end leading-none">
+            <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+              {Math.max(1, p.colorways?.length ?? 1)} màu
+            </span>
+          </div>
+
           {/* Colorways */}
-          <div className="mt-3 flex min-h-[38px] items-center gap-2">
+          <div className="mt-1 flex min-h-[36px] sm:min-h-[38px] items-center gap-1.5 sm:gap-2">
             {p.colorways.map((c) => {
               const isSelected =
                 c.id === (activeCw?.id ?? selectedCwId);

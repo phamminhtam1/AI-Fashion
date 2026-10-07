@@ -223,7 +223,7 @@ function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
     // Hydrate Phase 1 modules with API data; keep layout/mock for the rest
     Promise.all([
       adminApi.overview(),
-      adminApi.productsAll(),
+      adminApi.products({ limit: 20 }),
       adminApi.inventory(),
       adminApi.staff(),
       adminApi.audit(),
