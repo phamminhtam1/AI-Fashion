@@ -10,7 +10,9 @@
     "worker:tryon": "tsx src/workers/try-on.worker.ts",
     "import:pantio": "tsx src/scripts/import-pantio.ts --fresh",
     "sync:pantio": "tsx src/scripts/sync-pantio-live.ts",
-    "sync:pantio:apply": "tsx src/scripts/sync-pantio-live.ts --apply"
+    "sync:pantio:apply": "tsx src/scripts/sync-pantio-live.ts --apply",
+    "stock:fill-empty": "tsx src/scripts/fill-out-of-stock.ts",
+    "stock:fill-empty:apply": "tsx src/scripts/fill-out-of-stock.ts --apply"
   },
   "dependencies": {
     "@elane/db": "*",
