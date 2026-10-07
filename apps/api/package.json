@@ -8,7 +8,9 @@
     "start": "tsx src/index.ts",
     "test": "tsx --test src/**/*.test.ts",
     "worker:tryon": "tsx src/workers/try-on.worker.ts",
-    "import:pantio": "tsx src/scripts/import-pantio.ts --fresh"
+    "import:pantio": "tsx src/scripts/import-pantio.ts --fresh",
+    "sync:pantio": "tsx src/scripts/sync-pantio-live.ts",
+    "sync:pantio:apply": "tsx src/scripts/sync-pantio-live.ts --apply"
   },
   "dependencies": {
     "@elane/db": "*",
