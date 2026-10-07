@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Heart, Menu, Search, ShoppingBag, User, X, Minus, Plus, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { categories, formatVND, ensureCategories, getNavItems, products, type NavItem } from "@/lib/products";
 import { FREE_SHIP, useStore, getCartItemImage } from "@/lib/store";
@@ -113,9 +114,8 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
   return (
     <header
       ref={headerRef}
-      className={`sticky top-0 z-50 overflow-visible transition-all duration-300 group/header ${
-        scrolled ? "bg-background/95 backdrop-blur-md shadow-sm" : "bg-background"
-      }`}
+      className={`sticky top-0 z-50 overflow-visible transition-all duration-300 group/header ${scrolled ? "bg-background/95 backdrop-blur-md shadow-sm" : "bg-background"
+        }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false);
@@ -223,10 +223,9 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
           className={`
             hidden justify-center gap-7 lg:flex overflow-hidden
             transition-all duration-300 ease-out
-            ${
-              scrolled
-                ? "max-h-0 opacity-0 pb-0 pointer-events-none -translate-y-2"
-                : "max-h-16 opacity-100 pb-3 translate-y-0 pointer-events-auto"
+            ${scrolled
+              ? "max-h-0 opacity-0 pb-0 pointer-events-none -translate-y-2"
+              : "max-h-16 opacity-100 pb-3 translate-y-0 pointer-events-auto"
             }
           `}
           aria-label="Danh mục"
@@ -414,48 +413,133 @@ function Badge({ n }: { n: number }) {
 
 function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [q, setQ] = useState("");
+  const [mounted, setMounted] = useState(false);
   const navigate = useNavigate();
-  const results = q.trim() ? products.filter((p) => p.name.toLowerCase().includes(q.toLowerCase())).slice(0, 6) : [];
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 bg-background animate-in fade-in">
-      <div className="mx-auto max-w-4xl px-6 pt-10">
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setQ("");
+      return;
+    }
+    const origOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = origOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, onClose]);
+
+  if (!open || !mounted) return null;
+
+  const results = q.trim()
+    ? products.filter((p) => p.name.toLowerCase().includes(q.toLowerCase())).slice(0, 6)
+    : [];
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] bg-background text-foreground overflow-y-auto animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="mx-auto max-w-4xl px-6 pt-10 pb-16">
         <div className="flex items-center gap-4 border-b border-foreground pb-3">
-          <Search className="h-5 w-5" strokeWidth={1.5} />
-          <form className="flex-1" onSubmit={(e) => { e.preventDefault(); onClose(); navigate({ to: "/tim-kiem", search: { q } }); }}>
-            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm kiếm sản phẩm..." className="w-full bg-transparent font-serif text-2xl outline-none md:text-3xl" />
+          <Search className="h-5 w-5 shrink-0" strokeWidth={1.5} />
+          <form
+            className="flex-1"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (q.trim()) {
+                onClose();
+                navigate({ to: "/tim-kiem", search: { q } });
+              }
+            }}
+          >
+            <input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Tìm kiếm sản phẩm..."
+              className="w-full bg-transparent font-serif text-xl outline-none md:text-2xl placeholder:text-muted-foreground"
+            />
           </form>
-          <button onClick={onClose} aria-label="Đóng"><X className="h-6 w-6" strokeWidth={1.5} /></button>
+          <button
+            onClick={onClose}
+            aria-label="Đóng"
+            className="p-1 hover:opacity-70 transition-opacity cursor-pointer"
+          >
+            <X className="h-6 w-6" strokeWidth={1.5} />
+          </button>
         </div>
         {!q && (
           <div className="mt-8">
             <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Tìm kiếm phổ biến</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {["Đầm lụa", "Blazer", "Set tweed", "Quần linen", "Chân váy xếp ly"].map((t) => (
-                <button key={t} onClick={() => setQ(t)} className="border border-border px-4 py-2 text-sm hover:border-foreground">{t}</button>
+                <button
+                  key={t}
+                  onClick={() => setQ(t)}
+                  className="border border-border px-4 py-2 text-sm hover:border-foreground transition-colors cursor-pointer"
+                >
+                  {t}
+                </button>
               ))}
             </div>
             <p className="mt-8 text-[11px] uppercase tracking-widest text-muted-foreground">Danh mục</p>
             <div className="mt-3 flex flex-wrap gap-4 text-sm">
               {categories.map((c) => (
-                <Link key={c.slug} to="/danh-muc/$slug" params={{ slug: c.slug }} onClick={onClose} className="underline-offset-4 hover:underline">{c.name}</Link>
+                <Link
+                  key={c.slug}
+                  to="/danh-muc/$slug"
+                  params={{ slug: c.slug }}
+                  onClick={onClose}
+                  className="underline-offset-4 hover:underline"
+                >
+                  {c.name}
+                </Link>
               ))}
             </div>
           </div>
         )}
         {q && (
           <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3">
-            {results.length === 0 && <p className="col-span-full text-muted-foreground">Không tìm thấy sản phẩm cho "{q}".</p>}
+            {results.length === 0 && (
+              <p className="col-span-full text-muted-foreground">Không tìm thấy sản phẩm cho "{q}".</p>
+            )}
             {results.map((p) => (
-              <Link key={p.id} to="/san-pham/$slug" params={{ slug: p.slug }} onClick={onClose} className="flex gap-3">
-                <img src={p.images[0]} alt={p.name} className="h-24 w-18 object-cover" />
-                <div className="text-sm"><p className="line-clamp-2 font-medium">{p.name}</p><p className="mt-1 text-muted-foreground">{formatVND(p.salePrice ?? p.price)}</p></div>
+              <Link
+                key={p.id}
+                to="/san-pham/$slug"
+                params={{ slug: p.slug }}
+                onClick={onClose}
+                className="flex gap-3 p-2 rounded-sm hover:bg-secondary/50 transition-colors"
+              >
+                <img
+                  src={p.images[0]}
+                  alt={p.name}
+                  className="h-24 w-18 object-cover bg-secondary shrink-0"
+                />
+                <div className="text-sm">
+                  <p className="line-clamp-2 min-h-[2.6em] font-serif text-[16px] font-medium leading-[1.3] tracking-[-0.015em] text-foreground transition-opacity hover:opacity-70">{p.name}</p>
+                  <p className="mt-1 text-muted-foreground">{formatVND(p.salePrice ?? p.price)}</p>
+                </div>
               </Link>
             ))}
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
