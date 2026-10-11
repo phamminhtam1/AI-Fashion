@@ -26,6 +26,7 @@ import { storeAuthRoutes } from "./routes/store/auth.js";
 import { storeCouponRoutes } from "./routes/store/coupons.js";
 import { storeTryOnRoutes } from "./routes/store/try-on.js";
 import "./workers/try-on.worker.js";
+import "./workers/order-expiry.worker.js";
 import { meRoutes } from "./routes/me/index.js";
 import { publicCatalogRoutes } from "./routes/public/catalog.js";
 import { publicContentRoutes } from "./routes/public/content.js";

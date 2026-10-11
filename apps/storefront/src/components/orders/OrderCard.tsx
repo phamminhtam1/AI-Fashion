@@ -1,12 +1,20 @@
-import { useState } from "react";
+// Thay component @/components/orders/OrderCard hiện tại bằng file này.
+// Tương thích với trang tài khoản đã thiết kế; toàn bộ giao diện dùng Tailwind.
+import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import {
+  ArrowRight,
+  Check,
   CheckCircle2,
   Clock,
   Copy,
   Eye,
+  Loader2,
   Package,
   QrCode,
+  ShoppingBag,
   Trash2,
+  Truck,
   XCircle,
 } from "lucide-react";
 import { formatVND } from "@/lib/products";
@@ -14,17 +22,21 @@ import type { Order } from "@/lib/store";
 import { storeApi } from "@/lib/api";
 import { toast } from "sonner";
 
-function copyText(label: string, value: string) {
-  void navigator.clipboard.writeText(value).then(
-    () => toast.success(`Đã copy ${label}`),
-    () => toast.error("Không copy được"),
-  );
+async function copyText(label: string, value: string) {
+  try {
+    await navigator.clipboard.writeText(value);
+    toast.success(`Đã sao chép ${label}`);
+    return true;
+  } catch {
+    toast.error("Không sao chép được. Vui lòng thử lại.");
+    return false;
+  }
 }
 
 interface OrderCardProps {
   order: Order;
   onViewDetail: (orderId: string) => void;
-  onPayNow: (order: {
+  onPayNow?: (order: {
     id: string;
     order_number: string;
     grand_total_vnd: number;
@@ -39,6 +51,13 @@ export function OrderCard({
   onOrderUpdated,
 }: OrderCardProps) {
   const [cancelling, setCancelling] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timeout = window.setTimeout(() => setCopied(false), 2000);
+    return () => window.clearTimeout(timeout);
+  }, [copied]);
 
   const isBankAwaiting =
     order.paymentMethod === "bank" &&
@@ -47,6 +66,11 @@ export function OrderCard({
 
   const isPaid = order.paymentStatus === "paid";
   const isCancelled = order.status === "cancelled";
+
+  const handleCopyOrderNumber = async () => {
+    const success = await copyText("mã đơn hàng", order.orderNumber);
+    if (success) setCopied(true);
+  };
 
   const handleCancel = async () => {
     if (!confirm(`Bạn có chắc muốn hủy đơn hàng #${order.orderNumber}?`)) return;
@@ -57,233 +81,187 @@ export function OrderCard({
       toast.success(`Đã hủy đơn hàng #${order.orderNumber}`);
       onOrderUpdated();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Không hủy được đơn",
-      );
+      toast.error(err instanceof Error ? err.message : "Không hủy được đơn");
     } finally {
       setCancelling(false);
     }
   };
 
-  const fulfillmentLabel =
+  const fulfillment =
     order.status === "completed"
-      ? "Hoàn thành"
+      ? { label: "Hoàn thành", Icon: CheckCircle2, tone: "border-[#e0e0e0] bg-[#f5f5f5] text-[#333333]" }
       : order.status === "shipping"
-        ? "Đang giao"
+        ? { label: "Đang giao hàng", Icon: Truck, tone: "border-[#e0e0e0] bg-[#f5f5f5] text-[#444444]" }
         : order.status === "processing"
-          ? "Đang đóng gói"
+          ? { label: "Đang đóng gói", Icon: Package, tone: "border-[#e5e5e5] bg-[#f5f5f5] text-[#111111]" }
           : order.status === "confirmed"
-            ? "Đã xác nhận"
+            ? { label: "Đã xác nhận", Icon: CheckCircle2, tone: "border-[#e5e5e5] bg-[#f5f5f5] text-[#111111]" }
             : order.status === "cancelled"
-              ? "Đã hủy"
-              : "Chờ xử lý";
+              ? { label: "Đã hủy", Icon: XCircle, tone: "border-[#e0e0e0] bg-[#f5f5f5] text-[#666666]" }
+              : { label: "Chờ xử lý", Icon: Clock, tone: "border-[#e5e5e5] bg-[#f5f5f5] text-[#555555]" };
+  const StatusIcon = fulfillment.Icon;
 
-  const fulfillmentTone =
-    order.status === "completed"
-      ? "bg-emerald-500"
-      : order.status === "shipping"
-        ? "bg-blue-500"
-        : order.status === "processing" || order.status === "confirmed"
-          ? "bg-amber-500"
-          : order.status === "cancelled"
-            ? "bg-rose-500"
-            : "bg-neutral-400";
+  const placedAt = new Date(order.date);
+  const formattedDate = Number.isNaN(placedAt.getTime())
+    ? "Thời gian chưa có sẵn"
+    : placedAt.toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
   return (
-    <article className="group border-b border-border/60 pb-7 transition-colors">
-      {/* ORDER META */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/75">
-              Order
-            </p>
-
-            <span className="h-px w-5 bg-border" />
-
-            <button
-              type="button"
-              onClick={() => copyText("mã đơn", order.orderNumber)}
-              className="group/copy inline-flex cursor-pointer items-center gap-1.5 text-[11px] font-semibold tracking-[0.08em] text-foreground"
-              title="Sao chép mã đơn"
-            >
-              #{order.orderNumber}
-              <Copy className="size-3 stroke-[1.4] text-foreground/60 transition-colors group-hover/copy:text-foreground" />
-            </button>
+    <article
+      aria-label={`Đơn hàng #${order.orderNumber}`}
+      className="overflow-hidden rounded-3xl border border-[#e5e5e5] bg-white text-[#171717] shadow-[0_8px_32px_-24px_rgba(0,0,0,0.08)]"
+    >
+      {/* Order identity and live status */}
+      <header className="flex flex-col gap-4 border-b border-[#ededed] px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:gap-5 sm:px-7 sm:py-6">
+        <div className="flex min-w-0 items-center gap-3.5">
+          <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f2f2f2] text-[#111111]">
+            <ShoppingBag className="h-5 w-5 stroke-[1.4]" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#666666]">Đơn hàng của bạn</p>
+            <div className="mt-1 flex min-w-0 items-center gap-1">
+              <span className="break-all text-sm font-semibold tracking-wide text-[#111111] sm:text-base">#{order.orderNumber}</span>
+              <button
+                type="button"
+                onClick={() => void handleCopyOrderNumber()}
+                title={copied ? "Đã sao chép" : "Sao chép mã đơn"}
+                aria-label={copied ? "Đã sao chép mã đơn hàng" : "Sao chép mã đơn hàng"}
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#666666] transition-colors hover:bg-[#f7f7f7] hover:text-[#111111] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] focus-visible:ring-offset-2"
+              >
+                {copied ? <Check aria-hidden="true" className="h-3.5 w-3.5" /> : <Copy aria-hidden="true" className="h-3.5 w-3.5" />}
+              </button>
+              <span role="status" aria-live="polite" className="sr-only">{copied ? "Đã sao chép mã đơn hàng" : ""}</span>
+            </div>
+            <p className="text-[11px] leading-5 text-[#666666]">{Number.isNaN(placedAt.getTime()) ? formattedDate : `Đặt lúc ${formattedDate}`}</p>
           </div>
-
-          <p className="mt-2 text-[11px] font-medium text-foreground/75">
-            {new Date(order.date).toLocaleDateString("vi-VN", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
         </div>
 
-        {/* Status */}
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <div className="flex items-center gap-2">
-            <span className={`size-1.5 rounded-full ${fulfillmentTone}`} />
-            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-foreground">
-              {fulfillmentLabel}
-            </span>
-          </div>
-
-          <span className="hidden h-4 w-px bg-border sm:block" />
-
+        <div className="flex flex-wrap items-center gap-2 sm:max-w-[260px] sm:justify-end sm:pt-1">
+          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium ${fulfillment.tone}`}>
+            <StatusIcon aria-hidden="true" className="h-3.5 w-3.5 shrink-0 stroke-[1.6]" />
+            {fulfillment.label}
+          </span>
           {isPaid ? (
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-              <CheckCircle2 className="size-3.5 stroke-[1.6]" />
-              Đã thanh toán
-              {order.paymentMethod === "bank" ? " · QR" : " · COD"}
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#e0e0e0] bg-[#f5f5f5] px-3 py-1.5 text-[11px] font-medium text-[#333333]">
+              <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+              Đã thanh toán · {order.paymentMethod === "bank" ? "VietQR" : "COD"}
             </span>
           ) : isBankAwaiting ? (
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
-              <Clock className="size-3.5 stroke-[1.6] animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#dddddd] bg-[#f5f5f5] px-3 py-1.5 text-[11px] font-medium text-[#333333]">
+              <QrCode aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
               Chờ thanh toán VietQR
             </span>
-          ) : isCancelled ? (
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-rose-700 dark:text-rose-400">
-              <XCircle className="size-3.5 stroke-[1.6]" />
-              Đơn đã hủy
-            </span>
           ) : (
-            <span className="text-[11px] font-medium text-foreground/75">
-              Chưa thanh toán
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#ededed] bg-[#ffffff] px-3 py-1.5 text-[11px] font-medium text-[#666666]">
+              <Clock aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+              {!isCancelled && order.paymentMethod !== "bank" ? "Thanh toán khi nhận hàng" : "Chưa thanh toán"}
             </span>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* PRODUCT ITEMS */}
-      <div className="mt-6">
+      {/* Purchased designs */}
+      <div className="px-5 py-5 sm:px-7 sm:py-6">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-serif text-lg sm:text-xl">Những thiết kế bạn đã chọn</h3>
+          {typeof order.itemsCount === "number" && order.itemsCount > 0 && <span className="rounded-full bg-[#f7f7f7] px-3 py-1.5 text-[10px] font-medium tabular-nums text-[#666666]">{order.itemsCount} sản phẩm</span>}
+        </div>
+
         {order.itemsPreview && order.itemsPreview.length > 0 ? (
-          <div className="divide-y divide-border/50">
-            {order.itemsPreview.map((it) => (
-              <div
-                key={it.id}
-                className="grid grid-cols-[72px_minmax(0,1fr)_auto] gap-4 py-4 first:pt-0 last:pb-0"
-              >
-                {/* Image */}
-                <div className="aspect-[3/4] w-[72px] overflow-hidden bg-secondary/40">
-                  {it.image_url ? (
-                    <img
-                      src={it.image_url}
-                      alt={it.product_name}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                    />
+          <ul className="divide-y divide-[#ededed]">
+            {order.itemsPreview.map((item) => (
+              <li key={item.id} className="flex items-start gap-3.5 py-5 first:pt-0 last:pb-0 sm:items-center sm:gap-5">
+                <div className="h-24 w-[72px] shrink-0 overflow-hidden rounded-xl bg-[#f0f0f0] sm:h-28 sm:w-[84px]">
+                  {item.image_url ? (
+                    <img src={item.image_url} alt={item.product_name} loading="lazy" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <Package className="size-5 stroke-[1.2] text-foreground/60" />
-                    </div>
+                    <div className="flex h-full w-full items-center justify-center text-[#666666]"><Package aria-hidden="true" className="h-6 w-6 stroke-[1.2]" /></div>
                   )}
                 </div>
-
-                {/* Product info */}
-                <div className="min-w-0 self-center">
-                  <p className="line-clamp-2 font-serif text-[16px] font-medium leading-[1.3] tracking-[-0.01em] text-foreground">
-                    {it.product_name}
-                  </p>
-
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-medium text-foreground/75">
-                    {it.size_label && (
-                      <span className="font-semibold">Size {it.size_label}</span>
-                    )}
-                    {it.color_label && (
-                      <span>{it.color_label}</span>
-                    )}
-                    <span>Số lượng {it.qty}</span>
+                <div className="min-w-0 flex-1 sm:flex sm:items-center sm:justify-between sm:gap-5">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-medium leading-6 sm:text-base">{item.product_name}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] leading-5 text-[#666666]">
+                      {item.size_label && <span className="rounded-md bg-[#f7f7f7] px-2 py-0.5 font-medium text-[#666666]">Size {item.size_label}</span>}
+                      {item.color_label && <span>{item.color_label}</span>}
+                      <span>Số lượng: {item.qty}</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 shrink-0 sm:mt-0 sm:text-right">
+                    <p className="text-sm font-semibold tabular-nums text-[#111111]">{formatVND(item.line_total_vnd)}</p>
+                    {item.qty > 1 && <p className="mt-1 text-[10px] leading-5 tabular-nums text-[#666666]">{item.qty} × {formatVND(item.unit_price_vnd)}</p>}
                   </div>
                 </div>
-
-                {/* Price */}
-                <div className="self-center text-right">
-                  <p className="text-[14px] font-bold text-foreground">
-                    {formatVND(it.line_total_vnd)}
-                  </p>
-                  {it.qty > 1 && (
-                    <p className="mt-1 text-[10px] font-medium text-foreground/60">
-                      {it.qty} × {formatVND(it.unit_price_vnd)}
-                    </p>
-                  )}
-                </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         ) : (
-          <div className="flex items-center justify-between py-3 text-[11px] font-medium text-foreground/75">
-            <span>Chi tiết sản phẩm trong đơn</span>
-            <span className="font-semibold text-foreground">
-              {order.itemsCount ? `${order.itemsCount} sản phẩm` : ""}
-            </span>
+          <div className="flex items-start gap-3 rounded-2xl bg-[#ffffff] p-4 text-xs leading-6 text-[#666666]">
+            <Package aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-[#666666]" />
+            <p>Mở chi tiết đơn hàng để xem đầy đủ thông tin sản phẩm.</p>
           </div>
         )}
       </div>
 
-      {/* ORDER SUMMARY / ACTIONS */}
-      <div className="mt-6 flex flex-col gap-5 border-t border-border/60 pt-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/75">
-            Tổng thanh toán
-          </p>
-          <p className="mt-1  text-[26px] font-medium tracking-[-0.02em] text-foreground">
-            {formatVND(order.total)}
-          </p>
-        </div>
+      {/* Total and actions */}
+      <footer className="border-t border-[#ededed] bg-[#fafafa] px-3 py-3 sm:px-5 sm:py-3">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#666666]">Tổng thanh toán</p>
+            <p className="mt-2 break-words text-2xl font-semibold tracking-tight tabular-nums text-[#111111] sm:text-3xl">{formatVND(order.total)}</p>
+          </div>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-          {isBankAwaiting && (
+          <div className={`grid w-full shrink-0 gap-2 sm:w-auto ${isBankAwaiting ? "grid-cols-2" : "grid-cols-1"}`}>
+            {isBankAwaiting && (onPayNow ? (
+              <button
+                type="button"
+                onClick={() => onPayNow?.({ id: order.id, order_number: order.orderNumber, grand_total_vnd: order.total })}
+                className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-[#111111] px-3 py-3 text-xs font-medium text-white transition-colors hover:bg-[#333333] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] focus-visible:ring-offset-2 sm:px-5"
+              >
+                <QrCode aria-hidden="true" className="h-4 w-4 shrink-0" />Thanh toán ngay
+              </button>
+            ) : (
+              <Link
+                to="/thanh-toan"
+                search={{ orderId: order.id }}
+                className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-[#111111] px-3 py-3 text-xs font-medium text-white transition-colors hover:bg-[#333333] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] focus-visible:ring-offset-2 sm:px-5"
+              >
+                <QrCode aria-hidden="true" className="h-4 w-4 shrink-0" />Thanh toán ngay
+              </Link>
+            ))}
             <button
               type="button"
-              onClick={() =>
-                onPayNow({
-                  id: order.id,
-                  order_number: order.orderNumber,
-                  grand_total_vnd: order.total,
-                })
-              }
-              className="group/pay inline-flex cursor-pointer items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground"
+              onClick={() => onViewDetail(order.id)}
+              className={`group inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-3 py-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] focus-visible:ring-offset-2 sm:px-5 ${isBankAwaiting ? "border border-[#e5e5e5] bg-white text-[#111111] hover:border-[#111111] hover:bg-[#f7f7f7]" : "bg-[#111111] text-white hover:bg-[#333333]"}`}
             >
-              <QrCode className="size-3.5 stroke-[1.5]" />
-              <span className="border-b border-foreground pb-0.5">
-                Thanh toán ngay
-              </span>
-              <span className="transition-transform duration-300 group-hover/pay:translate-x-1">
-                →
-              </span>
+              <Eye aria-hidden="true" className="h-4 w-4 shrink-0" />Xem chi tiết
+              {!isBankAwaiting && <ArrowRight aria-hidden="true" className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />}
             </button>
-          )}
+          </div>
+        </div>
 
-          {isBankAwaiting && (
+        {isBankAwaiting && (
+          <div className="mt-4 flex flex-col items-start justify-between gap-2 border-t border-dashed border-[#e5e5e5] pt-3 sm:flex-row sm:items-center sm:gap-4">
+            <p className="flex items-start gap-2 text-[11px] leading-6 text-[#666666]"><Clock aria-hidden="true" className="mt-1.5 h-3.5 w-3.5 shrink-0 text-[#666666]" />Đơn hàng đang chờ xác nhận thanh toán VietQR.</p>
             <button
               type="button"
               disabled={cancelling}
+              aria-busy={cancelling}
               onClick={() => void handleCancel()}
-              className="inline-flex cursor-pointer items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-foreground/60 transition-colors hover:text-destructive disabled:opacity-40"
+              className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 self-end rounded-lg px-2 text-[11px] font-medium text-[#666666] transition-colors hover:bg-[#f5f5f5] hover:text-[#666666] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto"
             >
-              <Trash2 className="size-3.5 stroke-[1.4]" />
-              {cancelling ? "Đang hủy..." : "Hủy đơn"}
+              {cancelling ? <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" /> : <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />}
+              {cancelling ? "Đang hủy…" : "Hủy đơn hàng"}
             </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => onViewDetail(order.id)}
-            className="group/detail inline-flex cursor-pointer items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground"
-          >
-            <Eye className="size-3.5 stroke-[1.4]" />
-            <span className="border-b border-foreground pb-0.5">
-              Xem chi tiết
-            </span>
-            <span className="transition-transform duration-300 group-hover/detail:translate-x-1">
-              →
-            </span>
-          </button>
-        </div>
-      </div>
+          </div>
+        )}
+      </footer>
     </article>
   );
 }

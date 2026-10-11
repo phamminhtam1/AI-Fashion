@@ -101,7 +101,7 @@ function ProductPage() {
 
 function ProductDetail({ product: p, slug }: { product: Product; slug: string }) {
   const cat = getCategory(p.category);
-  const { addToCart, toggleWishlist, wishlist, cart } = useStore();
+  const { addToCart, toggleWishlist, wishlist, cart, setCartOpen, prepareBuyNow } = useStore();
   const navigate = useNavigate();
 
   const initialCw = p.colorways[0];
@@ -262,20 +262,9 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
       toast.error(`Kho chỉ còn ${variant.available} sản phẩm, bạn không thể chọn số lượng ${qty}`);
       return;
     }
-    const inCart = cart.find((x) => x.variantId === variant.id);
-    const currentInCart = inCart ? inCart.qty : 0;
-    if (currentInCart + qty > variant.available) {
-      const remaining = Math.max(0, variant.available - currentInCart);
-      if (remaining <= 0) {
-        toast.error(`Bạn đã có ${currentInCart} sản phẩm trong giỏ hàng (kho chỉ còn tối đa ${variant.available} sản phẩm)`);
-      } else {
-        toast.error(`Kho chỉ còn ${variant.available} sản phẩm. Bạn đã có ${currentInCart} trong giỏ và chỉ có thể mua thêm tối đa ${remaining} sản phẩm.`);
-      }
-      return;
-    }
-    const ok = addToCart(p, variant.id, qty);
-    if (ok !== false) {
-      void navigate({ to: "/thanh-toan" });
+    const ok = prepareBuyNow(p, variant.id, qty);
+    if (ok) {
+      void navigate({ to: "/thanh-toan", search: { buyNow: true } });
     }
   };
 
@@ -299,9 +288,15 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-6 md:px-8 md:py-10">
-      <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground">
-        <Link to="/" className="hover:text-foreground">Trang chủ</Link> /{" "}
-        {cat && <><Link to="/danh-muc/$slug" params={{ slug: cat.slug }} className="hover:text-foreground">{cat.name}</Link> / </>}
+      <nav aria-label="Breadcrumb" className="text-base text-muted-foreground font-medium flex items-center gap-2 flex-wrap">
+        <Link to="/" className="hover:text-foreground transition-colors">Trang chủ</Link>
+        <span className="opacity-40">/</span>
+        {cat && (
+          <>
+            <Link to="/danh-muc/$slug" params={{ slug: cat.slug }} className="hover:text-foreground transition-colors">{cat.name}</Link>
+            <span className="opacity-40">/</span>
+          </>
+        )}
         <span className="text-foreground">{p.name}</span>
       </nav>
 

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Minus, Plus, X } from "lucide-react";
 import { formatVND, products } from "@/lib/products";
 import { FREE_SHIP, useStore, getCartItemImage } from "@/lib/store";
@@ -18,7 +19,11 @@ export const Route = createFileRoute("/gio-hang")({
 });
 
 function CartPage() {
-  const { cart, subtotal, updateQty, removeItem } = useStore();
+  const { cart, subtotal, updateQty, removeItem, setCartOpen } = useStore();
+
+  useEffect(() => {
+    setCartOpen(false);
+  }, [setCartOpen]);
   const shipping = subtotal >= FREE_SHIP || subtotal === 0 ? 0 : 30000;
   if (cart.length === 0)
     return (

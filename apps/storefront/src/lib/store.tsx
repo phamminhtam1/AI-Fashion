@@ -53,6 +53,7 @@ export type PlaceOrderInput = {
   paymentMethod: "cod" | "bank";
   total: number;
   couponCode?: string;
+  isBuyNow?: boolean;
 };
 
 export type PlaceOrderResult = {
@@ -82,7 +83,16 @@ type Store = {
   wishlist: string[];
   cartOpen: boolean;
   setCartOpen: (v: boolean) => void;
-  addToCart: (p: Product, variantId: string, qty?: number) => boolean;
+  addToCart: (
+    p: Product,
+    variantId: string,
+    qty?: number,
+    options?: { openDrawer?: boolean; showToast?: boolean }
+  ) => boolean;
+  buyNowItem: CartItem | null;
+  setBuyNowItem: (item: CartItem | null) => void;
+  prepareBuyNow: (p: Product, variantId: string, qty?: number) => boolean;
+  clearBuyNow: () => void;
   updateQty: (i: number, qty: number) => void;
   removeItem: (i: number) => void;
   clearCart: () => void;
@@ -128,6 +138,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [buyNowItem, setBuyNowItem] = useState<CartItem | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = sessionStorage.getItem("elane_buy_now_item");
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return null;
+  });
   const [ready, setReady] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -269,8 +287,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     orders,
     refreshOrders,
     placeOrder: async (o) => {
+      const isDirectBuy = Boolean(o.isBuyNow && buyNowItem);
+      const itemsToOrder =
+        isDirectBuy && buyNowItem
+          ? [{ variant_id: buyNowItem.variantId, qty: buyNowItem.qty }]
+          : cart.map((x) => ({ variant_id: x.variantId, qty: x.qty }));
+
       const res = await storeApi.placeOrder({
-        items: cart.map((x) => ({ variant_id: x.variantId, qty: x.qty })),
+        items: itemsToOrder,
         shipping: {
           full_name: o.fullName,
           phone: o.phone,
@@ -284,7 +308,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         note: o.note,
         ...(o.couponCode ? { coupon_code: o.couponCode } : {}),
       });
-      setCart([]);
+      if (isDirectBuy) {
+        setBuyNowItem(null);
+        try {
+          sessionStorage.removeItem("elane_buy_now_item");
+        } catch {}
+      } else {
+        setCart([]);
+      }
       await refreshOrders().catch(() => {});
       return {
         id: res.id,
@@ -298,7 +329,56 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     wishlist,
     cartOpen,
     setCartOpen,
-    addToCart: (p, variantId, qty = 1): boolean => {
+    buyNowItem,
+    setBuyNowItem,
+    prepareBuyNow: (p, variantId, qty = 1): boolean => {
+      const v = p.variants.find((x) => x.id === variantId);
+      if (!v) {
+        toast.error("Không tìm thấy biến thể sản phẩm");
+        return false;
+      }
+      if (v.available <= 0) {
+        toast.error("Sản phẩm này tạm thời đã hết hàng");
+        return false;
+      }
+      if (qty > v.available) {
+        toast.error(`Kho chỉ còn ${v.available} sản phẩm, bạn không thể chọn số lượng ${qty}`);
+        return false;
+      }
+      const cw = p.colorways.find((c) => c.id === v.colorwayId);
+      const cwIndex = p.colorways.findIndex((c) => c.id === v.colorwayId);
+      const colorName = cwIndex >= 0 ? p.colors[cwIndex]?.name : undefined;
+      const image = cw?.thumbnail || cw?.images?.[0] || p.images[0];
+      const item: CartItem = {
+        productId: p.id,
+        variantId,
+        sku: v.sku,
+        size: v.size,
+        qty,
+        colorwayId: v.colorwayId,
+        colorName,
+        image,
+        maxStock: v.available,
+      };
+      setBuyNowItem(item);
+      try {
+        sessionStorage.setItem("elane_buy_now_item", JSON.stringify(item));
+      } catch {}
+      setCartOpen(false);
+      return true;
+    },
+    clearBuyNow: () => {
+      setBuyNowItem(null);
+      try {
+        sessionStorage.removeItem("elane_buy_now_item");
+      } catch {}
+    },
+    addToCart: (
+      p,
+      variantId,
+      qty = 1,
+      options?: { openDrawer?: boolean; showToast?: boolean }
+    ): boolean => {
       const v = p.variants.find((x) => x.id === variantId);
       if (!v) {
         toast.error("Không tìm thấy biến thể sản phẩm");
@@ -341,10 +421,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           },
         ];
       });
-      toast.success("Đã thêm vào giỏ hàng", {
-        description: `${p.name}${colorName ? ` · ${colorName}` : ""} · Size ${v.size} (SL: ${qty})`,
-      });
-      setCartOpen(true);
+      if (options?.showToast !== false) {
+        toast.success("Đã thêm vào giỏ hàng", {
+          description: `${p.name}${colorName ? ` · ${colorName}` : ""} · Size ${v.size} (SL: ${qty})`,
+        });
+      }
+      if (options?.openDrawer ?? true) {
+        setCartOpen(true);
+      } else {
+        setCartOpen(false);
+      }
       return true;
     },
     updateQty: (i, qty) => {

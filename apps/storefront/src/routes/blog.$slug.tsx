@@ -27,7 +27,11 @@ function PostPage() {
   return (
     <article>
       <header className="mx-auto max-w-3xl px-6 pt-12 text-center">
-        <nav className="text-xs text-muted-foreground"><Link to="/">Trang chủ</Link> / <Link to="/blog">Tạp chí</Link></nav>
+        <nav className="text-base text-muted-foreground font-medium flex items-center justify-center gap-2">
+          <Link to="/" className="hover:text-foreground transition-colors">Trang chủ</Link>
+          <span className="opacity-40">/</span>
+          <Link to="/blog" className="hover:text-foreground transition-colors">Tạp chí</Link>
+        </nav>
         <p className="mt-8 text-[11px] uppercase tracking-[0.3em] text-muted-foreground">{post.category} · {new Date(post.date).toLocaleDateString("vi-VN")} · {post.readTime} phút đọc</p>
         <h1 className="mt-4 text-4xl leading-tight md:text-5xl">{post.title}</h1>
         <p className="mt-6 text-lg text-muted-foreground">{post.excerpt}</p>

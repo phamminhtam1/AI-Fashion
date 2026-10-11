@@ -188,16 +188,16 @@ function ListingContent({
 
   return (
     <div className="mx-auto max-w-[1440px] px-6 py-10 md:px-8">
-      <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground">
-        <Link to="/" className="hover:text-foreground">
+      <nav aria-label="Breadcrumb" className="text-base text-muted-foreground font-medium flex items-center gap-2 flex-wrap">
+        <Link to="/" className="hover:text-foreground transition-colors">
           Trang chủ
         </Link>
         {crumbs.length > 0 ? (
           crumbs.map((c, i) => (
-            <span key={c.slug}>
-              {" / "}
+            <span key={c.slug} className="flex items-center gap-2">
+              <span className="opacity-40">/</span>
               {i < crumbs.length - 1 ? (
-                <Link to="/danh-muc/$slug" params={{ slug: c.slug }} className="hover:text-foreground">
+                <Link to="/danh-muc/$slug" params={{ slug: c.slug }} className="hover:text-foreground transition-colors">
                   {c.name}
                 </Link>
               ) : (
@@ -206,10 +206,10 @@ function ListingContent({
             </span>
           ))
         ) : (
-          <>
-            {" / "}
+          <span className="flex items-center gap-2">
+            <span className="opacity-40">/</span>
             <span className="text-foreground">{initialData.title}</span>
-          </>
+          </span>
         )}
       </nav>
       <header className="mt-6 max-w-2xl">

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   CheckCircle2,
   Clock,
@@ -457,18 +458,15 @@ export function OrderDetailModal({ orderId, onClose, onPayNow, onOrderUpdated }:
             <div className="flex items-center gap-2">
               {order.payment_method === "bank" &&
                 order.payment_status === "awaiting" &&
-                order.status === "pending" &&
-                onPayNow && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      onPayNow(order);
-                    }}
-                    className="bg-foreground text-background px-6 py-2.5 text-xs uppercase tracking-widest font-medium hover:bg-foreground/90 transition-colors shadow-sm"
+                order.status === "pending" && (
+                  <Link
+                    to="/thanh-toan"
+                    search={{ orderId: order.id }}
+                    onClick={onClose}
+                    className="bg-foreground text-background px-6 py-2.5 text-xs uppercase tracking-widest font-medium hover:bg-foreground/90 transition-colors shadow-sm inline-flex items-center justify-center"
                   >
                     Thanh toán VietQR ngay
-                  </button>
+                  </Link>
                 )}
               <button
                 type="button"

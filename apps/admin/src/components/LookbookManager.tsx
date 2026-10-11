@@ -514,7 +514,7 @@ export function LookbookManager() {
                     </div>
 
                     {/* Actions Footer */}
-                    <div className="p-5 pt-0 border-t border-border/50 mt-4 flex items-center justify-between gap-2">
+                    <div className="p-5 pt-0  mt-4 flex items-center justify-between gap-2">
                       <Button
                         size="sm"
                         onClick={() => handleOpenFramesManager(lb)}
@@ -1047,10 +1047,10 @@ export function LookbookManager() {
                 initialProduct={
                   editingFrame?.product_id
                     ? {
-                        id: editingFrame.product_id,
-                        name: editingFrame.product_name || "Sản phẩm đã chọn",
-                        slug: editingFrame.product_slug,
-                      }
+                      id: editingFrame.product_id,
+                      name: editingFrame.product_name || "Sản phẩm đã chọn",
+                      slug: editingFrame.product_slug,
+                    }
                     : undefined
                 }
               />

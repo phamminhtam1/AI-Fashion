@@ -489,7 +489,7 @@ function LookbookPage() {
     <>
       {/* Standard Breadcrumb matching other pages */}
       <div className="mx-auto max-w-[1440px] px-6 pt-6 pb-2 md:px-8 md:pt-8">
-        <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+        <nav aria-label="Breadcrumb" className="text-base text-muted-foreground flex items-center gap-2 flex-wrap font-medium">
           <Link to="/" className="hover:text-foreground transition-colors">
             Trang chủ
           </Link>
@@ -912,8 +912,8 @@ function LookbookPage() {
 
                                         <span
                                           className={`text-[11px] font-semibold tracking-[0.08em] ${hasStock
-                                              ? "text-emerald-700 dark:text-emerald-400"
-                                              : "text-muted-foreground"
+                                            ? "text-emerald-700 dark:text-emerald-400"
+                                            : "text-muted-foreground"
                                             }`}
                                         >
                                           {hasStock ? "Sẵn hàng" : "Hết hàng"}
@@ -932,8 +932,8 @@ function LookbookPage() {
                                               <span
                                                 key={s}
                                                 className={`text-[11.5px] font-medium transition-opacity ${sizeInStock
-                                                    ? "text-foreground"
-                                                    : "text-muted-foreground/40 line-through"
+                                                  ? "text-foreground"
+                                                  : "text-muted-foreground/40 line-through"
                                                   }`}
                                               >
                                                 {s}
