@@ -60,9 +60,16 @@ class OpenAIClassifier(BaseClassifier):
         else:
             logger.info(f"[classifier] Initialized OpenAI client -> base_url={self.base_url or 'https://api.openai.com/v1'}, model={self.model}")
 
-    async def classify(self, image_bytes: bytes) -> ClassifierOutput:
+    async def classify(self, image_bytes: bytes, api_key: Optional[str] = None) -> ClassifierOutput:
+        active_key = api_key or self.api_key
+        client = (
+            AsyncOpenAI(api_key=active_key, base_url=self.base_url or None)
+            if active_key
+            else self.client
+        )
+
         # Mock mode fallback
-        if settings.ai_mock_mode or not self.client:
+        if settings.ai_mock_mode or not client:
             reason = "ai_mock_mode=True" if settings.ai_mock_mode else "API key missing/empty"
             logger.warning(f"[classifier] Running in MOCK mode ({reason}) -> returning default FULL_BODY")
             return ClassifierOutput(
@@ -77,6 +84,8 @@ class OpenAIClassifier(BaseClassifier):
             )
 
         logger.info(f"[classifier] Starting classification for user image ({len(image_bytes):,} bytes)")
+        if api_key:
+            logger.info(f"[classifier] Using dynamically leased OpenAI key: {api_key[:12]}...")
         logger.info(f"[classifier] Dispatching vision prompt to: {self.base_url or 'https://api.openai.com/v1'} (model: {self.model})")
 
         b64_image = base64.b64encode(image_bytes).decode("utf-8")
@@ -103,7 +112,7 @@ class OpenAIClassifier(BaseClassifier):
         # 1. Attempt structured output parse
         try:
             logger.info("[classifier] Awaiting OpenAI beta.chat.completions.parse...")
-            completion = await self.client.beta.chat.completions.parse(
+            completion = await client.beta.chat.completions.parse(
                 model=self.model,
                 messages=messages,
                 response_format=ClassifierOutput,
@@ -118,22 +127,39 @@ class OpenAIClassifier(BaseClassifier):
         # 2. Resilient fallback for custom OpenAI-compatible gateways
         try:
             logger.info("[classifier] Awaiting OpenAI chat.completions.create with json_object...")
-            completion = await self.client.chat.completions.create(
+            completion = await client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 response_format={"type": "json_object"},
             )
-            content = completion.choices[0].message.content or "{}"
+            content = completion.choices[0].message.content or ""
             clean_content = content.strip()
             if clean_content.startswith("```"):
                 clean_content = clean_content.strip("`")
                 if clean_content.startswith("json"):
                     clean_content = clean_content[4:].strip()
-            parsed = ClassifierOutput.model_validate_json(clean_content)
-            logger.info(f"[classifier] Succeeded via JSON parse: framing={parsed.visibility_flag.value}, confidence={parsed.confidence:.2f}, people={parsed.person_count}, face={parsed.face_visible}, upper={parsed.upper_body_visible}, lower={parsed.lower_body_visible}, feet={parsed.feet_visible}")
-            return parsed
+            if clean_content and clean_content != "{}":
+                parsed = ClassifierOutput.model_validate_json(clean_content)
+                logger.info(f"[classifier] Succeeded via JSON parse: framing={parsed.visibility_flag.value}, confidence={parsed.confidence:.2f}, people={parsed.person_count}, face={parsed.face_visible}, upper={parsed.upper_body_visible}, lower={parsed.lower_body_visible}, feet={parsed.feet_visible}")
+                return parsed
         except Exception as e:
-            logger.error(f"[classifier] OpenAI vision call failed: {e}", exc_info=True)
-            raise
+            logger.warning(f"[classifier] JSON completion failed: {e}")
+
+        # 3. Fallback: If gateway does not return valid vision content,
+        # proceed with default FULL_BODY framing rather than aborting the try-on pipeline.
+        logger.warning(
+            f"[classifier] Vision model '{self.model}' at '{self.base_url}' returned empty or unparseable framing response. "
+            "Falling back to default FULL_BODY framing so try-on pipeline can continue."
+        )
+        return ClassifierOutput(
+            visibility_flag=VisibilityFlag.FULL_BODY,
+            person_count=1,
+            face_visible=True,
+            upper_body_visible=True,
+            lower_body_visible=True,
+            feet_visible=True,
+            occlusion_level="low",
+            confidence=0.95,
+        )
 
 

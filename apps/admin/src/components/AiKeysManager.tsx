@@ -46,6 +46,7 @@ export function AiKeysManager() {
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [providerFilter, setProviderFilter] = useState("all");
 
   // Create Modal State
   const [createOpen, setCreateOpen] = useState(false);
@@ -88,8 +89,13 @@ export function AiKeysManager() {
       setRefreshingId(id);
       const updated = await adminApi.refreshAiKeyCredits(id);
       setKeys((prev) => prev.map((k) => (k.id === id ? { ...k, ...updated } : k)));
+      const unit = updated.provider === "openai" ? "tokens" : "credits";
+      const count =
+        updated.creditsRemaining !== null && updated.creditsRemaining !== undefined
+          ? updated.creditsRemaining.toLocaleString("vi-VN")
+          : "0";
       toast.success(
-        `Đã cập nhật số dư cho '${updated.label}': ${updated.creditsRemaining ?? 0} credits`,
+        `Đã cập nhật số dư cho '${updated.label}': ${count} ${unit}`,
       );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -144,7 +150,8 @@ export function AiKeysManager() {
     try {
       setTestingKey(true);
       setTestResult(null);
-      const res = await adminApi.testAiKey(createForm.rawKey.trim());
+      const provider = createForm.provider || "kie";
+      const res = await adminApi.testAiKey(createForm.rawKey.trim(), provider);
       setTestResult({
         tested: true,
         ok: res.ok,
@@ -152,7 +159,12 @@ export function AiKeysManager() {
         error: res.error,
       });
       if (res.ok) {
-        toast.success(`Key hợp lệ! Số dư hiện tại: ${res.credits ?? 0} credits`);
+        const unit = provider === "openai" ? "tokens" : "credits";
+        const count =
+          res.credits !== undefined && res.credits !== null
+            ? res.credits.toLocaleString("vi-VN")
+            : "Khả dụng";
+        toast.success(`Key hợp lệ! Số dư hiện tại: ${count} ${unit}`);
       } else {
         toast.error(res.error || "Key không hợp lệ");
       }
@@ -230,11 +242,31 @@ export function AiKeysManager() {
     const active = keys.filter((k) => k.status === "ACTIVE").length;
     const exhausted = keys.filter((k) => k.status === "EXHAUSTED").length;
     const rateLimited = keys.filter((k) => k.status === "RATE_LIMITED").length;
-    const totalCredits = keys
-      .filter((k) => k.status === "ACTIVE")
+
+    const kieCredits = keys
+      .filter((k) => k.status === "ACTIVE" && k.provider === "kie")
       .reduce((sum, k) => sum + (k.creditsRemaining ?? 0), 0);
 
-    return { total, active, exhausted, rateLimited, totalCredits };
+    const gptTokens = keys
+      .filter((k) => k.status === "ACTIVE" && k.provider === "openai")
+      .reduce((sum, k) => sum + (k.creditsRemaining ?? 0), 0);
+
+    const gptFormatted =
+      gptTokens >= 1_000_000
+        ? `${(gptTokens / 1_000_000).toFixed(2)}M`
+        : gptTokens >= 1_000
+          ? `${(gptTokens / 1_000).toFixed(1)}k`
+          : gptTokens.toLocaleString("vi-VN");
+
+    return {
+      total,
+      active,
+      exhausted,
+      rateLimited,
+      kieCredits,
+      gptTokens,
+      gptFormatted,
+    };
   }, [keys]);
 
   // Filtered keys
@@ -246,10 +278,12 @@ export function AiKeysManager() {
         k.provider.toLowerCase().includes(search.toLowerCase());
 
       const matchStatus = statusFilter === "all" || k.status === statusFilter;
+      const matchProvider =
+        providerFilter === "all" || k.provider.toLowerCase() === providerFilter.toLowerCase();
 
-      return matchSearch && matchStatus;
+      return matchSearch && matchStatus && matchProvider;
     });
-  }, [keys, search, statusFilter]);
+  }, [keys, search, statusFilter, providerFilter]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -260,13 +294,25 @@ export function AiKeysManager() {
     <div className="space-y-6 mt-6">
 
       {/* Metric Cards */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[
           {
             label: "Tổng số Key",
             value: String(metrics.total),
-            note: "Đã cấu hình trong DB",
+            note: `${metrics.active} key đang hoạt động`,
             accent: true,
+          },
+          {
+            label: "Credit Kie.ai (Try-On)",
+            value: `${metrics.kieCredits} Credit `,
+            note: "Dùng ghép đồ & tách nền áo",
+            accent: false,
+          },
+          {
+            label: "Token GPT (Vision)",
+            value: metrics.gptFormatted,
+            note: `${metrics.gptTokens.toLocaleString("vi-VN")} tokens khả dụng`,
+            accent: false,
           },
           {
             label: "Đang hoạt động",
@@ -275,15 +321,9 @@ export function AiKeysManager() {
             accent: false,
           },
           {
-            label: "Credit khả dụng",
-            value: String(metrics.totalCredits),
-            note: "Trên các key ACTIVE",
-            accent: false,
-          },
-          {
             label: "Hết lượt / Cần nạp",
             value: String(metrics.exhausted),
-            note: metrics.exhausted > 0 ? "Cần đăng ký thêm tài khoản" : "Tất cả đều ổn",
+            note: metrics.exhausted > 0 ? "Cần nạp hoặc thay key" : "Tất cả đều ổn",
             accent: false,
           },
         ].map((m, i) => (
@@ -295,12 +335,13 @@ export function AiKeysManager() {
             )}
           >
             <p className="section-label">{m.label}</p>
-            <p className="mt-3 font-serif text-3xl font-normal">{m.value}</p>
+            <p className="mt-3 font-serif text-2xl lg:text-3xl font-normal">{m.value}</p>
             <p
               className={cn(
-                "mt-1 text-xs",
+                "mt-1 text-xs truncate",
                 m.accent || i === 0 ? "text-primary" : "text-muted-foreground",
               )}
+              title={m.note}
             >
               {m.note}
             </p>
@@ -310,8 +351,8 @@ export function AiKeysManager() {
 
       {/* Action Bar & Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 items-center gap-2">
-          <div className="relative flex-1 max-w-sm">
+        <div className="flex flex-1 items-center gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input
               placeholder="Tìm theo tên tài khoản hoặc key..."
@@ -320,6 +361,17 @@ export function AiKeysManager() {
               className="pl-9 h-9 text-xs"
             />
           </div>
+
+          <Select value={providerFilter} onValueChange={setProviderFilter}>
+            <SelectTrigger className="w-[145px] h-9 text-xs">
+              <SelectValue placeholder="Nhà cung cấp" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả Provider</SelectItem>
+              <SelectItem value="kie">Kie.ai (Try-On)</SelectItem>
+              <SelectItem value="openai">OpenAI / GPT</SelectItem>
+            </SelectContent>
+          </Select>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[150px] h-9 text-xs">
@@ -505,12 +557,23 @@ export function AiKeysManager() {
                                 "font-mono font-semibold text-xs px-2 py-0.5 rounded",
                                 isExhausted
                                   ? "bg-rose-500/10 text-rose-600"
-                                  : key.creditsRemaining < 15
+                                  : key.creditsRemaining < (key.provider === "openai" ? 50000 : 15)
                                     ? "bg-amber-500/10 text-amber-600"
                                     : "bg-emerald-500/10 text-emerald-600",
                               )}
+                              title={
+                                key.provider === "openai"
+                                  ? `${key.creditsRemaining.toLocaleString("vi-VN")} tokens`
+                                  : `${key.creditsRemaining} credits`
+                              }
                             >
-                              {key.creditsRemaining}
+                              {key.provider === "openai"
+                                ? key.creditsRemaining >= 1000000
+                                  ? `${(key.creditsRemaining / 1000000).toFixed(2)}M`
+                                  : key.creditsRemaining >= 1000
+                                    ? `${(key.creditsRemaining / 1000).toFixed(1)}k`
+                                    : key.creditsRemaining
+                                : key.creditsRemaining}
                             </span>
                           ) : (
                             <span className="text-muted-foreground">—</span>
@@ -520,7 +583,7 @@ export function AiKeysManager() {
                             type="button"
                             onClick={() => handleRefreshKey(key.id)}
                             disabled={isRefreshing}
-                            title="Kiểm tra lại số dư từ Kie.ai"
+                            title={`Kiểm tra lại số dư từ ${key.provider === "openai" ? "OpenAI / Codex" : "Kie.ai"}`}
                             className="text-muted-foreground hover:text-primary transition-colors p-1 rounded hover:bg-muted"
                           >
                             <RefreshCw
@@ -613,7 +676,7 @@ export function AiKeysManager() {
             <DialogHeader>
               <DialogTitle className="font-serif text-xl">Thêm AI API Key Mới</DialogTitle>
               <DialogDescription className="text-xs">
-                Key sẽ được kiểm tra kết nối với Kie.ai và mã hóa AES-256 trước khi lưu.
+                Key sẽ được kiểm tra kết nối với {createForm.provider === "openai" ? "OpenAI / TuongTacGPT" : "Kie.ai"} và mã hóa AES-256 trước khi lưu.
               </DialogDescription>
             </DialogHeader>
 
@@ -625,14 +688,17 @@ export function AiKeysManager() {
                 </Label>
                 <Select
                   value={createForm.provider}
-                  onValueChange={(val) => setCreateForm((prev) => ({ ...prev, provider: val }))}
+                  onValueChange={(val) => {
+                    setCreateForm((prev) => ({ ...prev, provider: val }));
+                    setTestResult(null);
+                  }}
                 >
                   <SelectTrigger id="provider" className="h-9 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="kie">Kie.ai (GPT Image 2.5 Sunburst Try-On)</SelectItem>
-                    <SelectItem value="openai">OpenAI (Vision Classification)</SelectItem>
+                    <SelectItem value="openai">OpenAI / TuongTacGPT (Vision Classification)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -644,7 +710,11 @@ export function AiKeysManager() {
                 </Label>
                 <Input
                   id="label"
-                  placeholder="Ví dụ: Kie Free 01 (tam@gmail.com)"
+                  placeholder={
+                    createForm.provider === "openai"
+                      ? "Ví dụ: TuongTacGPT Vision 01 (sk-codex-...)"
+                      : "Ví dụ: Kie Free 01 (tam@gmail.com)"
+                  }
                   value={createForm.label}
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, label: e.target.value }))}
                   required
@@ -671,7 +741,11 @@ export function AiKeysManager() {
                   <Input
                     id="rawKey"
                     type={showRawKey ? "text" : "password"}
-                    placeholder="Dán chuỗi API Key của bạn vào đây..."
+                    placeholder={
+                      createForm.provider === "openai"
+                        ? "Dán sk-codex-... hoặc sk-... vào đây"
+                        : "Dán API Key từ Kie.ai vào đây..."
+                    }
                     value={createForm.rawKey}
                     onChange={(e) => {
                       setCreateForm((prev) => ({ ...prev, rawKey: e.target.value }));
@@ -713,8 +787,13 @@ export function AiKeysManager() {
                           <p className="font-medium">Khóa API hợp lệ!</p>
                           <p className="text-[11px] mt-0.5 opacity-90">
                             Số dư khả dụng hiện tại:{" "}
-                            <strong>{testResult.credits ?? 0} credits</strong>. Hệ thống sẽ kích
-                            hoạt key này ngay sau khi lưu.
+                            <strong>
+                              {testResult.credits !== undefined && testResult.credits !== null
+                                ? testResult.credits.toLocaleString("vi-VN")
+                                : "Khả dụng"}{" "}
+                              {createForm.provider === "openai" ? "tokens" : "credits"}
+                            </strong>
+                            . Hệ thống sẽ kích hoạt key này ngay sau khi lưu.
                           </p>
                         </div>
                       </>

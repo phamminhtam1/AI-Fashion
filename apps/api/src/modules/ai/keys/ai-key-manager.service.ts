@@ -78,6 +78,105 @@ export class AiKeyManagerService {
   }
 
   /**
+   * Directly queries OpenAI / TuongTacGPT API with the given raw API key to test connectivity and retrieve remaining credits.
+   */
+  async checkOpenAiCredits(rawKey: string): Promise<KeyCreditCheckResult> {
+    const key = rawKey.trim();
+    if (!key) {
+      return { ok: false, error: "API Key không được để trống" };
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 7000);
+
+      // 1. First test TuongTacGPT / Codex endpoint
+      const resp = await fetch("https://api.tuongtacgpt.click/api/key-status", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          Accept: "application/json",
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (resp.ok) {
+        const body = (await resp.json()) as {
+          key?: {
+            status?: string;
+            remainingTokens?: number;
+            remainingCredits?: number;
+            tokenLimit?: number;
+          };
+        };
+
+        if (body?.key) {
+          const isKeyActive = body.key.status === "active";
+          const tokens = body.key.remainingTokens ?? body.key.remainingCredits ?? null;
+          return {
+            ok: isKeyActive,
+            credits: tokens !== null ? Math.round(Number(tokens)) : undefined,
+            statusCode: 200,
+            error: isKeyActive ? undefined : `Khóa đang ở trạng thái: ${body.key.status}`,
+          };
+        }
+      }
+
+      // If key is sk-codex and returned error
+      if (key.startsWith("sk-codex-")) {
+        return {
+          ok: false,
+          statusCode: resp.status,
+          error: "API Key TuongTacGPT không hợp lệ hoặc đã hết hạn",
+        };
+      }
+
+      // 2. Fallback to standard OpenAI models endpoint if not sk-codex
+      try {
+        const oaiController = new AbortController();
+        const oaiTimeout = setTimeout(() => oaiController.abort(), 6000);
+        const oaiResp = await fetch("https://api.openai.com/v1/models", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${key}`,
+            Accept: "application/json",
+          },
+          signal: oaiController.signal,
+        });
+        clearTimeout(oaiTimeout);
+
+        if (oaiResp.ok) {
+          return {
+            ok: true,
+            statusCode: 200,
+            credits: 1000000, // Default virtual balance for standard OpenAI keys
+          };
+        }
+
+        return {
+          ok: false,
+          statusCode: oaiResp.status,
+          error: "API Key OpenAI không hợp lệ hoặc không có quyền truy cập",
+        };
+      } catch {
+        return {
+          ok: false,
+          statusCode: resp.status,
+          error: `API Key không hợp lệ (mã HTTP ${resp.status})`,
+        };
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return {
+        ok: false,
+        error: `Không thể kết nối tới máy chủ kiểm tra API Key (${msg})`,
+      };
+    }
+  }
+
+  /**
    * Lists all registered keys with masked preview and operational status.
    * Encrypted ciphertext is intentionally excluded for security.
    */
@@ -130,7 +229,7 @@ export class AiKeyManagerService {
     let initialCredits: number | null = null;
     let initialStatus = "ACTIVE";
 
-    // Validate key with Kie.ai if provider is kie
+    // Validate key with provider
     if (provider === "kie") {
       const check = await this.checkKieCredits(rawKey);
       if (!check.ok) {
@@ -138,6 +237,15 @@ export class AiKeyManagerService {
       }
       initialCredits = check.credits ?? null;
       if (initialCredits === 0) {
+        initialStatus = "EXHAUSTED";
+      }
+    } else if (provider === "openai") {
+      const check = await this.checkOpenAiCredits(rawKey);
+      if (!check.ok) {
+        throw new ApiError(400, "invalid_api_key", check.error || "API Key OpenAI không hợp lệ");
+      }
+      initialCredits = check.credits ?? null;
+      if (initialCredits !== null && initialCredits <= 0) {
         initialStatus = "EXHAUSTED";
       }
     }
@@ -212,6 +320,14 @@ export class AiKeyManagerService {
         updatePayload.creditsRemaining = check.credits ?? null;
         updatePayload.status = (check.credits ?? 1) > 0 ? "ACTIVE" : "EXHAUSTED";
         updatePayload.lastCheckedAt = new Date();
+      } else if (existing[0].provider === "openai") {
+        const check = await this.checkOpenAiCredits(rawKey);
+        if (!check.ok) {
+          throw new ApiError(400, "invalid_api_key", check.error || "Key OpenAI mới không hợp lệ");
+        }
+        updatePayload.creditsRemaining = check.credits ?? null;
+        updatePayload.status = (check.credits === null || check.credits > 0) ? "ACTIVE" : "EXHAUSTED";
+        updatePayload.lastCheckedAt = new Date();
       }
       updatePayload.encryptedKey = encryptApiKey(rawKey);
       updatePayload.maskedKey = maskApiKey(rawKey);
@@ -245,11 +361,14 @@ export class AiKeyManagerService {
     }
 
     const rawKey = decryptApiKey(existing[0].encryptedKey);
-    if (existing[0].provider !== "kie") {
+    if (existing[0].provider !== "kie" && existing[0].provider !== "openai") {
       return existing[0];
     }
 
-    const check = await this.checkKieCredits(rawKey);
+    const check =
+      existing[0].provider === "openai"
+        ? await this.checkOpenAiCredits(rawKey)
+        : await this.checkKieCredits(rawKey);
     const now = new Date();
 
     if (!check.ok) {
@@ -272,8 +391,13 @@ export class AiKeyManagerService {
       };
     }
 
-    const credits = check.credits ?? 0;
-    const newStatus = credits === 0 ? "EXHAUSTED" : existing[0].status === "EXHAUSTED" ? "ACTIVE" : existing[0].status;
+    const credits = check.credits !== undefined ? check.credits : existing[0].creditsRemaining;
+    const isExhausted = credits !== null && credits !== undefined && credits <= 0;
+    const newStatus = isExhausted
+      ? "EXHAUSTED"
+      : existing[0].status === "EXHAUSTED"
+      ? "ACTIVE"
+      : existing[0].status;
 
     const [updated] = await this.db
       .update(aiApiKeys)
@@ -379,21 +503,28 @@ export class AiKeyManagerService {
   async recordSuccess(keyId: string) {
     const now = new Date();
     const existing = await this.db
-      .select({ credits: aiApiKeys.creditsRemaining })
+      .select({
+        credits: aiApiKeys.creditsRemaining,
+        provider: aiApiKeys.provider,
+        count: aiApiKeys.successCount,
+      })
       .from(aiApiKeys)
       .where(eq(aiApiKeys.id, keyId))
       .limit(1);
 
-    const currentCredits = existing[0]?.credits;
+    if (!existing[0]) return;
+
+    const currentCredits = existing[0].credits;
+    const deduction = existing[0].provider === "openai" ? 3000 : 1;
     const nextCredits =
       currentCredits !== null && currentCredits !== undefined && currentCredits > 0
-        ? currentCredits - 1
+        ? Math.max(0, currentCredits - deduction)
         : currentCredits;
 
     await this.db
       .update(aiApiKeys)
       .set({
-        successCount: (await this.db.select({ count: aiApiKeys.successCount }).from(aiApiKeys).where(eq(aiApiKeys.id, keyId)))[0]?.count! + 1,
+        successCount: (existing[0].count ?? 0) + 1,
         creditsRemaining: nextCredits,
         errorCount: 0,
         lastErrorMessage: null,

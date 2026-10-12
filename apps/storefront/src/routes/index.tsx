@@ -78,20 +78,20 @@ function Home() {
   const womanItems =
     womanPosts.length > 0
       ? womanPosts.slice(0, 6).map((p) => ({
-          id: p.id,
-          title: p.title,
-          image: p.image_url,
-          link: p.link_url || (p.product_slug ? `/san-pham/${p.product_slug}` : null),
-        }))
+        id: p.id,
+        title: p.title,
+        image: p.image_url,
+        link: p.link_url || (p.product_slug ? `/san-pham/${p.product_slug}` : null),
+      }))
       : newIn
-          .filter((p) => !isAccessory(p))
-          .slice(0, 6)
-          .map((p) => ({
-            id: p.id,
-            title: p.name,
-            image: p.images[0] ?? "",
-            link: `/san-pham/${p.slug}`,
-          }));
+        .filter((p) => !isAccessory(p))
+        .slice(0, 6)
+        .map((p) => ({
+          id: p.id,
+          title: p.name,
+          image: p.images[0] ?? "",
+          link: `/san-pham/${p.slug}`,
+        }));
 
   return (
     <>

@@ -118,14 +118,13 @@ export function OrderCard({
       className="overflow-hidden rounded-3xl border border-[#e5e5e5] bg-white text-[#171717] shadow-[0_8px_32px_-24px_rgba(0,0,0,0.08)]"
     >
       {/* Order identity and live status */}
-      <header className="flex flex-col gap-4 border-b border-[#ededed] px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:gap-5 sm:px-7 sm:py-6">
+      <header className="flex flex-col gap-4 border-b border-[#ededed] px-5 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5 sm:px-7 sm:py-3">
         <div className="flex min-w-0 items-center gap-3.5">
           <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f2f2f2] text-[#111111]">
             <ShoppingBag className="h-5 w-5 stroke-[1.4]" />
           </span>
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#666666]">Đơn hàng của bạn</p>
-            <div className="mt-1 flex min-w-0 items-center gap-1">
+            <div className="flex min-w-0 items-center">
               <span className="break-all text-sm font-semibold tracking-wide text-[#111111] sm:text-base">#{order.orderNumber}</span>
               <button
                 type="button"
@@ -168,11 +167,6 @@ export function OrderCard({
 
       {/* Purchased designs */}
       <div className="px-5 py-5 sm:px-7 sm:py-6">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-serif text-lg sm:text-xl">Những thiết kế bạn đã chọn</h3>
-          {typeof order.itemsCount === "number" && order.itemsCount > 0 && <span className="rounded-full bg-[#f7f7f7] px-3 py-1.5 text-[10px] font-medium tabular-nums text-[#666666]">{order.itemsCount} sản phẩm</span>}
-        </div>
-
         {order.itemsPreview && order.itemsPreview.length > 0 ? (
           <ul className="divide-y divide-[#ededed]">
             {order.itemsPreview.map((item) => (
@@ -186,7 +180,7 @@ export function OrderCard({
                 </div>
                 <div className="min-w-0 flex-1 sm:flex sm:items-center sm:justify-between sm:gap-5">
                   <div className="min-w-0">
-                    <p className="break-words text-sm font-medium leading-6 sm:text-base">{item.product_name}</p>
+                    <p className="break-words font-serif text-sm font-medium leading-6 sm:text-base">{item.product_name}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] leading-5 text-[#666666]">
                       {item.size_label && <span className="rounded-md bg-[#f7f7f7] px-2 py-0.5 font-medium text-[#666666]">Size {item.size_label}</span>}
                       {item.color_label && <span>{item.color_label}</span>}
@@ -214,7 +208,7 @@ export function OrderCard({
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#666666]">Tổng thanh toán</p>
-            <p className="mt-2 break-words text-2xl font-semibold tracking-tight tabular-nums text-[#111111] sm:text-3xl">{formatVND(order.total)}</p>
+            <p className="mt-2 break-words text-xl font-semibold tracking-tight tabular-nums text-[#111111] sm:text-2xl">{formatVND(order.total)}</p>
           </div>
 
           <div className={`grid w-full shrink-0 gap-2 sm:w-auto ${isBankAwaiting ? "grid-cols-2" : "grid-cols-1"}`}>
@@ -238,7 +232,7 @@ export function OrderCard({
             <button
               type="button"
               onClick={() => onViewDetail(order.id)}
-              className={`group inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-3 py-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] focus-visible:ring-offset-2 sm:px-5 ${isBankAwaiting ? "border border-[#e5e5e5] bg-white text-[#111111] hover:border-[#111111] hover:bg-[#f7f7f7]" : "bg-[#111111] text-white hover:bg-[#333333]"}`}
+              className={`group inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-2 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] focus-visible:ring-offset-2 sm:px-5 ${isBankAwaiting ? "border border-[#e5e5e5] bg-white text-[#111111] hover:border-[#111111] hover:bg-[#f7f7f7]" : "bg-[#111111] text-white hover:bg-[#333333]"}`}
             >
               <Eye aria-hidden="true" className="h-4 w-4 shrink-0" />Xem chi tiết
               {!isBankAwaiting && <ArrowRight aria-hidden="true" className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />}

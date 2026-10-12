@@ -303,7 +303,7 @@ function SuccessScreen({ done }: { done: Success }) {
                       </div>
                       <div className="min-w-0 flex-1 sm:flex sm:items-center sm:justify-between sm:gap-4">
                         <div className="min-w-0">
-                          <h3 className="break-words text-sm font-medium leading-6 sm:text-base">{item.product_name}</h3>
+                          <h3 className="break-words font-serif text-sm font-medium leading-6 sm:text-base">{item.product_name}</h3>
                           <p className="mt-1.5 text-xs leading-5 text-[#666666]">
                             {[item.color_label, item.size_label ? `Size ${item.size_label}` : null].filter(Boolean).join(" · ")}
                           </p>

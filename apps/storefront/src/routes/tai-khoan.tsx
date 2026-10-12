@@ -374,12 +374,12 @@ function Account() {
         <div className="grid items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-8">
           {/* Sidebar; horizontal navigation on mobile */}
           <aside className="min-w-0 lg:sticky lg:top-[calc(var(--header-height,148px)+24px)]">
-            <div className="rounded-3xl border border-[#e5e5e5] bg-white p-3 sm:p-4">
+            <div className="rounded-3xl border border-[#e5e5e5] bg-white p-3 sm:p-4 font-sans">
               <div className="hidden items-center gap-3 border-b border-[#ededed] px-2 pb-5 pt-2 lg:flex">
                 <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f0f0f0] font-serif text-xl text-[#111111]">{initial}</span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium" title={user.name}>{user.name}</p>
-                  <p className="mt-1 truncate text-xs text-[#666666]" title={user.email}>{user.email}</p>
+                  <p className="truncate font-sans text-sm font-semibold tracking-tight text-[#111111]" title={user.name}>{user.name}</p>
+                  <p className="mt-0.5 truncate font-sans text-xs text-[#666666]" title={user.email}>{user.email}</p>
                 </div>
               </div>
               <nav aria-label="Khu vực tài khoản" className="flex gap-2 overflow-x-auto overscroll-x-contain py-1 lg:mt-3 lg:flex-col lg:overflow-visible lg:py-0">
@@ -392,11 +392,11 @@ function Account() {
                       aria-pressed={active}
                       aria-controls="account-panel"
                       onClick={() => setTab(id)}
-                      className={`flex min-h-[48px] shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-left text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] focus-visible:ring-inset lg:w-full ${active ? "bg-[#111111] text-white" : "text-[#666666] hover:bg-[#f7f7f7] hover:text-[#111111]"}`}
+                      className={`flex min-h-[48px] shrink-0 items-center gap-3 rounded-2xl px-4 py-3 text-left font-sans text-xs font-medium tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] focus-visible:ring-inset lg:w-full ${active ? "bg-[#111111] text-white" : "text-[#666666] hover:bg-[#f7f7f7] hover:text-[#111111]"}`}
                     >
                       <Icon aria-hidden="true" className="h-4 w-4 shrink-0 stroke-[1.6]" />
-                      <span className="whitespace-nowrap">{label}</span>
-                      {typeof count === "number" && count > 0 && <span className={`ml-auto rounded-full px-2 py-0.5 text-[10px] tabular-nums ${active ? "bg-white/15 text-white" : "bg-[#f2f2f2] text-[#666666]"}`}>{count}</span>}
+                      <span className="whitespace-nowrap font-sans">{label}</span>
+                      {typeof count === "number" && count > 0 && <span className={`ml-auto rounded-full px-2 py-0.5 font-sans text-[10px] font-medium tabular-nums ${active ? "bg-white/15 text-white" : "bg-[#f2f2f2] text-[#666666]"}`}>{count}</span>}
                     </button>
                   );
                 })}
@@ -433,11 +433,11 @@ function Account() {
                       </button>
                     </div>
                   )}
-                  <div aria-label="Lọc đơn hàng" className="mt-6 flex gap-2 overflow-x-auto overscroll-x-contain border-t border-[#ededed] pt-5 pb-1">
+                  <div aria-label="Lọc đơn hàng" className="mt-6 flex gap-2 overflow-x-auto overscroll-x-contain border-t border-[#ededed] pt-5 pb-1 font-sans">
                     {filterTabs.map((filter) => (
-                      <button key={filter.id} type="button" aria-pressed={orderFilter === filter.id} onClick={() => setOrderFilter(filter.id)} className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-full border px-4 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] focus-visible:ring-inset ${orderFilter === filter.id ? "border-[#e5e5e5] bg-[#f2f2f2] text-[#111111]" : "border-[#ededed] bg-white text-[#666666] hover:border-[#bdbdbd] hover:text-[#111111]"}`}>
-                        {filter.label}
-                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${orderFilter === filter.id ? "bg-white text-[#111111]" : "bg-[#ffffff] text-[#666666]"}`}>{filter.count ?? 0}</span>
+                      <button key={filter.id} type="button" aria-pressed={orderFilter === filter.id} onClick={() => setOrderFilter(filter.id)} className={`inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-full border px-4 font-sans text-xs font-medium tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] focus-visible:ring-inset ${orderFilter === filter.id ? "border-[#e5e5e5] bg-[#f2f2f2] text-[#111111]" : "border-[#ededed] bg-white text-[#666666] hover:border-[#bdbdbd] hover:text-[#111111]"}`}>
+                        <span className="font-sans">{filter.label}</span>
+                        <span className={`rounded-full px-1.5 py-0.5 font-sans text-[10px] tabular-nums ${orderFilter === filter.id ? "bg-white text-[#111111]" : "bg-[#ffffff] text-[#666666]"}`}>{filter.count ?? 0}</span>
                       </button>
                     ))}
                   </div>

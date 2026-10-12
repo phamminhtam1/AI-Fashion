@@ -751,10 +751,10 @@ export const adminApi = {
       body: JSON.stringify({ items }),
     }),
   aiKeys: () => req<{ items: AiApiKey[] }>("/admin/ai-keys"),
-  testAiKey: (rawKey: string) =>
+  testAiKey: (rawKey: string, provider: string = "kie") =>
     req<{ ok: boolean; credits?: number; error?: string; statusCode?: number }>("/admin/ai-keys/test", {
       method: "POST",
-      body: JSON.stringify({ rawKey }),
+      body: JSON.stringify({ rawKey, provider }),
     }),
   createAiKey: (body: CreateAiKeyInput) =>
     req<AiApiKey>("/admin/ai-keys", {

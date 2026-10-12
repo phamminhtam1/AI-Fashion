@@ -24,6 +24,7 @@ const updateKeySchema = z.object({
 
 const testKeySchema = z.object({
   rawKey: z.string().min(1, "Vui lòng nhập API Key"),
+  provider: z.string().optional().default("kie"),
 });
 
 // 1. List all AI Keys
@@ -44,7 +45,11 @@ adminAiKeyRoutes.post("/test", async (c) => {
 
   const db = c.get("db");
   const service = new AiKeyManagerService(db);
-  const result = await service.checkKieCredits(parsed.data.rawKey);
+  const provider = (parsed.data.provider || "kie").toLowerCase().trim();
+  const result =
+    provider === "openai"
+      ? await service.checkOpenAiCredits(parsed.data.rawKey)
+      : await service.checkKieCredits(parsed.data.rawKey);
 
   return c.json(result);
 });

@@ -44,6 +44,7 @@ export interface AiWorkerGenerateRequest {
   cached_garment_url?: string | null;
   cached_garment_metadata?: GarmentMetadata | null;
   api_key?: string;
+  openai_api_key?: string;
 }
 
 export interface AiWorkerGenerateResponse {

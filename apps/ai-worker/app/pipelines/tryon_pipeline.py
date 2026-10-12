@@ -47,7 +47,10 @@ class TryOnPipeline:
                     file_path=req.user_image_path,
                     url=req.user_image_url,
                 )
-                classifier_output = await self.classifier.classify(user_image_bytes)
+                classifier_output = await self.classifier.classify(
+                    user_image_bytes,
+                    api_key=req.openai_api_key,
+                )
                 visibility_flag = classifier_output.visibility_flag
             except Exception as e:
                 logger.error(f"[pipeline] Step 1 Classifier failed: {e}")

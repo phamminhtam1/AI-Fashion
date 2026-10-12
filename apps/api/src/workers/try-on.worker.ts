@@ -81,8 +81,9 @@ export async function processTryOnJob(job: Job<TryOnJobPayload>) {
     while (attempts < maxKeyAttempts) {
       attempts++;
       const activeKey = await keyManager.acquireActiveKey("kie");
+      const activeOpenAiKey = await keyManager.acquireActiveKey("openai");
       console.log(
-        `[tryon-worker] Attempt ${attempts}: Using AI key '${activeKey ? activeKey.label : "ENV_DEFAULT"}' for job ${jobId}`,
+        `[tryon-worker] Attempt ${attempts}: Using AI key '${activeKey ? activeKey.label : "ENV_DEFAULT"}' and OpenAI key '${activeOpenAiKey ? activeOpenAiKey.label : "ENV_DEFAULT"}' for job ${jobId}`,
       );
 
       try {
@@ -98,6 +99,7 @@ export async function processTryOnJob(job: Job<TryOnJobPayload>) {
           cached_garment_url: cachedGarmentUrl,
           cached_garment_metadata: cachedGarmentMetadata as any,
           api_key: activeKey?.rawKey,
+          openai_api_key: activeOpenAiKey?.rawKey,
         });
 
         if (aiResponse.status === "failed") {
@@ -112,42 +114,54 @@ export async function processTryOnJob(job: Job<TryOnJobPayload>) {
         if (activeKey) {
           await keyManager.recordSuccess(activeKey.id);
         }
+        if (activeOpenAiKey) {
+          await keyManager.recordSuccess(activeOpenAiKey.id);
+        }
         break;
       } catch (err: unknown) {
-        if (err instanceof ApiError && activeKey) {
+        if (err instanceof ApiError) {
           const errMsg = err.message || "";
-          const isRateLimit =
-            err.status === 429 ||
-            err.code === "ai_worker_rate_limited" ||
-            errMsg.includes("429") ||
-            errMsg.includes("rate limit") ||
-            errMsg.includes("too many requests");
+          const isOpenAiError =
+            err.code === "classifier_failed" ||
+            errMsg.toLowerCase().includes("openai") ||
+            errMsg.toLowerCase().includes("phân loại ảnh");
 
-          const isQuotaExhausted =
-            err.status === 402 ||
-            err.code === "credits_insufficient" ||
-            errMsg.toLowerCase().includes("credit") ||
-            errMsg.toLowerCase().includes("quota") ||
-            errMsg.toLowerCase().includes("insufficient");
+          const failedKey = isOpenAiError ? activeOpenAiKey : activeKey;
 
-          const isRevoked = err.status === 401 || err.code === "unauthorized";
+          if (failedKey) {
+            const isRateLimit =
+              err.status === 429 ||
+              err.code === "ai_worker_rate_limited" ||
+              errMsg.includes("429") ||
+              errMsg.includes("rate limit") ||
+              errMsg.includes("too many requests");
 
-          if (isRateLimit) {
-            console.warn(`[tryon-worker] Key '${activeKey.label}' is RATE LIMITED. Switching to next active key...`);
-            await keyManager.recordFailure(activeKey.id, "RATE_LIMITED", errMsg);
-            continue;
-          }
+            const isQuotaExhausted =
+              err.status === 402 ||
+              err.code === "credits_insufficient" ||
+              errMsg.toLowerCase().includes("credit") ||
+              errMsg.toLowerCase().includes("quota") ||
+              errMsg.toLowerCase().includes("insufficient");
 
-          if (isQuotaExhausted) {
-            console.warn(`[tryon-worker] Key '${activeKey.label}' has EXHAUSTED credits. Switching to next active key...`);
-            await keyManager.recordFailure(activeKey.id, "EXHAUSTED", errMsg);
-            continue;
-          }
+            const isRevoked = err.status === 401 || err.code === "unauthorized";
 
-          if (isRevoked) {
-            console.warn(`[tryon-worker] Key '${activeKey.label}' is REVOKED/INVALID. Switching to next active key...`);
-            await keyManager.recordFailure(activeKey.id, "REVOKED", errMsg);
-            continue;
+            if (isRateLimit) {
+              console.warn(`[tryon-worker] Key '${failedKey.label}' is RATE LIMITED. Switching to next active key...`);
+              await keyManager.recordFailure(failedKey.id, "RATE_LIMITED", errMsg);
+              continue;
+            }
+
+            if (isQuotaExhausted) {
+              console.warn(`[tryon-worker] Key '${failedKey.label}' has EXHAUSTED credits. Switching to next active key...`);
+              await keyManager.recordFailure(failedKey.id, "EXHAUSTED", errMsg);
+              continue;
+            }
+
+            if (isRevoked) {
+              console.warn(`[tryon-worker] Key '${failedKey.label}' is REVOKED/INVALID. Switching to next active key...`);
+              await keyManager.recordFailure(failedKey.id, "REVOKED", errMsg);
+              continue;
+            }
           }
         }
 

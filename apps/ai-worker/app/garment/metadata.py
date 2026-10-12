@@ -29,8 +29,15 @@ class GarmentMetadataExtractor:
         if self.client is None and settings.openai_api_key:
             self.client = AsyncOpenAI(api_key=settings.openai_api_key, base_url=base_url)
 
-    async def extract_metadata(self, image_bytes: bytes) -> GarmentMetadata:
-        if settings.ai_mock_mode or not self.client:
+    async def extract_metadata(self, image_bytes: bytes, api_key: Optional[str] = None) -> GarmentMetadata:
+        active_key = api_key or settings.openai_api_key
+        client = (
+            AsyncOpenAI(api_key=active_key, base_url=settings.openai_base_url or None)
+            if active_key
+            else self.client
+        )
+
+        if settings.ai_mock_mode or not client:
             reason = "ai_mock_mode=True" if settings.ai_mock_mode else "API key missing/empty"
             logger.warning(f"[garment-metadata] Running in MOCK mode ({reason}) -> returning default blazer metadata")
             return GarmentMetadata(
@@ -68,7 +75,7 @@ class GarmentMetadataExtractor:
         # 1. Attempt structured output parse
         try:
             logger.info("[garment-metadata] Awaiting OpenAI beta parse for GarmentMetadata...")
-            completion = await self.client.beta.chat.completions.parse(
+            completion = await client.beta.chat.completions.parse(
                 model=settings.openai_vision_model,
                 messages=messages,
                 response_format=GarmentMetadata,
@@ -83,7 +90,7 @@ class GarmentMetadataExtractor:
         # 2. Fallback to standard json_object
         try:
             logger.info("[garment-metadata] Awaiting OpenAI chat completion with json_object...")
-            completion = await self.client.chat.completions.create(
+            completion = await client.chat.completions.create(
                 model=settings.openai_vision_model,
                 messages=messages,
                 response_format={"type": "json_object"},

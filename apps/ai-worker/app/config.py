@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # OpenAI Compatible Vision Classifier
     openai_api_key: str = ""
     openai_base_url: str = ""
-    openai_vision_model: str = "gp-5.6-sol-max"
+    openai_vision_model: str = "gpt-5.6-sol-max"
 
     # Kie.ai (GPT Image 2.5 Sunburst) Virtual Try-On Provider
     kie_api_key: str = ""

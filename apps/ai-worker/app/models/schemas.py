@@ -62,6 +62,7 @@ class TryOnGenerateRequest(BaseModel):
     garment_metadata: Optional[GarmentMetadata] = None
     prompt: Optional[str] = None
     api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None
 
 
 class TryOnGenerateResponse(BaseModel):
@@ -89,6 +90,7 @@ class HealthResponse(BaseModel):
 class UserClassifyRequest(BaseModel):
     user_image_path: Optional[str] = Field(None, description="Local path to user photo")
     user_image_url: Optional[str] = Field(None, description="Public URL of user photo")
+    openai_api_key: Optional[str] = Field(None, description="Dynamic OpenAI API key override")
 
 
 class UserClassifyResponse(BaseModel):

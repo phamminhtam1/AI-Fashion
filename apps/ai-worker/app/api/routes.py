@@ -100,7 +100,7 @@ async def classify_user(req: UserClassifyRequest):
         )
 
     try:
-        output: ClassifierOutput = await classifier.classify(image_bytes)
+        output: ClassifierOutput = await classifier.classify(image_bytes, api_key=req.openai_api_key)
         logger.info(f"[routes] /v1/user/classify completed: flag={output.visibility_flag.value}, confidence={output.confidence:.2f}, people={output.person_count}")
         return UserClassifyResponse(
             ok=output.visibility_flag != VisibilityFlag.INVALID,
