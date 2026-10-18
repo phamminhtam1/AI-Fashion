@@ -38,16 +38,23 @@ storeCouponRoutes.post("/preview", async (c) => {
     throw e;
   }
 
-  if (row.type !== "percent" && row.type !== "fixed") {
+  if (
+    row.type !== "percent" &&
+    row.type !== "fixed" &&
+    row.type !== "free_shipping" &&
+    row.type !== "bxgy"
+  ) {
     throw new ApiError(400, "coupon_inactive", "Mã giảm giá không hợp lệ");
   }
 
-  const baseVnd = subtotal + shippingFeeVnd(subtotal);
+  const shipping = shippingFeeVnd(subtotal);
+  const baseVnd = subtotal + shipping;
   const discount_vnd = computeDiscountVnd({
     type: row.type,
     value: row.value,
     baseVnd,
     maxDiscountVnd: row.maxDiscountVnd,
+    shippingVnd: shipping,
   });
 
   return c.json({

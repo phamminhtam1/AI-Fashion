@@ -1,3 +1,5 @@
+import { adminErrorMessage } from "@/lib/admin-language";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import {
   AlertCircle,
   Bot,
@@ -13,6 +15,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "@tanstack/react-router";
+import { resolveAdminPath } from "@/lib/routes";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -66,14 +70,39 @@ export function AiKeysManager() {
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const openCreateModal = useCallback(() => {
+    setCreateForm({ provider: "kie", label: "", rawKey: "", priority: 1 });
+    setTestResult(null);
+    navigate({ to: "/ai-keys/them" });
+  }, [navigate]);
+
+  const closeCreateModal = useCallback(() => {
+    setCreateOpen(false);
+    navigate({ to: "/ai-keys" });
+  }, [navigate]);
+
+  useEffect(() => {
+    const route = resolveAdminPath(location.pathname);
+    if (route.tabId !== "ai_keys") return;
+
+    if (route.action === "create") {
+      setCreateOpen(true);
+    } else {
+      setCreateOpen(false);
+    }
+  }, [location.pathname]);
+
   const fetchKeys = useCallback(async () => {
     try {
       setLoading(true);
       const res = await adminApi.aiKeys();
       setKeys(res.items);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error("Không thể tải danh sách AI Key: " + msg);
+      const msg = err instanceof Error ? adminErrorMessage(err) : String(err);
+      toast.error("Không thể tải danh sách khóa AI: " + msg);
     } finally {
       setLoading(false);
     }
@@ -89,7 +118,7 @@ export function AiKeysManager() {
       setRefreshingId(id);
       const updated = await adminApi.refreshAiKeyCredits(id);
       setKeys((prev) => prev.map((k) => (k.id === id ? { ...k, ...updated } : k)));
-      const unit = updated.provider === "openai" ? "tokens" : "credits";
+      const unit = updated.provider === "openai" ? "đơn vị xử lý" : "điểm sử dụng";
       const count =
         updated.creditsRemaining !== null && updated.creditsRemaining !== undefined
           ? updated.creditsRemaining.toLocaleString("vi-VN")
@@ -98,7 +127,7 @@ export function AiKeysManager() {
         `Đã cập nhật số dư cho '${updated.label}': ${count} ${unit}`,
       );
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = err instanceof Error ? adminErrorMessage(err) : String(err);
       toast.error("Không thể kiểm tra số dư: " + msg);
     } finally {
       setRefreshingId(null);
@@ -115,9 +144,9 @@ export function AiKeysManager() {
       } else {
         await fetchKeys();
       }
-      toast.success("Đã đồng bộ số dư tất cả AI Key!");
+      toast.success("Đã đồng bộ số dư tất cả khóa AI!");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = err instanceof Error ? adminErrorMessage(err) : String(err);
       toast.error("Không thể đồng bộ số dư: " + msg);
     } finally {
       setRefreshingAll(false);
@@ -132,11 +161,11 @@ export function AiKeysManager() {
       setKeys((prev) => prev.map((k) => (k.id === key.id ? { ...k, ...updated } : k)));
       toast.success(
         nextStatus === "ACTIVE"
-          ? `Đã kích hoạt key '${key.label}'`
-          : `Đã tạm dừng key '${key.label}'`,
+          ? `Đã kích hoạt khóa '${key.label}'`
+          : `Đã tạm dừng khóa '${key.label}'`,
       );
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = err instanceof Error ? adminErrorMessage(err) : String(err);
       toast.error("Không thể đổi trạng thái: " + msg);
     }
   };
@@ -144,7 +173,7 @@ export function AiKeysManager() {
   // Handle Test Key inside Modal
   const handleTestRawKey = async () => {
     if (!createForm.rawKey.trim()) {
-      toast.error("Vui lòng dán chuỗi API Key vào ô trước khi kiểm tra");
+      toast.error("Vui lòng dán chuỗi khóa API vào ô trước khi kiểm tra");
       return;
     }
     try {
@@ -159,23 +188,23 @@ export function AiKeysManager() {
         error: res.error,
       });
       if (res.ok) {
-        const unit = provider === "openai" ? "tokens" : "credits";
+        const unit = provider === "openai" ? "đơn vị xử lý" : "điểm sử dụng";
         const count =
           res.credits !== undefined && res.credits !== null
             ? res.credits.toLocaleString("vi-VN")
             : "Khả dụng";
-        toast.success(`Key hợp lệ! Số dư hiện tại: ${count} ${unit}`);
+        toast.success(`Khóa hợp lệ! Số dư hiện tại: ${count} ${unit}`);
       } else {
-        toast.error(res.error || "Key không hợp lệ");
+        toast.error(res.error || "Khóa không hợp lệ");
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = err instanceof Error ? adminErrorMessage(err) : String(err);
       setTestResult({
         tested: true,
         ok: false,
         error: msg,
       });
-      toast.error("Lỗi kiểm tra key: " + msg);
+      toast.error("Lỗi kiểm tra khóa: " + msg);
     } finally {
       setTestingKey(false);
     }
@@ -185,11 +214,11 @@ export function AiKeysManager() {
   const handleCreateKey = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createForm.label.trim()) {
-      toast.error("Vui lòng nhập tên/nhãn gợi nhớ cho Key");
+      toast.error("Vui lòng nhập tên/nhãn gợi nhớ cho Khóa");
       return;
     }
     if (!createForm.rawKey.trim()) {
-      toast.error("Vui lòng nhập chuỗi API Key");
+      toast.error("Vui lòng nhập chuỗi khóa API");
       return;
     }
 
@@ -203,13 +232,13 @@ export function AiKeysManager() {
       });
 
       setKeys((prev) => [created, ...prev]);
-      toast.success(`Thêm key '${created.label}' thành công!`);
-      setCreateOpen(false);
+      toast.success(`Thêm khóa '${created.label}' thành công!`);
+      closeCreateModal();
       setCreateForm({ provider: "kie", label: "", rawKey: "", priority: 1 });
       setTestResult(null);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error("Lỗi khi thêm key: " + msg);
+      const msg = err instanceof Error ? adminErrorMessage(err) : String(err);
+      toast.error("Lỗi khi thêm khóa: " + msg);
     } finally {
       setSubmitting(false);
     }
@@ -218,8 +247,8 @@ export function AiKeysManager() {
   // Handle Delete Key with confirm dialog
   const handleDeleteKey = async (id: string, label: string) => {
     const ok = await confirm({
-      title: "Xác nhận xóa API Key",
-      description: `Bạn có chắc chắn muốn xóa API Key "${label}" khỏi hệ thống? Khóa này sẽ không thể dùng để xoay vòng nữa.`,
+      title: "Xác nhận xóa khóa API",
+      description: `Bạn có chắc chắn muốn xóa khóa API "${label}" khỏi hệ thống? Khóa này sẽ không thể dùng để xoay vòng nữa.`,
       destructive: true,
       confirmLabel: "Xóa khóa",
       cancelLabel: "Hủy",
@@ -229,10 +258,10 @@ export function AiKeysManager() {
     try {
       await adminApi.deleteAiKey(id);
       setKeys((prev) => prev.filter((k) => k.id !== id));
-      toast.success("Đã xóa API Key");
+      toast.success("Đã xóa khóa API");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error("Không thể xóa key: " + msg);
+      const msg = err instanceof Error ? adminErrorMessage(err) : String(err);
+      toast.error("Không thể xóa khóa: " + msg);
     }
   };
 
@@ -291,27 +320,31 @@ export function AiKeysManager() {
   };
 
   return (
-    <div className="space-y-6 mt-6">
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Quản lý khóa AI"
+        description="Quản lý khóa kết nối, hạn mức sử dụng và trạng thái các dịch vụ AI."
+      />
 
       {/* Metric Cards */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[
           {
-            label: "Tổng số Key",
+            label: "Tổng số khóa",
             value: String(metrics.total),
-            note: `${metrics.active} key đang hoạt động`,
+            note: `${metrics.active} khóa đang hoạt động`,
             accent: true,
           },
           {
-            label: "Credit Kie.ai (Try-On)",
-            value: `${metrics.kieCredits} Credit `,
-            note: "Dùng ghép đồ & tách nền áo",
+            label: "Hạn mức Kie.ai (Thử đồ)",
+            value: metrics.kieCredits.toLocaleString("vi-VN"),
+            note: "Điểm sử dụng để ghép đồ và tách nền",
             accent: false,
           },
           {
-            label: "Token GPT (Vision)",
+            label: "Hạn mức xử lý GPT (Nhận diện ảnh)",
             value: metrics.gptFormatted,
-            note: `${metrics.gptTokens.toLocaleString("vi-VN")} tokens khả dụng`,
+            note: `${metrics.gptTokens.toLocaleString("vi-VN")} đơn vị xử lý khả dụng`,
             accent: false,
           },
           {
@@ -323,22 +356,22 @@ export function AiKeysManager() {
           {
             label: "Hết lượt / Cần nạp",
             value: String(metrics.exhausted),
-            note: metrics.exhausted > 0 ? "Cần nạp hoặc thay key" : "Tất cả đều ổn",
+            note: metrics.exhausted > 0 ? "Cần nạp hoặc thay khóa" : "Tất cả đều ổn",
             accent: false,
           },
         ].map((m, i) => (
           <div
             key={m.label}
             className={cn(
-              "rounded-md border p-5",
+              "rounded-xs border p-5",
               m.accent || i === 0 ? "border-accent bg-accent/25" : "border-border",
             )}
           >
             <p className="section-label">{m.label}</p>
-            <p className="mt-3 font-serif text-2xl lg:text-3xl font-normal">{m.value}</p>
+            <p className="mt-3 admin-metric">{m.value}</p>
             <p
               className={cn(
-                "mt-1 text-xs truncate",
+                "mt-1 text-sm truncate",
                 m.accent || i === 0 ? "text-primary" : "text-muted-foreground",
               )}
               title={m.note}
@@ -355,34 +388,34 @@ export function AiKeysManager() {
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm theo tên tài khoản hoặc key..."
+              placeholder="Tìm theo tên tài khoản hoặc khóa..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9 text-xs"
+              className="pl-9 h-9 text-sm"
             />
           </div>
 
           <Select value={providerFilter} onValueChange={setProviderFilter}>
-            <SelectTrigger className="w-[145px] h-9 text-xs">
+            <SelectTrigger className="w-[145px] h-9 text-sm">
               <SelectValue placeholder="Nhà cung cấp" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả Provider</SelectItem>
-              <SelectItem value="kie">Kie.ai (Try-On)</SelectItem>
+              <SelectItem value="kie">Kie.ai (Thử đồ)</SelectItem>
               <SelectItem value="openai">OpenAI / GPT</SelectItem>
             </SelectContent>
           </Select>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px] h-9 text-xs">
+            <SelectTrigger className="w-[150px] h-9 text-sm">
               <SelectValue placeholder="Lọc trạng thái" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả trạng thái</SelectItem>
               <SelectItem value="ACTIVE">Hoạt động (Active)</SelectItem>
               <SelectItem value="RATE_LIMITED">Nghẽn (429)</SelectItem>
-              <SelectItem value="EXHAUSTED">Hết credit</SelectItem>
-              <SelectItem value="REVOKED">Key sai / Lỗi</SelectItem>
+              <SelectItem value="EXHAUSTED">Hết điểm sử dụng</SelectItem>
+              <SelectItem value="REVOKED">Khóa sai / Lỗi</SelectItem>
               <SelectItem value="DISABLED">Đã tắt</SelectItem>
             </SelectContent>
           </Select>
@@ -394,47 +427,51 @@ export function AiKeysManager() {
             size="sm"
             onClick={handleRefreshAll}
             disabled={refreshingAll || loading}
-            className="h-9 gap-1.5 text-xs"
+            className="h-9 gap-1.5 text-sm"
           >
             <RefreshCw className={cn("size-3.5", refreshingAll && "animate-spin")} />
             Đồng bộ số dư tất cả
           </Button>
 
           <Button
+            asChild
             size="sm"
-            onClick={() => {
-              setCreateForm({ provider: "kie", label: "", rawKey: "", priority: 1 });
-              setTestResult(null);
-              setCreateOpen(true);
-            }}
-            className="h-9 gap-1.5 text-xs"
+            className="h-9 gap-1.5 text-sm"
           >
-            <Plus className="size-3.5" />
-            Thêm API Key mới
+            <a
+              href="/ai-keys/them"
+              onClick={(e) => {
+                e.preventDefault();
+                openCreateModal();
+              }}
+            >
+              <Plus className="size-3.5" />
+              Thêm khóa API mới
+            </a>
           </Button>
         </div>
       </div>
 
       {/* Table Content */}
-      <div className="rounded-lg border border-border/80 bg-card/60 backdrop-blur-sm shadow-sm overflow-hidden">
+      <div className="rounded-xs border border-border/80 bg-card/60 backdrop-blur-sm shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center p-12 text-sm text-muted-foreground gap-3">
             <Loader2 className="size-6 animate-spin text-primary" />
-            <span>Đang tải danh sách AI Key từ cơ sở dữ liệu...</span>
+            <span>Đang tải danh sách khóa AI từ cơ sở dữ liệu...</span>
           </div>
         ) : filteredKeys.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center text-sm text-muted-foreground gap-2">
             <Bot className="size-8 text-muted-foreground/60 mb-1" />
-            <p className="font-medium text-foreground">Chưa có API Key nào</p>
-            <p className="text-xs max-w-sm">
-              Bạn có thể thêm các API Key Kie.ai (hoặc AI Provider khác) để hệ thống tự động xoay
+            <p className="font-medium text-foreground">Chưa có khóa API nào</p>
+            <p className="text-sm max-w-sm">
+              Bạn có thể thêm các khóa API Kie.ai (hoặc AI Provider khác) để hệ thống tự động xoay
               vòng phục vụ tính năng Thử đồ ảo.
             </p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCreateOpen(true)}
-              className="mt-3 gap-1.5 text-xs"
+              className="mt-3 gap-1.5 text-sm"
             >
               <Plus className="size-3.5" />
               Thêm khóa đầu tiên
@@ -442,13 +479,13 @@ export function AiKeysManager() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-border/60 bg-muted/40 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border/60 bg-muted/40 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 <tr>
                   <th className="py-3 px-4">Tài khoản / Nhà cung cấp</th>
-                  <th className="py-3 px-4">API Key (Đã mã hóa & Masked)</th>
+                  <th className="py-3 px-4">khóa API (Đã mã hóa & Masked)</th>
                   <th className="py-3 px-4">Trạng thái</th>
-                  <th className="py-3 px-4 text-center">Credit còn lại</th>
+                  <th className="py-3 px-4 text-center">Hạn mức còn lại</th>
                   <th className="py-3 px-4 text-center">Ưu tiên</th>
                   <th className="py-3 px-4 text-center">Thành công</th>
                   <th className="py-3 px-4">Lần cuối dùng</th>
@@ -473,7 +510,7 @@ export function AiKeysManager() {
                         <div className="font-medium text-foreground flex items-center gap-1.5">
                           <span>{key.label}</span>
                         </div>
-                        <div className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                           <span className="uppercase font-semibold tracking-wider text-primary">
                             {key.provider}
                           </span>
@@ -483,13 +520,13 @@ export function AiKeysManager() {
                       </td>
 
                       {/* Masked Key */}
-                      <td className="py-3 px-4 font-mono text-[11px]">
+                      <td className="py-3 px-4 tabular-nums text-xs">
                         <div className="inline-flex items-center gap-1 rounded bg-muted/60 px-2 py-0.5 border border-border/40">
                           <span>{key.maskedKey}</span>
                           <button
                             type="button"
                             onClick={() => copyToClipboard(key.maskedKey)}
-                            title="Sao chép gợi ý key"
+                            title="Sao chép gợi ý khóa"
                             className="text-muted-foreground hover:text-foreground transition-colors ml-1"
                           >
                             <Copy className="size-3" />
@@ -497,10 +534,10 @@ export function AiKeysManager() {
                         </div>
                         {key.lastErrorMessage && (
                           <p
-                            className="mt-1 text-[10px] text-rose-500 max-w-xs truncate"
-                            title={key.lastErrorMessage}
+                            className="mt-1 text-xs text-rose-500 max-w-xs truncate"
+                            title={adminErrorMessage(key.lastErrorMessage)}
                           >
-                            Lỗi: {key.lastErrorMessage}
+                            Lỗi: {adminErrorMessage(key.lastErrorMessage)}
                           </p>
                         )}
                       </td>
@@ -510,7 +547,7 @@ export function AiKeysManager() {
                         {key.status === "ACTIVE" ? (
                           <Badge
                             variant="outline"
-                            className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 gap-1 text-[10px] font-medium"
+                            className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 gap-1 text-xs font-medium"
                           >
                             <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             Đang dùng
@@ -518,7 +555,7 @@ export function AiKeysManager() {
                         ) : key.status === "RATE_LIMITED" ? (
                           <Badge
                             variant="outline"
-                            className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 gap-1 text-[10px] font-medium"
+                            className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 gap-1 text-xs font-medium"
                           >
                             <span className="size-1.5 rounded-full bg-amber-500" />
                             Nghẽn 429 (Chờ)
@@ -526,22 +563,22 @@ export function AiKeysManager() {
                         ) : key.status === "EXHAUSTED" ? (
                           <Badge
                             variant="outline"
-                            className="border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 gap-1 text-[10px] font-medium"
+                            className="border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 gap-1 text-xs font-medium"
                           >
                             <span className="size-1.5 rounded-full bg-rose-500" />
-                            Hết credit (0)
+                            Hết điểm sử dụng (0)
                           </Badge>
                         ) : key.status === "REVOKED" ? (
                           <Badge
                             variant="outline"
-                            className="border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 gap-1 text-[10px] font-medium"
+                            className="border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 gap-1 text-xs font-medium"
                           >
-                            Key bị sai / Khóa
+                            Khóa bị sai / Khóa
                           </Badge>
                         ) : (
                           <Badge
                             variant="outline"
-                            className="border-zinc-500/30 bg-zinc-500/10 text-zinc-500 gap-1 text-[10px] font-medium"
+                            className="border-zinc-500/30 bg-zinc-500/10 text-zinc-500 gap-1 text-xs font-medium"
                           >
                             Tạm tắt
                           </Badge>
@@ -554,7 +591,7 @@ export function AiKeysManager() {
                           {key.creditsRemaining !== null ? (
                             <span
                               className={cn(
-                                "font-mono font-semibold text-xs px-2 py-0.5 rounded",
+                                "tabular-nums font-semibold text-sm px-2 py-0.5 rounded",
                                 isExhausted
                                   ? "bg-rose-500/10 text-rose-600"
                                   : key.creditsRemaining < (key.provider === "openai" ? 50000 : 15)
@@ -563,8 +600,8 @@ export function AiKeysManager() {
                               )}
                               title={
                                 key.provider === "openai"
-                                  ? `${key.creditsRemaining.toLocaleString("vi-VN")} tokens`
-                                  : `${key.creditsRemaining} credits`
+                                  ? `${key.creditsRemaining.toLocaleString("vi-VN")} đơn vị xử lý`
+                                  : `${key.creditsRemaining} điểm sử dụng`
                               }
                             >
                               {key.provider === "openai"
@@ -595,21 +632,21 @@ export function AiKeysManager() {
 
                       {/* Priority */}
                       <td className="py-3 px-4 text-center">
-                        <span className="font-mono text-muted-foreground">P{key.priority}</span>
+                        <span className="tabular-nums text-muted-foreground">P{key.priority}</span>
                       </td>
 
                       {/* Success Count */}
-                      <td className="py-3 px-4 text-center font-mono">
+                      <td className="py-3 px-4 text-center tabular-nums">
                         <span className="text-foreground">{key.successCount}</span>
                         {key.errorCount > 0 && (
-                          <span className="text-[10px] text-rose-500 ml-1">
+                          <span className="text-xs text-rose-500 ml-1">
                             ({key.errorCount} lỗi)
                           </span>
                         )}
                       </td>
 
                       {/* Last Used At */}
-                      <td className="py-3 px-4 text-muted-foreground text-[11px]">
+                      <td className="py-3 px-4 text-muted-foreground text-xs">
                         {key.lastUsedAt
                           ? new Date(key.lastUsedAt).toLocaleString("vi-VN", {
                             hour: "2-digit",
@@ -629,7 +666,7 @@ export function AiKeysManager() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleToggleStatus(key)}
-                              className="h-7 px-2 text-[11px] text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                              className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                             >
                               Bật lại
                             </Button>
@@ -640,7 +677,7 @@ export function AiKeysManager() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleToggleStatus(key)}
-                              className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
                             >
                               Tắt
                             </Button>
@@ -651,7 +688,7 @@ export function AiKeysManager() {
                             size="icon"
                             onClick={() => handleDeleteKey(key.id, key.label)}
                             className="h-7 w-7 text-muted-foreground hover:text-rose-600 hover:bg-rose-50"
-                            title="Xóa Key này"
+                            title="Xóa Khóa này"
                           >
                             <Trash2 className="size-3.5" />
                           </Button>
@@ -670,20 +707,26 @@ export function AiKeysManager() {
 
 
       {/* Modal: Thêm API Key Mới */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <Dialog
+        open={createOpen}
+        onOpenChange={(open) => {
+          setCreateOpen(open);
+          if (!open) closeCreateModal();
+        }}
+      >
         <DialogContent className="sm:max-w-[480px]">
           <form onSubmit={handleCreateKey}>
             <DialogHeader>
-              <DialogTitle className="font-serif text-xl">Thêm AI API Key Mới</DialogTitle>
-              <DialogDescription className="text-xs">
-                Key sẽ được kiểm tra kết nối với {createForm.provider === "openai" ? "OpenAI / TuongTacGPT" : "Kie.ai"} và mã hóa AES-256 trước khi lưu.
+              <DialogTitle className="font-sans admin-section-title">Thêm AI khóa API Mới</DialogTitle>
+              <DialogDescription className="text-sm">
+                Khóa sẽ được kiểm tra kết nối với {createForm.provider === "openai" ? "OpenAI / TuongTacGPT" : "Kie.ai"} và mã hóa AES-256 trước khi lưu.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               {/* Provider */}
               <div className="space-y-1.5">
-                <Label htmlFor="provider" className="text-xs font-medium">
+                <Label htmlFor="provider" className="text-sm font-medium">
                   Nhà cung cấp AI
                 </Label>
                 <Select
@@ -693,19 +736,19 @@ export function AiKeysManager() {
                     setTestResult(null);
                   }}
                 >
-                  <SelectTrigger id="provider" className="h-9 text-xs">
+                  <SelectTrigger id="provider" className="h-9 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="kie">Kie.ai (GPT Image 2.5 Sunburst Try-On)</SelectItem>
-                    <SelectItem value="openai">OpenAI / TuongTacGPT (Vision Classification)</SelectItem>
+                    <SelectItem value="kie">Kie.ai (GPT Image 2.5 Sunburst – Thử đồ)</SelectItem>
+                    <SelectItem value="openai">OpenAI / TuongTacGPT (Phân loại hình ảnh)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {/* Label */}
               <div className="space-y-1.5">
-                <Label htmlFor="label" className="text-xs font-medium">
+                <Label htmlFor="label" className="text-sm font-medium">
                   Tên gợi nhớ / Tài khoản
                 </Label>
                 <Input
@@ -718,20 +761,20 @@ export function AiKeysManager() {
                   value={createForm.label}
                   onChange={(e) => setCreateForm((prev) => ({ ...prev, label: e.target.value }))}
                   required
-                  className="h-9 text-xs"
+                  className="h-9 text-sm"
                 />
               </div>
 
               {/* Raw API Key */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="rawKey" className="text-xs font-medium">
-                    Chuỗi API Key
+                  <Label htmlFor="rawKey" className="text-sm font-medium">
+                    Chuỗi khóa API
                   </Label>
                   <button
                     type="button"
                     onClick={() => setShowRawKey(!showRawKey)}
-                    className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1"
+                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                   >
                     {showRawKey ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
                     <span>{showRawKey ? "Ẩn" : "Hiện"}</span>
@@ -744,7 +787,7 @@ export function AiKeysManager() {
                     placeholder={
                       createForm.provider === "openai"
                         ? "Dán sk-codex-... hoặc sk-... vào đây"
-                        : "Dán API Key từ Kie.ai vào đây..."
+                        : "Dán khóa API từ Kie.ai vào đây..."
                     }
                     value={createForm.rawKey}
                     onChange={(e) => {
@@ -752,7 +795,7 @@ export function AiKeysManager() {
                       setTestResult(null);
                     }}
                     required
-                    className="h-9 text-xs font-mono pr-20"
+                    className="h-9 text-sm tabular-nums pr-20"
                   />
                   <Button
                     type="button"
@@ -760,7 +803,7 @@ export function AiKeysManager() {
                     size="sm"
                     onClick={handleTestRawKey}
                     disabled={testingKey || !createForm.rawKey.trim()}
-                    className="absolute right-1 top-1 h-7 text-[10px] px-2"
+                    className="absolute right-1 top-1 h-7 text-xs px-2"
                   >
                     {testingKey ? (
                       <Loader2 className="size-3 animate-spin" />
@@ -774,7 +817,7 @@ export function AiKeysManager() {
                 {testResult?.tested && (
                   <div
                     className={cn(
-                      "mt-2 rounded p-2.5 text-xs flex items-start gap-2 border",
+                      "mt-2 rounded p-2.5 text-sm flex items-start gap-2 border",
                       testResult.ok
                         ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
                         : "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300",
@@ -785,15 +828,15 @@ export function AiKeysManager() {
                         <CheckCircle2 className="size-4 shrink-0 text-emerald-600 mt-0.5" />
                         <div>
                           <p className="font-medium">Khóa API hợp lệ!</p>
-                          <p className="text-[11px] mt-0.5 opacity-90">
+                          <p className="text-xs mt-0.5 opacity-90">
                             Số dư khả dụng hiện tại:{" "}
                             <strong>
                               {testResult.credits !== undefined && testResult.credits !== null
                                 ? testResult.credits.toLocaleString("vi-VN")
                                 : "Khả dụng"}{" "}
-                              {createForm.provider === "openai" ? "tokens" : "credits"}
+                              {createForm.provider === "openai" ? "đơn vị xử lý" : "điểm sử dụng"}
                             </strong>
-                            . Hệ thống sẽ kích hoạt key này ngay sau khi lưu.
+                            . Hệ thống sẽ kích hoạt khóa này ngay sau khi lưu.
                           </p>
                         </div>
                       </>
@@ -802,8 +845,8 @@ export function AiKeysManager() {
                         <AlertCircle className="size-4 shrink-0 text-rose-600 mt-0.5" />
                         <div>
                           <p className="font-medium">Kiểm tra thất bại</p>
-                          <p className="text-[11px] mt-0.5 opacity-90">
-                            {testResult.error || "Key không hợp lệ hoặc đã bị khóa."}
+                          <p className="text-xs mt-0.5 opacity-90">
+                            {testResult.error ? adminErrorMessage(testResult.error) : "Khóa không hợp lệ hoặc đã bị khóa."}
                           </p>
                         </div>
                       </>
@@ -814,7 +857,7 @@ export function AiKeysManager() {
 
               {/* Priority */}
               <div className="space-y-1.5">
-                <Label htmlFor="priority" className="text-xs font-medium">
+                <Label htmlFor="priority" className="text-sm font-medium">
                   Độ ưu tiên (Priority)
                 </Label>
                 <Input
@@ -826,9 +869,9 @@ export function AiKeysManager() {
                   onChange={(e) =>
                     setCreateForm((prev) => ({ ...prev, priority: Number(e.target.value) }))
                   }
-                  className="h-9 text-xs"
+                  className="h-9 text-sm"
                 />
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Số càng lớn càng được ưu tiên bốc ra sử dụng trước (Mặc định: 1).
                 </p>
               </div>
@@ -836,14 +879,22 @@ export function AiKeysManager() {
 
             <DialogFooter className="gap-2 sm:gap-0">
               <Button
+                asChild
                 type="button"
                 variant="outline"
-                onClick={() => setCreateOpen(false)}
-                className="h-9 text-xs"
+                className="h-9 text-sm"
               >
-                Hủy
+                <a
+                  href="/ai-keys"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    closeCreateModal();
+                  }}
+                >
+                  Hủy
+                </a>
               </Button>
-              <Button type="submit" disabled={submitting} className="h-9 text-xs gap-1.5">
+              <Button type="submit" disabled={submitting} className="h-9 text-sm gap-1.5">
                 {submitting && <Loader2 className="size-3.5 animate-spin" />}
                 Lưu và Kích hoạt
               </Button>

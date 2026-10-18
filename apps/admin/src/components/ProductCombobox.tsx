@@ -208,7 +208,7 @@ export function ProductCombobox({
         <div
           role="combobox"
           aria-expanded={open}
-          className={`flex h-10 w-full min-w-0 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-xs cursor-pointer hover:bg-muted/50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring gap-2 overflow-hidden ${className}`}
+          className={`flex h-10 w-full min-w-0 items-center justify-between rounded-xs border border-input bg-background px-3 py-2 text-xs cursor-pointer hover:bg-muted/50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring gap-2 overflow-hidden ${className}`}
         >
           {selectedProduct ? (
             <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
@@ -219,7 +219,7 @@ export function ProductCombobox({
                   className="size-6 rounded object-cover border border-border shrink-0 bg-secondary"
                 />
               ) : (
-                <div className="size-6 rounded bg-muted flex items-center justify-center text-[10px] shrink-0 font-medium">
+                <div className="size-6 rounded bg-muted flex items-center justify-center text-xs shrink-0 font-medium">
                   SP
                 </div>
               )}
@@ -227,7 +227,7 @@ export function ProductCombobox({
               {selectedProduct.category?.name && (
                 <Badge
                   variant="secondary"
-                  className="text-[10px] px-1.5 py-0 shrink-0 font-normal truncate max-w-[110px]"
+                  className="text-xs px-1.5 py-0 shrink-0 font-normal truncate max-w-[110px]"
                 >
                   {selectedProduct.category.name}
                 </Badge>
@@ -271,7 +271,7 @@ export function ProductCombobox({
               placeholder="Gõ tên sản phẩm, mã SKU, danh mục... (đợi 1s để tìm)"
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-8 pr-7 h-8 text-xs bg-background"
+              className="pl-8 pr-7 h-8 text-sm bg-background"
               autoFocus
             />
             {search && (
@@ -286,7 +286,7 @@ export function ProductCombobox({
           </div>
 
           {/* Status Bar */}
-          <div className="flex items-center justify-between px-1 text-[10px] text-muted-foreground min-h-[16px]">
+          <div className="flex items-center justify-between px-1 text-xs text-muted-foreground min-h-[16px]">
             {loading ? (
               <span className="text-primary flex items-center gap-1">
                 <Loader2 className="size-3 animate-spin" />
@@ -299,7 +299,7 @@ export function ProductCombobox({
             )}
 
             {search.trim() && !loading && !isTyping && (
-              <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">
                 Từ khóa: "{search.trim()}"
               </span>
             )}
@@ -318,14 +318,14 @@ export function ProductCombobox({
               onSelect("");
               setOpen(false);
             }}
-            className="w-full flex items-center justify-between px-2.5 py-2 text-xs rounded hover:bg-muted text-left transition cursor-pointer text-muted-foreground"
+            className="w-full flex items-center justify-between px-2.5 py-2 text-sm rounded hover:bg-muted text-left transition cursor-pointer text-muted-foreground"
           >
             <span>-- Không gắn sản phẩm --</span>
             {!selectedId && <Check className="size-3.5 text-primary" />}
           </button>
 
           {products.length === 0 ? (
-            <div className="py-8 text-center text-xs text-muted-foreground">
+            <div className="py-8 text-center text-sm text-muted-foreground">
               {loading ? (
                 <div className="flex items-center justify-center gap-1.5">
                   <Loader2 className="size-4 animate-spin text-primary" />
@@ -364,19 +364,19 @@ export function ProductCombobox({
                       className="size-8 rounded object-cover border border-border shrink-0 bg-secondary"
                     />
                   ) : (
-                    <div className="size-8 rounded bg-secondary flex items-center justify-center text-[10px] text-muted-foreground shrink-0 font-medium">
+                    <div className="size-8 rounded bg-secondary flex items-center justify-center text-xs text-muted-foreground shrink-0 font-medium">
                       SP
                     </div>
                   )}
 
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{p.name}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-muted-foreground">
+                    <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
                       {p.category?.name && (
                         <span className="truncate max-w-[120px]">{p.category.name}</span>
                       )}
                       {p.category?.name && sku && <span>•</span>}
-                      {sku && <span className="font-mono text-[10px]">{sku}</span>}
+                      {sku && <span className="tabular-nums text-xs">{sku}</span>}
                     </div>
                   </div>
 

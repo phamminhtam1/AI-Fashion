@@ -22,6 +22,7 @@ import { adminDiscountCodeRoutes } from "./routes/admin/discount-codes.js";
 import { adminElaneWomanRoutes } from "./routes/admin/elane-woman.js";
 import { adminLookbookRoutes } from "./routes/admin/lookbooks.js";
 import { adminAiKeyRoutes } from "./routes/admin/ai-keys.js";
+import { adminSocialRoutes, instagramWebhookRoutes, publishDueSocialContent } from "./routes/admin/social.js";
 import { storeAuthRoutes } from "./routes/store/auth.js";
 import { storeCouponRoutes } from "./routes/store/coupons.js";
 import { storeTryOnRoutes } from "./routes/store/try-on.js";
@@ -86,11 +87,13 @@ app.route("/api/v1", publicContentRoutes);
 app.route("/api/v1", publicSizeRoutes);
 app.route("/api/v1", publicPaymentRoutes);
 app.route("/api/v1", sepayWebhookRoutes);
+app.route("/api/v1/webhooks/instagram", instagramWebhookRoutes);
 app.route("/api/v1/store/auth", storeAuthRoutes);
 app.route("/api/v1/store/coupons", storeCouponRoutes);
 app.route("/api/v1/store/try-ons", storeTryOnRoutes);
 app.route("/api/v1/me", meRoutes);
 app.route("/api/v1/admin/auth", adminAuthRoutes);
+app.route("/api/v1/admin/social", adminSocialRoutes);
 app.route("/api/v1/admin/products", adminProductRoutes);
 app.route("/api/v1/admin/categories", adminCategoryRoutes);
 app.route("/api/v1/admin", adminSizeRoutes);
@@ -104,6 +107,12 @@ app.route("/api/v1/admin/elane-woman", adminElaneWomanRoutes);
 app.route("/api/v1/admin/lookbooks", adminLookbookRoutes);
 app.route("/api/v1/admin/ai-keys", adminAiKeyRoutes);
 app.route("/api/v1/admin", adminOpsRoutes);
+
+// Lightweight scheduler for approved Instagram posts. The database status update
+// makes retries safe across process restarts; production can move this to a queue later.
+setInterval(() => {
+  void publishDueSocialContent(db);
+}, 30_000).unref();
 
 app.use(
   "/media/*",

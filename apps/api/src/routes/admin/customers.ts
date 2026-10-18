@@ -28,6 +28,8 @@ function mapCustomer(
     address_count?: number;
     default_address?: string | null;
     city?: string | null;
+    order_count?: number;
+    last_order_at?: string | null;
   },
 ) {
   return {
@@ -44,6 +46,8 @@ function mapCustomer(
     ...(extras?.address_count !== undefined ? { address_count: extras.address_count } : {}),
     ...(extras?.default_address !== undefined ? { default_address: extras.default_address } : {}),
     ...(extras?.city !== undefined ? { city: extras.city } : {}),
+    ...(extras?.order_count !== undefined ? { order_count: extras.order_count } : {}),
+    ...(extras?.last_order_at !== undefined ? { last_order_at: extras.last_order_at } : {}),
   };
 }
 
@@ -73,7 +77,7 @@ adminCustomerRoutes.get("/", async (c) => {
   const sortBy = c.req.query("sort_by") ?? "created_at_desc";
   const page = Math.max(1, Number(c.req.query("page") ?? 1) || 1);
   const rawLimit = Number(c.req.query("limit") ?? 50) || 50;
-  const limit = ([25, 50, 100, 200] as number[]).includes(rawLimit) ? rawLimit : 50;
+  const limit = Math.min(200, Math.max(1, rawLimit));
   const offset = (page - 1) * limit;
 
   const conds = [];
@@ -160,6 +164,16 @@ adminCustomerRoutes.get("/", async (c) => {
         order by a.is_default desc, a.created_at desc
         limit 1
       )`,
+      order_count: sql<number>`(
+        select count(*)::int
+        from orders o
+        where o.customer_id = customers.id
+      )`,
+      last_order_at: sql<string | null>`(
+        select max(o.placed_at)::text
+        from orders o
+        where o.customer_id = customers.id
+      )`,
     })
     .from(customers)
     .where(where)
@@ -176,6 +190,39 @@ adminCustomerRoutes.get("/", async (c) => {
   const segDist: Record<string, number> = {};
   for (const r of segmentCounts) segDist[r.segment] = r.n;
 
+  // Global overview metrics for metric cards
+  const [metricsRow] = await db.select({
+    total_customers: sql<number>`count(*)::int`,
+    active_customers: sql<number>`count(*) filter (
+      where status = 'active' and (
+        created_at >= now() - interval '1 year' or
+        exists (select 1 from orders o where o.customer_id = customers.id and o.placed_at >= now() - interval '1 year')
+      )
+    )::int`,
+    customers_with_multiple_orders: sql<number>`count(*) filter (
+      where (select count(*) from orders o where o.customer_id = customers.id and o.status != 'cancelled') >= 2
+    )::int`,
+  }).from(customers);
+
+  const [ordersMetricRow] = await db.select({
+    total_orders: sql<number>`count(*)::int`,
+    avg_order_value: sql<number>`coalesce(avg(grand_total_vnd), 0)::bigint`,
+  }).from(orders).where(sql`status != 'cancelled'`);
+
+  const totalCust = metricsRow?.total_customers ?? 0;
+  const activeCust = metricsRow?.active_customers ?? 0;
+  const totalOrd = ordersMetricRow?.total_orders ?? 0;
+  const avgAov = Number(ordersMetricRow?.avg_order_value ?? 0);
+  const repeatCust = metricsRow?.customers_with_multiple_orders ?? 0;
+
+  const overviewMetrics = {
+    total_customers: totalCust,
+    active_customers: activeCust,
+    avg_orders_per_customer: totalCust > 0 ? Number((totalOrd / totalCust).toFixed(1)) : 0,
+    avg_order_value_vnd: avgAov,
+    repeat_customer_rate: totalCust > 0 ? Math.round((repeatCust / totalCust) * 100) : 0,
+  };
+
   return c.json({
     items: rows.map((r) =>
       mapCustomer(r.customer, {
@@ -183,12 +230,15 @@ adminCustomerRoutes.get("/", async (c) => {
         address_count: Number(r.address_count ?? 0),
         default_address: r.default_address || null,
         city: r.city || null,
+        order_count: Number(r.order_count ?? 0),
+        last_order_at: r.last_order_at || null,
       }),
     ),
     total,
     page,
     limit,
     segment_distribution: segDist,
+    overview_metrics: overviewMetrics,
   });
 });
 
@@ -374,8 +424,12 @@ adminCustomerRoutes.patch("/:id", async (c) => {
   requirePerm(user, "customer.write");
   const body = z
     .object({
+      full_name: z.string().min(1).optional(),
+      email: z.string().email().optional().nullable(),
+      phone: z.string().optional().nullable(),
+      segment: z.enum(["new", "loyal", "vip"]).optional(),
       status: statusEnum.optional(),
-      internal_note: z.string().optional(),
+      internal_note: z.string().optional().nullable(),
     })
     .safeParse(await c.req.json());
   if (!body.success) throw new ApiError(400, "validation_error", "Dữ liệu cập nhật không hợp lệ");
@@ -384,9 +438,25 @@ adminCustomerRoutes.patch("/:id", async (c) => {
   const existing = (await db.select().from(customers).where(eq(customers.id, c.req.param("id"))).limit(1))[0];
   if (!existing) throw new ApiError(404, "not_found", "Không tìm thấy khách hàng");
 
+  // Check email uniqueness if changing email
+  if (body.data.email && body.data.email !== existing.email) {
+    const [conflict] = await db
+      .select({ id: customers.id })
+      .from(customers)
+      .where(eq(customers.email, body.data.email))
+      .limit(1);
+    if (conflict) {
+      throw new ApiError(409, "email_conflict", "Email này đã được sử dụng bởi một khách hàng khác");
+    }
+  }
+
   const updateData: Partial<typeof customers.$inferInsert> = { updatedAt: new Date() };
-  if (body.data.status) updateData.status = body.data.status;
-  if (body.data.internal_note !== undefined) updateData.internalNote = body.data.internal_note;
+  if (body.data.full_name !== undefined) updateData.fullName = body.data.full_name;
+  if (body.data.email !== undefined) updateData.email = body.data.email;
+  if (body.data.phone !== undefined) updateData.phone = body.data.phone;
+  if (body.data.segment !== undefined) updateData.segment = body.data.segment;
+  if (body.data.status !== undefined) updateData.status = body.data.status;
+  if (body.data.internal_note !== undefined) updateData.internalNote = body.data.internal_note ?? "";
 
   const [row] = await db
     .update(customers)
@@ -399,8 +469,22 @@ adminCustomerRoutes.patch("/:id", async (c) => {
     action: "customer.update",
     resourceType: "customer",
     resourceId: row!.id,
-    beforeRedacted: { status: existing.status, internalNote: existing.internalNote },
-    afterRedacted: { status: row!.status, internalNote: row!.internalNote },
+    beforeRedacted: {
+      fullName: existing.fullName,
+      email: existing.email,
+      phone: existing.phone,
+      segment: existing.segment,
+      status: existing.status,
+      internalNote: existing.internalNote,
+    },
+    afterRedacted: {
+      fullName: row!.fullName,
+      email: row!.email,
+      phone: row!.phone,
+      segment: row!.segment,
+      status: row!.status,
+      internalNote: row!.internalNote,
+    },
     requestId: requestId(c),
   });
 
@@ -408,17 +492,198 @@ adminCustomerRoutes.patch("/:id", async (c) => {
 });
 
 adminCustomerRoutes.post("/", async (c) => {
-  throw new ApiError(403, "forbidden", "Không thể tạo khách hàng từ admin — dữ liệu đến từ phía khách");
+  const user = c.get("user")!;
+  requirePerm(user, "customer.write");
+  const body = z
+    .object({
+      full_name: z.string().min(1, "Họ và tên là bắt buộc"),
+      email: z.string().email("Email không hợp lệ").optional().nullable(),
+      phone: z.string().optional().nullable(),
+      segment: z.enum(["new", "loyal", "vip"]).optional().default("new"),
+      status: statusEnum.optional().default("active"),
+      internal_note: z.string().optional().default(""),
+      address: z
+        .object({
+          recipient_name: z.string().optional(),
+          phone: z.string().optional(),
+          address_line: z.string(),
+          city: z.string().optional(),
+          province: z.string().optional(),
+          postal_code: z.string().optional(),
+          country: z.string().optional(),
+          is_default: z.boolean().optional().default(true),
+        })
+        .optional(),
+    })
+    .safeParse(await c.req.json());
+
+  if (!body.success) {
+    throw new ApiError(400, "validation_error", body.error.errors[0]?.message ?? "Dữ liệu không hợp lệ");
+  }
+
+  const db = c.get("db");
+
+  // Check email uniqueness if provided
+  if (body.data.email) {
+    const [existing] = await db
+      .select({ id: customers.id })
+      .from(customers)
+      .where(eq(customers.email, body.data.email))
+      .limit(1);
+    if (existing) {
+      throw new ApiError(409, "email_conflict", "Email này đã được sử dụng bởi một khách hàng khác");
+    }
+  }
+
+  const [row] = await db
+    .insert(customers)
+    .values({
+      fullName: body.data.full_name,
+      email: body.data.email ?? null,
+      phone: body.data.phone ?? null,
+      segment: body.data.segment,
+      status: body.data.status,
+      internalNote: body.data.internal_note ?? "",
+      totalSpentVnd: 0,
+    })
+    .returning();
+
+  if (body.data.address && body.data.address.address_line) {
+    await db.insert(customerAddresses).values({
+      customerId: row!.id,
+      recipientName: body.data.address.recipient_name || body.data.full_name,
+      phone: body.data.address.phone || body.data.phone || "",
+      addressLine: body.data.address.address_line,
+      administrativeUnits: {
+        city: body.data.address.city ?? "",
+        province: body.data.address.province ?? "",
+        postal_code: body.data.address.postal_code ?? "",
+        country: body.data.address.country ?? "Việt Nam",
+      },
+      isDefault: body.data.address.is_default ?? true,
+    });
+  }
+
+  await db.insert(auditLogs).values({
+    actorAccountId: user.accountId,
+    action: "customer.create",
+    resourceType: "customer",
+    resourceId: row!.id,
+    afterRedacted: {
+      fullName: row!.fullName,
+      email: row!.email,
+      phone: row!.phone,
+      segment: row!.segment,
+      status: row!.status,
+    },
+    requestId: requestId(c),
+  });
+
+  return c.json(mapCustomer(row!), 201);
 });
 
 adminCustomerRoutes.post("/:id/addresses", async (c) => {
-  throw new ApiError(403, "forbidden", "Không thể thêm địa chỉ từ admin");
+  const user = c.get("user")!;
+  requirePerm(user, "customer.write");
+  const customerId = c.req.param("id");
+  const body = z
+    .object({
+      recipient_name: z.string().min(1),
+      phone: z.string().min(1),
+      address_line: z.string().min(1),
+      administrative_units: z.record(z.string()).optional().default({}),
+      is_default: z.boolean().optional().default(false),
+    })
+    .safeParse(await c.req.json());
+  if (!body.success) throw new ApiError(400, "validation_error", "Dữ liệu địa chỉ không hợp lệ");
+
+  const db = c.get("db");
+  const customer = (await db.select().from(customers).where(eq(customers.id, customerId)).limit(1))[0];
+  if (!customer) throw new ApiError(404, "not_found", "Không tìm thấy khách hàng");
+
+  if (body.data.is_default) {
+    await db
+      .update(customerAddresses)
+      .set({ isDefault: false })
+      .where(eq(customerAddresses.customerId, customerId));
+  }
+
+  const [addr] = await db
+    .insert(customerAddresses)
+    .values({
+      customerId,
+      recipientName: body.data.recipient_name,
+      phone: body.data.phone,
+      addressLine: body.data.address_line,
+      administrativeUnits: body.data.administrative_units,
+      isDefault: body.data.is_default,
+    })
+    .returning();
+
+  return c.json(mapAddress(addr!), 201);
 });
 
 adminCustomerRoutes.patch("/:id/addresses/:aid", async (c) => {
-  throw new ApiError(403, "forbidden", "Không thể sửa địa chỉ từ admin");
+  const user = c.get("user")!;
+  requirePerm(user, "customer.write");
+  const customerId = c.req.param("id");
+  const addressId = c.req.param("aid");
+  const body = z
+    .object({
+      recipient_name: z.string().optional(),
+      phone: z.string().optional(),
+      address_line: z.string().optional(),
+      administrative_units: z.record(z.string()).optional(),
+      is_default: z.boolean().optional(),
+    })
+    .safeParse(await c.req.json());
+  if (!body.success) throw new ApiError(400, "validation_error", "Dữ liệu địa chỉ không hợp lệ");
+
+  const db = c.get("db");
+  const existing = (
+    await db
+      .select()
+      .from(customerAddresses)
+      .where(and(eq(customerAddresses.id, addressId), eq(customerAddresses.customerId, customerId)))
+      .limit(1)
+  )[0];
+  if (!existing) throw new ApiError(404, "not_found", "Không tìm thấy địa chỉ");
+
+  if (body.data.is_default) {
+    await db
+      .update(customerAddresses)
+      .set({ isDefault: false })
+      .where(eq(customerAddresses.customerId, customerId));
+  }
+
+  const updateData: Partial<typeof customerAddresses.$inferInsert> = {};
+  if (body.data.recipient_name !== undefined) updateData.recipientName = body.data.recipient_name;
+  if (body.data.phone !== undefined) updateData.phone = body.data.phone;
+  if (body.data.address_line !== undefined) updateData.addressLine = body.data.address_line;
+  if (body.data.administrative_units !== undefined) updateData.administrativeUnits = body.data.administrative_units;
+  if (body.data.is_default !== undefined) updateData.isDefault = body.data.is_default;
+
+  const [addr] = await db
+    .update(customerAddresses)
+    .set(updateData)
+    .where(eq(customerAddresses.id, addressId))
+    .returning();
+
+  return c.json(mapAddress(addr!));
 });
 
 adminCustomerRoutes.delete("/:id/addresses/:aid", async (c) => {
-  throw new ApiError(403, "forbidden", "Không thể xóa địa chỉ từ admin");
+  const user = c.get("user")!;
+  requirePerm(user, "customer.write");
+  const customerId = c.req.param("id");
+  const addressId = c.req.param("aid");
+  const db = c.get("db");
+
+  const deleted = await db
+    .delete(customerAddresses)
+    .where(and(eq(customerAddresses.id, addressId), eq(customerAddresses.customerId, customerId)))
+    .returning();
+
+  if (!deleted.length) throw new ApiError(404, "not_found", "Không tìm thấy địa chỉ");
+  return c.json({ ok: true });
 });

@@ -9,12 +9,52 @@ import { requirePerm } from "../../lib/session.js";
 import {
   collectDescendantIds,
   enrichTree,
+  rollupProductCounts,
   sortTreeOrder,
   wouldCreateCycle,
 } from "../../lib/category-tree.js";
 
+import { randomUUID } from "node:crypto";
+import { mediaPublicUrl, uploadMediaObject } from "../../lib/media-storage.js";
+
+const MAX_BYTES = 10 * 1024 * 1024;
+const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+
 export const adminCategoryRoutes = new Hono<AppVars>();
 adminCategoryRoutes.use("*", requireAuth);
+
+/** Upload category thumbnail / avatar */
+adminCategoryRoutes.post("/upload", async (c) => {
+  const user = c.get("user")!;
+  requirePerm(user, "product.write");
+
+  const body = await c.req.parseBody();
+  const file = body["file"];
+  if (!file || typeof file === "string") {
+    throw new ApiError(400, "validation_error", "Thiếu file ảnh (field: file)");
+  }
+
+  const mime = file.type || "application/octet-stream";
+  if (!ALLOWED_MIME.has(mime)) {
+    throw new ApiError(400, "invalid_mime", "Chỉ chấp nhận định dạng ảnh JPEG, PNG, WebP hoặc GIF");
+  }
+
+  const buf = Buffer.from(await file.arrayBuffer());
+  if (buf.byteLength > MAX_BYTES) {
+    throw new ApiError(400, "file_too_large", "Ảnh tối đa 10MB");
+  }
+  if (buf.byteLength < 32) {
+    throw new ApiError(400, "validation_error", "File ảnh không hợp lệ");
+  }
+
+  const ext =
+    mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : mime === "image/gif" ? "gif" : "jpg";
+  const objectKey = `categories/${randomUUID()}.${ext}`;
+  await uploadMediaObject(objectKey, buf, mime);
+
+  const url = mediaPublicUrl(objectKey);
+  return c.json({ url, object_key: objectKey }, 201);
+});
 
 function siblingParentFilter(parentId: string | null) {
   return parentId === null ? isNull(categories.parentId) : eq(categories.parentId, parentId);
@@ -59,6 +99,7 @@ const upsertSchema = z.object({
   sort_order: z.number().int().optional(),
   status: z.enum(["active", "archived"]).optional(),
   parent_id: z.string().uuid().nullable().optional(),
+  image_url: z.string().nullable().optional(),
   seo_title: z.string().nullable().optional(),
   seo_description: z.string().nullable().optional(),
 });
@@ -75,26 +116,28 @@ async function assertValidParent(db: Db, nodeId: string | null, parentId: string
   }
 }
 
-async function assertCanAddChild(db: Db, parentId: string) {
-  const [pc] = await db
-    .select({ n: count() })
-    .from(productCategories)
-    .where(eq(productCategories.categoryId, parentId));
-  if (Number(pc?.n ?? 0) > 0) {
-    throw new ApiError(
-      409,
-      "parent_has_products",
-      "Danh mục cha đang gắn sản phẩm — chuyển SP sang lá khác trước khi thêm con",
-    );
-  }
-}
+async function getSubtreeProductCounts(
+  db: Db,
+  allCategories: Array<{ id: string; parentId: string | null }>,
+) {
+  const links = await db
+    .select({
+      categoryId: productCategories.categoryId,
+      productId: productCategories.productId,
+    })
+    .from(productCategories);
 
-async function productCountFor(db: Db, categoryId: string) {
-  const [pc] = await db
-    .select({ n: count() })
-    .from(productCategories)
-    .where(eq(productCategories.categoryId, categoryId));
-  return Number(pc?.n ?? 0);
+  const productIdsByCat = new Map<string, Set<string>>();
+  for (const link of links) {
+    let s = productIdsByCat.get(link.categoryId);
+    if (!s) {
+      s = new Set();
+      productIdsByCat.set(link.categoryId, s);
+    }
+    s.add(link.productId);
+  }
+
+  return rollupProductCounts(allCategories, productIdsByCat);
 }
 
 function mapCategory(
@@ -110,6 +153,7 @@ function mapCategory(
     sort_order: row.sortOrder,
     status: row.status,
     parent_id: row.parentId,
+    image_url: row.imageUrl,
     seo_title: row.seoTitle,
     seo_description: row.seoDescription,
     product_count: productCount,
@@ -137,11 +181,16 @@ adminCategoryRoutes.get("/", async (c) => {
     return true;
   });
 
+  const productCounts = await getSubtreeProductCounts(
+    db,
+    all.map((r) => ({ id: r.id, parentId: r.parentId })),
+  );
+
   const items = [];
   for (const n of filteredOrdered) {
     const row = all.find((r) => r.id === n.id)!;
     const meta = enrichById[n.id]!;
-    items.push(mapCategory(row, meta, await productCountFor(db, row.id)));
+    items.push(mapCategory(row, meta, productCounts.get(row.id) ?? 0));
   }
   return c.json({ items });
 });
@@ -154,7 +203,11 @@ adminCategoryRoutes.get("/:id", async (c) => {
   const all = await db.select().from(categories);
   const enriched = enrichTree(all.map((r) => ({ id: r.id, parentId: r.parentId })));
   const meta = enriched.find((e) => e.id === rows[0]!.id)!;
-  return c.json(mapCategory(rows[0], meta, await productCountFor(db, rows[0].id)));
+  const productCounts = await getSubtreeProductCounts(
+    db,
+    all.map((r) => ({ id: r.id, parentId: r.parentId })),
+  );
+  return c.json(mapCategory(rows[0], meta, productCounts.get(rows[0].id) ?? 0));
 });
 
 adminCategoryRoutes.post("/", async (c) => {
@@ -171,7 +224,6 @@ adminCategoryRoutes.post("/", async (c) => {
   const parentId = body.data.parent_id ?? null;
   if (parentId) {
     await assertValidParent(db, null, parentId);
-    await assertCanAddChild(db, parentId);
   }
 
   const sortOrder = body.data.sort_order ?? (await nextSiblingSortOrder(db, parentId));
@@ -185,6 +237,7 @@ adminCategoryRoutes.post("/", async (c) => {
       sortOrder,
       status: body.data.status ?? "active",
       parentId,
+      imageUrl: body.data.image_url ?? null,
       seoTitle: body.data.seo_title ?? null,
       seoDescription: body.data.seo_description ?? null,
     })
@@ -228,9 +281,8 @@ adminCategoryRoutes.patch("/:id", async (c) => {
 
   const nextParent =
     body.data.parent_id !== undefined ? body.data.parent_id : existing[0].parentId;
-  if (body.data.parent_id !== undefined) {
+  if (body.data.parent_id !== undefined && nextParent !== existing[0].parentId) {
     await assertValidParent(db, existing[0].id, nextParent);
-    if (nextParent) await assertCanAddChild(db, nextParent);
   }
 
   const [row] = await db
@@ -242,6 +294,7 @@ adminCategoryRoutes.patch("/:id", async (c) => {
       sortOrder: body.data.sort_order ?? existing[0].sortOrder,
       status: body.data.status ?? existing[0].status,
       parentId: nextParent,
+      imageUrl: body.data.image_url !== undefined ? body.data.image_url : existing[0].imageUrl,
       seoTitle: body.data.seo_title !== undefined ? body.data.seo_title : existing[0].seoTitle,
       seoDescription: body.data.seo_description !== undefined ? body.data.seo_description : existing[0].seoDescription,
       updatedAt: new Date(),
@@ -262,7 +315,11 @@ adminCategoryRoutes.patch("/:id", async (c) => {
   const all = await db.select().from(categories);
   const enriched = enrichTree(all.map((r) => ({ id: r.id, parentId: r.parentId })));
   const meta = enriched.find((e) => e.id === row!.id)!;
-  return c.json(mapCategory(row!, meta, await productCountFor(db, row!.id)));
+  const productCounts = await getSubtreeProductCounts(
+    db,
+    all.map((r) => ({ id: r.id, parentId: r.parentId })),
+  );
+  return c.json(mapCategory(row!, meta, productCounts.get(row!.id) ?? 0));
 });
 
 adminCategoryRoutes.delete("/:id", async (c) => {
@@ -278,10 +335,8 @@ adminCategoryRoutes.delete("/:id", async (c) => {
   const graph = all.map((r) => ({ id: r.id, parentId: r.parentId }));
   const subtreeIds = [existing[0].id, ...collectDescendantIds(graph, existing[0].id)];
 
-  let subtreeProductCount = 0;
-  for (const id of subtreeIds) {
-    subtreeProductCount += await productCountFor(db, id);
-  }
+  const productCounts = await getSubtreeProductCounts(db, graph);
+  const subtreeProductCount = productCounts.get(existing[0].id) ?? 0;
 
   if (hard) {
     if (subtreeProductCount > 0) {

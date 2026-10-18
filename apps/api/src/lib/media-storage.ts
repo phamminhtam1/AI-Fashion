@@ -1,5 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
+import {
+  DeleteObjectsCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "../env.js";
 import { ApiError } from "./errors.js";
@@ -26,6 +32,32 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 let _client: SupabaseClient | undefined;
+let _r2Client: S3Client | undefined;
+
+function useR2(): boolean {
+  return env.mediaStorageProvider.toLowerCase() === "r2";
+}
+
+function requireR2() {
+  if (!env.r2Endpoint || !env.r2AccessKeyId || !env.r2SecretAccessKey) {
+    throw new ApiError(
+      503,
+      "storage_misconfigured",
+      "Thiếu R2_ENDPOINT / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY",
+    );
+  }
+  if (!_r2Client) {
+    _r2Client = new S3Client({
+      endpoint: env.r2Endpoint,
+      region: env.r2Region,
+      credentials: {
+        accessKeyId: env.r2AccessKeyId,
+        secretAccessKey: env.r2SecretAccessKey,
+      },
+    });
+  }
+  return { client: _r2Client, bucket: env.r2MediaBucket };
+}
 
 function requireStorage() {
   if (!env.supabaseUrl || !env.supabaseServiceRoleKey) {
@@ -49,6 +81,12 @@ export function mediaPublicUrl(objectKey: string): string {
   if (objectKey.startsWith("http://") || objectKey.startsWith("https://")) {
     return objectKey;
   }
+  if (useR2()) {
+    if (!env.r2PublicBaseUrl) {
+      throw new ApiError(503, "storage_misconfigured", "Thiếu R2_PUBLIC_BASE_URL");
+    }
+    return `${env.r2PublicBaseUrl}/${objectKey}`;
+  }
   if (env.supabaseUrl) {
     const base = env.supabaseUrl.replace(/\/$/, "");
     return `${base}/storage/v1/object/public/${env.supabaseMediaBucket}/${objectKey}`;
@@ -62,6 +100,28 @@ export async function uploadMediaObject(
   body: Buffer,
   contentType: string,
 ): Promise<void> {
+  if (useR2()) {
+    const { client, bucket } = requireR2();
+    try {
+      await client.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: objectKey,
+          Body: body,
+          ContentType: contentType,
+          CacheControl: "public, max-age=31536000, immutable",
+        }),
+      );
+      await client.send(new HeadObjectCommand({ Bucket: bucket, Key: objectKey }));
+      return;
+    } catch (error) {
+      throw new ApiError(
+        502,
+        "storage_upload_failed",
+        error instanceof Error ? error.message : "Upload ảnh lên R2 thất bại",
+      );
+    }
+  }
   if (!env.supabaseUrl || !env.supabaseServiceRoleKey) {
     const filePath = path.resolve(env.uploadDir, objectKey);
     await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
@@ -86,6 +146,30 @@ export async function deleteMediaObject(objectKey: string): Promise<void> {
 /** Batch remove — one round-trip instead of N sequential deletes. */
 export async function deleteMediaObjects(objectKeys: string[]): Promise<void> {
   if (!objectKeys.length) return;
+  if (useR2()) {
+    const { client, bucket } = requireR2();
+    for (let offset = 0; offset < objectKeys.length; offset += 1000) {
+      const chunk = objectKeys.slice(offset, offset + 1000);
+      try {
+        const result = await client.send(
+          new DeleteObjectsCommand({
+            Bucket: bucket,
+            Delete: { Objects: chunk.map((Key) => ({ Key })), Quiet: true },
+          }),
+        );
+        if (result.Errors?.length) {
+          console.warn("[media] R2 delete errors:", result.Errors);
+        }
+      } catch (error) {
+        console.warn(
+          "[media] R2 batch delete failed:",
+          chunk.length,
+          error instanceof Error ? error.message : error,
+        );
+      }
+    }
+    return;
+  }
   if (!env.supabaseUrl || !env.supabaseServiceRoleKey) {
     for (const key of objectKeys) {
       try {

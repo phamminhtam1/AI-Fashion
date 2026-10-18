@@ -558,7 +558,12 @@ meRoutes.post("/orders", async (c) => {
         if (e instanceof CouponError) throw new ApiError(400, e.code, e.message);
         throw e;
       }
-      if (locked.type !== "percent" && locked.type !== "fixed") {
+      if (
+        locked.type !== "percent" &&
+        locked.type !== "fixed" &&
+        locked.type !== "free_shipping" &&
+        locked.type !== "bxgy"
+      ) {
         throw new ApiError(400, "coupon_inactive", "Mã giảm giá không hợp lệ");
       }
       discountVnd = computeDiscountVnd({
@@ -566,6 +571,7 @@ meRoutes.post("/orders", async (c) => {
         value: locked.value,
         baseVnd: subtotal + shipping,
         maxDiscountVnd: locked.maxDiscountVnd,
+        shippingVnd: shipping,
       });
       const bumped = await tx
         .update(discountCodes)

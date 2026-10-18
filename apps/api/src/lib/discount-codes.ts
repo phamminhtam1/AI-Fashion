@@ -6,12 +6,17 @@ export function normalizeCouponCode(code: string): string {
 
 /** `baseVnd` = subtotal + shipping (order total before discount). */
 export function computeDiscountVnd(args: {
-  type: "percent" | "fixed";
+  type: "percent" | "fixed" | "free_shipping" | "bxgy" | string;
   value: number;
   baseVnd: number;
   maxDiscountVnd: number | null;
+  shippingVnd?: number;
 }): number {
-  const { type, value, baseVnd, maxDiscountVnd } = args;
+  const { type, value, baseVnd, maxDiscountVnd, shippingVnd = 0 } = args;
+  if (type === "free_shipping") {
+    const pct = value > 0 ? Math.min(100, value) : 100;
+    return Math.floor((shippingVnd * pct) / 100);
+  }
   let raw = type === "percent" ? Math.floor((baseVnd * value) / 100) : value;
   if (type === "percent" && maxDiscountVnd != null) raw = Math.min(raw, maxDiscountVnd);
   return Math.max(0, Math.min(raw, baseVnd));

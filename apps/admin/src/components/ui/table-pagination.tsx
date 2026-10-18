@@ -71,12 +71,12 @@ export function TablePagination({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 bg-card/30 text-xs",
+        "flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 bg-card/30 text-sm",
         className
       )}
     >
       {/* Left: Summary Count */}
-      <div className="flex items-center gap-2 text-muted-foreground font-mono">
+      <div className="flex items-center gap-2 text-muted-foreground tabular-nums">
         <span>
           {totalItems === 0
             ? `0 ${itemName}`
@@ -89,11 +89,11 @@ export function TablePagination({
         {/* Page Size Selector */}
         {onPageSizeChange && pageSizeOptions && pageSizeOptions.length > 0 && (
           <div className="flex items-center gap-1.5 mr-1">
-            <span className="text-[11px] text-muted-foreground">Hiển thị:</span>
+            <span className="text-xs text-muted-foreground">Hiển thị:</span>
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="h-7 rounded border border-border bg-background px-2 py-0 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+              className="h-7 rounded-xs border border-border bg-background px-2 py-0 text-sm tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
             >
               {pageSizeOptions.map((opt) => (
                 <option key={opt} value={opt}>
@@ -114,7 +114,7 @@ export function TablePagination({
                 size="icon"
                 disabled={safeCurrentPage <= 1}
                 onClick={() => onPageChange(1)}
-                className="size-7 text-xs"
+                className="size-7 text-sm"
                 title="Trang đầu"
               >
                 <ChevronsLeft className="size-3.5" />
@@ -127,7 +127,7 @@ export function TablePagination({
               size={compact ? "sm" : "icon"}
               disabled={safeCurrentPage <= 1}
               onClick={() => onPageChange(safeCurrentPage - 1)}
-              className={cn("h-7 text-xs", compact ? "px-2 gap-1" : "size-7")}
+              className={cn("h-7 text-sm", compact ? "px-2 gap-1" : "size-7")}
               title="Trang trước"
             >
               <ChevronLeft className="size-3.5" />
@@ -136,7 +136,7 @@ export function TablePagination({
 
             {/* Page indicator or Numbers */}
             {compact ? (
-              <span className="px-2 text-xs font-mono text-muted-foreground whitespace-nowrap">
+              <span className="px-2 text-sm tabular-nums text-muted-foreground whitespace-nowrap">
                 {safeCurrentPage} / {safeTotalPages}
               </span>
             ) : (
@@ -145,7 +145,7 @@ export function TablePagination({
                   p === "ellipsis" ? (
                     <span
                       key={`ellipsis-${idx}`}
-                      className="size-7 flex items-center justify-center text-muted-foreground text-xs"
+                      className="size-7 flex items-center justify-center text-muted-foreground text-sm"
                     >
                       …
                     </span>
@@ -155,9 +155,9 @@ export function TablePagination({
                       type="button"
                       onClick={() => onPageChange(p)}
                       className={cn(
-                        "size-7 rounded font-mono text-xs transition-colors flex items-center justify-center",
+                        "size-7 rounded tabular-nums text-sm transition-colors flex items-center justify-center",
                         p === safeCurrentPage
-                          ? "bg-foreground text-background font-bold shadow-xs"
+                          ? "bg-foreground text-background font-semibold shadow-xs"
                           : "border border-border bg-background text-foreground hover:bg-secondary"
                       )}
                     >
@@ -174,7 +174,7 @@ export function TablePagination({
               size={compact ? "sm" : "icon"}
               disabled={safeCurrentPage >= safeTotalPages}
               onClick={() => onPageChange(safeCurrentPage + 1)}
-              className={cn("h-7 text-xs", compact ? "px-2 gap-1" : "size-7")}
+              className={cn("h-7 text-sm", compact ? "px-2 gap-1" : "size-7")}
               title="Trang sau"
             >
               {compact && <span>Sau</span>}
@@ -188,7 +188,7 @@ export function TablePagination({
                 size="icon"
                 disabled={safeCurrentPage >= safeTotalPages}
                 onClick={() => onPageChange(safeTotalPages)}
-                className="size-7 text-xs"
+                className="size-7 text-sm"
                 title="Trang cuối"
               >
                 <ChevronsRight className="size-3.5" />

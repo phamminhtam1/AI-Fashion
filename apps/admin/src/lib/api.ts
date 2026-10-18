@@ -1,4 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+import { adminErrorMessage } from "@/lib/admin-language";
+
+const API_URL = import.meta.env["VITE_API_URL"] ?? "http://localhost:3001";
 
 export type Category = {
   id: string;
@@ -8,6 +10,7 @@ export type Category = {
   sort_order: number;
   status: string;
   parent_id: string | null;
+  image_url?: string | null;
   seo_title: string | null;
   seo_description: string | null;
   product_count: number;
@@ -96,6 +99,7 @@ export type InventoryDocumentListItem = {
   reason: string;
   line_count: number;
   total_qty?: number;
+  total_amount_vnd?: number;
   created_at: string;
   posted_at: string | null;
 };
@@ -219,6 +223,14 @@ export type CustomerAnalytics = {
   top_products: Array<{ name: string; count: number; total_vnd: number; image_url?: string | null }>;
 };
 
+export type CustomerOverviewMetrics = {
+  total_customers: number;
+  active_customers: number;
+  avg_orders_per_customer: number;
+  avg_order_value_vnd: number;
+  repeat_customer_rate: number;
+};
+
 export type Customer = {
   id: string;
   full_name: string;
@@ -231,6 +243,8 @@ export type Customer = {
   address_count?: number;
   default_address?: string | null;
   city?: string | null;
+  order_count?: number;
+  last_order_at?: string | null;
   addresses?: CustomerAddress[];
   orders?: CustomerOrderSummary[];
   analytics?: CustomerAnalytics;
@@ -244,6 +258,64 @@ export type Overview = {
   low_stock_skus: number;
   pending_inventory_docs: number;
   customer_total: number;
+  total_revenue_vnd?: number;
+  total_orders?: number;
+  pending_orders?: number;
+  confirmed_orders?: number;
+  cancelled_orders?: number;
+  today_revenue_vnd?: number;
+  today_orders?: number;
+  orders_by_status?: Array<{ status: string; count: number }>;
+  revenue_by_day?: Array<{ date: string; revenue: number; orders: number }>;
+  recent_orders?: Array<{
+    fulfillment_status?: string;
+    id: string;
+    order_number: string;
+    status: string;
+    grand_total_vnd: number;
+    payment_method: string;
+    payment_status: string;
+    placed_at: string;
+    customer_name: string;
+  }>;
+  top_selling_products?: Array<{
+    product_name: string;
+    total_qty: number;
+    total_amount: number;
+  }>;
+  total_items_sold?: number;
+  new_customers?: number;
+  trends?: Partial<Record<"revenue" | "orders" | "customers" | "items", number>>;
+  revenue_by_category?: Array<{ name: string; percent: number }>;
+  top_products?: Array<{
+    id: string;
+    name: string;
+    sku: string;
+    category: string;
+    sold: number;
+    revenue_vnd: number;
+    image_url?: string | null;
+  }>;
+  sales_channels?: Array<{ key: string; name: string; percent: number; orders: number }>;
+  active_promotions?: Array<{
+    id: string;
+    name: string;
+    description?: string | null;
+    discount_label: string;
+    start_at: string;
+    end_at: string;
+    status: string;
+    image_url?: string | null;
+  }>;
+  recent_posts?: Array<{ id: string; title: string; image_url?: string | null; views: number; status: string }>;
+  recent_lookbooks?: Array<{
+    id: string;
+    title: string;
+    season?: string | null;
+    views: number;
+    status: string;
+    cover_image_url?: string | null;
+  }>;
   customers_by_segment: Array<{ segment: string; count: number }>;
   products_by_status: Array<{ status: string; count: number }>;
   low_stock_by_category: Array<{ category_name: string; sku_count: number }>;
@@ -274,18 +346,79 @@ export type SizeChart = {
   }>;
 };
 
+export type SocialConnection = {
+  id: string; instagramUserId: string; username: string; pageId?: string; status: string;
+  autoReplyEnabled: boolean; tokenExpiresAt: string | null; createdAt: string;
+  accountName?: string; followers?: number; following?: number; mediaCount?: number; avatarUrl?: string | null;
+};
+export type SocialContentItem = {
+  id: string; connectionId: string | null; title: string; caption: string;
+  mediaType: "IMAGE" | "REELS"; mediaUrls: string[]; source: string; status: string;
+  scheduledAt: string | null; externalPostId: string | null; permalink: string | null;
+  publishedAt: string | null; lastError: string | null; createdAt: string;
+};
+export type SocialInteraction = {
+  id: string; authorUsername: string | null; message: string; kind: string; status: string;
+  aiReply: string | null; escalationReason: string | null; createdAt: string;
+};
+export type SocialOverview = {
+  connections: SocialConnection[]; content: SocialContentItem[]; interactions: SocialInteraction[];
+  metrics: Array<{ id: string; contentId: string; impressions: number; reach: number; likes: number; comments: number; saves: number; shares: number; linkClicks: number; attributedOrders: number; attributedRevenueVnd: number; capturedAt: string }>;
+};
+export type SocialPlatformSettings = {
+  appId: string; graphVersion: string; redirectUri: string; webhookUrl: string;
+  hasAppSecret: boolean; hasWebhookVerifyToken: boolean; source: "database" | "environment";
+};
+
+const ADMIN_GET_CACHE_TTL_MS = 2 * 60 * 1000;
+const adminGetCache = new Map<
+  string,
+  { expiresAt: number; promise: Promise<unknown> }
+>();
+
+/** Clear cached admin reads after a write or an authentication change. */
+export function clearAdminApiCache() {
+  adminGetCache.clear();
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}/api/v1${path}`, {
-    credentials: "include",
-    ...init,
-    headers: {
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      ...init?.headers,
-    },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { message?: string }).message ?? `API ${res.status}`);
-  return data as T;
+  const method = (init?.method ?? "GET").toUpperCase();
+  const isCacheableRead = method === "GET" && path.startsWith("/admin/");
+
+  if (isCacheableRead) {
+    const cached = adminGetCache.get(path);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.promise as Promise<T>;
+    }
+    if (cached) adminGetCache.delete(path);
+  }
+
+  const request = (async () => {
+    const res = await fetch(`${API_URL}/api/v1${path}`, {
+      credentials: "include",
+      ...init,
+      headers: {
+        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...init?.headers,
+      },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(adminErrorMessage((data as { message?: string }).message, res.status));
+    if (method !== "GET") clearAdminApiCache();
+    return data as T;
+  })();
+
+  if (isCacheableRead) {
+    adminGetCache.set(path, {
+      expiresAt: Date.now() + ADMIN_GET_CACHE_TTL_MS,
+      promise: request,
+    });
+    request.catch(() => {
+      if (adminGetCache.get(path)?.promise === request) adminGetCache.delete(path);
+    });
+  }
+
+  return request;
 }
 
 export const adminApi = {
@@ -299,7 +432,13 @@ export const adminApi = {
       full_name: string;
       permissions: string[];
     }>("/admin/auth/me"),
-  overview: () => req<Overview>("/admin/overview"),
+  overview: (params?: { from?: string; to?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.from) q.set("from", params.from);
+    if (params?.to) q.set("to", params.to);
+    const qs = q.toString();
+    return req<Overview>(`/admin/overview${qs ? `?${qs}` : ""}`);
+  },
   customers: (params?: {
     segment?: string;
     status?: string;
@@ -326,7 +465,14 @@ export const adminApi = {
     if (params?.page) q.set("page", String(params.page));
     if (params?.limit) q.set("limit", String(params.limit));
     const qs = q.toString();
-    return req<{ items: Customer[]; total: number; page: number; limit: number; segment_distribution: Record<string, number> }>(`/admin/customers${qs ? `?${qs}` : ""}`);
+    return req<{
+      items: Customer[];
+      total: number;
+      page: number;
+      limit: number;
+      segment_distribution: Record<string, number>;
+      overview_metrics?: CustomerOverviewMetrics;
+    }>(`/admin/customers${qs ? `?${qs}` : ""}`);
   },
   customer: (id: string) => req<Customer>(`/admin/customers/${id}`),
   createCustomer: (body: {
@@ -336,6 +482,16 @@ export const adminApi = {
     segment?: CustomerSegment;
     status?: "active" | "blocked";
     internal_note?: string;
+    address?: {
+      recipient_name?: string;
+      phone?: string;
+      address_line: string;
+      city?: string;
+      province?: string;
+      postal_code?: string;
+      country?: string;
+      is_default?: boolean;
+    };
   }) => req<Customer>("/admin/customers", { method: "POST", body: JSON.stringify(body) }),
   updateCustomer: (
     id: string,
@@ -397,13 +553,88 @@ export const adminApi = {
         payment_ref: string | null;
         placed_at: string;
         customer_name: string;
-        fulfillment_status: "unfulfilled" | "fulfilled" | "partial";
+        customer_location?: string;
+        items_count?: number;
+        item_images?: string[];
+        extra_items?: number;
+        fulfillment_status: "unfulfilled" | "fulfilled" | "partial" | string;
         fulfilled_at: string | null;
         inventory_doc_id: string | null;
         inventory_doc_code: string | null;
       }>;
+      stats: {
+        total: number;
+        revenue_vnd: number;
+        pending_payment: number;
+        processing: number;
+        shipping: number;
+        delivered: number;
+        cancelled: number;
+        returned: number;
+        today_orders: number;
+        today_revenue_vnd: number;
+      };
     }>(`/admin/orders${qs ? `?${qs}` : ""}`);
   },
+  createOrder: (body: {
+    customer_id?: string | null | undefined;
+    customer_name: string;
+    customer_email?: string | null | undefined;
+    customer_phone?: string | null | undefined;
+    shipping: {
+      full_name: string;
+      phone?: string | null | undefined;
+      address_line: string;
+      city: string;
+      state?: string | null | undefined;
+      postal_code?: string | null | undefined;
+      country?: string | null | undefined;
+      note?: string | null | undefined;
+    };
+    billing?: {
+      full_name?: string | null | undefined;
+      address_line?: string | null | undefined;
+      city?: string | null | undefined;
+      country?: string | null | undefined;
+    } | undefined;
+    items: Array<{
+      variant_id?: string | undefined;
+      product_id?: string | undefined;
+      sku: string;
+      product_name: string;
+      size_label?: string | null | undefined;
+      color_label?: string | null | undefined;
+      unit_price_vnd: number;
+      qty: number;
+      image_url?: string | null | undefined;
+    }>;
+    payment_method?: string | undefined;
+    payment_status?: string | undefined;
+    fulfillment_status?: string | undefined;
+    fulfillment_location?: string | null | undefined;
+    shipping_method?: string | null | undefined;
+    shipping_vnd?: number | undefined;
+    discount_vnd?: number | undefined;
+    discount_code?: string | null | undefined;
+    status?: string | undefined;
+    notes?: string | null | undefined;
+  }) =>
+    req<{
+      id: string;
+      order_number: string;
+      status: string;
+      grand_total_vnd: number;
+      payment_method: string;
+      payment_status: string;
+      customer_name: string;
+      customer_location: string;
+      items_count: number;
+      fulfillment_status: string;
+      placed_at: string;
+    }>("/admin/orders", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   orderDetail: (id: string) =>
     req<{
       id: string;
@@ -426,6 +657,10 @@ export const adminApi = {
       recipient: Record<string, string> | null;
       shipping_address: Record<string, string> | null;
       placed_at: string;
+      created_at?: string | null;
+      updated_at?: string | null;
+      sepay_transaction?: { id: string; sepayId: number; payload: Record<string, unknown>; createdAt: string } | null;
+      inventory_doc?: { id: string; code: string; status: string; postedAt: string | null; createdAt: string } | null;
       items: Array<{
         id?: string;
         product_id?: string;
@@ -465,7 +700,7 @@ export const adminApi = {
   fulfillOrder: (
     id: string,
     body?: {
-      status?: "unfulfilled" | "fulfilled";
+      status?: "unfulfilled" | "fulfilled" | "shipping" | "delivered";
       inventory_doc_id?: string | null;
       inventory_doc_code?: string | null;
     },
@@ -474,7 +709,7 @@ export const adminApi = {
       id: string;
       order_number: string;
       status: string;
-      fulfillment_status: "unfulfilled" | "fulfilled" | "partial";
+      fulfillment_status: "unfulfilled" | "fulfilled" | "partial" | "shipping" | "delivered";
       fulfilled_at: string | null;
       inventory_doc_id: string | null;
       inventory_doc_code: string | null;
@@ -550,7 +785,7 @@ export const adminApi = {
   ) => {
     const colorwayId = typeof opts === "boolean" ? "" : opts.colorwayId;
     const isCover = typeof opts === "boolean" ? opts : (opts.isCover ?? true);
-    if (!colorwayId) throw new Error("Thiếu colorway_id");
+    if (!colorwayId) throw new Error("Thiếu mã bộ màu");
     const fd = new FormData();
     fd.append("file", file);
     fd.append("colorway_id", colorwayId);
@@ -562,6 +797,7 @@ export const adminApi = {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error((data as { message?: string }).message ?? `API ${res.status}`);
+    clearAdminApiCache();
     return data as AdminProduct;
   },
   createColorway: (productId: string, body?: { size_ids?: string[] }) =>
@@ -573,6 +809,18 @@ export const adminApi = {
     req<AdminProduct>(`/admin/products/${productId}/colorways/${colorwayId}`, { method: "DELETE" }),
   deleteProductMedia: (id: string, assetId: string) =>
     req<AdminProduct>(`/admin/products/${id}/media/${assetId}`, { method: "DELETE" }),
+  uploadCategoryMedia: async (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`${API_URL}/api/v1/admin/categories/upload`, {
+      method: "POST",
+      credentials: "include",
+      body: fd,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data as { message?: string }).message ?? `API ${res.status}`);
+    return data as { url: string; object_key: string };
+  },
   categories: (status?: string) =>
     req<{ items: Category[] }>(`/admin/categories${status ? `?status=${status}` : ""}`),
   createCategory: (body: {
@@ -582,6 +830,7 @@ export const adminApi = {
     sort_order?: number;
     status?: "active" | "archived";
     parent_id?: string | null;
+    image_url?: string | null;
   }) => req<Category>("/admin/categories", { method: "POST", body: JSON.stringify(body) }),
   updateCategory: (
     id: string,
@@ -592,6 +841,7 @@ export const adminApi = {
       sort_order: number;
       status: "active" | "archived";
       parent_id: string | null;
+      image_url: string | null;
     }>,
   ) => req<Category>(`/admin/categories/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteCategory: (id: string, hard = false) =>
@@ -694,8 +944,25 @@ export const adminApi = {
     req<DiscountCode>("/admin/discount-codes", { method: "POST", body: JSON.stringify(body) }),
   patchDiscountCode: (id: string, body: Partial<DiscountCodeInput>) =>
     req<DiscountCode>(`/admin/discount-codes/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
-  deleteDiscountCode: (id: string) =>
-    req<DiscountCode>(`/admin/discount-codes/${id}`, { method: "DELETE" }),
+  deleteDiscountCode: (id: string, hard = true) =>
+    req<{ id: string; success?: boolean; deleted?: boolean }>(
+      `/admin/discount-codes/${id}${hard ? "?hard=1" : ""}`,
+      { method: "DELETE" },
+    ),
+  uploadDiscountCodeImage: async (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`${API_URL}/api/v1/admin/discount-codes/upload`, {
+      method: "POST",
+      credentials: "include",
+      body: fd,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Tải ảnh khuyến mãi thất bại");
+    }
+    return (await res.json()) as { url: string; object_key: string };
+  },
   elaneWomanPosts: () => req<{ items: ElaneWomanPost[] }>("/admin/elane-woman"),
   createElaneWomanPost: (body: FormData | ElaneWomanInput) => {
     if (body instanceof FormData) {
@@ -708,6 +975,7 @@ export const adminApi = {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.message || "Tạo bài đăng thất bại");
         }
+        clearAdminApiCache();
         return res.json() as Promise<ElaneWomanPost>;
       });
     }
@@ -724,6 +992,7 @@ export const adminApi = {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.message || "Cập nhật bài đăng thất bại");
         }
+        clearAdminApiCache();
         return res.json() as Promise<ElaneWomanPost>;
       });
     }
@@ -741,7 +1010,7 @@ export const adminApi = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Upload ảnh thất bại");
+      throw new Error(err.message || "Tải ảnh lên thất bại");
     }
     return (await res.json()) as { url: string; object_key: string };
   },
@@ -786,6 +1055,11 @@ export const adminApi = {
     req<AdminLookbook>(`/admin/lookbooks/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteLookbook: (id: string) =>
     req<{ id: string; success: boolean }>(`/admin/lookbooks/${id}`, { method: "DELETE" }),
+  deleteLookbooks: (ids: string[]) =>
+    req<{ success: boolean; count: number }>("/admin/lookbooks/bulk-delete", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    }),
   reorderLookbooks: (items: Array<{ id: string; sort_order: number }>) =>
     req<{ success: boolean; count: number }>("/admin/lookbooks/reorder", {
       method: "POST",
@@ -812,17 +1086,45 @@ export const adminApi = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Upload ảnh thất bại");
+      throw new Error(err.message || "Tải ảnh lên thất bại");
     }
     return (await res.json()) as { url: string; object_key: string };
   },
+  socialOverview: (fresh = false) =>
+    req<SocialOverview>(`/admin/social/overview${fresh ? `?refresh=${Date.now()}` : ""}`),
+  socialSettings: () => req<SocialPlatformSettings>("/admin/social/settings"),
+  updateSocialSettings: (body: { appId: string; appSecret?: string; webhookVerifyToken?: string; graphVersion: string; redirectUri?: string | null }) =>
+    req<{ ok: boolean }>("/admin/social/settings", { method: "PUT", body: JSON.stringify(body) }),
+  instagramConnectUrl: () => req<{ url: string }>("/admin/social/instagram/connect-url"),
+  createSocialContent: (body: {
+    connectionId?: string | null; title: string; caption: string; mediaType: "IMAGE" | "REELS";
+    mediaUrls: string[]; source: "user" | "ai" | "ai_assisted"; campaignCode?: string | null;
+  }) => req<SocialContentItem>("/admin/social/content", { method: "POST", body: JSON.stringify(body) }),
+  updateSocialContent: (id: string, body: Partial<{
+    connectionId: string | null; title: string; caption: string; mediaType: "IMAGE" | "REELS";
+    mediaUrls: string[]; source: "user" | "ai" | "ai_assisted"; campaignCode: string | null;
+  }>) => req<SocialContentItem>(`/admin/social/content/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  generateSocialContent: (body: { brief: string; productContext?: string; tone?: string }) =>
+    req<{ title: string; caption: string; hashtags: string[] }>("/admin/social/content/generate", { method: "POST", body: JSON.stringify(body) }),
+  approveSocialContent: (id: string, body: { publishNow?: boolean; scheduledAt?: string | null }) =>
+    req<SocialContentItem>(`/admin/social/content/${id}/approve`, { method: "POST", body: JSON.stringify(body) }),
+  retrySocialAiReply: (id: string) => req<{ ok: boolean }>(`/admin/social/interactions/${id}/retry-ai`, { method: "POST" }),
+  syncSocialMetrics: () => req<{ synced: number }>("/admin/social/metrics/sync", { method: "POST" }),
+};
+
+export type DiscountCodeAppliedProduct = {
+  id: string;
+  name: string;
+  sku?: string;
+  category?: string;
+  image_url?: string | null;
 };
 
 export type DiscountCode = {
   id: string;
   code: string;
   name: string;
-  type: "percent" | "fixed" | string;
+  type: "percent" | "fixed" | "free_shipping" | "bxgy" | string;
   value: number;
   min_order_vnd: number;
   max_discount_vnd: number | null;
@@ -830,7 +1132,22 @@ export type DiscountCode = {
   ends_at: string | null;
   usage_limit: number | null;
   usage_count: number;
-  status: "active" | "disabled" | string;
+  status: "active" | "disabled" | "draft" | "paused" | string;
+  description?: string | null;
+  image_url?: string | null;
+  banner_url?: string | null;
+  apply_scope?: "all" | "category" | "products";
+  products?: DiscountCodeAppliedProduct[];
+  applied_category_ids?: string[];
+  customer_group?: "all" | "member" | "new" | "selected";
+  per_customer_limit?: number | null;
+  apply_on_sale?: boolean;
+  show_on_homepage?: boolean;
+  stackable?: boolean;
+  created_by_id?: string | null;
+  updated_by_id?: string | null;
+  created_by_name?: string | null;
+  updated_by_name?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -838,14 +1155,25 @@ export type DiscountCode = {
 export type DiscountCodeInput = {
   code: string;
   name: string;
-  type: "percent" | "fixed";
+  type: "percent" | "fixed" | "free_shipping" | "bxgy";
   value: number;
   min_order_vnd?: number;
   max_discount_vnd?: number | null;
   starts_at?: string | null;
   ends_at?: string | null;
   usage_limit?: number | null;
-  status?: "active" | "disabled";
+  status?: "active" | "disabled" | "draft" | "paused";
+  description?: string | null;
+  image_url?: string | null;
+  banner_url?: string | null;
+  apply_scope?: "all" | "category" | "products";
+  products?: DiscountCodeAppliedProduct[];
+  applied_category_ids?: string[];
+  customer_group?: "all" | "member" | "new" | "selected";
+  per_customer_limit?: number | null;
+  apply_on_sale?: boolean;
+  show_on_homepage?: boolean;
+  stackable?: boolean;
 };
 
 export type ElaneWomanPost = {
@@ -922,9 +1250,26 @@ export type AdminLookbook = {
   subtitle: string | null;
   description: string | null;
   season: string | null;
+  year?: number | null;
   cover_image_url: string;
   sort_order: number;
-  status: "published" | "draft" | "archived" | string;
+  status: "published" | "draft" | "scheduled" | "archived" | string;
+  intro_content?: string | null;
+  published_at?: string | null;
+  unpublish_at?: string | null;
+  unpublish_enabled?: boolean;
+  show_on_home?: boolean;
+  allow_products?: boolean;
+  view_count?: number;
+  product_count?: number;
+  attached_products?: Array<{
+    id: string;
+    name: string;
+    slug?: string | null;
+    sku?: string | null;
+    image_url?: string | null;
+  }>;
+  attached_product_ids?: string[];
   created_at: string;
   updated_at: string;
   item_count?: number;
@@ -932,3 +1277,5 @@ export type AdminLookbook = {
 };
 
 export { API_URL };
+
+

@@ -153,7 +153,7 @@ adminProductRoutes.get("/", async (c) => {
 
   const page = Math.max(1, Number(c.req.query("page") ?? 1) || 1);
   const rawLimit = Number(c.req.query("limit") ?? 20) || 20;
-  const limit = ([20, 50, 100] as number[]).includes(rawLimit) ? rawLimit : 20;
+  const limit = Math.min(100, Math.max(1, rawLimit));
   const offset = (page - 1) * limit;
 
   const status = c.req.query("status") || undefined;
@@ -336,7 +336,13 @@ adminProductRoutes.get("/:id", async (c) => {
   const user = c.get("user")!;
   requirePerm(user, "product.read");
   const db = c.get("db");
-  const rows = await db.select().from(products).where(eq(products.id, c.req.param("id"))).limit(1);
+  const param = c.req.param("id");
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(param);
+  const rows = await db
+    .select()
+    .from(products)
+    .where(isUuid ? eq(products.id, param) : eq(products.slug, param))
+    .limit(1);
   if (!rows[0]) throw new ApiError(404, "not_found", "Không tìm thấy");
   return c.json(await mapProduct(db, rows[0], canReadCost(user)));
 });

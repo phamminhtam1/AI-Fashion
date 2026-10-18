@@ -5,7 +5,9 @@ import { env } from "../env.js";
 // ponytail: URL builder only — skips network upload
 const key = "abc/file.jpg";
 const url = mediaPublicUrl(key);
-if (env.supabaseUrl) {
+if (env.mediaStorageProvider.toLowerCase() === "r2") {
+  assert.equal(url, `${env.r2PublicBaseUrl}/${key}`);
+} else if (env.supabaseUrl) {
   assert.match(url, /\/storage\/v1\/object\/public\/products\/abc\/file\.jpg$/);
   assert.ok(!url.includes("/rest/v1"));
 } else {

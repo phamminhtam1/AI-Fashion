@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { auditLogs, lookbooks, lookbookItems, products } from "@elane/db";
 import type { AppVars } from "../../middleware/auth.js";
@@ -58,7 +58,7 @@ adminLookbookRoutes.post("/upload", async (c) => {
   return c.json({ url, object_key: objectKey }, 201);
 });
 
-/** 2. List all lookbooks with item count */
+/** 2. List all lookbooks with item count and product count */
 adminLookbookRoutes.get("/", async (c) => {
   const user = c.get("user")!;
   requirePerm(user, "product.read");
@@ -72,12 +72,29 @@ adminLookbookRoutes.get("/", async (c) => {
       subtitle: lookbooks.subtitle,
       description: lookbooks.description,
       season: lookbooks.season,
+      year: lookbooks.year,
       cover_image_url: lookbooks.coverImageUrl,
       sort_order: lookbooks.sortOrder,
       status: lookbooks.status,
+      intro_content: lookbooks.introContent,
+      published_at: lookbooks.publishedAt,
+      unpublish_at: lookbooks.unpublishAt,
+      unpublish_enabled: lookbooks.unpublishEnabled,
+      show_on_home: lookbooks.showOnHome,
+      allow_products: lookbooks.allowProducts,
+      view_count: lookbooks.viewCount,
+      attached_products: lookbooks.attachedProducts,
+      attached_product_ids: lookbooks.attachedProductIds,
       created_at: lookbooks.createdAt,
       updated_at: lookbooks.updatedAt,
       item_count: sql<number>`(SELECT count(*)::int FROM lookbook_items WHERE lookbook_items.lookbook_id = lookbooks.id)`,
+      product_count: sql<number>`(
+        SELECT count(DISTINCT pid)::int FROM (
+          SELECT product_id::text AS pid FROM lookbook_items WHERE lookbook_items.lookbook_id = lookbooks.id AND product_id IS NOT NULL
+          UNION
+          SELECT elem->>'id' AS pid FROM jsonb_array_elements(COALESCE(lookbooks.attached_products, '[]'::jsonb)) AS elem WHERE elem->>'id' IS NOT NULL
+        ) t
+      )`,
     })
     .from(lookbooks)
     .orderBy(asc(lookbooks.sortOrder), desc(lookbooks.createdAt));
@@ -109,14 +126,76 @@ adminLookbookRoutes.post("/reorder", async (c) => {
   return c.json({ success: true, count: items.length });
 });
 
-/** 4. Get single lookbook by ID with all its items */
+/** 4. Bulk delete lookbooks */
+adminLookbookRoutes.post("/bulk-delete", async (c) => {
+  const user = c.get("user")!;
+  requirePerm(user, "product.write");
+  const db = c.get("db");
+
+  const body = await c.req.json().catch(() => ({}));
+  const ids = Array.isArray(body.ids) ? (body.ids as string[]) : [];
+  if (!ids.length) {
+    throw new ApiError(400, "invalid_body", "Thiếu danh sách lookbook IDs");
+  }
+
+  await db.delete(lookbooks).where(inArray(lookbooks.id, ids));
+
+  await db.insert(auditLogs).values({
+    actorAccountId: user.accountId,
+    action: "lookbook.bulk_delete",
+    resourceType: "lookbook",
+    resourceId: ids[0] || "bulk",
+    beforeRedacted: { ids },
+    requestId: requestId(c),
+  });
+
+  return c.json({ success: true, count: ids.length });
+});
+
+/** 5. Get single lookbook by ID or SLUG with all its items */
 adminLookbookRoutes.get("/:id", async (c) => {
   const user = c.get("user")!;
   requirePerm(user, "product.read");
   const db = c.get("db");
-  const id = c.req.param("id");
+  const param = c.req.param("id");
 
-  const [lb] = await db.select().from(lookbooks).where(eq(lookbooks.id, id)).limit(1);
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(param);
+  const [lb] = await db
+    .select({
+      id: lookbooks.id,
+      slug: lookbooks.slug,
+      title: lookbooks.title,
+      subtitle: lookbooks.subtitle,
+      description: lookbooks.description,
+      season: lookbooks.season,
+      year: lookbooks.year,
+      cover_image_url: lookbooks.coverImageUrl,
+      sort_order: lookbooks.sortOrder,
+      status: lookbooks.status,
+      intro_content: lookbooks.introContent,
+      published_at: lookbooks.publishedAt,
+      unpublish_at: lookbooks.unpublishAt,
+      unpublish_enabled: lookbooks.unpublishEnabled,
+      show_on_home: lookbooks.showOnHome,
+      allow_products: lookbooks.allowProducts,
+      view_count: lookbooks.viewCount,
+      attached_products: lookbooks.attachedProducts,
+      attached_product_ids: lookbooks.attachedProductIds,
+      created_at: lookbooks.createdAt,
+      updated_at: lookbooks.updatedAt,
+      item_count: sql<number>`(SELECT count(*)::int FROM lookbook_items WHERE lookbook_items.lookbook_id = lookbooks.id)`,
+      product_count: sql<number>`(
+        SELECT count(DISTINCT pid)::int FROM (
+          SELECT product_id::text AS pid FROM lookbook_items WHERE lookbook_items.lookbook_id = lookbooks.id AND product_id IS NOT NULL
+          UNION
+          SELECT elem->>'id' AS pid FROM jsonb_array_elements(COALESCE(lookbooks.attached_products, '[]'::jsonb)) AS elem WHERE elem->>'id' IS NOT NULL
+        ) t
+      )`,
+    })
+    .from(lookbooks)
+    .where(isUuid ? or(eq(lookbooks.id, param), eq(lookbooks.slug, param)) : eq(lookbooks.slug, param))
+    .limit(1);
+
   if (!lb) {
     throw new ApiError(404, "not_found", "Không tìm thấy bộ Lookbook");
   }
@@ -139,7 +218,7 @@ adminLookbookRoutes.get("/:id", async (c) => {
     })
     .from(lookbookItems)
     .leftJoin(products, eq(products.id, lookbookItems.productId))
-    .where(eq(lookbookItems.lookbookId, id))
+    .where(eq(lookbookItems.lookbookId, lb.id))
     .orderBy(asc(lookbookItems.sortOrder), asc(lookbookItems.createdAt));
 
   return c.json({
@@ -151,7 +230,7 @@ adminLookbookRoutes.get("/:id", async (c) => {
   });
 });
 
-/** 5. Create new lookbook */
+/** 6. Create new lookbook */
 adminLookbookRoutes.post("/", async (c) => {
   const user = c.get("user")!;
   requirePerm(user, "product.write");
@@ -178,6 +257,31 @@ adminLookbookRoutes.post("/", async (c) => {
     slug = `${slug}-${Math.floor(Math.random() * 1000)}`;
   }
 
+  const status =
+    body.status === "draft" || body.status === "archived" || body.status === "scheduled" ? body.status : "published";
+
+  let publishedAt: Date | null = null;
+  if (body.published_at || body.publishedAt) {
+    publishedAt = new Date(body.published_at || body.publishedAt);
+  } else if (status === "published") {
+    publishedAt = new Date();
+  }
+
+  let unpublishAt: Date | null = null;
+  if (body.unpublish_at || body.unpublishAt) {
+    unpublishAt = new Date(body.unpublish_at || body.unpublishAt);
+  }
+
+  const attachedProducts = Array.isArray(body.attached_products)
+    ? body.attached_products
+    : Array.isArray(body.products)
+      ? body.products
+      : [];
+
+  const attachedProductIds = Array.isArray(body.attached_product_ids)
+    ? body.attached_product_ids
+    : attachedProducts.map((p: any) => p.id).filter(Boolean);
+
   const [created] = await db
     .insert(lookbooks)
     .values({
@@ -186,25 +290,35 @@ adminLookbookRoutes.post("/", async (c) => {
       subtitle: (body.subtitle || "").trim() || null,
       description: (body.description || "").trim() || null,
       season: (body.season || "").trim() || null,
+      year: typeof body.year === "number" ? body.year : Number(body.year) || null,
       coverImageUrl,
-      sortOrder: typeof body.sort_order === "number" ? body.sort_order : 0,
-      status: body.status === "draft" || body.status === "archived" ? body.status : "published",
+      sortOrder: typeof body.sort_order === "number" ? body.sort_order : Number(body.sort_order) || 0,
+      status,
+      introContent: (body.intro_content || body.introContent || "").trim() || null,
+      publishedAt,
+      unpublishAt,
+      unpublishEnabled: body.unpublish_enabled ?? Boolean(unpublishAt),
+      showOnHome: body.show_on_home ?? true,
+      allowProducts: body.allow_products ?? true,
+      viewCount: typeof body.view_count === "number" ? body.view_count : 0,
+      attachedProducts,
+      attachedProductIds,
     })
     .returning();
 
   await db.insert(auditLogs).values({
-    accountId: user.id,
-    action: "create",
-    entityType: "lookbook",
-    entityId: created.id,
-    payloadAfter: created,
+    actorAccountId: user.accountId,
+    action: "lookbook.create",
+    resourceType: "lookbook",
+    resourceId: created.id,
+    afterRedacted: created,
     requestId: requestId(c),
   });
 
   return c.json(created, 201);
 });
 
-/** 6. Update lookbook */
+/** 7. Update lookbook */
 adminLookbookRoutes.patch("/:id", async (c) => {
   const user = c.get("user")!;
   requirePerm(user, "product.write");
@@ -237,31 +351,72 @@ adminLookbookRoutes.patch("/:id", async (c) => {
   if (body.subtitle !== undefined) patch.subtitle = String(body.subtitle).trim() || null;
   if (body.description !== undefined) patch.description = String(body.description).trim() || null;
   if (body.season !== undefined) patch.season = String(body.season).trim() || null;
+  if (body.year !== undefined) patch.year = typeof body.year === "number" ? body.year : Number(body.year) || null;
   if (body.cover_image_url !== undefined || body.coverImageUrl !== undefined) {
     const url = String(body.cover_image_url || body.coverImageUrl).trim();
     if (url) patch.coverImageUrl = url;
   }
   if (typeof body.sort_order === "number") patch.sortOrder = body.sort_order;
   if (body.status !== undefined) {
-    patch.status = body.status === "draft" || body.status === "archived" ? body.status : "published";
+    patch.status =
+      body.status === "draft" || body.status === "archived" || body.status === "scheduled"
+        ? body.status
+        : "published";
+  }
+  if (body.intro_content !== undefined || body.introContent !== undefined) {
+    patch.introContent = String(body.intro_content || body.introContent).trim() || null;
+  }
+  if (body.published_at !== undefined || body.publishedAt !== undefined) {
+    const val = body.published_at || body.publishedAt;
+    patch.publishedAt = val ? new Date(val) : null;
+  } else if (patch.status === "published" && !existing.publishedAt) {
+    patch.publishedAt = new Date();
+  }
+  if (body.unpublish_at !== undefined || body.unpublishAt !== undefined) {
+    const val = body.unpublish_at || body.unpublishAt;
+    patch.unpublishAt = val ? new Date(val) : null;
+  }
+  if (body.unpublish_enabled !== undefined || body.unpublishEnabled !== undefined) {
+    patch.unpublishEnabled = Boolean(body.unpublish_enabled ?? body.unpublishEnabled);
+  }
+  if (body.show_on_home !== undefined || body.showOnHome !== undefined) {
+    patch.showOnHome = Boolean(body.show_on_home ?? body.showOnHome);
+  }
+  if (body.allow_products !== undefined || body.allowProducts !== undefined) {
+    patch.allowProducts = Boolean(body.allow_products ?? body.allowProducts);
+  }
+  if (body.view_count !== undefined || body.viewCount !== undefined) {
+    patch.viewCount = Number(body.view_count ?? body.viewCount) || 0;
+  }
+  if (body.attached_products !== undefined || body.products !== undefined) {
+    const prods = Array.isArray(body.attached_products)
+      ? body.attached_products
+      : Array.isArray(body.products)
+        ? body.products
+        : [];
+    patch.attachedProducts = prods;
+    patch.attachedProductIds = prods.map((p: any) => p.id).filter(Boolean);
+  }
+  if (body.attached_product_ids !== undefined) {
+    patch.attachedProductIds = Array.isArray(body.attached_product_ids) ? body.attached_product_ids : [];
   }
 
   const [updated] = await db.update(lookbooks).set(patch).where(eq(lookbooks.id, id)).returning();
 
   await db.insert(auditLogs).values({
-    accountId: user.id,
-    action: "update",
-    entityType: "lookbook",
-    entityId: id,
-    payloadBefore: existing,
-    payloadAfter: updated,
+    actorAccountId: user.accountId,
+    action: "lookbook.update",
+    resourceType: "lookbook",
+    resourceId: id,
+    beforeRedacted: existing,
+    afterRedacted: updated,
     requestId: requestId(c),
   });
 
   return c.json(updated);
 });
 
-/** 7. Delete lookbook */
+/** 8. Delete lookbook */
 adminLookbookRoutes.delete("/:id", async (c) => {
   const user = c.get("user")!;
   requirePerm(user, "product.write");
@@ -276,16 +431,17 @@ adminLookbookRoutes.delete("/:id", async (c) => {
   await db.delete(lookbooks).where(eq(lookbooks.id, id));
 
   await db.insert(auditLogs).values({
-    accountId: user.id,
-    action: "delete",
-    entityType: "lookbook",
-    entityId: id,
-    payloadBefore: existing,
+    actorAccountId: user.accountId,
+    action: "lookbook.delete",
+    resourceType: "lookbook",
+    resourceId: id,
+    beforeRedacted: existing,
     requestId: requestId(c),
   });
 
   return c.json({ id, success: true });
 });
+
 
 /** 8. Add item to lookbook */
 adminLookbookRoutes.post("/:id/items", async (c) => {

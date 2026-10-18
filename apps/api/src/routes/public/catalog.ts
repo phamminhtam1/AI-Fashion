@@ -84,7 +84,9 @@ async function mapProduct(db: AppVars["Variables"]["db"], p: typeof products.$in
   );
   const publicById = new Map(publicCws.map((c) => [c.id, c]));
 
-  const cat = await db.select().from(categories).where(eq(categories.id, p.primaryCategoryId)).limit(1);
+  const cat = p.primaryCategoryId
+    ? await db.select().from(categories).where(eq(categories.id, p.primaryCategoryId)).limit(1)
+    : [];
   const occIds = await db.select().from(productOccasions).where(eq(productOccasions.productId, p.id));
   let occasionSlug: string | null = null;
   if (occIds[0]) {
@@ -97,7 +99,7 @@ async function mapProduct(db: AppVars["Variables"]["db"], p: typeof products.$in
   const costs = sizeSource.map((v) => v.cost_vnd).filter((x): x is number => x != null);
   const minPrice = prices.length ? Math.min(...prices) : 0;
   const maxCompare = compare.length ? Math.max(...compare) : null;
-  const minCost = costs.length ? Math.min(...costs) : null;
+  const minCost = costs.length ? Math.min(...costs) : (minPrice > 0 ? Math.round(minPrice * 0.3) : null);
 
   let sizeChart: { id: string; name: string; unit: string } | null = null;
   if (p.sizeChartId) {
@@ -198,7 +200,7 @@ async function mapProduct(db: AppVars["Variables"]["db"], p: typeof products.$in
         sku: v.sku,
         price_vnd: v.price_vnd,
         compare_at_price_vnd: v.compare_at_price_vnd,
-        ...(includeCost ? { cost_vnd: v.cost_vnd } : {}),
+        ...(includeCost ? { cost_vnd: v.cost_vnd ?? (v.price_vnd > 0 ? Math.round(v.price_vnd * 0.3) : null) } : {}),
         status: v.status,
         colorway_id: v.colorway_id,
         size_id: v.size_id,
@@ -399,6 +401,7 @@ publicCatalogRoutes.get("/categories", async (c) => {
       slug: r.slug,
       name: r.name,
       description: r.description,
+      image_url: r.imageUrl,
       parent_id: r.parentId,
     })),
   });

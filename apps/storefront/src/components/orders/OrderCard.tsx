@@ -208,7 +208,7 @@ export function OrderCard({
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#666666]">Tổng thanh toán</p>
-            <p className="mt-2 break-words text-xl font-semibold tracking-tight tabular-nums text-[#111111] sm:text-2xl">{formatVND(order.total)}</p>
+            <p className="mt-1 break-words text-xl font-semibold tracking-tight tabular-nums text-[#111111] sm:text-xl">{formatVND(order.total)}</p>
           </div>
 
           <div className={`grid w-full shrink-0 gap-2 sm:w-auto ${isBankAwaiting ? "grid-cols-2" : "grid-cols-1"}`}>

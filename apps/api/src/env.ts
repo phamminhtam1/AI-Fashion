@@ -25,6 +25,13 @@ export const env = {
   supabaseUrl: normalizeSupabaseUrl(process.env.SUPABASE_URL),
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || undefined,
   supabaseMediaBucket: process.env.SUPABASE_MEDIA_BUCKET ?? "products",
+  mediaStorageProvider: process.env.MEDIA_STORAGE_PROVIDER ?? "supabase",
+  r2Endpoint: process.env.R2_ENDPOINT?.replace(/\/$/, ""),
+  r2Region: process.env.R2_REGION ?? "auto",
+  r2AccessKeyId: process.env.R2_ACCESS_KEY_ID || undefined,
+  r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY || undefined,
+  r2MediaBucket: process.env.R2_MEDIA_BUCKET ?? "ai-fashion-public",
+  r2PublicBaseUrl: process.env.R2_PUBLIC_BASE_URL?.replace(/\/$/, ""),
   sepayWebhookSecret: process.env.SEPAY_WEBHOOK_SECRET ?? "",
   sepayBankAccount: process.env.SEPAY_BANK_ACCOUNT ?? "",
   sepayAccountName: process.env.SEPAY_ACCOUNT_NAME ?? "",
@@ -39,4 +46,10 @@ export const env = {
     process.env.AI_KEY_ENCRYPTION_SECRET ??
     process.env.SESSION_SECRET ??
     "elane-ai-key-encryption-secret-default-32B!",
+  metaAppId: process.env.META_APP_ID ?? "",
+  metaAppSecret: process.env.META_APP_SECRET ?? "",
+  metaRedirectUri: process.env.META_REDIRECT_URI ?? "http://localhost:3001/api/v1/admin/social/instagram/callback",
+  metaWebhookVerifyToken: process.env.META_WEBHOOK_VERIFY_TOKEN ?? "",
+  metaGraphVersion: process.env.META_GRAPH_VERSION ?? "v23.0",
+  socialAiModel: process.env.SOCIAL_AI_MODEL ?? "gpt-4.1-mini",
 };

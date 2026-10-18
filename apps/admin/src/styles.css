@@ -5,12 +5,22 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "IBM Plex Sans", sans-serif;
-  --font-serif: "Libre Baskerville", serif;
-  --radius-sm: calc(var(--radius) - 2px);
-  --radius-md: var(--radius);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 2px);
+  --font-sans: "Be Vietnam Pro", "Segoe UI", sans-serif;
+  --font-serif: var(--font-sans);
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.375rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --radius-xs: 4px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius: 4px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -33,53 +43,122 @@
 }
 
 :root {
-  --radius: 0.375rem;
-  --background: oklch(0.948 0.012 72);
-  --foreground: oklch(0.252 0.008 80);
-  --card: oklch(0.948 0.012 72);
-  --card-foreground: oklch(0.252 0.008 80);
-  --popover: oklch(0.975 0.008 72);
-  --popover-foreground: oklch(0.252 0.008 80);
-  --primary: oklch(0.48 0.135 28);
-  --primary-foreground: oklch(0.975 0.008 72);
-  --secondary: oklch(0.89 0.016 70);
-  --secondary-foreground: oklch(0.252 0.008 80);
-  --muted: oklch(0.91 0.014 72);
-  --muted-foreground: oklch(0.49 0.012 75);
-  --accent: oklch(0.79 0.025 68);
-  --accent-foreground: oklch(0.252 0.008 80);
-  --destructive: oklch(0.48 0.135 28);
-  --destructive-foreground: oklch(0.975 0.008 72);
-  --border: oklch(0.72 0.018 70 / 45%);
-  --input: oklch(0.62 0.02 70 / 55%);
-  --ring: oklch(0.48 0.135 28);
-  --field: #f7f4ef;
+  --radius: 4px;
+  --background: #f8f9fa;
+  --foreground: #101828;
+  --card: #ffffff;
+  --card-foreground: #101828;
+  --popover: #ffffff;
+  --popover-foreground: #101828;
+  --primary: #6941c6;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f5f7;
+  --secondary-foreground: #344054;
+  --muted: #f2f4f7;
+  --muted-foreground: #667085;
+  --accent: #f4f3ff;
+  --accent-foreground: #6941c6;
+  --destructive: #d92d20;
+  --destructive-foreground: #ffffff;
+  --border: #eaecf0;
+  --input: #d0d5dd;
+  --ring: #6941c6;
+  --field: #ffffff;
 }
 
 @layer base {
   * { border-color: var(--color-border); }
   html { background: var(--color-background); }
-  body { margin: 0; background-color: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans); letter-spacing: 0; }
-  button, a, input, textarea { letter-spacing: 0; }
-  /* Form controls: brighter than page cream so empty vs filled is obvious */
+  body { margin: 0; background-color: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans); font-size: var(--text-sm); line-height: var(--text-sm--line-height); letter-spacing: 0; -webkit-font-smoothing: antialiased; }
+  button, a, input, textarea, select { font-family: inherit; letter-spacing: 0; }
   select {
     background-color: var(--field);
   }
 }
 
+/* Shared type hierarchy for every admin page, dialog and content panel. */
+@utility admin-page-title {
+  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  @media (min-width: 640px) {
+    font-size: 1.75rem;
+    line-height: 2.25rem;
+  }
+}
+
+@utility admin-section-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  line-height: var(--text-lg--line-height);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+@utility admin-subsection-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+@utility admin-metric {
+  font-family: var(--font-sans);
+  font-size: 1.75rem;
+  line-height: 2.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 @utility section-label {
-  font-size: 0.625rem;
-  line-height: 1rem;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs--line-height);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   color: var(--color-muted-foreground);
 }
 
 @keyframes chart-rise { from { transform: scaleY(0); opacity: .35; } to { transform: scaleY(1); opacity: 1; } }
 .chart-bar { transform-origin: bottom; animation: chart-rise .7s cubic-bezier(.2,.75,.25,1) both; }
 .chart-bar:nth-child(2n) { animation-delay: 60ms; }
-@media (prefers-reduced-motion: reduce) { .chart-bar { animation: none; } * { scroll-behavior: auto !important; } }
+
+/* A shared entrance transition keeps every admin module as lively as the
+   order-detail experience without making individual managers own animation. */
+@keyframes admin-page-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.995);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.admin-page-motion {
+  animation: admin-page-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: 50% 0;
+  will-change: transform, opacity, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-bar,
+  .admin-page-motion {
+    animation: none;
+  }
+  .admin-page-motion {
+    filter: none;
+    transform: none;
+    will-change: auto;
+  }
+  * { scroll-behavior: auto !important; }
+}
 
 /* =========================================================================
    Interactive Controls & Buttons Pointer Cursor
@@ -114,3 +193,122 @@ input:disabled,
   cursor: not-allowed !important;
 }
 
+/* =========================================================================
+   Luxury Custom Scrollbar - Thanh cuộn thanh mảnh, tinh tế cho ÉLANE Admin
+   ========================================================================= */
+
+/* Firefox standard */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+}
+
+/* WebKit (Chrome, Edge, Safari, Opera) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(105, 65, 198, 0.65); /* Soft purple tint matching ÉLANE primary */
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: #6941c6;
+}
+
+/* Hide ugly Windows triangle arrow buttons */
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Specialized Sidebar subtle scroll */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.5);
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #6941c6;
+}
+
+
+
+/* Dashboard layout uses explicit CSS so chart dimensions never depend on utility generation. */
+.overview-dashboard { font-family: var(--font-sans); font-size: var(--text-sm); line-height: var(--text-sm--line-height); }
+.overview-charts, .overview-operations, .overview-content { display:grid; gap:16px; align-items:start; grid-template-columns:minmax(0,1fr); }
+.overview-chart { height:280px; min-height:280px; width:100%; }
+.overview-donut { position:relative; width:158px; height:158px; flex:0 0 158px; }
+.overview-channel { display:grid; grid-template-columns:28px 80px minmax(40px,1fr) 48px 48px; align-items:center; gap:8px; font-size:12px; }
+.overview-channel > :first-child { width:28px; height:28px; }
+.overview-dashboard table { font-size: var(--text-sm); }
+
+
+
+
+.overview-dashboard col { min-width:0; }
+@media (min-width:1200px) {
+  .overview-charts { grid-template-columns:minmax(0,1.65fr) minmax(360px,1fr); }
+  .overview-operations { grid-template-columns:minmax(0,1fr) minmax(340px,.7fr); }
+  .overview-operations > :last-child { grid-column:1 / -1; }
+  .overview-content { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (min-width:1700px) {
+  .overview-operations { grid-template-columns:minmax(490px,1.15fr) minmax(330px,.8fr) minmax(470px,1.1fr); }
+  .overview-operations > :last-child { grid-column:auto; }
+  .overview-content { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media (max-width:600px) {
+  .overview-channel { grid-template-columns:28px 72px minmax(20px,1fr) 42px 42px; gap:5px; }
+}
+
+
+/* Reserve readable widths for values and badges; names receive remaining space. */
+.overview-operations > :last-child table { min-width:760px; }
+.overview-operations > :last-child td:nth-child(1),
+.overview-operations > :last-child td:nth-child(3),
+.overview-operations > :last-child td:nth-child(4),
+.overview-operations > :last-child td:nth-child(5) { white-space:nowrap; overflow:visible; text-overflow:clip; }
+.overview-content table { min-width:450px; }
+@media (min-width:1200px) and (max-width:1999px) {
+ .overview-operations { grid-template-columns:minmax(0,1.5fr) minmax(340px,1fr); }
+ .overview-operations > :last-child { grid-column:1 / -1; }
+}
+
+.overview-operations > :last-child table { min-width: 1080px; }

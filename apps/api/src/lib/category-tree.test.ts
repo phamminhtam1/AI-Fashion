@@ -5,6 +5,7 @@ import {
   wouldCreateCycle,
   enrichTree,
   sortTreeOrder,
+  rollupProductCounts,
 } from "./category-tree.js";
 
 const nodes = [
@@ -45,5 +46,23 @@ describe("category-tree", () => {
       sortTreeOrder(nodes).map((n) => n.id),
       ["a", "b", "c", "d"],
     );
+  });
+
+  it("rollupProductCounts aggregates child category products into parent category", () => {
+    const pmap = new Map<string, string[]>([
+      ["a", ["p1"]],
+      ["b", ["p2", "p3"]],
+      ["c", ["p4"]],
+      ["d", ["p5"]],
+    ]);
+    const counts = rollupProductCounts(nodes, pmap);
+    // c has 1 (p4)
+    assert.equal(counts.get("c"), 1);
+    // b has 2 + 1 = 3 (p2, p3, p4)
+    assert.equal(counts.get("b"), 3);
+    // a has 1 + 2 + 1 = 4 (p1, p2, p3, p4)
+    assert.equal(counts.get("a"), 4);
+    // d has 1 (p5)
+    assert.equal(counts.get("d"), 1);
   });
 });

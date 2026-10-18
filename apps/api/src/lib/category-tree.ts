@@ -69,3 +69,26 @@ export function sortTreeOrder<T extends CatNode & { sortOrder?: number; name?: s
   walk(null);
   return out;
 }
+
+/**
+ * Tính tổng số sản phẩm cho từng danh mục bao gồm cả sản phẩm của toàn bộ danh mục con.
+ */
+export function rollupProductCounts(
+  nodes: CatNode[],
+  productIdsByCat: Map<string, Iterable<string>>,
+): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const n of nodes) {
+    const descendantIds = collectDescendantIds(nodes, n.id);
+    const subtreeIds = [n.id, ...descendantIds];
+    const uniqueProducts = new Set<string>();
+    for (const id of subtreeIds) {
+      const pids = productIdsByCat.get(id);
+      if (pids) {
+        for (const pid of pids) uniqueProducts.add(pid);
+      }
+    }
+    out.set(n.id, uniqueProducts.size);
+  }
+  return out;
+}

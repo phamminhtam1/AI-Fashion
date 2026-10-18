@@ -121,6 +121,7 @@ export const categories = pgTable("categories", {
   slug: text("slug").notNull().unique(),
   sortOrder: integer("sort_order").notNull().default(0),
   status: text("status").notNull().default("active"),
+  imageUrl: text("image_url"),
   description: text("description"),
   seoTitle: text("seo_title"),
   seoDescription: text("seo_description"),
@@ -442,7 +443,7 @@ export const discountCodes = pgTable("discount_codes", {
   id: id(),
   code: text("code").notNull().unique(),
   name: text("name").notNull(),
-  type: text("type").notNull(), // percent|fixed
+  type: text("type").notNull(), // percent|fixed|free_shipping|bxgy
   value: integer("value").notNull(),
   minOrderVnd: integer("min_order_vnd").notNull().default(0),
   maxDiscountVnd: integer("max_discount_vnd"),
@@ -450,7 +451,26 @@ export const discountCodes = pgTable("discount_codes", {
   endsAt: ts("ends_at"),
   usageLimit: integer("usage_limit"),
   usageCount: integer("usage_count").notNull().default(0),
-  status: text("status").notNull().default("active"), // active|disabled
+  status: text("status").notNull().default("active"), // active|disabled|draft|paused
+  description: text("description"),
+  imageUrl: text("image_url"),
+  bannerUrl: text("banner_url"),
+  applyScope: text("apply_scope").notNull().default("all"), // all|category|products
+  appliedProducts: jsonb("applied_products").$type<Array<{
+    id: string;
+    name: string;
+    sku?: string;
+    category?: string;
+    image_url?: string | null;
+  }>>().default([]),
+  appliedCategoryIds: jsonb("applied_category_ids").$type<string[]>().default([]),
+  customerGroup: text("customer_group").notNull().default("all"), // all|member|new|selected
+  perCustomerLimit: integer("per_customer_limit"),
+  applyOnSale: boolean("apply_on_sale").notNull().default(false),
+  showOnHomepage: boolean("show_on_homepage").notNull().default(false),
+  stackable: boolean("stackable").notNull().default(false),
+  createdById: uuid("created_by_id").references(() => accounts.id),
+  updatedById: uuid("updated_by_id").references(() => accounts.id),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
@@ -583,7 +603,23 @@ export const lookbooks = pgTable("lookbooks", {
   season: text("season"),
   coverImageUrl: text("cover_image_url").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
-  status: text("status").notNull().default("published"), // published | draft | archived
+  status: text("status").notNull().default("published"), // published | draft | scheduled | archived
+  year: integer("year"),
+  introContent: text("intro_content"),
+  publishedAt: ts("published_at"),
+  unpublishAt: ts("unpublish_at"),
+  unpublishEnabled: boolean("unpublish_enabled").notNull().default(false),
+  showOnHome: boolean("show_on_home").notNull().default(true),
+  allowProducts: boolean("allow_products").notNull().default(true),
+  viewCount: integer("view_count").notNull().default(0),
+  attachedProductIds: jsonb("attached_product_ids").$type<string[]>().default([]),
+  attachedProducts: jsonb("attached_products").$type<Array<{
+    id: string;
+    name: string;
+    slug?: string | null;
+    sku?: string | null;
+    image_url?: string | null;
+  }>>().default([]),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
@@ -729,5 +765,96 @@ export const aiApiKeys = pgTable("ai_api_keys", {
   lastCheckedAt: ts("last_checked_at"),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
+});
+
+// --- Instagram Social Commerce & AI Content Hub ---
+export const socialPlatformConfigs = pgTable("social_platform_configs", {
+  id: id(),
+  provider: text("provider").notNull().unique(),
+  appId: text("app_id").notNull(),
+  encryptedAppSecret: text("encrypted_app_secret").notNull(),
+  encryptedWebhookVerifyToken: text("encrypted_webhook_verify_token").notNull(),
+  graphVersion: text("graph_version").notNull().default("v23.0"),
+  redirectUri: text("redirect_uri"),
+  updatedById: uuid("updated_by_id").references(() => accounts.id),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export const instagramConnections = pgTable("instagram_connections", {
+  id: id(),
+  instagramUserId: text("instagram_user_id").notNull().unique(),
+  username: text("username").notNull(),
+  pageId: text("page_id"),
+  encryptedAccessToken: text("encrypted_access_token").notNull(),
+  tokenExpiresAt: ts("token_expires_at"),
+  scopes: jsonb("scopes").$type<string[]>().notNull().default([]),
+  status: text("status").notNull().default("active"), // active|expired|revoked|error
+  autoReplyEnabled: boolean("auto_reply_enabled").notNull().default(true),
+  createdById: uuid("created_by_id").references(() => accounts.id),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export const socialContentItems = pgTable("social_content_items", {
+  id: id(),
+  connectionId: uuid("connection_id").references(() => instagramConnections.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  caption: text("caption").notNull().default(""),
+  mediaType: text("media_type").notNull().default("IMAGE"), // IMAGE|CAROUSEL|REELS
+  mediaUrls: jsonb("media_urls").$type<string[]>().notNull().default([]),
+  source: text("source").notNull().default("user"), // user|ai|ai_assisted
+  status: text("status").notNull().default("draft"), // draft|approved|scheduled|publishing|published|failed
+  scheduledAt: ts("scheduled_at"),
+  approvedAt: ts("approved_at"),
+  approvedById: uuid("approved_by_id").references(() => accounts.id),
+  externalPostId: text("external_post_id"),
+  permalink: text("permalink"),
+  publishedAt: ts("published_at"),
+  lastError: text("last_error"),
+  campaignCode: text("campaign_code"),
+  createdById: uuid("created_by_id").references(() => accounts.id),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export const socialInteractions = pgTable(
+  "social_interactions",
+  {
+    id: id(),
+    connectionId: uuid("connection_id").notNull().references(() => instagramConnections.id, { onDelete: "cascade" }),
+    contentId: uuid("content_id").references(() => socialContentItems.id, { onDelete: "set null" }),
+    externalPostId: text("external_post_id"),
+    externalInteractionId: text("external_interaction_id").notNull(),
+    kind: text("kind").notNull().default("comment"), // comment|mention|dm
+    authorId: text("author_id"),
+    authorUsername: text("author_username"),
+    message: text("message").notNull(),
+    intent: text("intent"),
+    sentiment: text("sentiment"),
+    status: text("status").notNull().default("new"), // new|replied|escalated|ignored
+    aiReply: text("ai_reply"),
+    repliedAt: ts("replied_at"),
+    escalationReason: text("escalation_reason"),
+    rawPayload: jsonb("raw_payload"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("social_interactions_external_uq").on(t.connectionId, t.externalInteractionId)],
+);
+
+export const socialMetricSnapshots = pgTable("social_metric_snapshots", {
+  id: id(),
+  contentId: uuid("content_id").notNull().references(() => socialContentItems.id, { onDelete: "cascade" }),
+  impressions: integer("impressions").notNull().default(0),
+  reach: integer("reach").notNull().default(0),
+  likes: integer("likes").notNull().default(0),
+  comments: integer("comments").notNull().default(0),
+  saves: integer("saves").notNull().default(0),
+  shares: integer("shares").notNull().default(0),
+  linkClicks: integer("link_clicks").notNull().default(0),
+  attributedOrders: integer("attributed_orders").notNull().default(0),
+  attributedRevenueVnd: bigint("attributed_revenue_vnd", { mode: "number" }).notNull().default(0),
+  capturedAt: ts("captured_at").notNull().defaultNow(),
 });
 

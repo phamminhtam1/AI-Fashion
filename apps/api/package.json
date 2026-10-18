@@ -11,10 +11,15 @@
     "import:pantio": "tsx src/scripts/import-pantio.ts --fresh",
     "sync:pantio": "tsx src/scripts/sync-pantio-live.ts",
     "sync:pantio:apply": "tsx src/scripts/sync-pantio-live.ts --apply",
+    "repair:pantio-images": "tsx src/scripts/repair-pantio-images.ts",
+    "repair:pantio-images:apply": "tsx src/scripts/repair-pantio-images.ts --apply",
+    "delete:broken-image-products": "tsx src/scripts/delete-products-with-broken-images.ts",
+    "delete:broken-image-products:apply": "tsx src/scripts/delete-products-with-broken-images.ts --apply",
     "stock:fill-empty": "tsx src/scripts/fill-out-of-stock.ts",
     "stock:fill-empty:apply": "tsx src/scripts/fill-out-of-stock.ts --apply"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1152.0",
     "@elane/db": "*",
     "@hono/node-server": "^1.19.0",
     "@supabase/supabase-js": "^2.117.1",

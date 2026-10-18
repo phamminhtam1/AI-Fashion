@@ -1,3 +1,5 @@
+import { adminErrorMessage } from "@/lib/admin-language";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { MoreHorizontal, Palette, Plus, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -26,7 +28,7 @@ export function ColorsManager() {
       const res = await adminApi.colors();
       setItems(res.items);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Không tải được màu");
+      toast.error(e instanceof Error ? adminErrorMessage(e) : "Không tải được màu");
     } finally {
       setLoading(false);
     }
@@ -91,7 +93,7 @@ export function ColorsManager() {
       await load();
       backToList();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Lưu thất bại");
+      toast.error(e instanceof Error ? adminErrorMessage(e) : "Lưu thất bại");
     } finally {
       setSaving(false);
     }
@@ -114,7 +116,7 @@ export function ColorsManager() {
       toast.success("Đã xóa màu");
       await load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Xóa thất bại");
+      toast.error(e instanceof Error ? adminErrorMessage(e) : "Xóa thất bại");
     }
   }
 
@@ -132,9 +134,9 @@ export function ColorsManager() {
         <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0 flex-1">
             <p className="section-label text-primary">{editing ? "Chỉnh sửa" : "Tạo mới"}</p>
-            <h2 className="mt-1 font-serif text-2xl sm:text-3xl">
+            <h1 className="mt-1 admin-page-title">
               {editing ? editing.name : "Thêm màu"}
-            </h2>
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               Màu dùng cho biến thể sản phẩm (mã + tên + hex).
             </p>
@@ -152,12 +154,12 @@ export function ColorsManager() {
         <section className="mt-8 grid max-w-2xl gap-6 border-t border-border pt-8">
           <div className="flex items-center gap-4">
             <span
-              className="size-14 shrink-0 rounded-md border border-border shadow-inner"
+              className="size-14 shrink-0 rounded-xs border border-border shadow-inner"
               style={{ backgroundColor: form.hex || "#ccc" }}
               aria-hidden
             />
             <label className="block min-w-0 flex-1">
-              <span className="text-xs font-medium">Mã hex</span>
+              <span className="text-sm font-medium">Mã hex</span>
               <div className="mt-2 flex gap-2">
                 <Input
                   type="color"
@@ -167,7 +169,7 @@ export function ColorsManager() {
                   aria-label="Chọn màu"
                 />
                 <Input
-                  className="font-mono"
+                  className="tabular-nums"
                   value={form.hex}
                   onChange={(e) => setForm((f) => ({ ...f, hex: e.target.value }))}
                   placeholder="#1A1A1A"
@@ -176,7 +178,7 @@ export function ColorsManager() {
             </label>
           </div>
           <label className="block">
-            <span className="text-xs font-medium">Tên màu</span>
+            <span className="text-sm font-medium">Tên màu</span>
             <Input
               className="mt-2"
               value={form.name}
@@ -185,9 +187,9 @@ export function ColorsManager() {
             />
           </label>
           <label className="block">
-            <span className="text-xs font-medium">Mã (slug)</span>
+            <span className="text-sm font-medium">Mã (đường dẫn)</span>
             <Input
-              className="mt-2 font-mono text-sm"
+              className="mt-2 tabular-nums text-sm"
               value={form.code}
               onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
               placeholder="Tự tạo từ tên nếu để trống"
@@ -203,7 +205,7 @@ export function ColorsManager() {
           </div>
         </section>
 
-        <footer className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-border py-5 text-[11px] text-muted-foreground">
+        <footer className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-border py-5 text-xs text-muted-foreground">
           <span>© 2026 ÉLANE · Modern Femininity</span>
           <span>Mảng màu · form</span>
         </footer>
@@ -214,36 +216,37 @@ export function ColorsManager() {
   return (
     <>
       {confirmDialog}
+      <AdminPageHeader title="Màu sắc" description="Quản lý bảng màu dùng cho các biến thể sản phẩm." />
       <div className="mt-6 flex items-center justify-between gap-4">
-        <span className="text-xs text-muted-foreground">{items.length} màu trong catalog</span>
+        <span className="text-sm text-muted-foreground">{items.length} màu trong danh mục</span>
         <Button size="sm" onClick={openCreate}>
           <Plus className="mr-1.5 size-4" /> Thêm màu
         </Button>
       </div>
 
       <section className="mt-6 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-md border border-accent bg-accent/25 p-5">
+        <div className="rounded-xs border border-accent bg-accent/25 p-5">
           <p className="section-label">Tổng màu</p>
-          <p className="mt-3 font-serif text-3xl">{loading ? "…" : items.length}</p>
-          <p className="mt-1 text-xs text-primary">Trong hệ thống</p>
+          <p className="mt-3 font-sans admin-metric">{loading ? "…" : items.length}</p>
+          <p className="mt-1 text-sm text-primary">Trong hệ thống</p>
         </div>
-        <div className="rounded-md border border-border p-5">
+        <div className="rounded-xs border border-border p-5">
           <p className="section-label">Đang dùng</p>
-          <p className="mt-3 font-serif text-3xl">
+          <p className="mt-3 font-sans admin-metric">
             {loading ? "…" : items.filter((c) => c.variant_count > 0).length}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">Có gắn biến thể</p>
+          <p className="mt-1 text-sm text-muted-foreground">Có gắn biến thể</p>
         </div>
-        <div className="rounded-md border border-border p-5">
+        <div className="rounded-xs border border-border p-5">
           <p className="section-label">Chưa dùng</p>
-          <p className="mt-3 font-serif text-3xl">
+          <p className="mt-3 font-sans admin-metric">
             {loading ? "…" : items.filter((c) => c.variant_count === 0).length}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">Có thể xóa</p>
+          <p className="mt-1 text-sm text-muted-foreground">Có thể xóa</p>
         </div>
       </section>
 
-      <section className="mt-6 overflow-hidden rounded-md border border-border">
+      <section className="mt-6 overflow-hidden rounded-xs border border-border">
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm font-medium">Danh sách màu</p>
           <div className="relative flex-1 sm:max-w-xs">
@@ -258,11 +261,11 @@ export function ColorsManager() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-sm">
-            <thead className="bg-secondary/55 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            <thead className="bg-secondary/55 text-xs uppercase tracking-[0.04em] text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 text-left">Màu</th>
                 <th className="px-4 py-3 text-left">Mã</th>
-                <th className="px-4 py-3 text-left">Hex</th>
+                <th className="px-4 py-3 text-left">Mã màu</th>
                 <th className="px-4 py-3 text-right">Biến thể</th>
                 <th className="w-14" />
               </tr>
@@ -290,8 +293,8 @@ export function ColorsManager() {
                         {c.name}
                       </span>
                     </td>
-                    <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground">{c.code}</td>
-                    <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground">
+                    <td className="px-4 py-3.5 tabular-nums text-sm text-muted-foreground">{c.code}</td>
+                    <td className="px-4 py-3.5 tabular-nums text-sm text-muted-foreground">
                       {c.hex ?? "—"}
                     </td>
                     <td className="px-4 py-3.5 text-right">{c.variant_count}</td>
@@ -319,7 +322,7 @@ export function ColorsManager() {
         </div>
       </section>
 
-      <footer className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-border py-5 text-[11px] text-muted-foreground">
+      <footer className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-border py-5 text-xs text-muted-foreground">
         <span>© 2026 ÉLANE · Modern Femininity</span>
         <span className="inline-flex items-center gap-1">
           <Palette className="size-3" /> Mảng màu · list

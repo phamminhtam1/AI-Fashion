@@ -16,9 +16,12 @@ export type ConfirmOptions = {
   title: string;
   description: string;
   confirmLabel?: string;
+  confirmText?: string;
   cancelLabel?: string;
+  cancelText?: string;
   /** Nút xác nhận màu cảnh báo (xóa / nguy hiểm) */
   destructive?: boolean;
+  variant?: "default" | "destructive";
 };
 
 type Pending = ConfirmOptions & {
@@ -48,6 +51,10 @@ export function useConfirmDialog() {
     });
   }, []);
 
+  const isDestructive = Boolean(pending?.destructive || pending?.variant === "destructive");
+  const confirmText = pending?.confirmLabel || pending?.confirmText || "Đồng ý";
+  const cancelText = pending?.cancelLabel || pending?.cancelText || "Huỷ";
+
   const dialog = (
     <AlertDialog
       open={!!pending}
@@ -57,32 +64,33 @@ export function useConfirmDialog() {
     >
       <AlertDialogContent className="sm:max-w-md">
         <AlertDialogHeader>
-          <p className="section-label text-primary">{pending?.destructive ? "Cảnh báo" : "Xác nhận"}</p>
-          <AlertDialogTitle className="font-serif text-2xl">{pending?.title}</AlertDialogTitle>
+          <p className="section-label text-primary">{isDestructive ? "Cảnh báo" : "Xác nhận"}</p>
+          <AlertDialogTitle className="font-sans admin-section-title">{pending?.title}</AlertDialogTitle>
           <AlertDialogDescription className="whitespace-pre-line text-sm leading-relaxed">
             {pending?.description}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => close(false)}>
-            {pending?.cancelLabel ?? "Huỷ"}
+            {cancelText}
           </AlertDialogCancel>
           <AlertDialogAction
             className={cn(
-              pending?.destructive &&
-                "bg-primary text-primary-foreground hover:bg-primary/90",
+              isDestructive
+                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                : "bg-primary text-primary-foreground hover:bg-primary/90",
             )}
             onClick={(e) => {
               e.preventDefault();
               close(true);
             }}
           >
-            {pending?.confirmLabel ?? "Đồng ý"}
+            {confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
 
-  return { confirm, dialog };
+  return { confirm, dialog, ConfirmDialogElement: dialog };
 }

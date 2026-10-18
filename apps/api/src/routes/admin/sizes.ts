@@ -15,7 +15,10 @@ import { ApiError, requestId } from "../../lib/errors.js";
 import { requirePerm } from "../../lib/session.js";
 
 export const adminSizeRoutes = new Hono<AppVars>();
-adminSizeRoutes.use("*", requireAuth);
+adminSizeRoutes.use("/sizes", requireAuth);
+adminSizeRoutes.use("/sizes/*", requireAuth);
+adminSizeRoutes.use("/size-charts", requireAuth);
+adminSizeRoutes.use("/size-charts/*", requireAuth);
 
 function codeify(str: string) {
   return str

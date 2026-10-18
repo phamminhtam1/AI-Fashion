@@ -1,0 +1,70 @@
+CREATE TABLE IF NOT EXISTS "instagram_connections" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "instagram_user_id" text NOT NULL UNIQUE,
+  "username" text NOT NULL,
+  "page_id" text,
+  "encrypted_access_token" text NOT NULL,
+  "token_expires_at" timestamp with time zone,
+  "scopes" jsonb DEFAULT '[]'::jsonb NOT NULL,
+  "status" text DEFAULT 'active' NOT NULL,
+  "auto_reply_enabled" boolean DEFAULT true NOT NULL,
+  "created_by_id" uuid REFERENCES "accounts"("id"),
+  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  "updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE IF NOT EXISTS "social_content_items" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "connection_id" uuid REFERENCES "instagram_connections"("id") ON DELETE SET NULL,
+  "title" text NOT NULL,
+  "caption" text DEFAULT '' NOT NULL,
+  "media_type" text DEFAULT 'IMAGE' NOT NULL,
+  "media_urls" jsonb DEFAULT '[]'::jsonb NOT NULL,
+  "source" text DEFAULT 'user' NOT NULL,
+  "status" text DEFAULT 'draft' NOT NULL,
+  "scheduled_at" timestamp with time zone,
+  "approved_at" timestamp with time zone,
+  "approved_by_id" uuid REFERENCES "accounts"("id"),
+  "external_post_id" text,
+  "permalink" text,
+  "published_at" timestamp with time zone,
+  "last_error" text,
+  "campaign_code" text,
+  "created_by_id" uuid REFERENCES "accounts"("id"),
+  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  "updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE IF NOT EXISTS "social_interactions" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "connection_id" uuid NOT NULL REFERENCES "instagram_connections"("id") ON DELETE CASCADE,
+  "content_id" uuid REFERENCES "social_content_items"("id") ON DELETE SET NULL,
+  "external_post_id" text,
+  "external_interaction_id" text NOT NULL,
+  "kind" text DEFAULT 'comment' NOT NULL,
+  "author_id" text,
+  "author_username" text,
+  "message" text NOT NULL,
+  "intent" text,
+  "sentiment" text,
+  "status" text DEFAULT 'new' NOT NULL,
+  "ai_reply" text,
+  "replied_at" timestamp with time zone,
+  "escalation_reason" text,
+  "raw_payload" jsonb,
+  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  "updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "social_interactions_external_uq" ON "social_interactions" ("connection_id", "external_interaction_id");
+CREATE TABLE IF NOT EXISTS "social_metric_snapshots" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "content_id" uuid NOT NULL REFERENCES "social_content_items"("id") ON DELETE CASCADE,
+  "impressions" integer DEFAULT 0 NOT NULL,
+  "reach" integer DEFAULT 0 NOT NULL,
+  "likes" integer DEFAULT 0 NOT NULL,
+  "comments" integer DEFAULT 0 NOT NULL,
+  "saves" integer DEFAULT 0 NOT NULL,
+  "shares" integer DEFAULT 0 NOT NULL,
+  "link_clicks" integer DEFAULT 0 NOT NULL,
+  "attributed_orders" integer DEFAULT 0 NOT NULL,
+  "attributed_revenue_vnd" bigint DEFAULT 0 NOT NULL,
+  "captured_at" timestamp with time zone DEFAULT now() NOT NULL
+);

@@ -63,8 +63,7 @@ adminInventoryRoutes.get("/", async (c) => {
         eq(productVariants.status, "active"),
       ),
     )
-    .orderBy(products.name, productVariants.sku)
-    .limit(500);
+    .orderBy(products.name, productVariants.sku);
 
   // Fetch product and colorway images
   const productIds = Array.from(new Set(rows.map((r) => r.product_id)));
@@ -128,6 +127,20 @@ adminInventoryRoutes.get("/documents", async (c) => {
         select coalesce(sum(l.qty), 0)::int from inventory_document_lines l
         where l.document_id = inventory_documents.id
       )`,
+      total_amount_vnd: sql<number>`(
+        select coalesce(sum(
+          l.qty * coalesce(
+            l.unit_cost_vnd,
+            case when inventory_documents.type = 'issue'
+              then pv.price_vnd
+              else coalesce(pv.cost_vnd, round(pv.price_vnd * 0.45)::bigint)
+            end
+          )
+        ), 0)::bigint
+        from inventory_document_lines l
+        inner join product_variants pv on pv.id = l.variant_id
+        where l.document_id = inventory_documents.id
+      )`,
     })
     .from(inventoryDocuments)
     .where(conds.length ? and(...conds) : undefined)
@@ -154,7 +167,11 @@ adminInventoryRoutes.get("/documents/:id", async (c) => {
       barcode: productVariants.barcode,
       qty: inventoryDocumentLines.qty,
       direction: inventoryDocumentLines.direction,
-      unit_cost_vnd: inventoryDocumentLines.unitCostVnd,
+      unit_cost_vnd:
+        docs[0].type === "issue"
+          ? sql<number | null>`COALESCE(${inventoryDocumentLines.unitCostVnd}, ${productVariants.priceVnd})::bigint`
+          : sql<number | null>`COALESCE(${inventoryDocumentLines.unitCostVnd}, ${productVariants.costVnd}, ROUND(${productVariants.priceVnd} * 0.45)::bigint)`,
+      price_vnd: productVariants.priceVnd,
       sku: productVariants.sku,
       product_name: products.name,
       color_name: sql<string>`'Màu ' || (${productColorways.sortOrder} + 1)`,
@@ -400,7 +417,7 @@ adminInventoryRoutes.post("/documents/:id/post", async (c) => {
       await tx
         .update(orders)
         .set({
-          fulfillmentStatus: "fulfilled",
+          fulfillmentStatus: "shipping",
           fulfilledAt: new Date(),
           inventoryDocId: docs[0]!.id,
           inventoryDocCode: docs[0]!.code,

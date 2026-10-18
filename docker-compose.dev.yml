@@ -44,6 +44,13 @@ services:
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
       SUPABASE_MEDIA_BUCKET: ${SUPABASE_MEDIA_BUCKET:-products}
+      MEDIA_STORAGE_PROVIDER: ${MEDIA_STORAGE_PROVIDER:-supabase}
+      R2_ENDPOINT: ${R2_ENDPOINT:-}
+      R2_REGION: ${R2_REGION:-auto}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_MEDIA_BUCKET: ${R2_MEDIA_BUCKET:-ai-fashion-public}
+      R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL:-}
       SEPAY_WEBHOOK_SECRET: ${SEPAY_WEBHOOK_SECRET:-}
       SEPAY_BANK_ACCOUNT: ${SEPAY_BANK_ACCOUNT:-}
       SEPAY_ACCOUNT_NAME: ${SEPAY_ACCOUNT_NAME:-}
@@ -114,9 +121,9 @@ services:
   ngrok:
     image: ngrok/ngrok:latest
     container_name: elane-ngrok
-    command: http api:3001 --log stdout
+    command: http api:3001 --domain=strident-norris-perspectively.ngrok-free.dev --log stdout
     environment:
-      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-30XVk5B0dpJpLYXIgxeYyK7NgyT_25peumFR6Rwsz995bJLjq}
     ports:
       - "4040:4040"
     depends_on:

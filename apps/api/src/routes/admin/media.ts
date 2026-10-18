@@ -13,7 +13,7 @@ const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const MAX_BYTES = 5 * 1024 * 1024; // 5MB
 
 export const adminMediaRoutes = new Hono<AppVars>();
-adminMediaRoutes.use("*", requireAuth);
+adminMediaRoutes.use("/products/*", requireAuth);
 
 adminMediaRoutes.post("/products/:id/media", async (c) => {
   const user = c.get("user")!;

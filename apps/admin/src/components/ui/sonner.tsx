@@ -6,7 +6,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       className="toaster group"
+      containerAriaLabel="Thông báo"
+      style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)" }}
       toastOptions={{
+        closeButtonAriaLabel: "Đóng thông báo",
+        style: { fontFamily: "var(--font-sans)", fontSize: "var(--text-sm)" },
         classNames: {
           toast:
             "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
