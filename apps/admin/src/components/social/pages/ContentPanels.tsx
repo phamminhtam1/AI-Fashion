@@ -1,9 +1,9 @@
-import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
-import { Check, Copy, Link2, List, ListOrdered, Pencil, Play, Plus, RefreshCw, Shirt, Smile, Sparkles, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { Check, ChevronLeft, ChevronRight, Copy, Eye, FolderHeart, GripVertical, Images, Link2, List, ListOrdered, Pencil, Play, Plus, RefreshCw, Shirt, Smile, Sparkles, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { AGES, AUDIENCES, CAMPAIGN_GOALS, CH_NAME, CONTENT_CHANNELS, CTAS, GOALS, MOCK_PRODUCTS, SEGMENTS, STYLES, TINTS, TONES, type Product, type Variant } from "../mock";
+import { AGES, AUDIENCES, CAMPAIGN_GOALS, CH_NAME, CONTENT_CHANNELS, CTAS, GOALS, MOCK_PRODUCTS, SEGMENTS, STYLES, TONES, type Collection, type Product, type Variant } from "../mock";
 import type { AiPreset, ChannelId } from "../types";
 import { areaCls, ChannelLogo, Field, inputCls, Pill, card, vnd } from "../ui";
 import { fmtDuration, MediaView, Placeholder, type MediaItem } from "./ContentPreview";
@@ -34,37 +34,259 @@ function ChannelChip({ id, on, onToggle, className }: { id: ChannelId; on: boole
  * ===================================================================== */
 export interface AiForm { picked: string[]; goal: string; style: string; tone: string; audience: string; extra: string }
 
-export function AiInputPanel({ form, upd, preset, targets, onToggleChannel, busy, hasResult, onGenerate, onSeeAll }: {
-  form: AiForm; upd: (p: Partial<AiForm>) => void; preset: AiPreset; targets: ChannelId[]; onToggleChannel: (id: ChannelId) => void;
-  busy: boolean; hasResult: boolean; onGenerate: () => void; onSeeAll: () => void;
+export interface AiKeyInfo {
+  active: boolean;
+  message?: string;
+  key?: {
+    id: string;
+    label: string;
+    provider: string;
+    creditsRemaining: number | null;
+  };
+}
+
+export function AiInputPanel({
+  form,
+  upd,
+  preset,
+  targets,
+  onToggleChannel,
+  busy,
+  hasResult,
+  onGenerate,
+  onSeeAll,
+  aiKey,
+  onManageKeys,
+  products = MOCK_PRODUCTS,
+  selectedLookbook,
+  onClearLookbook,
+}: {
+  form: AiForm;
+  upd: (p: Partial<AiForm>) => void;
+  preset: AiPreset;
+  targets: ChannelId[];
+  onToggleChannel: (id: ChannelId) => void;
+  busy: boolean;
+  hasResult: boolean;
+  onGenerate: () => void;
+  onSeeAll: () => void;
+  aiKey?: AiKeyInfo | null;
+  onManageKeys?: () => void;
+  products?: Product[];
+  selectedLookbook?: Collection | null;
+  onClearLookbook?: () => void;
+  featuredFirst?: boolean;
 }) {
   const toggleProduct = (id: string) => upd({ picked: form.picked.includes(id) ? form.picked.filter((x) => x !== id) : [...form.picked, id] });
   const extraHint = preset === "topic" ? "Ví dụ: Phối đồ công sở mùa thu" : preset === "idea" ? "Ví dụ: Giới thiệu đầm lụa mới cho tiệc tối..." : "Nhấn mạnh chất liệu cao cấp, form dáng tôn dáng, phù hợp đi làm, đi cafe.";
+
+  // Chỉ hiển thị các sản phẩm đã chọn (giữ đúng thứ tự người dùng đã chọn)
+  const pickedProducts = useMemo(() => {
+    return form.picked
+      .map((id) => products.find((p) => p.id === id))
+      .filter((p): p is Product => Boolean(p));
+  }, [products, form.picked]);
+
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = () => {
+    const el = sliderRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 6);
+  };
+
+  useEffect(() => {
+    const el = sliderRef.current;
+    if (!el) return;
+    checkScroll();
+    el.addEventListener("scroll", checkScroll, { passive: true });
+    const ro = new ResizeObserver(() => checkScroll());
+    ro.observe(el);
+
+    const handleWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaX) < Math.abs(e.deltaY) && el.scrollWidth > el.clientWidth) {
+        if (
+          (e.deltaY > 0 && el.scrollLeft + el.clientWidth < el.scrollWidth - 2) ||
+          (e.deltaY < 0 && el.scrollLeft > 2)
+        ) {
+          e.preventDefault();
+          el.scrollLeft += e.deltaY;
+        }
+      }
+    };
+    el.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      el.removeEventListener("scroll", checkScroll);
+      el.removeEventListener("wheel", handleWheel);
+      ro.disconnect();
+    };
+  }, [pickedProducts]);
+
+  const scrollSlider = (direction: "left" | "right") => {
+    const el = sliderRef.current;
+    if (!el) return;
+    const distance = el.clientWidth * 0.75;
+    el.scrollBy({ left: direction === "left" ? -distance : distance, behavior: "smooth" });
+  };
+
   return (
-    <section className={cn(card, "space-y-5 p-5")}>
+    <section className={cn(card, "w-full min-w-0 max-w-full overflow-hidden space-y-5 p-5")}>
       <div>
         <h2 className="text-lg font-semibold">2. Nhập thông tin để AI tạo nội dung</h2>
-        <p className="mt-1 text-sm text-slate-500">Cung cấp thông tin về sản phẩm và định hướng, AI sẽ tự động tạo gợi ý nội dung phù hợp với thương hiệu ÉLANE.</p>
       </div>
 
-      <Field label={<>Chọn sản phẩm / BST {preset === "product" && <span className="text-rose-500">*</span>}</>}
-        hint={<button type="button" onClick={onSeeAll} className="text-xs font-medium text-[#6941c6] hover:underline">Xem tất cả</button>}>
-        <div className="grid grid-cols-4 gap-2">
-          {MOCK_PRODUCTS.map((p) => {
-            const on = form.picked.includes(p.id);
-            return (
-              <button key={p.id} type="button" aria-pressed={on} onClick={() => toggleProduct(p.id)} title={p.name}
-                className={cn("min-w-0 rounded-lg border p-1 text-left", on ? "border-[#6941c6] bg-violet-50/50 ring-1 ring-[#6941c6]" : "border-slate-200 hover:border-violet-200")}>
-                <div className={cn("relative grid aspect-[3/4] place-items-center rounded-md bg-gradient-to-br text-slate-500", p.tint)}>
-                  <Shirt className="size-6" />
-                  {on && <span className="absolute left-1 top-1"><Checkbox on /></span>}
-                </div>
-                <p className="mt-1.5 line-clamp-2 text-[11px] leading-tight text-slate-700">{p.name}</p>
-                <p className="mt-0.5 text-[11px] font-semibold">{vnd(p.price)}</p>
+      <Field
+        label={
+          <>
+            Chọn sản phẩm / BST {preset === "product" && <span className="text-rose-500">*</span>}
+            {form.picked.length > 0 && (
+              <span className="ml-2 font-normal text-xs text-violet-700">
+                (Đã chọn {form.picked.length})
+              </span>
+            )}
+          </>
+        }
+        hint={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onSeeAll}
+              className="text-xs font-semibold text-[#6941c6] hover:underline flex items-center gap-1"
+            >
+              Xem tất cả &rarr;
+            </button>
+          </div>
+        }
+      >
+        {selectedLookbook && (
+          <div className="mb-2.5 flex items-center justify-between rounded-lg border border-violet-200 bg-violet-50/70 px-3 py-2 text-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <FolderHeart className="size-4 shrink-0 text-[#6941c6]" />
+              <span className="truncate">
+                BST đang chọn: <strong className="text-slate-900">{selectedLookbook.title}</strong>
+                {selectedLookbook.season && (
+                  <span className="ml-1 text-violet-700 font-medium">({selectedLookbook.season})</span>
+                )}
+              </span>
+            </div>
+            {onClearLookbook && (
+              <button
+                type="button"
+                onClick={onClearLookbook}
+                className="ml-2 shrink-0 text-[11px] text-slate-500 hover:text-slate-800 underline"
+              >
+                Bỏ chọn BST
               </button>
-            );
-          })}
-        </div>
+            )}
+          </div>
+        )}
+
+        {pickedProducts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
+            <Shirt className="size-7 text-slate-300" />
+            <p className="mt-2 text-xs font-semibold text-slate-700">Chưa chọn sản phẩm nào</p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={onSeeAll}
+              className="mt-3 h-8 gap-1.5 border-violet-200 text-xs text-[#6941c6] hover:bg-violet-50"
+            >
+              <Plus className="size-3.5" />
+              Chọn sản phẩm ({products.length})
+            </Button>
+          </div>
+        ) : (
+          <div className="relative w-full min-w-0 max-w-full">
+            {canScrollLeft && (
+              <button
+                type="button"
+                onClick={() => scrollSlider("left")}
+                aria-label="Trượt xem sản phẩm trước"
+                className="!min-h-0 absolute left-1 top-[38%] -translate-y-1/2 z-10 grid size-7 place-items-center rounded-full border border-slate-200 bg-white/95 text-slate-700 shadow-md backdrop-blur-xs transition-all hover:bg-white hover:scale-110 active:scale-95"
+              >
+                <ChevronLeft className="size-4 text-slate-700" />
+              </button>
+            )}
+
+            {canScrollRight && (
+              <button
+                type="button"
+                onClick={() => scrollSlider("right")}
+                aria-label="Trượt xem sản phẩm tiếp theo"
+                className="!min-h-0 absolute right-1 top-[38%] -translate-y-1/2 z-10 grid size-7 place-items-center rounded-full border border-slate-200 bg-white/95 text-slate-700 shadow-md backdrop-blur-xs transition-all hover:bg-white hover:scale-110 active:scale-95"
+              >
+                <ChevronRight className="size-4 text-slate-700" />
+              </button>
+            )}
+
+            <div
+              ref={sliderRef}
+              className="flex w-full min-w-0 max-w-full gap-2 overflow-x-auto pb-1.5 pt-0.5 scroll-smooth"
+              style={{ scrollbarWidth: "thin" }}
+            >
+              {pickedProducts.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  aria-pressed={true}
+                  onClick={() => toggleProduct(p.id)}
+                  title={`${p.name} (Bấm để bỏ chọn)`}
+                  className={cn(
+                    "!min-h-0 group relative w-[calc((100%-24px)/4)] min-w-[90px] max-w-[130px] shrink-0 rounded-lg border p-1 text-left transition-all",
+                    "border-[#6941c6] bg-violet-50/50 ring-1 ring-[#6941c6]"
+                  )}
+                >
+                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-md bg-slate-100">
+                    {p.imageUrl ? (
+                      <img
+                        src={p.imageUrl}
+                        alt={p.name}
+                        className="size-full object-cover transition-transform group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className={cn("grid size-full place-items-center bg-gradient-to-br text-slate-500", p.tint)}>
+                        <Shirt className="size-6" />
+                      </div>
+                    )}
+                    <span className="absolute left-1 top-1">
+                      <Checkbox on />
+                    </span>
+                    {p.category && (
+                      <span className="absolute bottom-1 right-1 rounded bg-slate-900/60 px-1 py-0.5 text-[8px] font-medium text-white backdrop-blur-xs">
+                        {p.category}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1.5 line-clamp-2 text-[11px] font-medium leading-tight text-slate-700">
+                    {p.name}
+                  </p>
+                  <div className="mt-0.5 flex items-center justify-between text-[10px]">
+                    <span className="truncate text-slate-400 max-w-[45px]">{p.sku}</span>
+                    <span className="font-semibold text-slate-900">{vnd(p.price)}</span>
+                  </div>
+                </button>
+              ))}
+
+              <button
+                type="button"
+                onClick={onSeeAll}
+                title="Chọn thêm sản phẩm khác"
+                className="!min-h-0 group flex w-[calc((100%-24px)/4)] min-w-[90px] max-w-[130px] shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-violet-300 bg-violet-50/30 p-2 text-center transition-colors hover:border-[#6941c6] hover:bg-violet-50"
+              >
+                <div className="grid size-7 place-items-center rounded-full bg-white text-[#6941c6] shadow-xs group-hover:scale-105 transition-transform">
+                  <Plus className="size-3.5" />
+                </div>
+                <span className="mt-1.5 text-[11px] font-medium text-[#6941c6]">Thêm SP</span>
+              </button>
+            </div>
+          </div>
+        )}
       </Field>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -103,23 +325,65 @@ export function AiInputPanel({ form, upd, preset, targets, onToggleChannel, busy
  * ===================================================================== */
 type ResultTab = "caption" | "hashtag" | "cta" | "media";
 
-export function AiResultPanel({ variants, active, onActive, editing, onEdit, onPatch, busy, onRegenerate, cta, onCta, products }: {
-  variants: Variant[]; active: number; onActive: (i: number) => void; editing: boolean; onEdit: (i: number) => void;
-  onPatch: (i: number, p: Partial<Variant>) => void; busy: boolean; onRegenerate: () => void; cta: string; onCta: (v: string) => void; products: Product[];
+export function AiResultPanel({
+  variants,
+  active,
+  onActive,
+  editing,
+  onEdit,
+  onPatch,
+  busy,
+  onRegenerate,
+  cta,
+  onCta,
+  media,
+  selectedMediaIds,
+  onSelectedMediaIds,
+  onFiles,
+  onChooseLibrary,
+  keyUsed,
+}: {
+  variants: Variant[];
+  active: number;
+  onActive: (i: number) => void;
+  editing: boolean;
+  onEdit: (i: number) => void;
+  onPatch: (i: number, p: Partial<Variant>) => void;
+  busy: boolean;
+  onRegenerate: () => void;
+  cta: string;
+  onCta: (v: string) => void;
+  media: MediaItem[];
+  selectedMediaIds: string[];
+  onSelectedMediaIds: (ids: string[]) => void;
+  onFiles: (files: File[]) => void;
+  onChooseLibrary: () => void;
+  keyUsed?: { label?: string; provider?: string } | null;
 }) {
   const [tab, setTab] = useState<ResultTab>("caption");
-  const [mediaOn, setMediaOn] = useState<number[]>([0]); // TODO(api): gợi ý ảnh/media lấy từ thư viện sản phẩm khi có API
-  const refs = useRef<Partial<Record<ResultTab, HTMLElement | null>>>({});
-  const go = (t: ResultTab) => { setTab(t); refs.current[t]?.scrollIntoView({ behavior: "smooth", block: "nearest" }); };
+  const [previewMedia, setPreviewMedia] = useState<MediaItem | null>(null);
+  const mediaInput = useRef<HTMLInputElement>(null);
   const hasResult = variants.length > 0;
   const hashtags = variants[active]?.hashtags ?? [];
   const tabs: { id: ResultTab; label: string }[] = [{ id: "caption", label: `Caption (${variants.length})` }, { id: "hashtag", label: "Hashtag" }, { id: "cta", label: "CTA" }, { id: "media", label: "Hình ảnh/Media" }];
-  const tile = (i: number) => products[i % Math.max(products.length, 1)]?.tint ?? TINTS[i % TINTS.length];
+  const selectedCount = selectedMediaIds.filter((id) => media.some((item) => item.id === id)).length;
+  const toggleMedia = (id: string) => onSelectedMediaIds(selectedMediaIds.includes(id) ? selectedMediaIds.filter((item) => item !== id) : [...selectedMediaIds, id].slice(0, MAX_MEDIA));
+  const moveMedia = (id: string, direction: -1 | 1) => {
+    const from = selectedMediaIds.indexOf(id);
+    const to = from + direction;
+    if (from < 0 || to < 0 || to >= selectedMediaIds.length) return;
+    const next = [...selectedMediaIds];
+    [next[from], next[to]] = [next[to]!, next[from]!];
+    onSelectedMediaIds(next);
+  };
 
   return (
     <section className={cn(card, "p-5")}>
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <h2 className="text-lg font-semibold">3. Kết quả gợi ý từ AI</h2>
+        <div>
+          <h2 className="text-lg font-semibold">3. Kết quả gợi ý từ AI</h2>
+
+        </div>
         {hasResult && <span className="inline-flex items-center gap-1.5 rounded-md border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-[#6941c6]"><Sparkles className="size-3.5" />Đã tạo {variants.length} phiên bản nội dung</span>}
       </div>
 
@@ -132,64 +396,99 @@ export function AiResultPanel({ variants, active, onActive, editing, onEdit, onP
       ) : (
         <>
           <div role="tablist" className="mt-4 flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs sm:text-sm">
-            {tabs.map((t) => <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => go(t.id)} className={cn("flex-1 whitespace-nowrap rounded-md px-2 py-1.5 font-medium", tab === t.id ? "bg-white text-[#6941c6] shadow-sm" : "text-slate-500 hover:text-slate-700")}>{t.label}</button>)}
+            {tabs.map((t) => <button key={t.id} id={`ai-result-tab-${t.id}`} role="tab" aria-selected={tab === t.id} aria-controls={`ai-result-panel-${t.id}`} onClick={() => setTab(t.id)} className={cn("flex-1 whitespace-nowrap rounded-md px-2 py-1.5 font-medium transition-colors", tab === t.id ? "bg-white text-[#6941c6] shadow-sm" : "text-slate-500 hover:bg-white/60 hover:text-slate-700")}>{t.label}</button>)}
           </div>
 
-          <div ref={(el) => { refs.current.caption = el; }} className="mt-5 flex items-start justify-between gap-3">
-            <div><h3 className="text-sm font-semibold">Gợi ý caption</h3><p className="mt-0.5 text-xs text-slate-500">AI đã tạo {variants.length} phiên bản caption dựa trên thông tin của bạn. Bạn có thể chỉnh sửa trước khi đăng.</p></div>
-            <Button size="sm" variant="outline" disabled={busy} onClick={onRegenerate} className="shrink-0 gap-1.5 border-violet-200 text-[#6941c6]"><RefreshCw className={cn("size-3.5", busy && "animate-spin")} />Tạo lại nội dung</Button>
-          </div>
-
-          <div className="mt-3 space-y-3">
-            {variants.map((v, i) => (
-              <div key={v.id} onClick={() => onActive(i)} className={cn("cursor-pointer rounded-lg border p-4 transition-colors", active === i ? "border-[#6941c6] bg-violet-50/30" : "border-slate-200 hover:border-violet-200")}>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2"><h4 className="text-sm font-semibold">{v.label}</h4>{i === 0 && <Pill tone="violet">Đề xuất</Pill>}</div>
-                  <span className="text-xs text-slate-400">{v.caption.length}/2,200</span>
-                </div>
-                {editing && active === i
-                  ? <textarea value={v.caption} maxLength={MAX_CAPTION} onClick={(e) => e.stopPropagation()} onChange={(e) => onPatch(i, { caption: e.target.value })} rows={8} className={cn(areaCls, "mt-2")} />
-                  : <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{v.caption}</p>}
-                <div className="mt-3 flex items-center justify-end gap-2">
-                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); void copy(v.caption, "caption"); }} className="gap-1.5 border-violet-200 text-[#6941c6]"><Copy className="size-3.5" />Sao chép</Button>
-                  <Button size="icon" variant="outline" aria-label={editing && active === i ? "Xong chỉnh sửa" : "Chỉnh sửa caption"} onClick={(e) => { e.stopPropagation(); onEdit(i); }} className="size-8">
-                    {editing && active === i ? <Check className="size-4" /> : <Pencil className="size-4" />}
-                  </Button>
-                </div>
+          {tab === "caption" && (
+            <div id="ai-result-panel-caption" role="tabpanel" aria-labelledby="ai-result-tab-caption" className="mt-5">
+              <div className="flex items-start justify-between gap-3">
+                <div><h3 className="text-sm font-semibold">Gợi ý caption</h3><p className="mt-0.5 text-xs text-slate-500">AI đã tạo {variants.length} phiên bản caption dựa trên thông tin của bạn. Bạn có thể chỉnh sửa trước khi đăng.</p></div>
+                <Button size="sm" variant="outline" disabled={busy} onClick={onRegenerate} className="shrink-0 gap-1.5 border-violet-200 text-[#6941c6]"><RefreshCw className={cn("size-3.5", busy && "animate-spin")} />Tạo lại nội dung</Button>
               </div>
-            ))}
-          </div>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div ref={(el) => { refs.current.hashtag = el; }} className={box}>
-              <div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">Hashtag gợi ý</h3><Button size="sm" variant="outline" onClick={() => void copy(hashtags.join(" "), "hashtag")} className="h-7 gap-1 border-violet-200 px-2 text-xs text-[#6941c6]"><Copy className="size-3" />Sao chép</Button></div>
-              <div className="mt-3 flex flex-wrap gap-1.5">{hashtags.map((h) => <span key={h} className="rounded bg-violet-50 px-2 py-1 text-[11px] text-[#6941c6]">{h}</span>)}</div>
+              <div className="mt-3 space-y-3">
+                {variants.map((v, i) => (
+                  <div key={v.id} onClick={() => onActive(i)} className={cn("cursor-pointer rounded-lg border p-4 transition-colors", active === i ? "border-[#6941c6] bg-violet-50/30" : "border-slate-200 hover:border-violet-200")}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2"><h4 className="text-sm font-semibold">{v.label}</h4>{i === 0 && <Pill tone="violet">Đề xuất</Pill>}</div>
+                      <span className="text-xs text-slate-400">{v.caption.length}/2,200</span>
+                    </div>
+                    {editing && active === i
+                      ? <textarea value={v.caption} maxLength={MAX_CAPTION} onClick={(e) => e.stopPropagation()} onChange={(e) => onPatch(i, { caption: e.target.value })} rows={8} className={cn(areaCls, "mt-2")} />
+                      : <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{v.caption}</p>}
+                    <div className="mt-3 flex items-center justify-end gap-2">
+                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); void copy(v.caption, "caption"); }} className="gap-1.5 border-violet-200 text-[#6941c6]"><Copy className="size-3.5" />Sao chép</Button>
+                      <Button size="icon" variant="outline" aria-label={editing && active === i ? "Xong chỉnh sửa" : "Chỉnh sửa caption"} onClick={(e) => { e.stopPropagation(); onEdit(i); }} className="size-8">
+                        {editing && active === i ? <Check className="size-4" /> : <Pencil className="size-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div ref={(el) => { refs.current.cta = el; }} className={box}>
-              <div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">CTA gợi ý</h3><Button size="sm" variant="outline" onClick={() => void copy(cta, "CTA")} className="h-7 gap-1 border-violet-200 px-2 text-xs text-[#6941c6]"><Copy className="size-3" />Sao chép</Button></div>
-              <div role="radiogroup" className="mt-3 space-y-2">{CTAS.map((c) => (
-                <button key={c} type="button" role="radio" aria-checked={cta === c} onClick={() => onCta(c)} className="flex w-full items-center gap-2 text-left text-xs text-slate-700">
+          )}
+
+          {tab === "hashtag" && (
+            <div id="ai-result-panel-hashtag" role="tabpanel" aria-labelledby="ai-result-tab-hashtag" className={cn(box, "mt-5")}>
+              <div className="flex items-center justify-between gap-2"><div><h3 className="text-sm font-semibold">Hashtag gợi ý</h3><p className="mt-0.5 text-xs text-slate-500">Hashtag của phiên bản đang chọn.</p></div><Button size="sm" variant="outline" onClick={() => void copy(hashtags.join(" "), "hashtag")} className="h-8 gap-1 border-violet-200 px-2 text-xs text-[#6941c6]"><Copy className="size-3" />Sao chép</Button></div>
+              <div className="mt-4 flex flex-wrap gap-2">{hashtags.length > 0 ? hashtags.map((h) => <span key={h} className="rounded-md bg-violet-50 px-2.5 py-1.5 text-xs text-[#6941c6]">{h}</span>) : <p className="text-sm text-slate-400">Phiên bản này chưa có hashtag.</p>}</div>
+            </div>
+          )}
+
+          {tab === "cta" && (
+            <div id="ai-result-panel-cta" role="tabpanel" aria-labelledby="ai-result-tab-cta" className={cn(box, "mt-5")}>
+              <div className="flex items-center justify-between gap-2"><div><h3 className="text-sm font-semibold">CTA gợi ý</h3><p className="mt-0.5 text-xs text-slate-500">Chọn lời kêu gọi hành động dùng cho bài viết.</p></div><Button size="sm" variant="outline" onClick={() => void copy(cta, "CTA")} className="h-8 gap-1 border-violet-200 px-2 text-xs text-[#6941c6]"><Copy className="size-3" />Sao chép</Button></div>
+              <div role="radiogroup" className="mt-4 grid gap-2 sm:grid-cols-2">{CTAS.map((c) => (
+                <button key={c} type="button" role="radio" aria-checked={cta === c} onClick={() => onCta(c)} className={cn("flex min-h-10 w-full items-center gap-2 rounded-md border px-3 text-left text-sm text-slate-700 transition-colors", cta === c ? "border-[#6941c6] bg-violet-50" : "border-slate-200 hover:border-violet-200")}>
                   <span className={cn("grid size-4 shrink-0 place-items-center rounded-full border", cta === c ? "border-[#6941c6]" : "border-slate-300")}>{cta === c && <span className="size-2 rounded-full bg-[#6941c6]" />}</span>{c}
                 </button>
               ))}</div>
             </div>
-          </div>
+          )}
 
-          <div ref={(el) => { refs.current.media = el; }} className={cn(box, "mt-3")}>
-            <div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">Hình ảnh/Media gợi ý (4)</h3>
-              <Button size="sm" variant="outline" onClick={() => toast.info("Tạo thêm ảnh gợi ý sẽ nối với API tạo ảnh")} className="h-7 gap-1 border-violet-200 px-2 text-xs text-[#6941c6]"><Plus className="size-3" />Tạo thêm</Button></div>
-            <div className="mt-3 grid grid-cols-5 gap-2">{[0, 1, 2, 3, 4].map((i) => {
-              const on = mediaOn.includes(i);
-              return (
-                <button key={i} type="button" aria-pressed={on} aria-label={`Ảnh gợi ý ${i + 1}`} onClick={() => setMediaOn((m) => (m.includes(i) ? m.filter((x) => x !== i) : [...m, i]))}
-                  className={cn("relative aspect-[3/4] overflow-hidden rounded-md", on && "ring-2 ring-[#6941c6]")}>
-                  <Placeholder tint={tile(i)} />
-                  {on && <span className="absolute left-1 top-1"><Checkbox on /></span>}
-                  {i === 4 && <span className="absolute inset-0 grid place-items-center bg-slate-900/45 text-sm font-semibold text-white">+2</span>}
-                </button>
-              );
-            })}</div>
-          </div>
+          {tab === "media" && (
+            <div id="ai-result-panel-media" role="tabpanel" aria-labelledby="ai-result-tab-media" className={cn(box, "mt-5")}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div><h3 className="text-sm font-semibold">Hình ảnh/Media</h3><p className="mt-0.5 text-xs text-slate-500">Chọn và sắp xếp media dùng cho bài viết.</p></div>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={onChooseLibrary} className="h-8 gap-1.5"><Images className="size-3.5" />Chọn từ thư viện</Button>
+                  <Button size="sm" variant="outline" onClick={() => mediaInput.current?.click()} className="h-8 gap-1.5 border-violet-200 text-[#6941c6]"><Upload className="size-3.5" />Tải ảnh lên</Button>
+                  <input ref={mediaInput} type="file" accept="image/*,video/*" multiple className="hidden" onChange={(event) => { onFiles(Array.from(event.target.files ?? [])); event.target.value = ""; }} />
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between rounded-md bg-slate-50 px-3 py-2 text-xs">
+                <span className="font-medium text-slate-700">Đã chọn {selectedCount}/{media.length} media</span>
+                <span className="text-slate-500">Tối đa {MAX_MEDIA} · Thứ tự từ trái sang phải</span>
+              </div>
+
+              {media.length > 0 ? (
+                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">{media.map((item, index) => {
+                  const on = selectedMediaIds.includes(item.id);
+                  const order = selectedMediaIds.indexOf(item.id);
+                  return (
+                    <div key={item.id} className={cn("group relative aspect-[3/4] overflow-hidden rounded-md border bg-slate-100", on ? "border-[#6941c6] ring-2 ring-[#6941c6]/20" : "border-slate-200")}>
+                      <button type="button" aria-pressed={on} aria-label={`${on ? "Bỏ chọn" : "Chọn"} ${item.name}`} onClick={() => toggleMedia(item.id)} className="absolute inset-0 z-10"><span className="sr-only">{on ? "Bỏ chọn" : "Chọn"}</span></button>
+                      <MediaView item={item} />
+                      <span className="absolute left-2 top-2 z-20 pointer-events-none"><Checkbox on={on} /></span>
+                      {on && <span className="absolute right-2 top-2 z-20 grid size-5 place-items-center rounded-full bg-[#6941c6] text-[10px] font-semibold text-white">{order + 1}</span>}
+                      <div className="absolute inset-x-0 bottom-0 z-20 flex translate-y-full items-center justify-between bg-slate-950/70 p-1.5 text-white transition group-hover:translate-y-0">
+                        <button type="button" aria-label="Xem ảnh lớn" onClick={() => setPreviewMedia(item)} className="grid size-7 place-items-center rounded hover:bg-white/15"><Eye className="size-3.5" /></button>
+                        {on && <div className="flex items-center"><button type="button" aria-label="Chuyển sang trái" disabled={order === 0} onClick={() => moveMedia(item.id, -1)} className="grid size-7 place-items-center rounded hover:bg-white/15 disabled:opacity-30"><ChevronLeft className="size-4" /></button><GripVertical className="size-3.5 text-white/60" /><button type="button" aria-label="Chuyển sang phải" disabled={order === selectedMediaIds.length - 1} onClick={() => moveMedia(item.id, 1)} className="grid size-7 place-items-center rounded hover:bg-white/15 disabled:opacity-30"><ChevronRight className="size-4" /></button></div>}
+                      </div>
+                      {item.kind === "video" && <Play className="pointer-events-none absolute left-1/2 top-1/2 z-20 size-8 -translate-x-1/2 -translate-y-1/2 fill-white text-white drop-shadow" />}
+                      <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/60 to-transparent px-2 pb-2 pt-6 text-left text-[10px] text-white group-hover:opacity-0">{item.name || `Media ${index + 1}`}</span>
+                    </div>
+                  );
+                })}</div>
+              ) : (
+                <div className="mt-4 grid place-items-center rounded-lg border border-dashed border-slate-300 px-4 py-10 text-center"><Images className="size-8 text-slate-300" /><p className="mt-2 text-sm font-medium text-slate-600">Chưa có media</p><p className="mt-1 text-xs text-slate-400">Chọn sản phẩm từ thư viện hoặc tải ảnh lên.</p></div>
+              )}
+
+              {variants[active]?.visualBrief && <div className="mt-4 rounded-lg border border-violet-100 bg-violet-50/50 p-3"><p className="text-xs font-semibold text-[#6941c6]">Gợi ý bố cục từ AI</p><p className="mt-1 whitespace-pre-line text-xs leading-5 text-slate-600">{variants[active]?.visualBrief}</p></div>}
+
+              {previewMedia && <div role="dialog" aria-modal="true" aria-label="Xem media" className="fixed inset-0 z-50 grid place-items-center bg-slate-950/75 p-6" onClick={() => setPreviewMedia(null)}><div className="relative max-h-full max-w-4xl overflow-hidden rounded-lg bg-white p-2 shadow-xl" onClick={(event) => event.stopPropagation()}><MediaView item={previewMedia} className="max-h-[80vh] w-auto object-contain" /><button type="button" aria-label="Đóng" onClick={() => setPreviewMedia(null)} className="absolute right-3 top-3 grid size-8 place-items-center rounded-full bg-black/60 text-white"><X className="size-4" /></button></div></div>}
+            </div>
+          )}
         </>
       )}
     </section>
@@ -210,8 +509,9 @@ function Box({ title, hint, children, className }: { title: ReactNode; hint?: st
   return <div className={cn(box, className)}><h3 className="text-sm font-semibold">{title}</h3>{hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}<div className="mt-3">{children}</div></div>;
 }
 
-export function ManualComposer({ form, upd, product, onPickProduct, media, onFiles, onRemoveMedia, targets, onToggleChannel }: {
+export function ManualComposer({ form, upd, product, onPickProduct, lookbook, onClearLookbook, media, onFiles, onRemoveMedia, targets, onToggleChannel }: {
   form: ManualForm; upd: (p: Partial<ManualForm>) => void; product?: Product; onPickProduct: () => void;
+  lookbook?: Collection | null; onClearLookbook?: () => void;
   media: MediaItem[]; onFiles: (files: File[]) => void; onRemoveMedia: (id: string) => void; targets: ChannelId[]; onToggleChannel: (id: ChannelId) => void;
 }) {
   const ta = useRef<HTMLTextAreaElement>(null);
@@ -255,21 +555,93 @@ export function ManualComposer({ form, upd, product, onPickProduct, media, onFil
       <div className="mt-4 grid items-start gap-4 lg:grid-cols-2">
         {/* ---- Cột trái ---- */}
         <div className="space-y-4">
-          <Box title={<>Thông tin sản phẩm / BST <span className="text-rose-500">*</span></>}>
-            {product ? (
-              <div className="flex items-center gap-3 rounded-lg border border-slate-200 p-2">
-                <div className={cn("grid h-16 w-12 shrink-0 place-items-center rounded-md bg-gradient-to-br text-slate-500", product.tint)}><Shirt className="size-5" /></div>
-                <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{product.name}</p><p className="text-xs text-slate-400">{product.sku}</p>
-                  <div className="mt-1 flex items-center gap-2"><span className="text-sm font-bold">{vnd(product.price)}</span>{product.inStock ? <Pill tone="green">Còn hàng</Pill> : <Pill tone="rose">Hết hàng</Pill>}</div></div>
-                <button type="button" aria-label="Bỏ chọn sản phẩm" onClick={() => upd({ productId: null })} className="grid size-7 place-items-center self-start rounded-full hover:bg-slate-100"><X className="size-4" /></button>
+          <Box
+            title={
+              <div className="flex items-center justify-between">
+                <span>
+                  Thông tin sản phẩm / BST <span className="text-rose-500">*</span>
+                </span>
+                {product && (
+                  <button
+                    type="button"
+                    onClick={onPickProduct}
+                    className="text-xs font-semibold text-[#6941c6] hover:underline"
+                  >
+                    Đổi sản phẩm
+                  </button>
+                )}
               </div>
-            ) : <p className="rounded-lg border border-dashed border-slate-300 p-4 text-center text-xs text-slate-400">Chưa chọn sản phẩm nào</p>}
-            <div className="mt-2 grid grid-cols-5 gap-2">
-              {product && [0, 1, 2, 3].map((i) => <div key={i} className="aspect-[3/4] overflow-hidden rounded-md"><Placeholder tint={i === 0 ? product.tint : TINTS[i % TINTS.length]} /></div>)}
-              <button type="button" onClick={onPickProduct} className={cn("grid aspect-[3/4] place-items-center rounded-md border border-dashed border-violet-300 bg-violet-50/40 text-[11px] font-medium text-[#6941c6] hover:bg-violet-50", !product && "col-span-2 aspect-auto py-6")}>
-                <span className="grid justify-items-center gap-1 text-center"><Plus className="size-4" />{product ? "Thêm sản phẩm" : "Chọn sản phẩm"}</span>
+            }
+          >
+            {lookbook && (
+              <div className="mb-2.5 flex items-center justify-between rounded-lg border border-violet-200 bg-violet-50/70 p-2.5 text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FolderHeart className="size-4 shrink-0 text-[#6941c6]" />
+                  <span className="truncate">
+                    BST: <strong className="text-slate-900">{lookbook.title}</strong>
+                    {lookbook.season && <span className="ml-1 text-violet-700 font-medium">({lookbook.season})</span>}
+                  </span>
+                </div>
+                {onClearLookbook && (
+                  <button
+                    type="button"
+                    onClick={onClearLookbook}
+                    className="ml-2 shrink-0 text-[11px] text-slate-500 hover:text-slate-800 underline"
+                  >
+                    Bỏ chọn
+                  </button>
+                )}
+              </div>
+            )}
+            {product ? (
+              <div className="flex items-center gap-3 rounded-lg border border-slate-200 p-2.5 bg-slate-50/50">
+                <div className="relative size-16 shrink-0 overflow-hidden rounded-md bg-slate-100">
+                  {product.imageUrl ? (
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <div className={cn("grid size-full place-items-center bg-gradient-to-br text-slate-500", product.tint)}>
+                      <Shirt className="size-6" />
+                    </div>
+                  )}
+                  {product.category && (
+                    <span className="absolute bottom-1 right-1 rounded bg-slate-900/60 px-1 py-0.5 text-[8px] font-medium text-white backdrop-blur-xs">
+                      {product.category}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-900">{product.name}</p>
+                  <p className="text-xs text-slate-400">Mã SKU: {product.sku}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-sm font-bold text-slate-900">{vnd(product.price)}</span>
+                    {product.inStock ? <Pill tone="green">Còn hàng</Pill> : <Pill tone="rose">Hết hàng</Pill>}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Bỏ chọn sản phẩm"
+                  onClick={() => upd({ productId: null })}
+                  className="grid size-7 place-items-center self-start rounded-full hover:bg-slate-200/60 text-slate-400 hover:text-slate-700"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onPickProduct}
+                className="w-full rounded-lg border border-dashed border-violet-300 bg-violet-50/40 p-4 text-center transition-colors hover:bg-violet-50"
+              >
+                <div className="flex flex-col items-center gap-1.5 text-xs text-[#6941c6] font-medium">
+                  <Plus className="size-5" />
+                  <span>Chọn sản phẩm từ danh mục kho ÉLANE hoặc BST</span>
+                </div>
               </button>
-            </div>
+            )}
           </Box>
 
           <Box title="Media đính kèm" hint={`Tải ảnh/video để sử dụng trong bài đăng (tối đa ${MAX_MEDIA} file)`}>
@@ -304,7 +676,7 @@ export function ManualComposer({ form, upd, product, onPickProduct, media, onFil
               <Field label="Đối tượng khách hàng"><select value={form.segment} onChange={(e) => upd({ segment: e.target.value })} className={inputCls}>{SEGMENTS.map((g) => <option key={g}>{g}</option>)}</select></Field>
               <Field label="Độ tuổi"><select value={form.age} onChange={(e) => upd({ age: e.target.value })} className={inputCls}>{AGES.map((g) => <option key={g}>{g}</option>)}</select></Field>
             </div>
-            <Field label="Giọng văn / Phong cách"><select value={form.style} onChange={(e) => upd({ style: e.target.value })} className={inputCls}>{STYLES.map((g) => <option key={g}>{g}</option>)}</select></Field>
+            <Field label="Giọng văn / Phong cách"><select value={form.style} onChange={(e) => upd({ style: e.target.value })} className={inputCls}>{STYLES.map((s) => <option key={s}>{s}</option>)}</select></Field>
             <Field label={<>Ghi chú {optional}</>}>
               <div className="relative"><textarea value={form.note} maxLength={500} onChange={(e) => upd({ note: e.target.value })} rows={3} className={areaCls} placeholder="Thêm ghi chú cho team duyệt (ví dụ: yêu cầu chỉnh sửa, thời điểm đăng...)" /><span className="absolute bottom-2 right-3 text-xs text-slate-400">{form.note.length}/500</span></div>
             </Field>

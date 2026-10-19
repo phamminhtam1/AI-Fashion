@@ -1,5 +1,5 @@
-from app.models.schemas import GarmentMetadata, VisibilityFlag
-from app.prompts.tryon_prompt_builder import TryOnPromptBuilder
+from app.features.tryon.models.schemas import GarmentMetadata, VisibilityFlag
+from app.features.tryon.prompts.tryon_prompt_builder import TryOnPromptBuilder
 
 
 def test_prompt_builder_full_body():

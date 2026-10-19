@@ -160,6 +160,26 @@
   * { scroll-behavior: auto !important; }
 }
 
+/* Product/BST picker is portaled outside .social-commerce-ui. */
+.social-product-picker {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+}
+.social-product-picker :where(button, input, select) {
+  font-family: inherit;
+  font-size: var(--text-sm);
+}
+.social-product-picker :where(input, select) {
+  height: 2.25rem;
+  border-radius: var(--radius-xs);
+}
+.social-product-picker :where(section, article, div, button, img)[class*="rounded-lg"],
+.social-product-picker :where(section, article, div, button, img)[class*="rounded-xl"],
+.social-product-picker :where(section, article, div, button, img)[class*="rounded-2xl"] {
+  border-radius: var(--radius-xs);
+}
+
 /* =========================================================================
    Interactive Controls & Buttons Pointer Cursor
    Overrides Tailwind CSS preflight cursor: default
@@ -312,3 +332,50 @@ input:disabled,
 }
 
 .overview-operations > :last-child table { min-width: 1080px; }
+
+/* Social Commerce uses the same compact visual scale as the Admin pages. */
+.social-commerce-ui {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+}
+.social-commerce-ui :where(button, input, select, textarea) {
+  font-family: inherit;
+  font-size: var(--text-sm);
+  border-radius: var(--radius-xs);
+}
+.social-commerce-ui :where(section, article, div)[class*="rounded-lg"],
+.social-commerce-ui :where(section, article, div)[class*="rounded-xl"] {
+  border-radius: var(--radius-xs);
+}
+.social-commerce-ui :where(input, select):not([type="checkbox"]):not([type="radio"]) {
+  height: 2.25rem;
+}
+.social-commerce-ui button:not([role="switch"]):not([role="checkbox"]):not([role="radio"]) {
+  min-height: 2.25rem;
+}
+.social-commerce-ui textarea {
+  padding: 0.75rem;
+}
+
+@keyframes social-step-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(105, 65, 198, 0.12); }
+  50% { box-shadow: 0 0 0 7px rgba(105, 65, 198, 0.04); }
+}
+@keyframes social-step-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.social-connect-stepper .social-step-dot.is-active {
+  animation: social-step-pulse 1.8s ease-in-out infinite;
+}
+.social-connect-stepper .social-step-line.is-complete {
+  transform-origin: left;
+  animation: social-step-fill 420ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .social-connect-stepper .social-step-dot.is-active,
+  .social-connect-stepper .social-step-line.is-complete {
+    animation: none;
+  }
+}

@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils";
 import type { ChannelId } from "./types";
 
 export const BRAND = "#6941c6";
-export const card = "rounded-lg border border-slate-200 bg-white";
-export const inputCls = "h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#6941c6]";
-export const areaCls = "w-full rounded-md border border-slate-200 bg-white p-3 text-sm outline-none focus:border-[#6941c6]";
+export const card = "rounded-xs border border-slate-200/90 bg-white shadow-2xs";
+export const inputCls = "h-9 w-full rounded-xs border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]";
+export const areaCls = "w-full rounded-xs border border-slate-200 bg-white p-3 text-sm outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]";
 export const fmt = (n: number) => n.toLocaleString("en-US");
 export const vnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
 export const usd = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -25,8 +25,8 @@ const LOGOS: Record<ChannelId, { bg: string; icon: (c: string) => ReactNode }> =
 };
 const SIZES = { xs: ["size-5 rounded", "size-3 text-[10px]"], sm: ["size-8 rounded-md", "size-4 text-xs"], md: ["size-10 rounded-lg", "size-5 text-sm"], lg: ["size-12 rounded-xl", "size-6 text-base"] };
 export function ChannelLogo({ id, size = "md" }: { id: ChannelId; size?: keyof typeof SIZES }) {
-  const [box, ic] = SIZES[size];
-  return <span className={cn("grid shrink-0 place-items-center text-white", box)} style={{ background: LOGOS[id].bg }}>{LOGOS[id].icon(ic)}</span>;
+  const [box, ic] = (SIZES[size] ?? SIZES.md) as [string, string];
+  return <span className={cn("grid shrink-0 place-items-center text-white", box)} style={{ background: LOGOS[id]?.bg ?? "#333" }}>{LOGOS[id]?.icon(ic)}</span>;
 }
 
 /* ---------- Nhỏ lẻ ---------- */
@@ -66,7 +66,7 @@ export function Avatar({ label = "É", src, className }: { label?: string; src?:
 
 export function PageHeader({ title, desc, actions, onBack }: { title: ReactNode; desc?: string; actions?: ReactNode; onBack?: () => void }) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-3">
         {onBack && <button onClick={onBack} aria-label="Quay lại" className="mt-1 grid size-8 place-items-center rounded-md hover:bg-slate-100"><ArrowLeft className="size-5" /></button>}
         <div><h1 className="admin-page-title flex flex-wrap items-center gap-2">{title}</h1>{desc && <p className="mt-1 text-sm text-slate-500">{desc}</p>}</div>
@@ -78,17 +78,29 @@ export function PageHeader({ title, desc, actions, onBack }: { title: ReactNode;
 
 export function Stepper({ steps, current }: { steps: { title: string; desc?: string }[]; current: number }) {
   return (
-    <div className={cn(card, "grid gap-2 p-3 sm:grid-cols-2 lg:grid-cols-4")}>
+    <ol className={cn(card, "social-connect-stepper flex items-center px-5 py-3")}>
       {steps.map((s, i) => {
         const n = i + 1; const done = n < current; const on = n === current;
         return (
-          <div key={s.title} className={cn("flex items-center gap-3 rounded-md px-3 py-2", on && "bg-violet-50")}>
-            <span className={cn("grid size-9 shrink-0 place-items-center rounded-full text-sm font-semibold", on || done ? "bg-[#6941c6] text-white" : "bg-violet-100 text-[#6941c6]")}>{done ? <Check className="size-4" /> : n}</span>
-            <div className="min-w-0"><p className="truncate text-sm font-semibold">{s.title}</p>{s.desc && <p className="truncate text-xs text-slate-500">{s.desc}</p>}</div>
-          </div>
+          <li key={s.title} className={cn("flex min-w-0 items-center", i < steps.length - 1 && "flex-1")}>
+            <div className="flex shrink-0 items-center gap-2">
+              <span className={cn(
+                "social-step-dot grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold transition-all duration-300",
+                on && "is-active bg-[#6941c6] text-white shadow-[0_0_0_4px_rgba(105,65,198,0.12)]",
+                done && "bg-[#6941c6] text-white",
+                !on && !done && "bg-slate-100 text-slate-500",
+              )}>{done ? <Check className="size-3.5" strokeWidth={3} /> : n}</span>
+              <span className={cn("hidden whitespace-nowrap text-sm font-semibold sm:block", on || done ? "text-[#6941c6]" : "text-slate-500")}>{s.title}</span>
+            </div>
+            {i < steps.length - 1 && (
+              <span className="relative mx-3 h-px min-w-5 flex-1 overflow-hidden bg-slate-200" aria-hidden="true">
+                <span className={cn("social-step-line absolute inset-y-0 left-0 bg-[#6941c6]", done ? "is-complete w-full" : "w-0")} />
+              </span>
+            )}
+          </li>
         );
       })}
-    </div>
+    </ol>
   );
 }
 
@@ -100,7 +112,7 @@ export function Modal({ open, onClose, children, maxW = "max-w-2xl" }: { open: b
   if (!open) return null;
   return createPortal(
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div role="dialog" aria-modal="true" className={cn("max-h-[92vh] w-full overflow-y-auto rounded-lg bg-white p-6", maxW)}>{children}</div>
+      <div role="dialog" aria-modal="true" className={cn("max-h-[92vh] w-full overflow-y-auto rounded-xs bg-white p-6", maxW)}>{children}</div>
     </div>, document.body);
 }
 

@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api.routes import router
+from .api import router
 from .config import settings
 
 logging.basicConfig(
@@ -27,6 +27,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"  - AI Mock Mode:           {settings.ai_mock_mode}")
     logger.info(f"  - OpenAI Base URL:        {settings.openai_base_url or 'https://api.openai.com/v1 (default)'}")
     logger.info(f"  - OpenAI Vision Model:    {settings.openai_vision_model}")
+    logger.info(f"  - OpenAI Content Model:   {settings.openai_content_model}")
     logger.info(f"  - OpenAI Key Configured:  {key_preview}")
     logger.info(f"  - Kie Model:              {settings.kie_model}")
     logger.info(f"  - Kie Key Configured:     {kie_preview}")

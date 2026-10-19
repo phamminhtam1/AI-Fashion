@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, desc, eq, sql, inArray, notInArray, or } from "drizzle-orm";
+import { and, desc, eq, sql, inArray, notInArray, or, ilike } from "drizzle-orm";
 import {
   categories,
   occasions,
@@ -266,7 +266,7 @@ publicCatalogRoutes.get("/products", async (c) => {
     }
   }
   if (category) {
-    const cat = allCats.find((r) => r.slug === category);
+    const cat = allCats.find((r) => r.slug === category || r.id === category);
     if (!cat) return c.json({ items: [], page, limit, total: 0 });
     const catIds = [cat.id];
     const queue = [cat.id];
@@ -296,7 +296,21 @@ publicCatalogRoutes.get("/products", async (c) => {
     ids = ids ? ids.filter((id) => set.has(id)) : [...set];
   }
 
+  const q = (c.req.query("q") ?? "").trim();
   const conditions = [eq(products.status, "published")];
+  if (q) {
+    const like = `%${q}%`;
+    conditions.push(
+      or(
+        ilike(products.name, like),
+        ilike(products.slug, like),
+        sql`exists (
+          select 1 from product_variants v
+          where v.product_id = ${products.id} and v.sku ilike ${like}
+        )`,
+      )!,
+    );
+  }
   if (ids) {
     if (!ids.length) return c.json({ items: [], page, limit, total: 0 });
     conditions.push(inArray(products.id, ids));

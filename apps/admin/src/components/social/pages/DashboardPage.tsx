@@ -7,7 +7,8 @@ import { RevenueOrdersChart, Sparkline, Donut } from "../charts";
 import { CHANNEL_META, DATE_RANGES, KPI_MOCK } from "../mock";
 import type { ChannelAccount, ChannelId, SocialCtx } from "../types";
 import { ChannelLogo, Delta, Dot, Pill, PageHeader, card, fmt, inputCls, usd } from "../ui";
-import { useUpcomingPosts, PostStatusPill, PostThumb } from "./PostsPage";
+import { useUpcomingPosts } from "../useUpcomingPosts";
+import { PostStatusPill, PostThumb } from "../PostShared";
 
 const KPI_STYLE: Record<string, { icon: typeof Users; bg: string; fg: string; line: string }> = {
   revenue: { icon: ShoppingBag, bg: "bg-violet-100", fg: "text-violet-600", line: "#7c3aed" },
@@ -93,7 +94,7 @@ export function DashboardPage({ ctx }: { ctx: SocialCtx }) {
                 <thead className="text-xs font-medium text-slate-500"><tr className="border-y border-slate-100">
                   <th className="w-10 py-3 pl-4"><input type="checkbox" aria-label="Chọn tất cả" /></th><th className="py-3">Kênh</th><th>Trạng thái</th><th>Người theo dõi</th><th>Tương tác (30 ngày)</th><th>Đơn hàng</th><th>Tỷ lệ chuyển đổi</th><th>Doanh thu</th><th className="pr-4 text-center">Thao tác</th></tr></thead>
                 <tbody className="divide-y divide-slate-100">
-                  {rows.map((c) => <Row key={c.id} c={c} onOpen={() => go("channel-config", { channel: c.id })} />)}
+                  {rows.map((c) => <Row key={c.id} c={c} onOpen={() => go("connect", { channel: c.id })} />)}
                   {!rows.length && <tr><td colSpan={9} className="p-8 text-center text-slate-400">Không có kênh phù hợp.</td></tr>}
                 </tbody>
               </table>

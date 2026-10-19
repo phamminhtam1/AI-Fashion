@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, AsyncMock
-from app.storage.supabase_storage import SupabaseStorageService
+from app.shared.storage.supabase_storage import SupabaseStorageService
 from app.config import settings
 
 

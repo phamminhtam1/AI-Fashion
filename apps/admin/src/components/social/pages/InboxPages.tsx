@@ -48,7 +48,7 @@ export function MessagesPage({ ctx }: { ctx: SocialCtx }) {
           </div>
         ) : <Empty>Chọn một cuộc trò chuyện.</Empty>}
       </div>
-      <p className="text-xs text-slate-400">Dữ liệu mẫu – chưa nối API tin nhắn. <button onClick={() => ctx.go("channel-config", { tab: "inbox" })} className="text-[#6941c6] hover:underline">Cấu hình AI trả lời</button></p>
+      <p className="text-xs text-slate-400">Dữ liệu mẫu – chưa nối API tin nhắn. <button onClick={() => ctx.go("connect")} className="text-[#6941c6] hover:underline">Kiểm tra kết nối kênh</button></p>
     </div>
   );
 }

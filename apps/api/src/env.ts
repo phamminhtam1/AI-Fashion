@@ -51,5 +51,6 @@ export const env = {
   metaRedirectUri: process.env.META_REDIRECT_URI ?? "http://localhost:3001/api/v1/admin/social/instagram/callback",
   metaWebhookVerifyToken: process.env.META_WEBHOOK_VERIFY_TOKEN ?? "",
   metaGraphVersion: process.env.META_GRAPH_VERSION ?? "v23.0",
-  socialAiModel: process.env.SOCIAL_AI_MODEL ?? "gpt-4.1-mini",
+  socialAiModel: process.env.SOCIAL_AI_MODEL ?? process.env.OPENAI_VISION_MODEL ?? "gpt-5.6-sol-max",
+  openaiBaseUrl: process.env.OPENAI_BASE_URL ?? "",
 };

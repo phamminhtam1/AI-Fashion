@@ -1,12 +1,12 @@
 import os
 import pytest
-from app.classifiers.base import BaseClassifier
-from app.models.schemas import (
+from app.features.tryon.classifiers.base import BaseClassifier
+from app.features.tryon.models.schemas import (
     ClassifierOutput,
     TryOnGenerateRequest,
     VisibilityFlag,
 )
-from app.pipelines.tryon_pipeline import TryOnPipeline
+from app.features.tryon.pipelines.tryon_pipeline import TryOnPipeline
 
 
 class MockInvalidClassifier(BaseClassifier):

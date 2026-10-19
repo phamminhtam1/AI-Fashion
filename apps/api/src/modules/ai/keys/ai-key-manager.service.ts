@@ -326,7 +326,7 @@ export class AiKeyManagerService {
           throw new ApiError(400, "invalid_api_key", check.error || "Key OpenAI mới không hợp lệ");
         }
         updatePayload.creditsRemaining = check.credits ?? null;
-        updatePayload.status = (check.credits === null || check.credits > 0) ? "ACTIVE" : "EXHAUSTED";
+        updatePayload.status = (check.credits == null || check.credits > 0) ? "ACTIVE" : "EXHAUSTED";
         updatePayload.lastCheckedAt = new Date();
       }
       updatePayload.encryptedKey = encryptApiKey(rawKey);

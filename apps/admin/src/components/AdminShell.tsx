@@ -514,6 +514,10 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
     const map: Record<string, SocialPage> = {
       ketnoi: "connect",
       connect: "connect",
+      quanly: "channel-manage",
+      "channel-manage": "channel-manage",
+      cauhinh: "channel-manage",
+      "channel-config": "channel-manage",
       "ai-content": "ai-content",
       ai: "ai-content",
       baiviet: "posts",
@@ -522,8 +526,6 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
       messages: "messages",
       binhluan: "comments",
       comments: "comments",
-      cauhinh: "channel-config",
-      "channel-config": "channel-config",
       themkenh: "add-channel",
       "add-channel": "add-channel",
     };
@@ -537,8 +539,8 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
       const slugMap: Record<SocialPage, string | null> = {
         overview: null,
         connect: "ketnoi",
+        "channel-manage": "quanly",
         "add-channel": "them",
-        "channel-config": "cauhinh",
         "ai-content": "ai-content",
         posts: "baiviet",
         messages: "tinnhan",
@@ -1161,13 +1163,12 @@ function NavGroup({
               {item.id === "social" && isCurrent && onSocialPageChange && (
                 <div className="ml-7 border-l border-slate-200/80 pl-2 space-y-0.5 py-1">
                   {[
-                    { id: "overview" as SocialPage, label: "Tổng quan", href: "/kenhbanhang" },
+                    { id: "overview" as SocialPage, label: "Báo cáo hiệu quả", href: "/kenhbanhang" },
                     { id: "connect" as SocialPage, label: "Kết nối kênh", href: "/kenhbanhang/ketnoi" },
-                    { id: "ai-content" as SocialPage, label: "AI Content", href: "/kenhbanhang/ai-content" },
-                    { id: "posts" as SocialPage, label: "Bài viết", href: "/kenhbanhang/baiviet" },
-                    { id: "messages" as SocialPage, label: "Tin nhắn", href: "/kenhbanhang/tinnhan" },
-                    { id: "comments" as SocialPage, label: "Bình luận", href: "/kenhbanhang/binhluan" },
-                    { id: "channel-config" as SocialPage, label: "Cấu hình kênh", href: "/kenhbanhang/cauhinh" },
+                    { id: "channel-manage" as SocialPage, label: "Quản lý kênh", href: "/kenhbanhang/quanly" },
+                    { id: "ai-content" as SocialPage, label: "Content Studio", href: "/kenhbanhang/ai-content" },
+                    { id: "posts" as SocialPage, label: "Bài viết & lịch đăng", href: "/kenhbanhang/baiviet" },
+                    { id: "messages" as SocialPage, label: "Tin nhắn & bình luận", href: "/kenhbanhang/tinnhan" },
                   ].map((sub) => {
                     const isSubActive = (socialPage ?? "overview") === sub.id;
                     return (

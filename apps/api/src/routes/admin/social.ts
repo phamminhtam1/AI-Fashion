@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { Hono } from "hono";
 import { and, desc, eq, lte } from "drizzle-orm";
 import { z } from "zod";
@@ -8,6 +8,7 @@ import {
   socialContentItems,
   socialInteractions,
   socialMetricSnapshots,
+  employees,
 } from "@elane/db";
 import type { AppVars } from "../../middleware/auth.js";
 import { requireAuth } from "../../middleware/auth.js";
@@ -45,24 +46,56 @@ async function loadMetaConfig(db: AppVars["Variables"]["db"], requestUrl?: strin
 
 async function runSocialAi(db: AppVars["Variables"]["db"], system: string, user: string) {
   const manager = new AiKeyManagerService(db);
+  // Chỉ lấy key thuộc nhà cung cấp OPENAI từ hệ thống quản lý khóa AI
   const key = await manager.acquireActiveKey("openai");
-  if (!key) throw new ApiError(409, "missing_ai_key", "Chưa có OpenAI API key đang hoạt động");
+  if (!key) {
+    throw new ApiError(
+      409,
+      "missing_ai_key",
+      "Không tìm thấy OpenAI API key đang hoạt động trong Quản lý khóa AI. Vui lòng thêm hoặc kích hoạt khóa OpenAI."
+    );
+  }
+
+  const isCodex = key.rawKey.startsWith("sk-codex-");
+  const baseUrl = env.openaiBaseUrl || (isCodex ? "https://api.tuongtacgpt.click/v1" : "https://api.openai.com/v1");
+  const model = isCodex ? (env.socialAiModel || "gpt-5.6-sol-max") : (process.env.SOCIAL_AI_MODEL || "gpt-4o-mini");
+  const endpoint = `${baseUrl.replace(/\/+$/, "")}/chat/completions`;
+
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45000);
+
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: { Authorization: `Bearer ${key.rawKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: env.socialAiModel,
+        model,
         temperature: 0.7,
         messages: [{ role: "system", content: system }, { role: "user", content: user }],
       }),
+      signal: controller.signal,
     });
-    const data = await response.json().catch(() => ({})) as any;
-    if (!response.ok) throw new Error(data?.error?.message || `OpenAI ${response.status}`);
+    clearTimeout(timeout);
+
+    const data = (await response.json().catch(() => ({}))) as any;
+    if (!response.ok) {
+      const errMsg = data?.error?.message || `AI API trả về mã lỗi HTTP ${response.status}`;
+      throw new Error(errMsg);
+    }
     await manager.recordSuccess(key.id);
-    return String(data?.choices?.[0]?.message?.content || "").trim();
+    const content = String(data?.choices?.[0]?.message?.content || "").trim();
+    return {
+      content,
+      keyUsed: {
+        id: key.id,
+        label: key.label,
+        provider: "OPENAI",
+        creditsRemaining: key.creditsRemaining,
+      },
+    };
   } catch (error) {
-    await manager.recordFailure(key.id, "RATE_LIMITED", error instanceof Error ? error.message : String(error));
+    const errMsg = error instanceof Error ? error.message : String(error);
+    await manager.recordFailure(key.id, "RATE_LIMITED", errMsg);
     throw error;
   }
 }
@@ -116,12 +149,44 @@ adminSocialRoutes.use("*", async (c, next) => {
 
 adminSocialRoutes.get("/overview", async (c) => {
   const db = c.get("db");
-  const [connections, content, interactions, metrics] = await Promise.all([
+  const [connections, contentRows, interactions, metrics, staffRows] = await Promise.all([
     db.select().from(instagramConnections).orderBy(desc(instagramConnections.createdAt)),
     db.select().from(socialContentItems).orderBy(desc(socialContentItems.createdAt)),
     db.select().from(socialInteractions).orderBy(desc(socialInteractions.createdAt)).limit(100),
     db.select().from(socialMetricSnapshots).orderBy(desc(socialMetricSnapshots.capturedAt)).limit(100),
+    db.select({ accountId: employees.accountId, fullName: employees.fullName }).from(employees),
   ]);
+
+  const staffMap = new Map<string, string>();
+  for (const s of staffRows) {
+    if (s.accountId) staffMap.set(s.accountId, s.fullName);
+  }
+
+  const metricsMap = new Map<string, { impressions: number; reach: number; likes: number; comments: number; saves: number; shares: number }>();
+  for (const m of metrics) {
+    const cur = metricsMap.get(m.contentId) || { impressions: 0, reach: 0, likes: 0, comments: 0, saves: 0, shares: 0 };
+    cur.impressions = Math.max(cur.impressions, m.impressions);
+    cur.reach = Math.max(cur.reach, m.reach);
+    cur.likes = Math.max(cur.likes, m.likes);
+    cur.comments = Math.max(cur.comments, m.comments);
+    cur.saves = Math.max(cur.saves, m.saves);
+    cur.shares = Math.max(cur.shares, m.shares);
+    metricsMap.set(m.contentId, cur);
+  }
+
+  const enrichedContent = contentRows.map((item) => {
+    const m = metricsMap.get(item.id);
+    return {
+      ...item,
+      creatorName: item.createdById ? (staffMap.get(item.createdById) || "Quản trị viên") : "ÉLANE Admin",
+      approvedByName: item.approvedById ? (staffMap.get(item.approvedById) || "Quản lý") : null,
+      views: m ? m.reach || m.impressions : 0,
+      likes: m ? m.likes : 0,
+      comments: m ? m.comments : 0,
+      saves: m ? m.saves : 0,
+      shares: m ? m.shares : 0,
+    };
+  });
 
   const connectionsWithProfile = await Promise.all(
     connections.map(async ({ encryptedAccessToken, ...conn }) => {
@@ -144,7 +209,7 @@ adminSocialRoutes.get("/overview", async (c) => {
   );
 
   return c.json({
-    connections: connectionsWithProfile, content, interactions, metrics,
+    connections: connectionsWithProfile, content: enrichedContent, interactions, metrics,
   });
 });
 
@@ -320,9 +385,16 @@ adminSocialRoutes.get("/instagram/callback", async (c) => {
 });
 
 const contentSchema = z.object({
-  connectionId: z.string().uuid().nullable().optional(), title: z.string().min(1), caption: z.string().default(""),
-  mediaType: z.enum(["IMAGE", "REELS"]).default("IMAGE"), mediaUrls: z.array(z.string().url()).default([]),
-  source: z.enum(["user", "ai", "ai_assisted"]).default("user"), campaignCode: z.string().optional().nullable(),
+  connectionId: z.string().uuid().nullable().optional(),
+  title: z.string().min(1),
+  caption: z.string().default(""),
+  mediaType: z.enum(["IMAGE", "REELS"]).default("IMAGE"),
+  mediaUrls: z.array(z.string()).default([]),
+  source: z.enum(["user", "ai", "ai_assisted", "manual"]).default("user"),
+  campaignCode: z.string().optional().nullable(),
+  status: z.enum(["draft", "pending", "approved", "scheduled", "publishing", "published", "failed"]).default("draft"),
+  scheduledAt: z.string().datetime().optional().nullable().transform((v) => (v ? new Date(v) : null)),
+  metadata: z.record(z.any()).optional().nullable(),
 });
 
 adminSocialRoutes.post("/content", async (c) => {
@@ -332,13 +404,113 @@ adminSocialRoutes.post("/content", async (c) => {
   return c.json(row, 201);
 });
 
+adminSocialRoutes.get("/ai-key-status", async (c) => {
+  const manager = new AiKeyManagerService(c.get("db"));
+  const key = await manager.acquireActiveKey("openai");
+  if (!key) {
+    return c.json({
+      active: false,
+      message: "Chưa có khóa OpenAI nào đang hoạt động trong Quản lý khóa AI",
+    });
+  }
+  return c.json({
+    active: true,
+    key: {
+      id: key.id,
+      label: key.label,
+      provider: "OPENAI",
+      creditsRemaining: key.creditsRemaining,
+    },
+  });
+});
+
 adminSocialRoutes.post("/content/generate", async (c) => {
-  const body = z.object({ brief: z.string().min(3), productContext: z.string().optional(), tone: z.string().default("thanh lịch, tinh tế") }).parse(await c.req.json());
-  const output = await runSocialAi(c.get("db"),
-    "Bạn là copywriter thời trang của ÉLANE. Viết caption Instagram tiếng Việt, đúng sự thật, không bịa giá/tồn kho. Trả về JSON thuần gồm title, caption, hashtags (mảng).",
-    `Brief: ${body.brief}\nThông tin sản phẩm: ${body.productContext || "Không có"}\nGiọng điệu: ${body.tone}`);
-  const cleaned = output.replace(/^```json\s*|\s*```$/g, "");
-  try { return c.json(JSON.parse(cleaned)); } catch { return c.json({ title: "Nội dung Instagram", caption: output, hashtags: [] }); }
+  const body = z
+    .object({
+      brief: z.string().min(3),
+      productContext: z.string().optional(),
+      tone: z.string().default("thanh lịch, tinh tế"),
+      count: z.number().int().min(1).max(5).default(1),
+      channels: z.array(z.enum(["facebook", "instagram", "tiktok"])).optional(),
+      objective: z.string().optional(),
+      audience: z.string().optional(),
+      products: z.array(z.object({
+        id: z.string(),
+        name: z.string(),
+        description: z.string().optional(),
+        imageUrls: z.array(z.string().url()).optional(),
+        sku: z.string().optional(),
+        price: z.number().int().nonnegative().optional(),
+        category: z.string().optional(),
+      })).optional(),
+    })
+    .parse(await c.req.json());
+  const manager = new AiKeyManagerService(c.get("db"));
+  const key = await manager.acquireActiveKey("openai");
+  if (!key) throw new ApiError(409, "missing_ai_key", "Không tìm thấy OpenAI API key đang hoạt động trong Quản lý khóa AI.");
+
+  const channels = body.channels?.length ? body.channels : ["facebook", "instagram", "tiktok"];
+  const products = body.products?.length ? body.products : [{
+    id: "content-context",
+    name: "Nội dung ÉLANE",
+    description: body.productContext || body.brief,
+    imageUrls: [],
+    sku: undefined,
+    price: undefined,
+    category: undefined,
+  }];
+  const objectiveMap: Record<string, "awareness" | "engagement" | "conversion" | "launch"> = {
+    "Nhận diện thương hiệu": "awareness",
+    "Tăng tương tác": "engagement",
+    "Thúc đẩy bán hàng": "conversion",
+    "Ra mắt sản phẩm": "launch",
+  };
+  const jobId = `content-${Date.now()}-${randomUUID().slice(0, 8)}`;
+
+  try {
+    const response = await fetch(`${env.aiWorkerUrl.replace(/\/+$/, "")}/v1/content/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        job_id: jobId,
+        products: products.map((product) => ({
+          id: product.id,
+          name: product.name,
+          description: product.description || "",
+          image_urls: product.imageUrls || [],
+          category: product.category,
+        })),
+        channels,
+        objective: objectiveMap[body.objective || ""] || "engagement",
+        audience: body.audience || "Nữ công sở 25-35 tuổi",
+        tone: body.tone,
+        custom_instructions: body.brief,
+        brand_context: "ÉLANE - thời trang nữ thanh lịch, hiện đại",
+        openai_api_key: key.rawKey,
+      }),
+    });
+    const result = await response.json() as any;
+    if (!response.ok) throw new Error(result?.detail?.error_message || `AI Worker trả về HTTP ${response.status}`);
+    await manager.recordSuccess(key.id);
+    const variants = (result?.draft?.variants || []).map((item: any) => ({
+      title: item.headline,
+      caption: item.caption,
+      hashtags: item.hashtags,
+      cta: item.call_to_action,
+      channel: item.channel,
+      visualBrief: item.visual_brief,
+    }));
+    return c.json({
+      variants,
+      jobId,
+      review: result.review,
+      productBrief: result.product_brief,
+      keyUsed: { id: key.id, label: key.label, provider: "OPENAI", creditsRemaining: key.creditsRemaining },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new ApiError(502, "content_generation_failed", `AI Worker không thể tạo nội dung: ${message}`);
+  }
 });
 
 adminSocialRoutes.patch("/content/:id", async (c) => {
@@ -356,6 +528,115 @@ adminSocialRoutes.post("/content/:id/approve", async (c) => {
   if (!row) throw new ApiError(404, "not_found", "Không tìm thấy nội dung");
   if (body.publishNow) await publishContent(c.get("db"), row.id);
   return c.json((await c.get("db").select().from(socialContentItems).where(eq(socialContentItems.id, row.id)).limit(1))[0]);
+});
+
+adminSocialRoutes.delete("/content/:id", async (c) => {
+  const id = c.req.param("id");
+  const db = c.get("db");
+  const existing = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
+  if (!existing) throw new ApiError(404, "not_found", "Không tìm thấy nội dung");
+  await db.delete(socialContentItems).where(eq(socialContentItems.id, id));
+  return c.json({ ok: true, id });
+});
+
+adminSocialRoutes.post("/content/:id/duplicate", async (c) => {
+  const id = c.req.param("id");
+  const db = c.get("db");
+  const existing = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
+  if (!existing) throw new ApiError(404, "not_found", "Không tìm thấy nội dung");
+  const [cloned] = await db.insert(socialContentItems).values({
+    connectionId: existing.connectionId,
+    title: `[Bản sao] ${existing.title}`,
+    caption: existing.caption,
+    mediaType: existing.mediaType,
+    mediaUrls: existing.mediaUrls,
+    source: existing.source,
+    campaignCode: existing.campaignCode,
+    metadata: existing.metadata,
+    status: "draft",
+    createdById: c.get("user")!.accountId,
+  }).returning();
+  return c.json(cloned, 201);
+});
+
+adminSocialRoutes.post("/content/:id/send-review", async (c) => {
+  const id = c.req.param("id");
+  const db = c.get("db");
+  const existing = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
+  if (!existing) throw new ApiError(404, "not_found", "Không tìm thấy nội dung");
+  const [updated] = await db.update(socialContentItems).set({
+    status: "pending",
+    lastError: null,
+    updatedAt: new Date(),
+  }).where(eq(socialContentItems.id, id)).returning();
+  return c.json(updated);
+});
+
+adminSocialRoutes.post("/content/:id/reject", async (c) => {
+  const id = c.req.param("id");
+  const body = await c.req.json().catch(() => ({}));
+  const note = typeof body?.note === "string" && body.note.trim() ? body.note.trim() : "Bị từ chối duyệt";
+  const db = c.get("db");
+  const existing = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
+  if (!existing) throw new ApiError(404, "not_found", "Không tìm thấy nội dung");
+  const [updated] = await db.update(socialContentItems).set({
+    status: "draft",
+    lastError: note,
+    updatedAt: new Date(),
+  }).where(eq(socialContentItems.id, id)).returning();
+  return c.json(updated);
+});
+
+adminSocialRoutes.post("/content/:id/request-changes", async (c) => {
+  const id = c.req.param("id");
+  const body = await c.req.json().catch(() => ({}));
+  const note = typeof body?.note === "string" && body.note.trim() ? body.note.trim() : "Yêu cầu chỉnh sửa nội dung";
+  const db = c.get("db");
+  const existing = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
+  if (!existing) throw new ApiError(404, "not_found", "Không tìm thấy nội dung");
+  const [updated] = await db.update(socialContentItems).set({
+    status: "draft",
+    lastError: note,
+    updatedAt: new Date(),
+  }).where(eq(socialContentItems.id, id)).returning();
+  return c.json(updated);
+});
+
+adminSocialRoutes.post("/content/:id/reschedule", async (c) => {
+  const id = c.req.param("id");
+  const body = z.object({ scheduledAt: z.string().datetime() }).parse(await c.req.json().catch(() => ({})));
+  const db = c.get("db");
+  const existing = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
+  if (!existing) throw new ApiError(404, "not_found", "Không tìm thấy nội dung");
+  const [updated] = await db.update(socialContentItems).set({
+    scheduledAt: new Date(body.scheduledAt),
+    status: "scheduled",
+    updatedAt: new Date(),
+  }).where(eq(socialContentItems.id, id)).returning();
+  return c.json(updated);
+});
+
+adminSocialRoutes.post("/content/:id/cancel-schedule", async (c) => {
+  const id = c.req.param("id");
+  const db = c.get("db");
+  const existing = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
+  if (!existing) throw new ApiError(404, "not_found", "Không tìm thấy nội dung");
+  const [updated] = await db.update(socialContentItems).set({
+    scheduledAt: null,
+    status: "approved",
+    updatedAt: new Date(),
+  }).where(eq(socialContentItems.id, id)).returning();
+  return c.json(updated);
+});
+
+adminSocialRoutes.post("/content/:id/retry", async (c) => {
+  const id = c.req.param("id");
+  const db = c.get("db");
+  const existing = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
+  if (!existing) throw new ApiError(404, "not_found", "Không tìm thấy nội dung");
+  await publishContent(db, id);
+  const [updated] = await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1);
+  return c.json(updated);
 });
 
 adminSocialRoutes.post("/interactions/:id/retry-ai", async (c) => {
@@ -412,9 +693,10 @@ async function autoReplyToInteraction(db: AppVars["Variables"]["db"], id: string
   }
   let reply: string;
   try {
-    reply = await runSocialAi(db,
+    const aiResult = await runSocialAi(db,
       "Bạn là trợ lý Instagram của thời trang ÉLANE. Trả lời thân thiện, ngắn dưới 350 ký tự. Không bịa giá, size, tồn kho, khuyến mãi hay thời gian giao. Nếu thiếu dữ liệu, mời khách gửi tên sản phẩm hoặc inbox. Không hứa hoàn tiền/bồi thường.",
       interaction.message);
+    reply = aiResult.content;
   } catch {
     reply = "ÉLANE cảm ơn bạn đã quan tâm. Bạn cho mình xin tên sản phẩm hoặc gửi tin nhắn để đội ngũ kiểm tra thông tin chính xác nhé.";
   }

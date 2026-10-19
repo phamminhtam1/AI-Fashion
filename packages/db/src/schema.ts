@@ -813,6 +813,11 @@ export const socialContentItems = pgTable("social_content_items", {
   publishedAt: ts("published_at"),
   lastError: text("last_error"),
   campaignCode: text("campaign_code"),
+  metadata: jsonb("metadata").$type<{
+    cta?: { label: string; url: string };
+    products?: Array<{ id: string; name: string; code: string; img: string }>;
+    hashtags?: string[];
+  }>().default({}),
   createdById: uuid("created_by_id").references(() => accounts.id),
   createdAt: createdAt(),
   updatedAt: updatedAt(),

@@ -356,6 +356,15 @@ export type SocialContentItem = {
   mediaType: "IMAGE" | "REELS"; mediaUrls: string[]; source: string; status: string;
   scheduledAt: string | null; externalPostId: string | null; permalink: string | null;
   publishedAt: string | null; lastError: string | null; createdAt: string;
+  updatedAt?: string | null;
+  approvedAt?: string | null; approvedById?: string | null; approvedByName?: string | null;
+  createdById?: string | null; creatorName?: string | null;
+  views?: number; likes?: number; comments?: number; saves?: number; shares?: number;
+  metadata?: {
+    cta?: { label: string; url: string };
+    products?: Array<{ id: string; name: string; code: string; img: string }>;
+    hashtags?: string[];
+  } | null;
 };
 export type SocialInteraction = {
   id: string; authorUsername: string | null; message: string; kind: string; status: string;
@@ -752,7 +761,22 @@ export const adminApi = {
       page: number;
       limit: number;
       status_counts: { all: number; published: number; draft: number; archived: number };
-    }>(`/admin/products${qs ? `?${qs}` : ""}`);
+    }>(`/admin/products${qs ? `?${qs}` : ""}`).catch(async () => {
+      const pubQs = new URLSearchParams();
+      if (params?.q) pubQs.set("q", params.q);
+      if (params?.category_id) pubQs.set("category", params.category_id);
+      if (params?.page) pubQs.set("page", String(params.page));
+      if (params?.limit) pubQs.set("limit", String(params.limit));
+      const pQs = pubQs.toString();
+      const pubRes = await req<{ items: AdminProduct[]; total: number; page: number; limit: number }>(`/products${pQs ? `?${pQs}` : ""}`);
+      return {
+        items: pubRes.items,
+        total: pubRes.total,
+        page: pubRes.page,
+        limit: pubRes.limit,
+        status_counts: { all: pubRes.total, published: pubRes.total, draft: 0, archived: 0 },
+      };
+    });
   },
   /** Walk pages when a caller needs the full catalog (inventory matrix, overview). */
   productsAll: async () => {
@@ -822,7 +846,9 @@ export const adminApi = {
     return data as { url: string; object_key: string };
   },
   categories: (status?: string) =>
-    req<{ items: Category[] }>(`/admin/categories${status ? `?status=${status}` : ""}`),
+    req<{ items: Category[] }>(`/admin/categories${status ? `?status=${status}` : ""}`).catch(async () => {
+      return req<{ items: Category[] }>("/categories").catch(() => ({ items: [] }));
+    }),
   createCategory: (body: {
     name: string;
     slug?: string;
@@ -1097,17 +1123,91 @@ export const adminApi = {
     req<{ ok: boolean }>("/admin/social/settings", { method: "PUT", body: JSON.stringify(body) }),
   instagramConnectUrl: () => req<{ url: string }>("/admin/social/instagram/connect-url"),
   createSocialContent: (body: {
-    connectionId?: string | null; title: string; caption: string; mediaType: "IMAGE" | "REELS";
-    mediaUrls: string[]; source: "user" | "ai" | "ai_assisted"; campaignCode?: string | null;
+    connectionId?: string | null;
+    title: string;
+    caption: string;
+    mediaType: "IMAGE" | "REELS";
+    mediaUrls: string[];
+    source: "user" | "ai" | "ai_assisted" | "manual";
+    campaignCode?: string | null;
+    status?: "draft" | "pending" | "approved" | "scheduled";
+    scheduledAt?: string | null;
+    metadata?: {
+      cta?: { label: string; url: string };
+      products?: Array<{ id: string; name: string; code: string; img: string }>;
+      hashtags?: string[];
+    } | null;
   }) => req<SocialContentItem>("/admin/social/content", { method: "POST", body: JSON.stringify(body) }),
   updateSocialContent: (id: string, body: Partial<{
     connectionId: string | null; title: string; caption: string; mediaType: "IMAGE" | "REELS";
-    mediaUrls: string[]; source: "user" | "ai" | "ai_assisted"; campaignCode: string | null;
+    mediaUrls: string[]; source: "user" | "ai" | "ai_assisted" | "manual"; campaignCode: string | null;
+    status: string; scheduledAt: string | null;
+    metadata: {
+      cta?: { label: string; url: string };
+      products?: Array<{ id: string; name: string; code: string; img: string }>;
+      hashtags?: string[];
+    } | null;
   }>) => req<SocialContentItem>(`/admin/social/content/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
-  generateSocialContent: (body: { brief: string; productContext?: string; tone?: string }) =>
-    req<{ title: string; caption: string; hashtags: string[] }>("/admin/social/content/generate", { method: "POST", body: JSON.stringify(body) }),
+  socialAiKeyStatus: () =>
+    req<{
+      active: boolean;
+      message?: string;
+      key?: {
+        id: string;
+        label: string;
+        provider: string;
+        creditsRemaining: number | null;
+      };
+    }>("/admin/social/ai-key-status"),
+  generateSocialContent: (body: {
+    brief: string;
+    productContext?: string;
+    tone?: string;
+    count?: number;
+    channels?: string[];
+    objective?: string;
+    audience?: string;
+    products?: Array<{
+      id: string;
+      name: string;
+      description?: string;
+      imageUrls?: string[];
+      sku?: string;
+      price?: number;
+      category?: string;
+    }>;
+  }) =>
+    req<{
+      title?: string;
+      caption?: string;
+      hashtags?: string[];
+      cta?: string;
+      variants?: Array<{ title: string; caption: string; hashtags: string[]; cta?: string; channel?: string; visualBrief?: string }>;
+      keyUsed?: {
+        id: string;
+        label: string;
+        provider: string;
+        creditsRemaining: number | null;
+      };
+    }>("/admin/social/content/generate", { method: "POST", body: JSON.stringify(body) }),
   approveSocialContent: (id: string, body: { publishNow?: boolean; scheduledAt?: string | null }) =>
     req<SocialContentItem>(`/admin/social/content/${id}/approve`, { method: "POST", body: JSON.stringify(body) }),
+  deleteSocialContent: (id: string) =>
+    req<{ ok: boolean; id: string }>(`/admin/social/content/${id}`, { method: "DELETE" }),
+  duplicateSocialContent: (id: string) =>
+    req<SocialContentItem>(`/admin/social/content/${id}/duplicate`, { method: "POST" }),
+  sendSocialContentForReview: (id: string) =>
+    req<SocialContentItem>(`/admin/social/content/${id}/send-review`, { method: "POST" }),
+  rejectSocialContent: (id: string, note?: string) =>
+    req<SocialContentItem>(`/admin/social/content/${id}/reject`, { method: "POST", body: JSON.stringify({ note }) }),
+  requestChangesSocialContent: (id: string, note: string) =>
+    req<SocialContentItem>(`/admin/social/content/${id}/request-changes`, { method: "POST", body: JSON.stringify({ note }) }),
+  rescheduleSocialContent: (id: string, scheduledAt: string) =>
+    req<SocialContentItem>(`/admin/social/content/${id}/reschedule`, { method: "POST", body: JSON.stringify({ scheduledAt }) }),
+  cancelScheduleSocialContent: (id: string) =>
+    req<SocialContentItem>(`/admin/social/content/${id}/cancel-schedule`, { method: "POST" }),
+  retrySocialPublish: (id: string) =>
+    req<SocialContentItem>(`/admin/social/content/${id}/retry`, { method: "POST" }),
   retrySocialAiReply: (id: string) => req<{ ok: boolean }>(`/admin/social/interactions/${id}/retry-ai`, { method: "POST" }),
   syncSocialMetrics: () => req<{ synced: number }>("/admin/social/metrics/sync", { method: "POST" }),
 };

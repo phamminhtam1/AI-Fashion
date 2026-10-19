@@ -1,6 +1,6 @@
 import pytest
-from app.models.schemas import ClassifierOutput, VisibilityFlag
-from app.classifiers.openai_classifier import OpenAIClassifier
+from app.features.tryon.models.schemas import ClassifierOutput, VisibilityFlag
+from app.features.tryon.classifiers.openai_classifier import OpenAIClassifier
 
 
 def test_classifier_parses_face_only():

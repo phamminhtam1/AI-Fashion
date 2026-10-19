@@ -113,7 +113,33 @@ export const CONFIG_TABS = [
 
 /* ---------- AI Content ---------- */
 // TODO(api): GET /admin/products?limit=12
-export interface Product { id: string; name: string; sku: string; price: number; tint: string; inStock: boolean }
+export interface Product {
+  id: string;
+  name: string;
+  sku: string;
+  price: number;
+  tint: string;
+  inStock: boolean;
+  imageUrl?: string | null;
+  category?: string | null;
+  description?: string | null;
+  slug?: string;
+  colorsCount?: number;
+  sizesCount?: number;
+  variantsCount?: number;
+}
+
+export interface Collection {
+  id: string;
+  title: string;
+  slug?: string;
+  season?: string | null;
+  coverImageUrl?: string | null;
+  itemCount?: number;
+  description?: string | null;
+  attachedProductIds?: string[];
+}
+
 export const MOCK_PRODUCTS: Product[] = [
   { id: "p1", name: "Áo blazer nữ công sở", sku: "EL-BZ-001", price: 548000, tint: "from-stone-200 to-stone-300", inStock: true },
   { id: "p2", name: "Quần tây suông lưng cao", sku: "EL-TR-002", price: 498000, tint: "from-slate-100 to-slate-300", inStock: true },
@@ -133,7 +159,7 @@ export const CTAS = ["Mua ngay", "Khám phá BST", "Xem thêm sản phẩm", "T�
 export const GOALS = ["Giới thiệu sản phẩm", "Khuyến mãi", "Bộ sưu tập", "Kiến thức thời trang", "Tăng tương tác", "Khác"];
 export const STYLES = ["Thanh lịch, hiện đại", "Trẻ trung, năng động", "Sang trọng, tối giản"];
 export const TONES = ["Thân thiện, truyền cảm hứng", "Chuyên nghiệp, tin cậy", "Vui tươi, gần gũi"];
-export interface Variant { id: string; label: string; tags: string; title: string; caption: string; hashtags: string[]; }
+export interface Variant { id: string; label: string; tags: string; title: string; caption: string; hashtags: string[]; visualBrief?: string; }
 export const MOCK_VARIANTS: Variant[] = [1, 2, 3].map((n) => ({
   id: `v${n}`, label: `Phiên bản ${n}`, tags: ["Thanh lịch • Hiện đại • Truyền cảm hứng", "Trẻ trung • Gần gũi", "Sang trọng • Tối giản"][n - 1],
   title: "Modern Office Look",

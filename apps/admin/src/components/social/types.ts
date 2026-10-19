@@ -2,17 +2,17 @@ import type { Dispatch, SetStateAction } from "react";
 import type { SocialOverview, SocialContentItem, SocialPlatformSettings } from "@/lib/api";
 
 export type SocialPage =
-  | "overview" | "connect" | "add-channel" | "channel-config"
+  | "overview" | "connect" | "channel-manage" | "add-channel"
   | "ai-content" | "posts" | "messages" | "comments";
 
 /** Dùng cho sidebar của admin layout: các mục con của "Kênh bán hàng". */
 export const SOCIAL_NAV: { id: SocialPage; label: string }[] = [
   { id: "connect", label: "Kết nối kênh" },
+  { id: "channel-manage", label: "Quản lý kênh" },
   { id: "ai-content", label: "AI Content" },
   { id: "posts", label: "Bài viết" },
   { id: "messages", label: "Tin nhắn" },
   { id: "comments", label: "Bình luận" },
-  { id: "channel-config", label: "Cấu hình kênh" },
 ];
 
 export type ChannelId = "facebook" | "instagram" | "tiktok" | "shopee" | "website" | "zalo" | "lazada" | "youtube";

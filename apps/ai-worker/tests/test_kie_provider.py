@@ -2,8 +2,8 @@ import pytest
 import os
 from unittest.mock import AsyncMock, patch, MagicMock
 from app.config import settings
-from app.models.schemas import VisibilityFlag, GarmentMetadata
-from app.providers.kie_provider import KieTryOnProvider
+from app.features.tryon.models.schemas import VisibilityFlag, GarmentMetadata
+from app.features.tryon.providers.kie_provider import KieTryOnProvider
 
 
 def test_kie_provider_init():

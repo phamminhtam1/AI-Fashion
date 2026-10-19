@@ -7,10 +7,10 @@ import type { AiPreset, ChannelAccount, ChannelId, ConfigTab, GoOptions, SocialC
 import { DashboardPage } from "./social/pages/DashboardPage";
 import { ConnectPage } from "./social/pages/ConnectPage";
 import { AddChannelPage } from "./social/pages/AddChannelPage";
-import { ChannelConfigPage } from "./social/pages/ChannelConfigPage";
 import { AiContentPage } from "./social/pages/AiContentPage";
 import { PostsPage } from "./social/pages/PostsPage";
 import { CommentsPage, MessagesPage } from "./social/pages/InboxPages";
+import { ChannelManagePage } from "./social/pages/ChannelManagePage";
 
 export { SOCIAL_NAV } from "./social/types";
 export type { SocialPage } from "./social/types";
@@ -89,7 +89,7 @@ export function SocialCommerceManager({ page: controlled, onPageChange }: Props 
             pageId: connection.instagramUserId || connection.pageId || "—",
             connectedAt: connection.createdAt ? new Date(connection.createdAt).toLocaleString("vi-VN") : "Vừa xong",
             followers: connection.followers ?? 0,
-            avatarUrl: connection.avatarUrl,
+            avatarUrl: connection.avatarUrl ?? null,
           };
         }
         return blankAccount("instagram");
@@ -114,7 +114,7 @@ export function SocialCommerceManager({ page: controlled, onPageChange }: Props 
     if (id === "instagram") {
       if (!settings?.appId || !settings.hasAppSecret || !settings.hasWebhookVerifyToken) {
         toast.info("Hãy nhập cấu hình Meta trước khi kết nối Instagram");
-        go("channel-config", { channel: "instagram", tab: "webhook" });
+        go("add-channel", { wizardChannel: "instagram" });
         return;
       }
       try { const { url } = await adminApi.instagramConnectUrl(); window.location.assign(url); }
@@ -128,7 +128,7 @@ export function SocialCommerceManager({ page: controlled, onPageChange }: Props 
 
   const disconnectChannel = useCallback((id: ChannelId) => {
     if (id === "instagram") { toast.info("Chưa có API ngắt kết nối Instagram"); return; }
-    setLocal((old) => old.map((c) => (c.id === id ? blank(id) : c))); // TODO(api): DELETE /admin/social/channels/:id
+    setLocal((old) => old.map((c) => (c.id === id ? blankAccount(id) : c))); // TODO(api): DELETE /admin/social/channels/:id
     toast.success("Đã ngắt kết nối");
     go("connect");
   }, [go]);
@@ -162,14 +162,16 @@ export function SocialCommerceManager({ page: controlled, onPageChange }: Props 
     go, reload: load, refreshAll, connectChannel, disconnectChannel, approve, retryReply,
   };
 
+  let content;
   switch (page) {
-    case "connect": return <ConnectPage ctx={ctx} />;
-    case "add-channel": return <AddChannelPage key={wizardChannel ?? "new"} ctx={ctx} />;
-    case "channel-config": return <ChannelConfigPage ctx={ctx} />;
-    case "ai-content": return <AiContentPage key={aiPreset} ctx={ctx} />;
-    case "posts": return <PostsPage ctx={ctx} />;
-    case "messages": return <MessagesPage ctx={ctx} />;
-    case "comments": return <CommentsPage ctx={ctx} />;
-    default: return <DashboardPage ctx={ctx} />;
+    case "connect": content = <ConnectPage ctx={ctx} />; break;
+    case "channel-manage": content = <ChannelManagePage key={activeChannel} ctx={ctx} />; break;
+    case "add-channel": content = <AddChannelPage key={wizardChannel ?? "new"} ctx={ctx} />; break;
+    case "ai-content": content = <AiContentPage key={aiPreset} ctx={ctx} />; break;
+    case "posts": content = <PostsPage ctx={ctx} />; break;
+    case "messages": content = <MessagesPage ctx={ctx} />; break;
+    case "comments": content = <CommentsPage ctx={ctx} />; break;
+    default: content = <DashboardPage ctx={ctx} />;
   }
+  return <div className="social-commerce-ui font-sans text-sm">{content}</div>;
 }
