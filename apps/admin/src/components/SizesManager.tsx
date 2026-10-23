@@ -169,7 +169,8 @@ function SectionCard({
   );
 }
 
-export function SizesManager() {
+export function SizesManager({ permissions = [] }: { permissions?: string[] }) {
+  const canWrite = permissions.includes("*") || permissions.includes("product.write");
   const [detailTab, setDetailTab] = useState<"measurements" | "settings">("measurements");
   const [sizes, setSizes] = useState<SizeRow[]>([]);
   const [charts, setCharts] = useState<SizeChart[]>([]);
@@ -209,7 +210,7 @@ export function SizesManager() {
     }
     // Danh mục dùng cho "Danh mục áp dụng" — lỗi không chặn trang
     try {
-      const res = await adminApi.categories("all");
+      const res = await adminApi.categoryOptions("all");
       setAllCategories(res.items);
     } catch {
       /* bỏ qua */
@@ -452,7 +453,7 @@ export function SizesManager() {
             <Download className="size-3.5 text-slate-500" />
             <span>Xuất file</span>
           </Button>
-          <Button asChild className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer">
+          {canWrite && <Button asChild className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer">
             <a
               href="/bangsize/thembang"
               onClick={(e) => {
@@ -463,7 +464,7 @@ export function SizesManager() {
               <Plus className="size-3.5" />
               <span>Thêm bảng kích cỡ</span>
             </a>
-          </Button>
+            </Button>}
         </div>
       </div>
 

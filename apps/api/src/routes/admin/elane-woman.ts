@@ -82,6 +82,7 @@ adminElaneWomanRoutes.post("/reorder", async (c) => {
 
 /** List all ÉLANEwoman posts */
 adminElaneWomanRoutes.get("/", async (c) => {
+  requirePerm(c.get("user")!, "product.read");
   const db = c.get("db");
   const rows = await db
     .select({

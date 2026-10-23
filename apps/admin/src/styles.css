@@ -15,12 +15,12 @@
   --text-base--line-height: 1.5rem;
   --text-lg: 1.125rem;
   --text-lg--line-height: 1.75rem;
-  --radius-xs: 4px;
-  --radius-sm: 4px;
+  --radius-xs: 6px;
+  --radius-sm: 6px;
   --radius-md: 6px;
   --radius-lg: 8px;
   --radius-xl: 10px;
-  --radius: 4px;
+  --radius: 6px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -43,7 +43,7 @@
 }
 
 :root {
-  --radius: 4px;
+  --radius: 6px;
   --background: #f8f9fa;
   --foreground: #101828;
   --card: #ffffff;
@@ -75,6 +75,63 @@
     background-color: var(--field);
   }
 }
+
+/* The reference admin layout is composed at the compact density users see at
+   90% browser zoom. Keep the browser at its normal 100% zoom while applying
+   that density uniformly to the app shell (including fixed navigation). */
+.admin-app {
+  zoom: 0.9;
+  min-height: 111.111111vh;
+}
+
+/* Keep the navigation rhythm stable at the compact 100% density. The fixed
+   row height prevents the sidebar from drifting relative to the main panel
+   when the browser is resized. */
+.admin-sidebar-item {
+  min-height: 36px;
+}
+
+.admin-app [role="switch"] {
+  border-radius: 9999px !important;
+}
+
+.admin-app [role="switch"] > * {
+  border-radius: 9999px !important;
+}
+
+.admin-sidebar {
+  height: 111.111111vh !important;
+}
+
+.admin-sidebar nav {
+  scrollbar-gutter: stable;
+}
+
+.admin-sidebar nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-sidebar nav::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #d9dee8;
+  background-clip: padding-box;
+}
+
+.content-input-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.content-input-scroll::-webkit-scrollbar {
+  width: 7px;
+}
+
+.content-input-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
 
 /* Shared type hierarchy for every admin page, dialog and content panel. */
 @utility admin-page-title {
@@ -365,6 +422,59 @@ input:disabled,
 @keyframes social-step-fill {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
+}
+
+@keyframes ai-generating-float {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-7px) rotate(3deg); }
+}
+
+@keyframes ai-generating-sparkle {
+  0%, 100% { transform: scale(.92) rotate(-8deg); opacity: .72; }
+  50% { transform: scale(1.12) rotate(8deg); opacity: 1; }
+}
+
+@keyframes ai-generating-message {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ai-generating-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes ai-generating-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: .35; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+
+.ai-generating-orbit {
+  position: relative;
+  animation: ai-generating-float 2.2s ease-in-out infinite;
+}
+
+.ai-generating-orbit > span {
+  right: 7px;
+  top: 8px;
+  box-shadow: 0 0 0 5px rgb(232 121 249 / 18%);
+  animation: social-step-pulse 1.4s ease-in-out infinite;
+}
+
+.ai-generating-sparkle { animation: ai-generating-sparkle 1.6s ease-in-out infinite; }
+.ai-generating-message { animation: ai-generating-message 280ms ease-out both; }
+.ai-generating-progress { transform-origin: left; animation: ai-generating-progress 1.5s linear both; }
+.ai-generating-dot { animation: ai-generating-dot 1s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-generating-orbit,
+  .ai-generating-orbit > span,
+  .ai-generating-sparkle,
+  .ai-generating-message,
+  .ai-generating-progress,
+  .ai-generating-dot {
+    animation: none;
+  }
 }
 .social-connect-stepper .social-step-dot.is-active {
   animation: social-step-pulse 1.8s ease-in-out infinite;

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   inventoryBalances,
@@ -25,6 +25,32 @@ import { checkAndExpirePendingBankOrders } from "../../workers/order-expiry.work
 
 export const adminOrderRoutes = new Hono<AppVars>();
 adminOrderRoutes.use("*", requireAuth);
+
+/** Minimal customer lookup for order creation. It does not grant access to the CRM page. */
+adminOrderRoutes.get("/customer-options", async (c) => {
+  requirePerm(c.get("user")!, "order.customer.read");
+  const db = c.get("db");
+  const q = c.req.query("q")?.trim();
+  const limit = Math.min(200, Math.max(1, Number(c.req.query("limit") ?? 100) || 100));
+  const predicates = [eq(customers.status, "active")];
+  if (q) {
+    const like = `%${q}%`;
+    predicates.push(or(ilike(customers.fullName, like), ilike(customers.email, like), ilike(customers.phone, like))!);
+  }
+  const rows = await db
+    .select({
+      id: customers.id,
+      full_name: customers.fullName,
+      email: customers.email,
+      phone: customers.phone,
+      created_at: customers.createdAt,
+    })
+    .from(customers)
+    .where(and(...predicates))
+    .orderBy(desc(customers.createdAt))
+    .limit(limit);
+  return c.json({ items: rows });
+});
 
 adminOrderRoutes.get("/", async (c) => {
   requirePerm(c.get("user")!, "order.read");
@@ -165,7 +191,8 @@ adminOrderRoutes.get("/", async (c) => {
 });
 
 adminOrderRoutes.post("/", async (c) => {
-  requirePerm(c.get("user")!, "order.read");
+  requirePerm(c.get("user")!, "order.write");
+  requirePerm(c.get("user")!, "order.customer.read");
   const db = c.get("db");
 
   const body = z
@@ -518,7 +545,7 @@ adminOrderRoutes.get("/:id", async (c) => {
 });
 
 adminOrderRoutes.post("/:id/mark-paid", async (c) => {
-  requirePerm(c.get("user")!, "order.read");
+  requirePerm(c.get("user")!, "order.update");
   const id = c.req.param("id");
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   const condition = isUuid ? eq(orders.id, id) : sql`lower(${orders.orderNumber}) = lower(${id})`;
@@ -535,7 +562,6 @@ adminOrderRoutes.post("/:id/mark-paid", async (c) => {
 });
 
 adminOrderRoutes.patch("/:id", async (c) => {
-  requirePerm(c.get("user")!, "order.read");
   const id = c.req.param("id");
   const body = z
     .object({
@@ -546,6 +572,12 @@ adminOrderRoutes.patch("/:id", async (c) => {
     })
     .safeParse(await c.req.json());
   if (!body.success) throw new ApiError(400, "validation_error", "Dữ liệu không hợp lệ");
+  const user = c.get("user")!;
+  if (body.data.status === "cancelled") {
+    requirePerm(user, "order.cancel");
+  } else {
+    requirePerm(user, "order.update");
+  }
   const db = c.get("db");
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   const condition = isUuid ? eq(orders.id, id) : sql`lower(${orders.orderNumber}) = lower(${id})`;
@@ -606,7 +638,7 @@ adminOrderRoutes.patch("/:id", async (c) => {
 });
 
 adminOrderRoutes.post("/:id/fulfill", async (c) => {
-  requirePerm(c.get("user")!, "order.read");
+  requirePerm(c.get("user")!, "order.update");
   const id = c.req.param("id");
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   const condition = isUuid ? eq(orders.id, id) : sql`lower(${orders.orderNumber}) = lower(${id})`;

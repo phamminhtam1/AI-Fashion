@@ -135,7 +135,7 @@ export function CreateOrderView({
   // Load Real Categories on Mount
   useEffect(() => {
     adminApi
-      .categories("active")
+      .categoryOptions("active")
       .then((res) => {
         if (res && res.items) {
           setRealCategories(
@@ -149,7 +149,7 @@ export function CreateOrderView({
   // Hydrate real customers from API
   useEffect(() => {
     adminApi
-      .customers({ limit: 100 })
+      .orderCustomerOptions({ limit: 100 })
       .then((res) => {
         if (res && res.items && res.items.length > 0) {
           const mapped: CustomerDraft[] = res.items.map((c) => ({
@@ -157,7 +157,7 @@ export function CreateOrderView({
             name: c.full_name,
             email: c.email || "—",
             phone: c.phone || "—",
-            ordersCount: c.analytics?.total_orders ?? c.orders?.length ?? 0,
+            ordersCount: 0,
             joinedDate: c.created_at
               ? new Date(c.created_at).toLocaleDateString("vi-VN", { month: "short", year: "numeric" })
               : "Tháng 01/2024",

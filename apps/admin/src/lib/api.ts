@@ -353,13 +353,14 @@ export type SocialConnection = {
 };
 export type SocialContentItem = {
   id: string; connectionId: string | null; title: string; caption: string;
-  mediaType: "IMAGE" | "REELS"; mediaUrls: string[]; source: string; status: string;
+  mediaType: "IMAGE" | "CAROUSEL" | "REELS"; mediaUrls: string[]; source: string; status: string;
   scheduledAt: string | null; externalPostId: string | null; permalink: string | null;
   publishedAt: string | null; lastError: string | null; createdAt: string;
   updatedAt?: string | null;
   approvedAt?: string | null; approvedById?: string | null; approvedByName?: string | null;
   createdById?: string | null; creatorName?: string | null;
   views?: number; likes?: number; comments?: number; saves?: number; shares?: number;
+  reach?: number; impressions?: number; lastSyncedAt?: string | null;
   metadata?: {
     cta?: { label: string; url: string };
     products?: Array<{ id: string; name: string; code: string; img: string }>;
@@ -439,6 +440,10 @@ export const adminApi = {
       account_id: string;
       email: string;
       full_name: string;
+      employee_code: string | null;
+      avatar_url: string | null;
+      job_title: string | null;
+      role_name: string | null;
       permissions: string[];
     }>("/admin/auth/me"),
   overview: (params?: { from?: string; to?: string }) => {
@@ -644,6 +649,21 @@ export const adminApi = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  orderCustomerOptions: (params?: { q?: string; limit?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.q) q.set("q", params.q);
+    if (params?.limit) q.set("limit", String(params.limit));
+    const qs = q.toString();
+    return req<{
+      items: Array<{
+        id: string;
+        full_name: string;
+        email: string | null;
+        phone: string | null;
+        created_at: string;
+      }>;
+    }>(`/admin/orders/customer-options${qs ? `?${qs}` : ""}`);
+  },
   orderDetail: (id: string) =>
     req<{
       id: string;
@@ -846,9 +866,9 @@ export const adminApi = {
     return data as { url: string; object_key: string };
   },
   categories: (status?: string) =>
-    req<{ items: Category[] }>(`/admin/categories${status ? `?status=${status}` : ""}`).catch(async () => {
-      return req<{ items: Category[] }>("/categories").catch(() => ({ items: [] }));
-    }),
+    req<{ items: Category[] }>(`/admin/categories${status ? `?status=${status}` : ""}`),
+  categoryOptions: (status?: string) =>
+    req<{ items: Category[] }>(`/admin/categories/options${status ? `?status=${status}` : ""}`),
   createCategory: (body: {
     name: string;
     slug?: string;
@@ -928,6 +948,8 @@ export const adminApi = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  submitDoc: (id: string) =>
+    req<{ id: string; status: string }>(`/admin/inventory/documents/${id}/submit`, { method: "POST" }),
   approveDoc: (id: string) =>
     req<{ id: string; status: string }>(`/admin/inventory/documents/${id}/approve`, { method: "POST" }),
   postDoc: (id: string, key: string) =>
@@ -940,7 +962,28 @@ export const adminApi = {
       `/admin/inventory/documents/${id}`,
       { method: "DELETE" },
     ),
-  staff: () => req<{ items: Array<Record<string, unknown>> }>("/admin/staff"),
+  staff: () => req<{ items: Array<{
+    id: string;
+    employee_code: string;
+    full_name: string;
+    avatar_url: string | null;
+    work_email: string | null;
+    phone: string | null;
+    joined_on: string;
+    status: string;
+    account_status: string | null;
+    last_login_at: string | null;
+    role: { role_id: string; role_code: string; role_name: string; scope_type: string } | null;
+    roles: Array<{ role_id: string; role_code: string; role_name: string; scope_type: string }>;
+  }> }>("/admin/staff"),
+  createStaff: (body: { full_name: string; work_email: string; phone?: string; role_code: string; password?: string }) => req<{ id: string; employee_code: string }>("/admin/staff", { method: "POST", body: JSON.stringify(body) }),
+  updateStaff: (id: string, status: "active" | "locked" | "left") => req<{ ok: boolean }>(`/admin/staff/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  permissions: () => req<{ items: Array<{ id: string; code: string; description: string }> }>("/admin/permissions"),
+  roles: () => req<{ items: Array<{ id: string; code: string; name: string; description: string; is_system: boolean; members: number; permission_count: number; created_at: string; updated_at: string }> }>("/admin/roles"),
+  role: (id: string) => req<{ role: { id: string; code: string; name: string; description: string; is_system: boolean; created_at: string; updated_at: string }; permissions: Array<{ id: string; code: string; description: string }>; members: Array<Record<string, unknown>> }>(`/admin/roles/${id}`),
+  createRole: (body: { code: string; name: string; permission_codes?: string[] }) => req<{ id: string; code: string; name: string }>("/admin/roles", { method: "POST", body: JSON.stringify(body) }),
+  updateRolePermissions: (id: string, permission_codes: string[]) => req<{ ok: boolean; role_id: string; permission_codes: string[] }>(`/admin/roles/${id}/permissions`, { method: "PATCH", body: JSON.stringify({ permission_codes }) }),
+  updateStaffRoles: (id: string, role_codes: string[], scope_type = "all") => req<{ ok: boolean; employee_id: string; role_codes: string[]; scope_type: string }>(`/admin/staff/${id}/roles`, { method: "PATCH", body: JSON.stringify({ role_codes, scope_type }) }),
   audit: () => req<{ items: Array<Record<string, unknown>> }>("/admin/audit-logs"),
   brand: () => req<{ value: Record<string, unknown> }>("/admin/settings/brand"),
   discountCodes: (params?: {
@@ -1126,7 +1169,7 @@ export const adminApi = {
     connectionId?: string | null;
     title: string;
     caption: string;
-    mediaType: "IMAGE" | "REELS";
+    mediaType: "IMAGE" | "CAROUSEL" | "REELS";
     mediaUrls: string[];
     source: "user" | "ai" | "ai_assisted" | "manual";
     campaignCode?: string | null;
@@ -1139,7 +1182,7 @@ export const adminApi = {
     } | null;
   }) => req<SocialContentItem>("/admin/social/content", { method: "POST", body: JSON.stringify(body) }),
   updateSocialContent: (id: string, body: Partial<{
-    connectionId: string | null; title: string; caption: string; mediaType: "IMAGE" | "REELS";
+    connectionId: string | null; title: string; caption: string; mediaType: "IMAGE" | "CAROUSEL" | "REELS";
     mediaUrls: string[]; source: "user" | "ai" | "ai_assisted" | "manual"; campaignCode: string | null;
     status: string; scheduledAt: string | null;
     metadata: {
@@ -1192,8 +1235,16 @@ export const adminApi = {
     }>("/admin/social/content/generate", { method: "POST", body: JSON.stringify(body) }),
   approveSocialContent: (id: string, body: { publishNow?: boolean; scheduledAt?: string | null }) =>
     req<SocialContentItem>(`/admin/social/content/${id}/approve`, { method: "POST", body: JSON.stringify(body) }),
-  deleteSocialContent: (id: string) =>
-    req<{ ok: boolean; id: string }>(`/admin/social/content/${id}`, { method: "DELETE" }),
+  unapproveSocialContent: (id: string) =>
+    req<SocialContentItem>(`/admin/social/content/${id}/unapprove`, { method: "POST" }),
+  deleteSocialContent: (id: string, force = false) =>
+    req<{
+      ok: boolean;
+      id: string;
+      deletedOnInstagram?: boolean;
+      instagramError?: string | null;
+      externalPostId?: string | null;
+    }>(`/admin/social/content/${id}${force ? "?force=true" : ""}`, { method: "DELETE" }),
   duplicateSocialContent: (id: string) =>
     req<SocialContentItem>(`/admin/social/content/${id}/duplicate`, { method: "POST" }),
   sendSocialContentForReview: (id: string) =>
@@ -1210,6 +1261,20 @@ export const adminApi = {
     req<SocialContentItem>(`/admin/social/content/${id}/retry`, { method: "POST" }),
   retrySocialAiReply: (id: string) => req<{ ok: boolean }>(`/admin/social/interactions/${id}/retry-ai`, { method: "POST" }),
   syncSocialMetrics: () => req<{ synced: number }>("/admin/social/metrics/sync", { method: "POST" }),
+  syncPostMetrics: (id: string) =>
+    req<{
+      success: boolean;
+      data: {
+        views: number;
+        reach: number;
+        impressions: number;
+        likes: number;
+        comments: number;
+        saves: number;
+        shares: number;
+        lastSyncedAt: string;
+      };
+    }>(`/admin/social/content/${id}/sync-metrics`, { method: "POST" }),
 };
 
 export type DiscountCodeAppliedProduct = {

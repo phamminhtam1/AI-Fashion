@@ -51,7 +51,7 @@ import { formatDateParts, StatusPill, type LookbookExt } from "./lookbook-shared
  *         /lookbook/them       -> trang thêm mới
  *         /lookbook/:id|:slug  -> trang chỉnh sửa
  */
-export function LookbookManager() {
+export function LookbookManager({ permissions = [] }: { permissions?: string[] }) {
   const location = useLocation();
   const route = resolveAdminPath(location.pathname);
 
@@ -59,7 +59,7 @@ export function LookbookManager() {
   if (route.subParam) {
     return <LookbookForm key={route.subParam} mode="edit" lookbookKey={route.subParam} />;
   }
-  return <LookbookList />;
+  return <LookbookList permissions={permissions} />;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -112,7 +112,8 @@ function MetricCard({
   );
 }
 
-function LookbookList() {
+function LookbookList({ permissions = [] }: { permissions?: string[] }) {
+  const canWrite = permissions.includes("*") || permissions.includes("product.write");
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
   const navigate = useNavigate();
 
@@ -299,10 +300,10 @@ function LookbookList() {
             <Download className="mr-1.5 size-3.5" />
             Xuất dữ liệu
           </Button>
-          <Button onClick={goCreate} className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white hover:bg-[#53389e]">
+          {canWrite && <Button onClick={goCreate} className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white hover:bg-[#53389e]">
             <Plus className="mr-1.5 size-3.5" />
             Thêm lookbook
-          </Button>
+          </Button>}
         </div>
       </div>
 
@@ -362,7 +363,7 @@ function LookbookList() {
             </Button>
           </div>
 
-          {checkedIds.length > 0 && (
+          {canWrite && checkedIds.length > 0 && (
             <div className="flex items-center justify-between border-b border-border bg-primary/5 px-4 py-2 text-sm">
               <span className="font-medium">Đã chọn {checkedIds.length} lookbook</span>
               <div className="flex items-center gap-2">
@@ -423,7 +424,7 @@ function LookbookList() {
                           ? "Tạo lookbook đầu tiên để giới thiệu câu chuyện thời trang của thương hiệu."
                           : "Thử đổi từ khóa hoặc bỏ bớt bộ lọc."}
                       </p>
-                      {lookbooks.length === 0 && (
+                      {canWrite && lookbooks.length === 0 && (
                         <Button size="sm" className="mt-4" onClick={goCreate}>
                           <Plus className="mr-1.5 size-3.5" />
                           Thêm lookbook
@@ -482,7 +483,7 @@ function LookbookList() {
                           <StatusPill status={lb.status} />
                         </td>
                         <td className="py-4 pr-3" onClick={(e) => e.stopPropagation()}>
-                          <DropdownMenu>
+                          {canWrite && <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm" className="size-8 p-0" aria-label="Thao tác">
                                 <MoreVertical className="size-4" />
@@ -508,7 +509,7 @@ function LookbookList() {
                                 Xóa
                               </DropdownMenuItem>
                             </DropdownMenuContent>
-                          </DropdownMenu>
+                          </DropdownMenu>}
                         </td>
                       </tr>
                     );
@@ -631,10 +632,10 @@ function LookbookList() {
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={() => goEdit(previewLb)}>
+              {canWrite && <Button variant="outline" onClick={() => goEdit(previewLb)}>
                 <Pencil className="mr-1.5 size-3.5" />
                 Chỉnh sửa
-              </Button>
+              </Button>}
               <Button asChild>
                 <a href={`/lookbook/${previewLb.slug}`} target="_blank" rel="noreferrer">
                   <ExternalLink className="mr-1.5 size-3.5" />

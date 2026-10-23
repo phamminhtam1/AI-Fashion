@@ -116,14 +116,16 @@ export function resolveAdminPath(path: string): {
   tabId: string;
   action?: "create" | "edit" | "detail" | null;
   subParam?: string | null;
+  detailId?: string | null;
 } {
   const rawParts = path.replace(/^\/+|\/+$/g, "").split("/");
   const first = (rawParts[0] ?? "").toLowerCase();
   const second = rawParts[1];
   const third = rawParts[2];
+  const fourth = rawParts[3];
 
   if (!first || first === "tongquan" || first === "tong-quan" || first === "overview") {
-    return { tabId: "overview", action: null, subParam: null };
+    return { tabId: "overview", action: null, subParam: null, detailId: null };
   }
 
   let tabId = "overview";
@@ -136,29 +138,48 @@ export function resolveAdminPath(path: string): {
 
   let action: "create" | "edit" | "detail" | null = null;
   let subParam: string | null = null;
+  let detailId: string | null = null;
 
   if (second) {
     const secondLower = second.toLowerCase();
     if (["themsanpham", "them-san-pham", "them", "new", "create", "tao", "tao-moi", "taophieu"].includes(secondLower)) {
       action = "create";
       subParam = third ?? null;
+      detailId = third ?? null;
     } else if (["sua", "edit", "chinh-sua", "chinhsua"].includes(secondLower)) {
       action = "edit";
       subParam = third ?? null;
+      detailId = third ?? null;
     } else if (["chitiet", "chi-tiet", "detail", "view"].includes(secondLower)) {
       action = "detail";
       subParam = third ?? null;
+      detailId = third ?? null;
     } else {
       subParam = second;
+      if (third) {
+        const thirdLower = third.toLowerCase();
+        if (["chitiet", "chi-tiet", "detail", "view"].includes(thirdLower)) {
+          action = "detail";
+          detailId = fourth ?? null;
+        } else if (["sua", "edit"].includes(thirdLower)) {
+          action = "edit";
+          detailId = fourth ?? null;
+        } else if (["them", "create", "new"].includes(thirdLower)) {
+          action = "create";
+          detailId = fourth ?? null;
+        } else {
+          detailId = third;
+        }
+      }
     }
   }
 
-  return { tabId, action, subParam };
+  return { tabId, action, subParam, detailId };
 }
 
 export function getAdminUrl(
   tabId: string,
-  actionOrSub?: "create" | "edit" | string | null,
+  actionOrSub?: "create" | "edit" | "detail" | string | null,
   subId?: string | null,
 ): string {
   if (tabId === "overview") return "/";
@@ -174,5 +195,13 @@ export function getAdminUrl(
   if (actionOrSub === "edit" && subId) {
     return `/${slug}/sua/${subId}`;
   }
+  if (actionOrSub === "detail" && subId) {
+    if (tabId === "social") return `/${slug}/baiviet/chitiet/${encodeURIComponent(subId)}`;
+    return `/${slug}/chitiet/${encodeURIComponent(subId)}`;
+  }
   return `/${slug}/${actionOrSub}`;
+}
+
+export function getPostDetailUrl(postId: string): string {
+  return `/kenhbanhang/baiviet/chitiet/${encodeURIComponent(postId)}`;
 }

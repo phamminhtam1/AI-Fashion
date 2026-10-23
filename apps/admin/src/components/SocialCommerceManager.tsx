@@ -43,9 +43,15 @@ interface Props {
   /** Trang đang mở. Bỏ trống để component tự quản lý; truyền vào nếu muốn đồng bộ với router/sidebar. */
   page?: SocialPage;
   onPageChange?: (page: SocialPage) => void;
+  initialPostId?: string | null;
+  permissions?: string[];
 }
 
-export function SocialCommerceManager({ page: controlled, onPageChange }: Props = {}) {
+export function SocialCommerceManager({ page: controlled, onPageChange, initialPostId, permissions = [] }: Props = {}) {
+  const hasPermission = useCallback((permission: string) => permissions.includes("*") || permissions.includes(permission), [permissions]);
+  const canChannelWrite = hasPermission("channel.write");
+  const canContentWrite = hasPermission("content.write");
+  const canPublish = hasPermission("content.publish");
   const [data, setData] = useState<SocialOverview>(EMPTY);
   const [settings, setSettings] = useState<SocialPlatformSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -158,6 +164,7 @@ export function SocialCommerceManager({ page: controlled, onPageChange }: Props 
   if (loading) return <div className="grid min-h-[460px] place-items-center"><Loader2 className="size-7 animate-spin text-[#6941c6]" /></div>;
 
   const ctx: SocialCtx = {
+    permissions, canChannelWrite, canContentWrite, canPublish,
     data, settings, reloadSettings: loadSettings, channels, setChannels: setLocal, activeChannel, configTab, aiPreset, wizardChannel,
     go, reload: load, refreshAll, connectChannel, disconnectChannel, approve, retryReply,
   };
@@ -168,7 +175,7 @@ export function SocialCommerceManager({ page: controlled, onPageChange }: Props 
     case "channel-manage": content = <ChannelManagePage key={activeChannel} ctx={ctx} />; break;
     case "add-channel": content = <AddChannelPage key={wizardChannel ?? "new"} ctx={ctx} />; break;
     case "ai-content": content = <AiContentPage key={aiPreset} ctx={ctx} />; break;
-    case "posts": content = <PostsPage ctx={ctx} />; break;
+    case "posts": content = <PostsPage ctx={ctx} initialPostId={initialPostId} />; break;
     case "messages": content = <MessagesPage ctx={ctx} />; break;
     case "comments": content = <CommentsPage ctx={ctx} />; break;
     default: content = <DashboardPage ctx={ctx} />;

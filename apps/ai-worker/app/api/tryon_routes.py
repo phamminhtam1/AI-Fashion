@@ -81,7 +81,7 @@ async def health_check():
 )
 async def classify_user(req: UserClassifyRequest):
     """
-    Gửi ảnh người dùng lên OpenAI Vision Model (gp-5.6-sol-max) để:
+    Gửi ảnh người dùng lên OpenAI Vision Model (gpt-5.6-sol-none) để:
     - Nhận diện framing: FACE_ONLY, UPPER_BODY, THREE_QUARTER, FULL_BODY, INVALID
     - Đếm số người trong ảnh (person_count)
     - Kiểm tra độ che khuất (occlusion_level), độ tự tin (confidence)

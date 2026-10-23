@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { AGES, AUDIENCES, CAMPAIGN_GOALS, CH_NAME, CONTENT_CHANNELS, CTAS, GOALS, MOCK_PRODUCTS, SEGMENTS, STYLES, TONES, type Collection, type Product, type Variant } from "../mock";
 import type { AiPreset, ChannelId } from "../types";
 import { areaCls, ChannelLogo, Field, inputCls, Pill, card, vnd } from "../ui";
-import { fmtDuration, MediaView, Placeholder, type MediaItem } from "./ContentPreview";
+import { fmtDuration, formatFullCta, MediaView, Placeholder, type MediaItem } from "./ContentPreview";
 
 const MAX_CAPTION = 2200;
 const MAX_TAGS = 30;
@@ -60,6 +60,9 @@ export function AiInputPanel({
   products = MOCK_PRODUCTS,
   selectedLookbook,
   onClearLookbook,
+  productImages = [],
+  selectedProductImageIds = [],
+  onToggleProductImage,
 }: {
   form: AiForm;
   upd: (p: Partial<AiForm>) => void;
@@ -76,6 +79,9 @@ export function AiInputPanel({
   selectedLookbook?: Collection | null;
   onClearLookbook?: () => void;
   featuredFirst?: boolean;
+  productImages?: MediaItem[];
+  selectedProductImageIds?: string[];
+  onToggleProductImage?: (id: string) => void;
 }) {
   const toggleProduct = (id: string) => upd({ picked: form.picked.includes(id) ? form.picked.filter((x) => x !== id) : [...form.picked, id] });
   const extraHint = preset === "topic" ? "Ví dụ: Phối đồ công sở mùa thu" : preset === "idea" ? "Ví dụ: Giới thiệu đầm lụa mới cho tiệc tối..." : "Nhấn mạnh chất liệu cao cấp, form dáng tôn dáng, phù hợp đi làm, đi cafe.";
@@ -197,7 +203,7 @@ export function AiInputPanel({
               className="mt-3 h-8 gap-1.5 border-violet-200 text-xs text-[#6941c6] hover:bg-violet-50"
             >
               <Plus className="size-3.5" />
-              Chọn sản phẩm ({products.length})
+              Chọn sản phẩm
             </Button>
           </div>
         ) : (
@@ -289,6 +295,53 @@ export function AiInputPanel({
         )}
       </Field>
 
+      {pickedProducts.length > 0 && productImages.length > 0 && (
+        <Field
+          label={<>Chọn ảnh sản phẩm gửi cho AI <span className="font-normal text-slate-400">({selectedProductImageIds.length}/10)</span></>}
+          hint="AI sẽ dùng các ảnh được đánh dấu làm hình ảnh tham chiếu khi tạo nội dung."
+        >
+          <div className="max-h-[480px] space-y-3 overflow-y-auto pr-1">
+            {pickedProducts.map((product) => {
+              const images = productImages.filter((item) => item.productId === product.id);
+              if (images.length === 0) return null;
+              const selectedCount = images.filter((item) => selectedProductImageIds.includes(item.id)).length;
+              return (
+                <div key={product.id} className="rounded-lg border border-slate-200 bg-slate-50/60 p-2.5">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="min-w-0 truncate text-xs font-semibold text-slate-700" title={product.name}>{product.name}</p>
+                    <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
+                      {selectedCount}/{images.length} ảnh
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+                    {images.map((item) => {
+                      const selected = selectedProductImageIds.includes(item.id);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => onToggleProductImage?.(item.id)}
+                          className={cn(
+                            "group relative aspect-[3/4] overflow-hidden rounded-lg border-2 bg-slate-100 transition",
+                            selected ? "border-[#6941c6] ring-2 ring-violet-100" : "border-transparent hover:border-violet-200",
+                          )}
+                          title={`${selected ? "Bỏ chọn" : "Chọn"} ${item.name}`}
+                        >
+                          <MediaView item={item} />
+                          <span className="absolute left-1.5 top-1.5"><Checkbox on={selected} /></span>
+                          {selected && <span className="absolute inset-x-1.5 bottom-1.5 rounded bg-[#6941c6]/90 px-1 py-0.5 text-center text-[9px] font-semibold text-white">Gửi cho AI</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Field>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Mục tiêu content"><select value={form.goal} onChange={(e) => upd({ goal: e.target.value })} className={inputCls}>{GOALS.map((g) => <option key={g}>{g}</option>)}</select></Field>
         <Field label="Phong cách nội dung"><select value={form.style} onChange={(e) => upd({ style: e.target.value })} className={inputCls}>{STYLES.map((s) => <option key={s}>{s}</option>)}</select></Field>
@@ -323,7 +376,7 @@ export function AiInputPanel({
 /* =====================================================================
  * AI: 3. Kết quả gợi ý
  * ===================================================================== */
-type ResultTab = "caption" | "hashtag" | "cta" | "media";
+type ResultTab = "content" | "media";
 
 export function AiResultPanel({
   variants,
@@ -336,6 +389,9 @@ export function AiResultPanel({
   onRegenerate,
   cta,
   onCta,
+  ctaLink,
+  onCtaLink,
+  suggestedLinks = [],
   media,
   selectedMediaIds,
   onSelectedMediaIds,
@@ -353,6 +409,9 @@ export function AiResultPanel({
   onRegenerate: () => void;
   cta: string;
   onCta: (v: string) => void;
+  ctaLink?: string;
+  onCtaLink?: (url: string) => void;
+  suggestedLinks?: { label: string; url: string }[];
   media: MediaItem[];
   selectedMediaIds: string[];
   onSelectedMediaIds: (ids: string[]) => void;
@@ -360,12 +419,16 @@ export function AiResultPanel({
   onChooseLibrary: () => void;
   keyUsed?: { label?: string; provider?: string } | null;
 }) {
-  const [tab, setTab] = useState<ResultTab>("caption");
+  const [tab, setTab] = useState<ResultTab>("content");
   const [previewMedia, setPreviewMedia] = useState<MediaItem | null>(null);
+  const [generatingStep, setGeneratingStep] = useState(0);
   const mediaInput = useRef<HTMLInputElement>(null);
   const hasResult = variants.length > 0;
   const hashtags = variants[active]?.hashtags ?? [];
-  const tabs: { id: ResultTab; label: string }[] = [{ id: "caption", label: `Caption (${variants.length})` }, { id: "hashtag", label: "Hashtag" }, { id: "cta", label: "CTA" }, { id: "media", label: "Hình ảnh/Media" }];
+  const tabs: { id: ResultTab; label: string }[] = [
+    { id: "content", label: `Caption, Hashtag & CTA (${variants.length})` },
+    { id: "media", label: "Hình ảnh/Media" },
+  ];
   const selectedCount = selectedMediaIds.filter((id) => media.some((item) => item.id === id)).length;
   const toggleMedia = (id: string) => onSelectedMediaIds(selectedMediaIds.includes(id) ? selectedMediaIds.filter((item) => item !== id) : [...selectedMediaIds, id].slice(0, MAX_MEDIA));
   const moveMedia = (id: string, direction: -1 | 1) => {
@@ -377,6 +440,24 @@ export function AiResultPanel({
     onSelectedMediaIds(next);
   };
 
+  const generatingMessages = [
+    "Đang phân tích sản phẩm và hình ảnh...",
+    "Đang kết hợp mục tiêu, phong cách và tông giọng...",
+    "Đang viết caption phù hợp từng nền tảng...",
+    "Đang hoàn thiện hashtag và lời kêu gọi hành động...",
+  ];
+
+  useEffect(() => {
+    if (!busy) {
+      setGeneratingStep(0);
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setGeneratingStep((step) => (step + 1) % generatingMessages.length);
+    }, 1500);
+    return () => window.clearInterval(timer);
+  }, [busy]);
+
   return (
     <section className={cn(card, "p-5")}>
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -387,7 +468,34 @@ export function AiResultPanel({
         {hasResult && <span className="inline-flex items-center gap-1.5 rounded-md border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-[#6941c6]"><Sparkles className="size-3.5" />Đã tạo {variants.length} phiên bản nội dung</span>}
       </div>
 
-      {!hasResult ? (
+      {busy ? (
+        <div className="ai-generating-state relative mt-5 overflow-hidden rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 px-5 py-10 text-center">
+          <div className="ai-generating-orbit mx-auto grid size-16 place-items-center rounded-2xl bg-white text-[#6941c6] shadow-[0_12px_35px_rgba(105,65,198,0.18)] ring-1 ring-violet-100">
+            <Sparkles className="ai-generating-sparkle size-7" />
+            <span className="absolute size-2 rounded-full bg-fuchsia-400" />
+          </div>
+          <p className="mt-5 text-sm font-semibold text-slate-800">AI đang tạo bài viết cho bạn</p>
+          <p key={generatingStep} className="ai-generating-message mt-1.5 text-xs text-slate-500" aria-live="polite">
+            {generatingMessages[generatingStep]}
+          </p>
+          <div className="mx-auto mt-5 flex max-w-xs items-center gap-2">
+            {generatingMessages.map((_, index) => (
+              <span
+                key={index}
+                className={cn(
+                  "h-1.5 flex-1 overflow-hidden rounded-full bg-violet-100 transition-colors duration-300",
+                  index <= generatingStep && "bg-violet-200",
+                )}
+              >
+                <span className={cn("block h-full rounded-full bg-[#6941c6] transition-all duration-500", index < generatingStep ? "w-full" : index === generatingStep ? "ai-generating-progress w-full" : "w-0")} />
+              </span>
+            ))}
+          </div>
+          <div className="mt-5 flex justify-center gap-1.5" aria-hidden="true">
+            {[0, 1, 2].map((index) => <span key={index} className="ai-generating-dot size-1.5 rounded-full bg-[#6941c6]" style={{ animationDelay: `${index * 160}ms` }} />)}
+          </div>
+        </div>
+      ) : !hasResult ? (
         <div className="grid place-items-center px-4 py-16 text-center">
           <span className="grid size-12 place-items-center rounded-full bg-violet-50 text-[#6941c6]"><Sparkles className="size-6" /></span>
           <p className="mt-3 text-sm font-medium text-slate-700">Chưa có nội dung gợi ý</p>
@@ -399,49 +507,271 @@ export function AiResultPanel({
             {tabs.map((t) => <button key={t.id} id={`ai-result-tab-${t.id}`} role="tab" aria-selected={tab === t.id} aria-controls={`ai-result-panel-${t.id}`} onClick={() => setTab(t.id)} className={cn("flex-1 whitespace-nowrap rounded-md px-2 py-1.5 font-medium transition-colors", tab === t.id ? "bg-white text-[#6941c6] shadow-sm" : "text-slate-500 hover:bg-white/60 hover:text-slate-700")}>{t.label}</button>)}
           </div>
 
-          {tab === "caption" && (
-            <div id="ai-result-panel-caption" role="tabpanel" aria-labelledby="ai-result-tab-caption" className="mt-5">
+          {tab === "content" && (
+            <div id="ai-result-panel-content" role="tabpanel" aria-labelledby="ai-result-tab-content" className="mt-5">
               <div className="flex items-start justify-between gap-3">
-                <div><h3 className="text-sm font-semibold">Gợi ý caption</h3><p className="mt-0.5 text-xs text-slate-500">AI đã tạo {variants.length} phiên bản caption dựa trên thông tin của bạn. Bạn có thể chỉnh sửa trước khi đăng.</p></div>
-                <Button size="sm" variant="outline" disabled={busy} onClick={onRegenerate} className="shrink-0 gap-1.5 border-violet-200 text-[#6941c6]"><RefreshCw className={cn("size-3.5", busy && "animate-spin")} />Tạo lại nội dung</Button>
+                <div>
+                  <h3 className="text-sm font-semibold">Gợi ý nội dung (Caption, Hashtag & CTA)</h3>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    AI đã tạo {variants.length} phiên bản nội dung hoàn chỉnh. Bạn có thể chỉnh sửa và sao chép trước khi đăng.
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" disabled={busy} onClick={onRegenerate} className="shrink-0 gap-1.5 border-violet-200 text-[#6941c6]">
+                  <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
+                  Tạo lại nội dung
+                </Button>
               </div>
+
               <div className="mt-3 space-y-3">
-                {variants.map((v, i) => (
-                  <div key={v.id} onClick={() => onActive(i)} className={cn("cursor-pointer rounded-lg border p-4 transition-colors", active === i ? "border-[#6941c6] bg-violet-50/30" : "border-slate-200 hover:border-violet-200")}>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2"><h4 className="text-sm font-semibold">{v.label}</h4>{i === 0 && <Pill tone="violet">Đề xuất</Pill>}</div>
-                      <span className="text-xs text-slate-400">{v.caption.length}/2,200</span>
+                {variants.map((v, i) => {
+                  const isCurrent = active === i;
+                  const isEditingThis = editing && isCurrent;
+                  const fullCta = formatFullCta(cta, ctaLink);
+                  const fullPost = [
+                    v.caption,
+                    fullCta ? `👉 ${fullCta}` : "",
+                    (v.hashtags || []).join(" "),
+                  ].filter(Boolean).join("\n\n");
+
+                  return (
+                    <div
+                      key={v.id}
+                      onClick={() => onActive(i)}
+                      className={cn(
+                        "cursor-pointer rounded-lg border p-4 transition-colors",
+                        isCurrent ? "border-[#6941c6] bg-violet-50/20 shadow-xs" : "border-slate-200 hover:border-violet-200"
+                      )}
+                    >
+                      {/* Tiêu đề phiên bản & Độ dài */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-semibold text-slate-800">{v.label}</h4>
+                          {i === 0 && <Pill tone="violet">Đề xuất</Pill>}
+                        </div>
+                        <span className="text-xs text-slate-400">{v.caption.length}/2,200 ký tự</span>
+                      </div>
+
+                      {/* Phần 1: Caption */}
+                      <div className="mt-2.5">
+                        <div className="flex items-center justify-between text-xs text-slate-500">
+                          <span className="font-medium text-slate-700">Caption:</span>
+                          {!isEditingThis && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void copy(v.caption, "caption");
+                              }}
+                              className="text-[11px] text-slate-400 hover:text-[#6941c6] inline-flex items-center gap-1"
+                              title="Chỉ sao chép caption"
+                            >
+                              <Copy className="size-3" />
+                              Copy caption
+                            </button>
+                          )}
+                        </div>
+                        {isEditingThis ? (
+                          <textarea
+                            value={v.caption}
+                            maxLength={MAX_CAPTION}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => onPatch(i, { caption: e.target.value })}
+                            rows={6}
+                            placeholder="Nhập nội dung caption..."
+                            className={cn(areaCls, "mt-1.5 text-xs sm:text-sm")}
+                          />
+                        ) : (
+                          <p className="mt-1 whitespace-pre-line text-xs sm:text-sm text-slate-700">{v.caption}</p>
+                        )}
+                      </div>
+
+                      {/* Phần 2: CTA (Kêu gọi hành động & Link) */}
+                      <div className="mt-3 rounded-md border border-slate-100 bg-slate-50/80 p-2.5" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-slate-700">Lời kêu gọi hành động (CTA):</span>
+                          {!isEditingThis && fullCta && (
+                            <button
+                              type="button"
+                              onClick={() => void copy(fullCta, "CTA")}
+                              className="text-[11px] text-slate-400 hover:text-[#6941c6] inline-flex items-center gap-1"
+                              title="Sao chép CTA kèm link"
+                            >
+                              <Copy className="size-3" />
+                              Copy CTA
+                            </button>
+                          )}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {CTAS.map((c) => (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => onCta(c)}
+                              className={cn(
+                                "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
+                                cta === c
+                                  ? "border-[#6941c6] bg-violet-100/70 font-semibold text-[#6941c6]"
+                                  : "border-slate-200 bg-white text-slate-600 hover:border-violet-200"
+                              )}
+                            >
+                              {c}
+                            </button>
+                          ))}
+                        </div>
+                        {isEditingThis && (
+                          <input
+                            type="text"
+                            value={cta}
+                            onChange={(e) => onCta(e.target.value)}
+                            placeholder="Hoặc nhập CTA tùy chỉnh..."
+                            className={cn(inputCls, "mt-2 h-7 text-xs")}
+                          />
+                        )}
+
+                        {/* Link đính kèm CTA */}
+                        <div className="mt-2.5 border-t border-slate-200/60 pt-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600">
+                              <Link2 className="size-3 text-[#6941c6]" />
+                              Link đính kèm CTA:
+                            </span>
+                            {ctaLink && (
+                              <button
+                                type="button"
+                                onClick={() => void copy(ctaLink, "link CTA")}
+                                className="text-[11px] text-slate-400 hover:text-[#6941c6] inline-flex items-center gap-1"
+                                title="Sao chép link"
+                              >
+                                <Copy className="size-3" />
+                                Copy link
+                              </button>
+                            )}
+                          </div>
+
+                          {suggestedLinks && suggestedLinks.length > 0 && (
+                            <div className="mt-1.5 flex flex-wrap gap-1">
+                              {suggestedLinks.map((item) => (
+                                <button
+                                  key={item.url}
+                                  type="button"
+                                  onClick={() => onCtaLink?.(item.url)}
+                                  className={cn(
+                                    "rounded border px-2 py-0.5 text-[11px] transition-colors truncate max-w-[240px]",
+                                    ctaLink === item.url
+                                      ? "border-[#6941c6] bg-violet-100/80 font-medium text-[#6941c6]"
+                                      : "border-slate-200 bg-white text-slate-600 hover:border-violet-300"
+                                  )}
+                                  title={item.url}
+                                >
+                                  {item.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            <input
+                              type="url"
+                              value={ctaLink || ""}
+                              onChange={(e) => onCtaLink?.(e.target.value)}
+                              placeholder="https://elane.vn/... (link sản phẩm / BST / inbox hoặc web)"
+                              className={cn(inputCls, "h-7 text-xs flex-1 font-mono text-[11px]")}
+                            />
+                            {ctaLink && (
+                              <button
+                                type="button"
+                                onClick={() => onCtaLink?.("")}
+                                className="text-slate-400 hover:text-slate-600 p-1 rounded"
+                                title="Xóa link"
+                              >
+                                <X className="size-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Phần 3: Hashtag */}
+                      <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-slate-700">Hashtags:</span>
+                          {!isEditingThis && v.hashtags?.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => void copy(v.hashtags.join(" "), "hashtag")}
+                              className="text-[11px] text-slate-400 hover:text-[#6941c6] inline-flex items-center gap-1"
+                              title="Chỉ sao chép hashtag"
+                            >
+                              <Copy className="size-3" />
+                              Copy hashtag
+                            </button>
+                          )}
+                        </div>
+                        {isEditingThis ? (
+                          <input
+                            type="text"
+                            value={v.hashtags.join(" ")}
+                            onChange={(e) => {
+                              const tags = e.target.value
+                                .split(/[\s,]+/)
+                                .filter(Boolean)
+                                .map((t) => (t.startsWith("#") ? t : `#${t}`));
+                              onPatch(i, { hashtags: tags });
+                            }}
+                            placeholder="#Elane #ThoiTrangNu..."
+                            className={cn(inputCls, "mt-1.5 h-8 text-xs")}
+                          />
+                        ) : (
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {v.hashtags?.length > 0 ? (
+                              v.hashtags.map((h) => (
+                                <span key={h} className="rounded-md bg-violet-50 px-2 py-0.5 text-xs text-[#6941c6]">
+                                  {h}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-slate-400">Chưa có hashtag</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Thao tác Sao chép & Chỉnh sửa */}
+                      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                        <span className="text-[11px] text-slate-400">
+                          {isCurrent ? "Đang áp dụng vào bản xem trước" : "Bấm để chọn phiên bản này"}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void copy(fullPost, "toàn bộ bài viết");
+                            }}
+                            className="gap-1.5 border-violet-200 text-[#6941c6] hover:bg-violet-50"
+                          >
+                            <Copy className="size-3.5" />
+                            Sao chép toàn bộ
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            aria-label={isEditingThis ? "Xong chỉnh sửa" : "Chỉnh sửa bài viết"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEdit(i);
+                            }}
+                            className="size-8"
+                          >
+                            {isEditingThis ? <Check className="size-4" /> : <Pencil className="size-4" />}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                    {editing && active === i
-                      ? <textarea value={v.caption} maxLength={MAX_CAPTION} onClick={(e) => e.stopPropagation()} onChange={(e) => onPatch(i, { caption: e.target.value })} rows={8} className={cn(areaCls, "mt-2")} />
-                      : <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{v.caption}</p>}
-                    <div className="mt-3 flex items-center justify-end gap-2">
-                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); void copy(v.caption, "caption"); }} className="gap-1.5 border-violet-200 text-[#6941c6]"><Copy className="size-3.5" />Sao chép</Button>
-                      <Button size="icon" variant="outline" aria-label={editing && active === i ? "Xong chỉnh sửa" : "Chỉnh sửa caption"} onClick={(e) => { e.stopPropagation(); onEdit(i); }} className="size-8">
-                        {editing && active === i ? <Check className="size-4" /> : <Pencil className="size-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-            </div>
-          )}
-
-          {tab === "hashtag" && (
-            <div id="ai-result-panel-hashtag" role="tabpanel" aria-labelledby="ai-result-tab-hashtag" className={cn(box, "mt-5")}>
-              <div className="flex items-center justify-between gap-2"><div><h3 className="text-sm font-semibold">Hashtag gợi ý</h3><p className="mt-0.5 text-xs text-slate-500">Hashtag của phiên bản đang chọn.</p></div><Button size="sm" variant="outline" onClick={() => void copy(hashtags.join(" "), "hashtag")} className="h-8 gap-1 border-violet-200 px-2 text-xs text-[#6941c6]"><Copy className="size-3" />Sao chép</Button></div>
-              <div className="mt-4 flex flex-wrap gap-2">{hashtags.length > 0 ? hashtags.map((h) => <span key={h} className="rounded-md bg-violet-50 px-2.5 py-1.5 text-xs text-[#6941c6]">{h}</span>) : <p className="text-sm text-slate-400">Phiên bản này chưa có hashtag.</p>}</div>
-            </div>
-          )}
-
-          {tab === "cta" && (
-            <div id="ai-result-panel-cta" role="tabpanel" aria-labelledby="ai-result-tab-cta" className={cn(box, "mt-5")}>
-              <div className="flex items-center justify-between gap-2"><div><h3 className="text-sm font-semibold">CTA gợi ý</h3><p className="mt-0.5 text-xs text-slate-500">Chọn lời kêu gọi hành động dùng cho bài viết.</p></div><Button size="sm" variant="outline" onClick={() => void copy(cta, "CTA")} className="h-8 gap-1 border-violet-200 px-2 text-xs text-[#6941c6]"><Copy className="size-3" />Sao chép</Button></div>
-              <div role="radiogroup" className="mt-4 grid gap-2 sm:grid-cols-2">{CTAS.map((c) => (
-                <button key={c} type="button" role="radio" aria-checked={cta === c} onClick={() => onCta(c)} className={cn("flex min-h-10 w-full items-center gap-2 rounded-md border px-3 text-left text-sm text-slate-700 transition-colors", cta === c ? "border-[#6941c6] bg-violet-50" : "border-slate-200 hover:border-violet-200")}>
-                  <span className={cn("grid size-4 shrink-0 place-items-center rounded-full border", cta === c ? "border-[#6941c6]" : "border-slate-300")}>{cta === c && <span className="size-2 rounded-full bg-[#6941c6]" />}</span>{c}
-                </button>
-              ))}</div>
             </div>
           )}
 
@@ -499,7 +829,7 @@ export function AiResultPanel({
  * Tự soạn: 2. Soạn nội dung & thiết lập thông tin
  * ===================================================================== */
 export interface ManualForm {
-  productId: string | null; campaign: string; segment: string; age: string; style: string; note: string;
+  productIds: string[]; campaign: string; segment: string; age: string; style: string; note: string;
   text: string; hashtags: string[]; cta: string; link: string;
 }
 const LINKS = ["Link sản phẩm", "Link website", "Link tin nhắn"];
@@ -509,15 +839,17 @@ function Box({ title, hint, children, className }: { title: ReactNode; hint?: st
   return <div className={cn(box, className)}><h3 className="text-sm font-semibold">{title}</h3>{hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}<div className="mt-3">{children}</div></div>;
 }
 
-export function ManualComposer({ form, upd, product, onPickProduct, lookbook, onClearLookbook, media, onFiles, onRemoveMedia, targets, onToggleChannel }: {
-  form: ManualForm; upd: (p: Partial<ManualForm>) => void; product?: Product; onPickProduct: () => void;
+export function ManualComposer({ form, upd, products, onPickProduct, lookbook, onClearLookbook, media, onFiles, onRemoveMedia, productImages = [], selectedProductImageIds = [], onToggleProductImage, targets, onToggleChannel }: {
+  form: ManualForm; upd: (p: Partial<ManualForm>) => void; products: Product[]; onPickProduct: () => void;
   lookbook?: Collection | null; onClearLookbook?: () => void;
   media: MediaItem[]; onFiles: (files: File[]) => void; onRemoveMedia: (id: string) => void; targets: ChannelId[]; onToggleChannel: (id: ChannelId) => void;
+  productImages?: MediaItem[]; selectedProductImageIds?: string[]; onToggleProductImage?: (id: string) => void;
 }) {
   const ta = useRef<HTMLTextAreaElement>(null);
   const [emoji, setEmoji] = useState(false);
   const [adding, setAdding] = useState(false);
   const [tag, setTag] = useState("");
+  const firstProduct = products[0];
 
   const caret = () => { const el = ta.current; const v = form.text; return { el, v, s: el?.selectionStart ?? v.length, e: el?.selectionEnd ?? v.length }; };
   function insert(text: string) {
@@ -561,7 +893,7 @@ export function ManualComposer({ form, upd, product, onPickProduct, lookbook, on
                 <span>
                   Thông tin sản phẩm / BST <span className="text-rose-500">*</span>
                 </span>
-                {product && (
+                {products.length > 0 && (
                   <button
                     type="button"
                     onClick={onPickProduct}
@@ -593,42 +925,57 @@ export function ManualComposer({ form, upd, product, onPickProduct, lookbook, on
                 )}
               </div>
             )}
-            {product ? (
-              <div className="flex items-center gap-3 rounded-lg border border-slate-200 p-2.5 bg-slate-50/50">
-                <div className="relative size-16 shrink-0 overflow-hidden rounded-md bg-slate-100">
-                  {product.imageUrl ? (
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      className="size-full object-cover"
-                    />
-                  ) : (
-                    <div className={cn("grid size-full place-items-center bg-gradient-to-br text-slate-500", product.tint)}>
-                      <Shirt className="size-6" />
+            {products.length > 0 ? (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  {products.map((product) => (
+                    <div key={product.id} className="flex items-center gap-3 rounded-lg border border-slate-200 p-2.5 bg-slate-50/50">
+                      <div className="relative size-16 shrink-0 overflow-hidden rounded-md bg-slate-100">
+                        {product.imageUrl ? <img src={product.imageUrl} alt={product.name} className="size-full object-cover" /> : <div className={cn("grid size-full place-items-center bg-gradient-to-br text-slate-500", product.tint)}><Shirt className="size-6" /></div>}
+                        {product.category && <span className="absolute bottom-1 right-1 rounded bg-slate-900/60 px-1 py-0.5 text-[8px] font-medium text-white backdrop-blur-xs">{product.category}</span>}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-slate-900">{product.name}</p>
+                        <p className="text-xs text-slate-400">Mã SKU: {product.sku}</p>
+                        <div className="mt-1 flex items-center gap-2"><span className="text-sm font-bold text-slate-900">{vnd(product.price)}</span>{product.inStock ? <Pill tone="green">Còn hàng</Pill> : <Pill tone="rose">Hết hàng</Pill>}</div>
+                      </div>
+                      <button type="button" aria-label={`Bỏ chọn ${product.name}`} onClick={() => upd({ productIds: form.productIds.filter((id) => id !== product.id) })} className="grid size-7 place-items-center self-start rounded-full hover:bg-slate-200/60 text-slate-400 hover:text-slate-700"><X className="size-4" /></button>
                     </div>
-                  )}
-                  {product.category && (
-                    <span className="absolute bottom-1 right-1 rounded bg-slate-900/60 px-1 py-0.5 text-[8px] font-medium text-white backdrop-blur-xs">
-                      {product.category}
-                    </span>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-900">{product.name}</p>
-                  <p className="text-xs text-slate-400">Mã SKU: {product.sku}</p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="text-sm font-bold text-slate-900">{vnd(product.price)}</span>
-                    {product.inStock ? <Pill tone="green">Còn hàng</Pill> : <Pill tone="rose">Hết hàng</Pill>}
+                  ))}
                   </div>
-                </div>
-                <button
-                  type="button"
-                  aria-label="Bỏ chọn sản phẩm"
-                  onClick={() => upd({ productId: null })}
-                  className="grid size-7 place-items-center self-start rounded-full hover:bg-slate-200/60 text-slate-400 hover:text-slate-700"
-                >
-                  <X className="size-4" />
-                </button>
+
+                {productImages.length > 0 && (
+                  <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
+                    {products.map((product) => {
+                      const images = productImages.filter((item) => item.productId === product.id);
+                      if (images.length === 0) return null;
+                      const selectedCount = images.filter((item) => selectedProductImageIds.includes(item.id)).length;
+                      return <div key={product.id} className="rounded-lg border border-slate-200 bg-slate-50/60 p-2.5">
+                        <div className="mb-2 flex items-center justify-between gap-2"><p className="min-w-0 truncate text-xs font-semibold text-slate-700">Ảnh: {product.name}</p><span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200">{selectedCount}/{images.length} ảnh</span></div>
+                        <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">{images.map((item) => {
+                        const selected = selectedProductImageIds.includes(item.id);
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => onToggleProductImage?.(item.id)}
+                            className={cn(
+                              "group relative aspect-[3/4] overflow-hidden rounded-lg border-2 bg-slate-100 transition",
+                              selected ? "border-[#6941c6] ring-2 ring-violet-100" : "border-transparent hover:border-violet-200",
+                            )}
+                            title={`${selected ? "Bỏ chọn" : "Chọn"} ${item.name}`}
+                          >
+                            <MediaView item={item} />
+                            <span className="absolute left-1.5 top-1.5"><Checkbox on={selected} /></span>
+                            {selected && <span className="absolute inset-x-1 bottom-1 rounded bg-[#6941c6]/90 px-1 py-0.5 text-center text-[8px] font-semibold text-white">Trong bài viết</span>}
+                          </button>
+                        );
+                        })}</div>
+                      </div>;
+                    })}
+                  </div>
+                )}
               </div>
             ) : (
               <button
@@ -664,7 +1011,7 @@ export function ManualComposer({ form, upd, product, onPickProduct, lookbook, on
 
           <Box title="Gắn thẻ sản phẩm trong media" hint="Chọn vị trí sản phẩm hiển thị trên ảnh (tùy chọn)">
             <div className="flex items-center gap-3">
-              <div className="h-14 w-11 shrink-0 overflow-hidden rounded-md">{media[0]?.kind === "image" ? <MediaView item={media[0]} /> : <Placeholder tint={product?.tint} />}</div>
+              <div className="h-14 w-11 shrink-0 overflow-hidden rounded-md">{media[0]?.kind === "image" ? <MediaView item={media[0]} /> : <Placeholder tint={firstProduct?.tint} />}</div>
               <Button type="button" variant="outline" onClick={() => toast.info("Gắn thẻ sản phẩm trên ảnh sẽ nối với API sản phẩm")} className="gap-1.5 border-violet-200 text-[#6941c6]"><Plus className="size-4" />Thêm thẻ sản phẩm</Button>
             </div>
           </Box>

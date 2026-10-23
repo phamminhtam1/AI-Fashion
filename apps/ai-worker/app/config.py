@@ -24,13 +24,15 @@ class Settings(BaseSettings):
     # OpenAI Compatible Vision Classifier
     openai_api_key: str = ""
     openai_base_url: str = ""
-    openai_vision_model: str = "gpt-5.6-sol-max"
-    openai_content_model: str = "gpt-5.6-sol-max"
+    openai_vision_model: str = "gpt-5.6-sol-none"
+    openai_content_model: str = "gpt-5.6-sol-none"
 
     # Kie.ai (GPT Image 2.5 Sunburst) Virtual Try-On Provider
     kie_api_key: str = ""
     kie_base_url: str = "https://api.kie.ai"
     kie_model: str = "gpt-image-2-5-sunburst-image-to-image"
+    # KIE request slug; the API resolves it to deepseek-v4-1-flash-261017.
+    kie_content_model: str = "deepseek-v4-1-flash"
     kie_polling_interval_seconds: float = 3.0
     kie_timeout_seconds: int = 0  # 0 = unlimited polling until completion
     tryon_provider: str = "kie"

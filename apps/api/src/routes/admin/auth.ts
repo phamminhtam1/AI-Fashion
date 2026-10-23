@@ -3,7 +3,7 @@ import { setCookie, deleteCookie } from "hono/cookie";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { accounts } from "@elane/db";
+import { accounts, employees, employeeRoleGrants, roles } from "@elane/db";
 import type { AppVars } from "../../middleware/auth.js";
 import { ApiError } from "../../lib/errors.js";
 import {
@@ -50,11 +50,27 @@ adminAuthRoutes.post("/logout", async (c) => {
 adminAuthRoutes.get("/me", async (c) => {
   const user = c.get("user");
   if (!user) throw new ApiError(401, "unauthorized", "Cần đăng nhập");
+  const [profile] = await c.get("db")
+    .select({
+      employee_code: employees.employeeCode,
+      avatar_url: employees.avatarUrl,
+      job_title: employees.jobTitle,
+      role_name: roles.name,
+    })
+    .from(employees)
+    .leftJoin(employeeRoleGrants, eq(employeeRoleGrants.employeeId, employees.id))
+    .leftJoin(roles, eq(roles.id, employeeRoleGrants.roleId))
+    .where(eq(employees.id, user.employeeId))
+    .limit(1);
   return c.json({
     account_id: user.accountId,
     email: user.email,
     employee_id: user.employeeId,
     full_name: user.fullName,
+    employee_code: profile?.employee_code ?? null,
+    avatar_url: profile?.avatar_url ?? null,
+    job_title: profile?.job_title ?? profile?.role_name ?? null,
+    role_name: profile?.role_name ?? null,
     permissions: user.permissions,
   });
 });

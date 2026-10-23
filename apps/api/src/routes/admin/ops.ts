@@ -8,6 +8,8 @@ import {
   accounts,
   employeeRoleGrants,
   roles,
+  rolePermissions,
+  permissions,
   auditLogs,
   settings,
   warehouses,
@@ -25,21 +27,25 @@ import {
 import { mediaPublicUrl } from "../../lib/media-storage.js";
 import type { AppVars } from "../../middleware/auth.js";
 import { requireAuth } from "../../middleware/auth.js";
-import { ApiError } from "../../lib/errors.js";
-import { requirePerm, revokeAllSessions } from "../../lib/session.js";
+import { ApiError, requestId } from "../../lib/errors.js";
+import { requireAnyPerm, requirePerm, revokeAllSessions } from "../../lib/session.js";
 import { normalizeCountSeries } from "../../lib/customer-labels.js";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 
 export const adminOpsRoutes = new Hono<AppVars>();
 adminOpsRoutes.use("/overview", requireAuth);
 adminOpsRoutes.use("/staff", requireAuth);
 adminOpsRoutes.use("/staff/*", requireAuth);
+adminOpsRoutes.use("/roles", requireAuth);
+adminOpsRoutes.use("/roles/*", requireAuth);
+adminOpsRoutes.use("/permissions", requireAuth);
 adminOpsRoutes.use("/settings/*", requireAuth);
 adminOpsRoutes.use("/audit-logs", requireAuth);
 adminOpsRoutes.use("/warehouses", requireAuth);
 
 adminOpsRoutes.get("/overview", async (c) => {
-  requirePerm(c.get("user")!, "product.read");
+  requireAnyPerm(c.get("user")!, ["dashboard.read", "product.read"]);
   const db = c.get("db");
   const [pub] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -582,6 +588,134 @@ adminOpsRoutes.get("/overview", async (c) => {
   });
 });
 
+const roleDescriptions: Record<string, string> = {
+  system_owner: "Toàn quyền quản trị hệ thống.",
+  ops_manager: "Quản lý vận hành, đơn hàng, nội dung.",
+  content_editor: "Tạo và quản lý nội dung.",
+  sales_staff: "Tạo đơn, quản lý khách hàng, tư vấn.",
+  warehouse_staff: "Quản lý tồn kho, kiểm hàng.",
+};
+
+function validatePermissionDependencies(permissionCodes: string[]) {
+  if (permissionCodes.includes("order.write") && !permissionCodes.includes("order.customer.read")) {
+    throw new ApiError(
+      400,
+      "permission_dependency",
+      "Quyền Tạo đơn hàng cần thêm quyền Tìm và chọn khách hàng khi tạo đơn",
+    );
+  }
+}
+
+adminOpsRoutes.get("/permissions", async (c) => {
+  requirePerm(c.get("user")!, "role.manage");
+  const rows = await c.get("db").select().from(permissions).orderBy(permissions.code);
+  return c.json({ items: rows });
+});
+
+adminOpsRoutes.get("/roles", async (c) => {
+  requirePerm(c.get("user")!, "role.manage");
+  const db = c.get("db");
+  const [roleRows, memberRows, permissionRows] = await Promise.all([
+    db.select().from(roles).orderBy(roles.name),
+    db.select({ roleId: employeeRoleGrants.roleId, count: sql<number>`count(*)::int` }).from(employeeRoleGrants).groupBy(employeeRoleGrants.roleId),
+    db.select({ roleId: rolePermissions.roleId, count: sql<number>`count(*)::int` }).from(rolePermissions).groupBy(rolePermissions.roleId),
+  ]);
+  const memberCount = new Map(memberRows.map((row) => [row.roleId, Number(row.count)]));
+  const permissionCount = new Map(permissionRows.map((row) => [row.roleId, Number(row.count)]));
+  return c.json({
+    items: roleRows.map((role) => ({
+      id: role.id,
+      code: role.code,
+      name: role.name,
+      description: roleDescriptions[role.code] ?? "Vai trò tùy chỉnh.",
+      is_system: role.isSystem,
+      members: memberCount.get(role.id) ?? 0,
+      permission_count: permissionCount.get(role.id) ?? 0,
+      created_at: role.createdAt,
+      updated_at: role.updatedAt,
+    })),
+  });
+});
+
+adminOpsRoutes.get("/roles/:id", async (c) => {
+  requirePerm(c.get("user")!, "role.manage");
+  const db = c.get("db");
+  const role = (await db.select().from(roles).where(eq(roles.id, c.req.param("id"))).limit(1))[0];
+  if (!role) throw new ApiError(404, "not_found", "Không tìm thấy vai trò");
+  const [permissionRows, memberRows] = await Promise.all([
+    db.select({ id: permissions.id, code: permissions.code, description: permissions.description }).from(rolePermissions)
+      .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId)).where(eq(rolePermissions.roleId, role.id)).orderBy(permissions.code),
+    db.select({ id: employees.id, employee_code: employees.employeeCode, full_name: employees.fullName, avatar_url: employees.avatarUrl, work_email: employees.workEmail, status: employees.status, scope_type: employeeRoleGrants.scopeType, expires_at: employeeRoleGrants.expiresAt })
+      .from(employeeRoleGrants).innerJoin(employees, eq(employees.id, employeeRoleGrants.employeeId)).where(eq(employeeRoleGrants.roleId, role.id)).orderBy(employees.fullName),
+  ]);
+  return c.json({
+    role: { id: role.id, code: role.code, name: role.name, description: roleDescriptions[role.code] ?? "Vai trò tùy chỉnh.", is_system: role.isSystem, created_at: role.createdAt, updated_at: role.updatedAt },
+    permissions: permissionRows,
+    members: memberRows,
+  });
+});
+
+adminOpsRoutes.post("/roles", async (c) => {
+  const user = c.get("user")!;
+  requirePerm(user, "role.manage");
+  const body = z.object({ code: z.string().trim().regex(/^[a-z][a-z0-9_]{2,48}$/), name: z.string().trim().min(2).max(80), permission_codes: z.array(z.string()).default([]) }).safeParse(await c.req.json());
+  if (!body.success) throw new ApiError(400, "validation_error", "Dữ liệu vai trò không hợp lệ");
+  validatePermissionDependencies(body.data.permission_codes);
+  const db = c.get("db");
+  const duplicate = await db.select({ id: roles.id }).from(roles).where(eq(roles.code, body.data.code)).limit(1);
+  if (duplicate[0]) throw new ApiError(409, "conflict", "Mã vai trò đã tồn tại");
+  const permissionRows = body.data.permission_codes.length
+    ? await db.select({ id: permissions.id, code: permissions.code }).from(permissions).where(inArray(permissions.code, body.data.permission_codes))
+    : [];
+  if (permissionRows.length !== body.data.permission_codes.length) throw new ApiError(400, "validation_error", "Một hoặc nhiều quyền không tồn tại");
+  const [role] = await db.insert(roles).values({ code: body.data.code, name: body.data.name, isSystem: false }).returning();
+  if (!role) throw new ApiError(500, "create_failed", "Không tạo được vai trò");
+  if (permissionRows.length) await db.insert(rolePermissions).values(permissionRows.map((permission) => ({ roleId: role.id, permissionId: permission.id })));
+  await db.insert(auditLogs).values({ actorAccountId: user.accountId, action: "role.create", resourceType: "role", resourceId: role.id, afterRedacted: { code: role.code, name: role.name, permission_codes: body.data.permission_codes }, requestId: requestId(c) });
+  return c.json({ id: role.id, code: role.code, name: role.name }, 201);
+});
+
+adminOpsRoutes.patch("/roles/:id/permissions", async (c) => {
+  const user = c.get("user")!;
+  requirePerm(user, "role.manage");
+  const body = z.object({ permission_codes: z.array(z.string()).max(200) }).safeParse(await c.req.json());
+  if (!body.success) throw new ApiError(400, "validation_error", "Danh sách quyền không hợp lệ");
+  validatePermissionDependencies(body.data.permission_codes);
+  const db = c.get("db");
+  const role = (await db.select().from(roles).where(eq(roles.id, c.req.param("id"))).limit(1))[0];
+  if (!role) throw new ApiError(404, "not_found", "Không tìm thấy vai trò");
+  const permissionRows = body.data.permission_codes.length
+    ? await db.select({ id: permissions.id, code: permissions.code }).from(permissions).where(inArray(permissions.code, body.data.permission_codes))
+    : [];
+  if (permissionRows.length !== body.data.permission_codes.length) throw new ApiError(400, "validation_error", "Một hoặc nhiều quyền không tồn tại");
+  const previous = await db.select({ code: permissions.code }).from(rolePermissions).innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId)).where(eq(rolePermissions.roleId, role.id));
+  await db.transaction(async (tx) => {
+    await tx.delete(rolePermissions).where(eq(rolePermissions.roleId, role.id));
+    if (permissionRows.length) await tx.insert(rolePermissions).values(permissionRows.map((permission) => ({ roleId: role.id, permissionId: permission.id })));
+  });
+  await db.insert(auditLogs).values({ actorAccountId: user.accountId, action: "role.permissions.update", resourceType: "role", resourceId: role.id, beforeRedacted: { permission_codes: previous.map((item) => item.code) }, afterRedacted: { permission_codes: body.data.permission_codes }, requestId: requestId(c) });
+  return c.json({ ok: true, role_id: role.id, permission_codes: body.data.permission_codes });
+});
+
+adminOpsRoutes.patch("/staff/:id/roles", async (c) => {
+  const user = c.get("user")!;
+  requirePerm(user, "role.manage");
+  const body = z.object({ role_codes: z.array(z.string()).min(1).max(20), scope_type: z.enum(["all", "warehouse", "store", "assigned"]).default("all") }).safeParse(await c.req.json());
+  if (!body.success) throw new ApiError(400, "validation_error", "Dữ liệu phân vai trò không hợp lệ");
+  const db = c.get("db");
+  const employee = (await db.select().from(employees).where(eq(employees.id, c.req.param("id"))).limit(1))[0];
+  if (!employee) throw new ApiError(404, "not_found", "Không tìm thấy nhân viên");
+  const roleRows = await db.select({ id: roles.id, code: roles.code }).from(roles).where(inArray(roles.code, body.data.role_codes));
+  if (roleRows.length !== body.data.role_codes.length) throw new ApiError(400, "validation_error", "Một hoặc nhiều vai trò không tồn tại");
+  const previous = await db.select({ code: roles.code }).from(employeeRoleGrants).innerJoin(roles, eq(roles.id, employeeRoleGrants.roleId)).where(eq(employeeRoleGrants.employeeId, employee.id));
+  await db.transaction(async (tx) => {
+    await tx.delete(employeeRoleGrants).where(eq(employeeRoleGrants.employeeId, employee.id));
+    await tx.insert(employeeRoleGrants).values(roleRows.map((role) => ({ employeeId: employee.id, roleId: role.id, scopeType: body.data.scope_type })));
+  });
+  await db.insert(auditLogs).values({ actorAccountId: user.accountId, action: "staff.roles.update", resourceType: "employee", resourceId: employee.id, beforeRedacted: { role_codes: previous.map((item) => item.code) }, afterRedacted: { role_codes: body.data.role_codes, scope_type: body.data.scope_type }, requestId: requestId(c) });
+  return c.json({ ok: true, employee_id: employee.id, role_codes: body.data.role_codes, scope_type: body.data.scope_type });
+});
+
 adminOpsRoutes.get("/staff", async (c) => {
   requirePerm(c.get("user")!, "staff.manage");
   const db = c.get("db");
@@ -590,14 +724,72 @@ adminOpsRoutes.get("/staff", async (c) => {
       id: employees.id,
       employee_code: employees.employeeCode,
       full_name: employees.fullName,
+      avatar_url: employees.avatarUrl,
       work_email: employees.workEmail,
+      phone: employees.phone,
+      joined_on: employees.joinedOn,
       status: employees.status,
       account_id: employees.accountId,
       account_status: accounts.status,
+      last_login_at: accounts.lastLoginAt,
     })
     .from(employees)
     .leftJoin(accounts, eq(accounts.id, employees.accountId));
-  return c.json({ items: rows });
+  const employeeIds = rows.map((row) => row.id);
+  const grantRows = employeeIds.length
+    ? await db
+        .select({ employee_id: employeeRoleGrants.employeeId, role_id: roles.id, role_code: roles.code, role_name: roles.name, scope_type: employeeRoleGrants.scopeType })
+        .from(employeeRoleGrants)
+        .innerJoin(roles, eq(roles.id, employeeRoleGrants.roleId))
+        .where(inArray(employeeRoleGrants.employeeId, employeeIds))
+    : [];
+  const grantsByEmployee = new Map<string, typeof grantRows>();
+  for (const grant of grantRows) {
+    const current = grantsByEmployee.get(grant.employee_id) ?? [];
+    current.push(grant);
+    grantsByEmployee.set(grant.employee_id, current);
+  }
+  return c.json({
+    items: rows.map((row) => ({
+      ...row,
+      roles: grantsByEmployee.get(row.id) ?? [],
+      role: grantsByEmployee.get(row.id)?.[0] ?? null,
+    })),
+  });
+});
+
+adminOpsRoutes.post("/staff", async (c) => {
+  const user = c.get("user")!;
+  requirePerm(user, "staff.manage");
+  const body = z.object({
+    full_name: z.string().trim().min(2).max(120),
+    work_email: z.string().trim().email().max(160),
+    phone: z.string().trim().max(30).optional(),
+    role_code: z.string().trim().min(1).max(80),
+    password: z.string().min(8).max(120).default("Trang1234@"),
+  }).safeParse(await c.req.json());
+  if (!body.success) throw new ApiError(400, "validation_error", "Thông tin nhân viên không hợp lệ");
+  const db = c.get("db");
+  const email = body.data.work_email.toLowerCase();
+  const [existingAccount] = await db.select({ id: accounts.id }).from(accounts).where(eq(accounts.email, email)).limit(1);
+  if (existingAccount) throw new ApiError(409, "conflict", "Email nhân viên đã tồn tại");
+  const [role] = await db.select({ id: roles.id, code: roles.code }).from(roles).where(eq(roles.code, body.data.role_code)).limit(1);
+  if (!role) throw new ApiError(400, "validation_error", "Vai trò không tồn tại");
+
+  const [lastEmployee] = await db.select({ employeeCode: employees.employeeCode }).from(employees).orderBy(desc(employees.createdAt)).limit(1);
+  const lastNumber = Number(lastEmployee?.employeeCode?.match(/(\d+)$/)?.[1] ?? 0);
+  const employeeCode = `ELN${String(lastNumber + 1).padStart(3, "0")}`;
+  const passwordHash = await bcrypt.hash(body.data.password, 10);
+  const created = await db.transaction(async (tx) => {
+    const [account] = await tx.insert(accounts).values({ authSubject: `email:${email}`, email, passwordHash, status: "active" }).returning({ id: accounts.id });
+    if (!account) throw new ApiError(500, "create_failed", "Không thể tạo tài khoản nhân viên");
+    const [employee] = await tx.insert(employees).values({ accountId: account.id, employeeCode, fullName: body.data.full_name, workEmail: email, phone: body.data.phone ?? null, status: "active" }).returning({ id: employees.id, employeeCode: employees.employeeCode });
+    if (!employee) throw new ApiError(500, "create_failed", "Không thể tạo hồ sơ nhân viên");
+    await tx.insert(employeeRoleGrants).values({ employeeId: employee.id, roleId: role.id, scopeType: "all" });
+    return employee;
+  });
+  await db.insert(auditLogs).values({ actorAccountId: user.accountId, action: "staff.create", resourceType: "employee", resourceId: created.id, beforeRedacted: null, afterRedacted: { employee_code: created.employeeCode, work_email: email, role_code: role.code }, requestId: requestId(c) });
+  return c.json({ id: created.id, employee_code: created.employeeCode }, 201);
 });
 
 adminOpsRoutes.patch("/staff/:id", async (c) => {
@@ -612,7 +804,10 @@ adminOpsRoutes.patch("/staff/:id", async (c) => {
   if (emp[0].accountId && (body.data.status === "locked" || body.data.status === "left")) {
     await db.update(accounts).set({ status: "locked", updatedAt: new Date() }).where(eq(accounts.id, emp[0].accountId));
     await revokeAllSessions(db, emp[0].accountId);
+  } else if (emp[0].accountId && body.data.status === "active") {
+    await db.update(accounts).set({ status: "active", updatedAt: new Date() }).where(eq(accounts.id, emp[0].accountId));
   }
+  await db.insert(auditLogs).values({ actorAccountId: user.accountId, action: "staff.status.update", resourceType: "employee", resourceId: emp[0].id, beforeRedacted: { status: emp[0].status }, afterRedacted: { status: body.data.status }, requestId: requestId(c) });
   return c.json({ ok: true });
 });
 

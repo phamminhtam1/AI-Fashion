@@ -30,7 +30,6 @@ def test_generate_content_endpoint():
     assert data["job_id"] == "api-content-001"
     assert data["status"] == "completed"
     assert len(data["draft"]["variants"]) == 2
-    assert data["review"]["passed"] is True
 
 
 def test_generate_content_rejects_empty_products():

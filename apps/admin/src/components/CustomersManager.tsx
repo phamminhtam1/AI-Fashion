@@ -452,9 +452,11 @@ type DetailTab = "orders" | "shipping" | "notes" | "activity";
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function CustomersManager({
+  permissions = [],
   onNavigateToOrder,
   onCreateOrder,
 }: {
+  permissions?: string[];
   onNavigateToOrder?: (orderNumber: string) => void;
   /** Nếu truyền vào, nút "Tạo đơn hàng" sẽ hiện ở trang chi tiết */
   onCreateOrder?: (customer: Customer) => void;
@@ -462,6 +464,7 @@ export function CustomersManager({
   const navigate = useNavigate();
   const location = useLocation();
   const route = resolveAdminPath(location.pathname);
+  const canWrite = permissions.includes("*") || permissions.includes("customer.write");
   const activeCustomerParam = route.tabId === "customers" ? route.subParam : null;
   const isCreateRoute = route.tabId === "customers" && (route.action === "create" || activeCustomerParam === "them");
   const detailParam = isCreateRoute ? null : activeCustomerParam;
@@ -1507,13 +1510,13 @@ export function CustomersManager({
         </div>
 
         <div className="flex items-center gap-2.5">
-          <Button
-            onClick={openCreate}
-            className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
-          >
-            <Plus className="size-3.5" />
-            <span>Thêm khách hàng</span>
-          </Button>
+          {canWrite && <Button
+              onClick={openCreate}
+              className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
+            >
+              <Plus className="size-3.5" />
+              <span>Thêm khách hàng</span>
+            </Button>}
         </div>
       </div>
 

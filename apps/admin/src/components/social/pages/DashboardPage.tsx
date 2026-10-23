@@ -81,7 +81,7 @@ export function DashboardPage({ ctx }: { ctx: SocialCtx }) {
                 <button onClick={() => setTab("all")} className={cn("flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold", tab === "all" ? "border-[#6941c6] text-[#6941c6]" : "border-transparent text-slate-600 hover:text-slate-900")}><LayoutGrid className="size-4" />Tất cả ({connected.length})</button>
                 {connected.map((c) => <button key={c.id} onClick={() => setTab(c.id)} className={cn("flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium", tab === c.id ? "border-[#6941c6] text-[#6941c6]" : "border-transparent text-slate-600 hover:text-slate-900")}><ChannelLogo id={c.id} size="xs" />{CHANNEL_META[c.id].name.replace(" Shop", "")}</button>)}
               </div>
-              <Button size="sm" variant="outline" onClick={() => go("connect")} className="gap-1.5 border-violet-200 bg-violet-50 text-[#6941c6] hover:bg-violet-100"><Plus className="size-4" />Kết nối kênh</Button>
+              {ctx.canChannelWrite && <Button size="sm" variant="outline" onClick={() => go("connect")} className="gap-1.5 border-violet-200 bg-violet-50 text-[#6941c6] hover:bg-violet-100"><Plus className="size-4" />Kết nối kênh</Button>}
             </div>
             <div className="grid gap-2 p-4 sm:grid-cols-[1fr_auto_auto_auto]">
               <div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm kiếm kênh..." className="pl-9" /></div>
@@ -126,23 +126,42 @@ export function DashboardPage({ ctx }: { ctx: SocialCtx }) {
               <div className="min-w-0 flex-1"><div className="flex items-center justify-between"><h2 className="font-semibold">AI Content Assistant</h2><span className="rounded-full bg-[#6941c6] px-2 py-0.5 text-[11px] font-semibold text-white">Beta</span></div>
                 <p className="mt-1 text-xs text-slate-500">Tạo nội dung hấp dẫn, phù hợp với từng kênh bán hàng bằng AI.</p></div>
             </div>
-            <Button onClick={() => go("ai-content")} className="mt-4 w-full gap-2 bg-[#6941c6] hover:bg-[#5b36b0]"><Plus className="size-4" />Tạo content với AI</Button>
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            {ctx.canContentWrite && <Button onClick={() => go("ai-content")} className="mt-4 w-full gap-2 bg-[#6941c6] hover:bg-[#5b36b0]"><Plus className="size-4" />Tạo content với AI</Button>}
+            {ctx.canContentWrite && <div className="mt-3 grid grid-cols-2 gap-2">
               {QUICK.map(({ label, icon: Icon, to }) => (
                 <button key={label} onClick={() => (to === "posts" ? go("posts") : go("ai-content", { preset: to }))} className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2.5 text-left text-sm text-slate-700 hover:border-violet-300 hover:bg-violet-50">
                   <Icon className="size-4 shrink-0 text-[#6941c6]" /><span className="truncate">{label}</span></button>))}
-            </div>
+            </div>}
           </section>
 
           <section className={cn(card, "p-5")}>
             <div className="flex items-center justify-between"><h2 className="font-semibold">Bài viết sắp đăng</h2><button onClick={() => go("posts")} className="text-xs font-medium text-[#6941c6] hover:underline">Xem tất cả →</button></div>
             <ul className="mt-3 space-y-3">
               {upcoming.map((p) => (
-                <li key={p.id} className="flex items-center gap-3">
-                  <PostThumb post={p} className="size-14" />
-                  <div className="min-w-0 flex-1"><p className="flex items-center gap-1.5 truncate text-sm font-medium"><ChannelLogo id={p.channel} size="xs" /><span className="truncate">{p.title}</span></p><p className="mt-1 text-xs text-slate-500">{p.time}</p></div>
-                  <PostStatusPill status={p.status} />
-                </li>))}
+                <li key={p.id}>
+                  <a
+                    href={`/kenhbanhang/baiviet/chitiet/${encodeURIComponent(p.id)}`}
+                    onClick={(e) => {
+                      if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
+                        e.preventDefault();
+                        window.history.pushState(null, "", `/kenhbanhang/baiviet/chitiet/${encodeURIComponent(p.id)}`);
+                        go("posts");
+                      }
+                    }}
+                    className="group flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-slate-50 cursor-pointer"
+                  >
+                    <PostThumb post={p} className="size-14 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="flex items-center gap-1.5 truncate text-sm font-medium group-hover:text-[#6941c6] transition-colors">
+                        <ChannelLogo id={p.channel} size="xs" />
+                        <span className="truncate">{p.title}</span>
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">{p.time}</p>
+                    </div>
+                    <PostStatusPill status={p.status} />
+                  </a>
+                </li>
+              ))}
               {!upcoming.length && <li className="py-4 text-center text-sm text-slate-400">Chưa có bài viết nào được lên lịch.</li>}
             </ul>
           </section>

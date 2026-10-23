@@ -1436,14 +1436,21 @@ GHI CHÚ: ${detail.shipping_address?.["note"] || "Cho khách xem hàng trước 
 // ─── Main OrdersManager Component ──────────────────────────────────────────
 
 export function OrdersManager({
+  permissions = [],
   onNavigateToInventory,
   targetOrderNumber,
   onOrderConsumed,
 }: {
+  permissions?: string[];
   onNavigateToInventory?: (seed: InventorySeed) => void;
   targetOrderNumber?: string | null;
   onOrderConsumed?: () => void;
 } = {}) {
+  const hasPermission = (permission: string) => permissions.includes("*") || permissions.includes(permission);
+  const canCreateOrder = hasPermission("order.write") && hasPermission("order.customer.read");
+  const canUpdateOrder = hasPermission("order.update");
+  const canCancelOrder = hasPermission("order.cancel");
+  const canExportOrders = hasPermission("order.export");
   const navigate = useNavigate();
   const location = useLocation();
   const route = resolveAdminPath(location.pathname);
@@ -1603,6 +1610,10 @@ export function OrdersManager({
   }, [route.tabId, route.action, activeOrderParam, orders, onOrderConsumed]);
 
   const handleOpenCreateOrder = () => {
+    if (!canCreateOrder) {
+      toast.error("Bạn không có quyền tạo đơn hàng");
+      return;
+    }
     setActiveMainTab("create");
     navigate({ to: "/donhang/themdon" as any });
   };
@@ -1641,6 +1652,10 @@ export function OrdersManager({
 
   // Export to CSV
   const handleExportCSV = () => {
+    if (!canExportOrders) {
+      toast.error("Bạn không có quyền xuất danh sách đơn hàng");
+      return;
+    }
     const headers = ["Mã đơn", "Khách hàng", "Khu vực", "Số lượng", "Tổng tiền VNĐ", "Thanh toán", "Vận chuyển", "Ngày đặt"];
     const rows = filtered.map((o) => [
       `#${o.order_number}`,
@@ -1667,6 +1682,10 @@ export function OrdersManager({
 
   // Quick actions
   const handleMarkPaid = async (order: EnhancedOrder) => {
+    if (!canUpdateOrder) {
+      toast.error("Bạn không có quyền cập nhật đơn hàng");
+      return;
+    }
     try {
       await adminApi.markOrderPaid(order.id);
       setOrders((prev) =>
@@ -1682,6 +1701,10 @@ export function OrdersManager({
   };
 
   const handleCancelOrder = async (order: EnhancedOrder) => {
+    if (!canCancelOrder) {
+      toast.error("Bạn không có quyền hủy đơn hàng");
+      return;
+    }
     try {
       await adminApi.patchOrder(order.id, { status: "cancelled" });
       setOrders((prev) =>
@@ -1828,7 +1851,7 @@ export function OrdersManager({
           setOrders((prev) => [newOrd, ...prev]);
           handleBackToList();
         }}
-        onSaveDraft={(draftOrd) => {
+          onSaveDraft={(draftOrd) => {
           setOrders((prev) => [draftOrd, ...prev]);
           handleBackToList();
         }}
@@ -1847,6 +1870,7 @@ export function OrdersManager({
           void fetchOrders();
         }}
         onNavigateToInventory={onNavigateToInventory}
+        permissions={permissions}
       />
     );
   }
@@ -1866,23 +1890,23 @@ export function OrdersManager({
 
         <div className="flex items-center gap-2.5 self-end sm:self-auto">
           {/* Export Button */}
-          <Button
+          {canExportOrders && <Button
             variant="outline"
             onClick={handleExportCSV}
             className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
           >
             <Download className="size-3.5 text-slate-500" />
             <span>Xuất CSV</span>
-          </Button>
+          </Button>}
 
           {/* Create Order Button */}
-          <Button
+          {canCreateOrder && <Button
             onClick={handleOpenCreateOrder}
             className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
           >
             <Plus className="size-3.5" />
             <span>Tạo đơn hàng</span>
-          </Button>
+          </Button>}
         </div>
       </div>
 
@@ -2261,19 +2285,19 @@ export function OrdersManager({
                             <DropdownMenuItem onClick={() => handleOpenDetail(order)}>
                               Xem chi tiết
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleMarkPaid(order)}>
+                            {canUpdateOrder && <DropdownMenuItem onClick={() => handleMarkPaid(order)}>
                               Xác nhận thanh toán
-                            </DropdownMenuItem>
+                            </DropdownMenuItem>}
                             <DropdownMenuItem onClick={() => handlePrintSlip(order)}>
                               In phiếu giao hàng
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem
+                            {canCancelOrder && <DropdownMenuItem
                               onClick={() => handleCancelOrder(order)}
                               className="text-rose-600 focus:text-rose-600 font-semibold"
                             >
                               Hủy đơn hàng
-                            </DropdownMenuItem>
+                            </DropdownMenuItem>}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>

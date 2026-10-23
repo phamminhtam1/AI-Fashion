@@ -137,7 +137,7 @@ class KieGarmentExtractor:
             public_url = result_img_url
 
         # 6. Extract structured metadata using OpenAI catalog analyzer
-        metadata = await self.metadata_extractor.extract_metadata(garment_bytes)
+        metadata = await self.metadata_extractor.extract_metadata(garment_bytes, api_key=active_key)
         sha256_hash = hashlib.sha256(garment_bytes).hexdigest()
 
         logger.info(f"[kie-garment] Garment extracted for variant '{variant_id}': category={metadata.category}, url={public_url}")

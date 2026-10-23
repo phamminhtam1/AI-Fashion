@@ -154,6 +154,12 @@ export function requirePerm(user: AuthUser, code: string) {
   }
 }
 
+export function requireAnyPerm(user: AuthUser, codes: string[]) {
+  if (!user.permissions.includes("*") && !codes.some((code) => user.permissions.includes(code))) {
+    throw new ApiError(403, "forbidden", `Thiếu một trong các quyền: ${codes.join(", ")}`);
+  }
+}
+
 export function cookieOptions(expiresAt: Date) {
   return {
     httpOnly: true,

@@ -226,7 +226,21 @@ export function ConnectStep({ id, name, flow, loggedIn, busy, accountId, onLogin
             <div><p className="font-semibold">{flow.loginTitle}</p><p className="max-w-md text-xs text-slate-500">{flow.loginDesc}</p></div>
           </div>
           {loggedIn ? (
-            <span className="inline-flex items-center gap-2 rounded-md bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-600"><CheckCircle2 className="size-4" />Đã đăng nhập</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-md bg-emerald-50 px-3.5 py-2 text-sm font-medium text-emerald-700">
+                <CheckCircle2 className="size-4" />Đã kết nối tài khoản
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onLogin}
+                disabled={busy}
+                className="gap-1.5 text-xs text-violet-700 hover:bg-violet-50 border-violet-200"
+              >
+                {busy ? <Loader2 className="size-3.5 animate-spin" /> : <ExternalLink className="size-3.5" />}
+                Đăng nhập lại / Cấp lại quyền Meta
+              </Button>
+            </div>
           ) : (
             <Button onClick={onLogin} disabled={busy} className={cn("gap-2", VIOLET)}>
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}{flow.loginCta}{!busy && <ExternalLink className="size-4" />}
@@ -241,7 +255,14 @@ export function ConnectStep({ id, name, flow, loggedIn, busy, accountId, onLogin
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Tìm kiếm ${flow.accountLabel}...`} className={cn(FIELD, "h-10 pl-9")} />
         </div>
         <div className={cn("overflow-hidden rounded-lg border border-slate-200", !loggedIn && "opacity-60")}>
-          {list.length === 0 && <p className="p-4 text-center text-sm text-slate-500">Không tìm thấy {flow.accountLabel} phù hợp.</p>}
+          {list.length === 0 && (
+            <div className="p-6 text-center text-sm text-slate-500">
+              <p className="font-medium text-slate-700">Chưa có {flow.accountLabel} nào được liên kết.</p>
+              <p className="mt-1 text-xs text-slate-400">
+                Vui lòng bấm nút <strong>"{flow.loginCta}"</strong> ở trên để đăng nhập và cấp quyền cho tài khoản thật của bạn qua Meta OAuth.
+              </p>
+            </div>
+          )}
           {list.map((a) => {
             const on = a.id === accountId;
             return (

@@ -904,7 +904,8 @@ function ElaneWomanForm({
 
 type PostTab = "all" | StatusUi;
 
-export function ElaneWomanManager() {
+export function ElaneWomanManager({ permissions = [] }: { permissions?: string[] }) {
+  const canWrite = permissions.includes("*") || permissions.includes("product.write");
   const [posts, setPosts] = useState<ElaneWomanPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [reordering, setReordering] = useState(false);
@@ -1255,7 +1256,7 @@ export function ElaneWomanManager() {
             </p>
           </div>
         </div>
-        <Button asChild className="h-9 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white hover:bg-[#53389e]">
+        {canWrite && <Button asChild className="h-9 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white hover:bg-[#53389e]">
           <a
             href="/elanewoman/them"
             onClick={(e) => {
@@ -1265,7 +1266,7 @@ export function ElaneWomanManager() {
           >
             <Plus className="mr-2 size-4" /> Thêm bài đăng
           </a>
-        </Button>
+        </Button>}
       </div>
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -1629,7 +1630,7 @@ export function ElaneWomanManager() {
                           {x.views != null ? x.views.toLocaleString("vi-VN") : "—"}
                         </td>
                         <td className="px-3 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                          <Popover open={menuId === p.id} onOpenChange={(o) => setMenuId(o ? p.id : null)}>
+                          {canWrite && <Popover open={menuId === p.id} onOpenChange={(o) => setMenuId(o ? p.id : null)}>
                             <PopoverTrigger asChild>
                               <Button variant="ghost" size="icon" className="size-8" aria-label="Thao tác">
                                 <MoreHorizontal className="size-4" />
@@ -1692,7 +1693,7 @@ export function ElaneWomanManager() {
                                 }}
                               />
                             </PopoverContent>
-                          </Popover>
+                          </Popover>}
                         </td>
                       </tr>
                     );
@@ -1783,10 +1784,10 @@ export function ElaneWomanManager() {
                   {pv.comments ?? "—"}
                 </span>
               </div>
-              <Button variant="outline" className="mt-4 h-10 w-full gap-2 bg-white" onClick={() => openEdit(pv)}>
+              {canWrite && <Button variant="outline" className="mt-4 h-10 w-full gap-2 bg-white" onClick={() => openEdit(pv)}>
                 <Pencil className="size-4" />
                 Chỉnh sửa bài đăng
-              </Button>
+              </Button>}
             </div>
           )}
         </aside>

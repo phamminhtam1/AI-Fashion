@@ -750,7 +750,7 @@ function PromotionForm({
 
   useEffect(() => {
     adminApi
-      .categories()
+      .categoryOptions()
       .then((res) => setCategoryList(res.items))
       .catch(() => { });
   }, []);
@@ -1426,7 +1426,8 @@ function PromotionForm({
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function DiscountCodesManager() {
+export function DiscountCodesManager({ permissions = [] }: { permissions?: string[] }) {
+  const canWrite = permissions.includes("*") || permissions.includes("promotion.write");
   const [items, setItems] = useState<DiscountCode[]>([]);
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
@@ -1689,7 +1690,7 @@ export function DiscountCodesManager() {
               </p>
             </div>
           </div>
-          <Button asChild className="h-9 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white hover:bg-[#53389e]">
+          {canWrite && <Button asChild className="h-9 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white hover:bg-[#53389e]">
             <a
               href="/khuyenmai/them"
               onClick={(e) => {
@@ -1699,7 +1700,7 @@ export function DiscountCodesManager() {
             >
               <Plus className="mr-2 size-4" /> Tạo khuyến mãi
             </a>
-          </Button>
+            </Button>}
         </div>
 
         <section className="overflow-hidden rounded-xl border border-border bg-card">

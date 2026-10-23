@@ -60,7 +60,11 @@ function extractBaseSku(rawSku: string | undefined, slug?: string): string {
 }
 
 function mapApiProduct(p: AdminProduct, index = 0): Product {
-  const img = p.images?.[0] || p.media?.find((m) => m.is_cover)?.url || p.media?.[0]?.url;
+  const gallery = Array.from(new Set([
+    ...(p.images || []),
+    ...(p.media || []).map((item) => item.url),
+  ].filter((url): url is string => Boolean(url))));
+  const img = p.media?.find((m) => m.is_cover)?.url || gallery[0];
   const rawSku = p.variants?.[0]?.sku || p.slug || `EL-${p.id.slice(0, 6)}`;
   const baseSku = extractBaseSku(rawSku, p.slug);
 
@@ -82,6 +86,7 @@ function mapApiProduct(p: AdminProduct, index = 0): Product {
     tint: TINTS[index % TINTS.length] ?? "#e0e7ff",
     inStock: p.variants && p.variants.length > 0 ? p.variants.some((v) => (v.cost_vnd ?? 1) >= 0) : true,
     imageUrl: img ?? null,
+    imageUrls: gallery,
     category: p.category?.name ?? null,
     description: p.material ? `${p.description || ""} (Chất liệu: ${p.material})` : (p.description ?? null),
     slug: p.slug,
@@ -204,7 +209,7 @@ export function ProductBstPickerModal({
     if (!open) return;
     let alive = true;
     adminApi
-      .categories()
+      .categoryOptions()
       .then((res) => {
         if (alive && res.items && res.items.length > 0) {
           setCategories(res.items.map((c) => ({ id: c.id, name: c.name, slug: c.slug })));
@@ -358,9 +363,7 @@ export function ProductBstPickerModal({
             <div>
               <div className="flex items-center gap-2.5">
                 <h2 id="pick-title" className="text-xl font-semibold tracking-tight">Chọn sản phẩm / BST</h2>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200">
-                  API Real Time
-                </span>
+
               </div>
               <p className="mt-1 text-sm text-slate-500">
                 Tìm kiếm trực tiếp từ kho {apiTotal > 0 ? `${apiTotal.toLocaleString("vi-VN")} sản phẩm` : "sản phẩm"} và bộ sưu tập để tạo nội dung.
@@ -476,7 +479,7 @@ export function ProductBstPickerModal({
                       <button key={p.id} type="button" role="checkbox" aria-checked={on} onClick={() => toggle(p.id)}
                         className={cn("group rounded-xl border bg-white p-2 text-left transition-all", on ? "border-[#6941c6] ring-1 ring-[#6941c6]" : "border-slate-200 hover:border-violet-300 hover:shadow-sm")}>
                         <div className="relative overflow-hidden rounded-lg bg-slate-100">
-                          <Thumb p={p} className="h-40 w-full transition-transform duration-300 group-hover:scale-[1.03]" />
+                          <Thumb p={p} className="aspect-[3/4] w-full transition-transform duration-300 group-hover:scale-[1.03]" />
                           <span className="absolute right-2 top-2"><Checkbox on={on} /></span>
                           {p.category && <span className="absolute bottom-2 left-2 rounded-md bg-white/90 px-2 py-0.5 text-[11px] font-medium text-slate-600">{p.category}</span>}
                           <span className="absolute bottom-2 right-2"><StockBadge inStock={p.inStock} /></span>

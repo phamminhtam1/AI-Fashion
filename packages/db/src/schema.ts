@@ -57,6 +57,7 @@ export const employees = pgTable("employees", {
     .unique(),
   employeeCode: text("employee_code").notNull().unique(),
   fullName: text("full_name").notNull(),
+  avatarUrl: text("avatar_url"),
   workEmail: text("work_email"),
   phone: text("phone"),
   departmentId: uuid("department_id").references(() => departments.id),
@@ -351,7 +352,7 @@ export const inventoryDocuments = pgTable("inventory_documents", {
   id: id(),
   code: text("code").notNull().unique(),
   type: text("type").notNull(), // receipt|issue|adjustment
-  status: text("status").notNull().default("draft"), // draft|approved|posted|void
+  status: text("status").notNull().default("draft"), // draft|submitted|approved|posted|void
   sourceWarehouseId: uuid("source_warehouse_id").references(() => warehouses.id),
   targetWarehouseId: uuid("target_warehouse_id").references(() => warehouses.id),
   reason: text("reason").notNull().default(""),

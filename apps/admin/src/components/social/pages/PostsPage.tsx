@@ -1,13 +1,16 @@
-import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
   Calendar, CalendarClock, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, Filter, Heart,
-  Image as ImageIcon, MessageCircle, MoreHorizontal, Pencil, Play, Plus, RotateCcw, Search, Send, Sparkles,
-  Trash2, X, XCircle, AlertCircle, ExternalLink, Link2,
+  Image as ImageIcon, MessageCircle, MoreHorizontal, Pencil, Play, Plus, RefreshCw, RotateCcw, Search, Send, Sparkles,
+  Trash2, X, XCircle, AlertCircle, ExternalLink, Link2, ArrowLeft, FileText, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { adminApi, type SocialContentItem } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { resolveAdminPath } from "@/lib/routes";
 import { CHANNEL_META, type PostRow, type PostStatus } from "../mock";
 import type { ChannelId, SocialCtx } from "../types";
 import { ChannelLogo, Empty, PageHeader, Pill, Modal, card } from "../ui";
@@ -71,7 +74,7 @@ function enrich(p: PostItem): PostView {
     ...p,
     state,
     kind,
-    format: x?.format ?? (kind === "video" ? "Video Reels" : kind === "image" ? "Post • Hình ảnh" : "Bài viết"),
+    format: x?.format ?? (kind === "video" ? "Video Reels" : (x?.mediaUrls?.length ?? 0) > 1 || x?.mediaType === "CAROUSEL" ? "Album Carousel" : kind === "image" ? "Post • Hình ảnh" : "Bài viết"),
     time: x?.scheduledAt ? fmtDateTime(new Date(x.scheduledAt)) : at ? fmtDateTime(at) : "Chưa đặt lịch",
     sub: subLabel(state, created),
     ...(hasMetrics ? { metrics: { views: compact(x?.views ?? 0), likes: compact(x?.likes ?? 0), comments: compact(x?.comments ?? 0) } } : {}),
@@ -96,7 +99,7 @@ const PLATFORMS: ChannelId[] = ["instagram", "facebook", "tiktok", "shopee", "we
 const KINDS: { id: Kind | "all"; label: string }[] = [
   { id: "all", label: "Tất cả" }, { id: "image", label: "Hình ảnh" }, { id: "video", label: "Video" }, { id: "article", label: "Bài viết" },
 ];
-const COLS = "grid grid-cols-[36px_minmax(280px,2.2fr)_minmax(170px,1.1fr)_120px_170px_minmax(170px,1fr)_190px] items-center gap-4";
+const COLS = "grid grid-cols-[36px_minmax(360px,2.3fr)_minmax(160px,0.9fr)_120px_170px_minmax(170px,0.9fr)_190px] items-center gap-x-6";
 
 /** Các hành động chỉ cần mở trang chi tiết. */
 const OPEN_DETAIL: ActionId[] = ["view_detail", "view_schedule", "view_error", "preview", "view_insights"];
@@ -123,7 +126,7 @@ function Thumb({ post }: { post: PostView }) {
 }
 
 function RowMenu({ post, onRun }: { post: PostView; onRun: (id: ActionId, p: PostView) => void }) {
-  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const ids = MENUS[post.state];
 
   useEffect(() => {
@@ -134,13 +137,23 @@ function RowMenu({ post, onRun }: { post: PostView; onRun: (id: ActionId, p: Pos
     return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
   }, [pos]);
 
-  // position: fixed để menu không bị bảng (overflow-x-auto) cắt, và lật lên nếu hết chỗ phía dưới.
+  // Render menu qua portal để tọa độ viewport không bị ảnh hưởng bởi transform/zoom
+  // của layout cha, đồng thời tránh bị vùng overflow của bảng cắt mất.
   const toggle = (e: MouseEvent<HTMLButtonElement>) => {
     if (pos) return setPos(null);
     const r = e.currentTarget.getBoundingClientRect();
-    const h = ids.length * 40 + 24;
-    const top = r.bottom + 6 + h > window.innerHeight ? Math.max(8, r.top - 6 - h) : r.bottom + 6;
-    setPos({ top, right: window.innerWidth - r.right });
+    const menuWidth = 176;
+    const menuHeight = ids.length * 36 + 20;
+    const gap = 6;
+    const viewportPadding = 8;
+    const top = r.bottom + gap + menuHeight > window.innerHeight
+      ? Math.max(viewportPadding, r.top - gap - menuHeight)
+      : r.bottom + gap;
+    const left = Math.min(
+      window.innerWidth - menuWidth - viewportPadding,
+      Math.max(viewportPadding, r.right - menuWidth),
+    );
+    setPos({ top, left });
   };
 
   return (
@@ -148,30 +161,50 @@ function RowMenu({ post, onRun }: { post: PostView; onRun: (id: ActionId, p: Pos
       <Button variant="outline" size="sm" onClick={toggle} aria-label="Thêm tuỳ chọn" aria-expanded={!!pos} className="size-9 bg-white px-0">
         <MoreHorizontal className="size-4" />
       </Button>
-      {pos && (
+      {pos && createPortal(
         <>
           <div className="fixed inset-0 z-40" onClick={() => setPos(null)} />
-          <div role="menu" style={{ top: pos.top, right: pos.right }} className="fixed z-50 w-[200px] overflow-hidden rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl">
+          <div role="menu" style={{ top: pos.top, left: pos.left }} className="fixed z-50 w-44 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
             {ids.map((id, i) => {
               const a = ACTIONS[id];
               const Icon = a.icon;
               const prevId = i > 0 ? ids[i - 1] : undefined;
               return (
                 <div key={id}>
-                  {a.danger && prevId && !ACTIONS[prevId]?.danger && <div className="my-1.5 border-t border-slate-100" />}
-                  <button
-                    role="menuitem"
-                    onClick={() => { setPos(null); onRun(id, post); }}
-                    className={cn("flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm", a.danger ? "text-rose-600 hover:bg-rose-50" : "text-slate-800 hover:bg-slate-50")}
-                  >
-                    <Icon className="size-4 shrink-0" />
-                    {a.label}
-                  </button>
+                  {a.danger && prevId && !ACTIONS[prevId]?.danger && <div className="my-1 border-t border-slate-100" />}
+                  {id === "view_detail" ? (
+                    <a
+                      href={`/kenhbanhang/baiviet/chitiet/${encodeURIComponent(post.id)}`}
+                      role="menuitem"
+                      onClick={(e) => {
+                        if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
+                          e.preventDefault();
+                          setPos(null);
+                          onRun(id, post);
+                        }
+                      }}
+                      className="flex h-9 w-full items-center gap-2.5 px-3 text-left text-[13px] text-slate-700 hover:bg-slate-50"
+                    >
+                      <Icon className="size-3.5 shrink-0" />
+                      {a.label}
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => { setPos(null); onRun(id, post); }}
+                      className={cn("flex h-9 w-full items-center gap-2.5 px-3 text-left text-[13px]", a.danger ? "text-rose-600 hover:bg-rose-50" : "text-slate-700 hover:bg-slate-50")}
+                    >
+                      <Icon className="size-3.5 shrink-0" />
+                      {a.label}
+                    </button>
+                  )}
                 </div>
               );
             })}
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </>
   );
@@ -373,27 +406,67 @@ function DeleteConfirmModal({
   onConfirm: () => Promise<void>;
   loading: boolean;
 }) {
+  const isPublishedOnInstagram = Boolean(post.state === "published" || post.item?.externalPostId || post.item?.permalink);
+  const permalink = post.item?.permalink || (post as any).permalink;
+
   return (
-    <Modal open onClose={onClose} maxW="max-w-md">
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="grid size-10 shrink-0 place-items-center rounded-full bg-rose-50 text-rose-600">
-            <Trash2 className="size-5" />
+    <Modal open onClose={onClose} maxW="max-w-sm">
+      <div className="space-y-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="grid size-9 shrink-0 place-items-center rounded-full bg-rose-50 text-rose-600">
+              <Trash2 className="size-4" />
+            </div>
+            <div className="min-w-0 pt-0.5">
+              <h3 className="text-base font-semibold text-slate-900">Xóa bài viết?</h3>
+              <p className="mt-1 text-sm text-slate-500">Thao tác này không thể hoàn tác.</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-base font-bold text-slate-900">Xác nhận xóa bài viết</h3>
-            <p className="text-xs text-slate-500">Thao tác này sẽ xóa vĩnh viễn dữ liệu khỏi hệ thống.</p>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="-mr-1 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:pointer-events-none disabled:opacity-50"
+            aria-label="Đóng"
+          >
+            <X className="size-4" />
+          </button>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="line-clamp-2 text-sm font-medium text-slate-800">{post.title}</p>
-        </div>
+        <p className="line-clamp-2 border-l-2 border-slate-200 pl-3 text-sm leading-6 text-slate-700">
+          {post.title}
+        </p>
 
-        <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
-          <Button variant="outline" onClick={onClose} disabled={loading}>Hủy</Button>
-          <Button onClick={onConfirm} disabled={loading} className="bg-rose-600 hover:bg-rose-700 text-white">
-            {loading ? "Đang xóa..." : "Xóa vĩnh viễn"}
+        {isPublishedOnInstagram && (
+          <div className="rounded-xl bg-amber-50 p-3.5">
+            <div className="flex items-start gap-2.5">
+              <ChannelLogo id="instagram" size="xs" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-amber-950">Bài vẫn còn trên Instagram</p>
+                <p className="mt-1 text-xs leading-5 text-amber-900/75">Bạn cần xóa riêng trên Instagram.</p>
+              </div>
+            </div>
+            {permalink && (
+              <a
+                href={permalink}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2.5 inline-flex items-center gap-1.5 pl-7 text-xs font-semibold text-pink-600 hover:underline"
+              >
+                Mở trên Instagram <ExternalLink className="size-3" />
+              </a>
+            )}
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-2.5 border-t border-slate-100 pt-4">
+          <Button variant="outline" onClick={onClose} disabled={loading} className="w-full">Hủy</Button>
+          <Button
+            onClick={() => void onConfirm()}
+            disabled={loading}
+            className="w-full bg-rose-600 text-white hover:bg-rose-700"
+          >
+            {loading ? "Đang xóa..." : "Xóa bài viết"}
           </Button>
         </div>
       </div>
@@ -800,12 +873,51 @@ function pageNumbers(page: number, pages: number) {
 
 /* ═════════════════════════ Trang ═════════════════════════ */
 
-export function PostsPage({ ctx }: { ctx: SocialCtx }) {
+export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostId?: string | null }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const upcoming = useUpcomingPosts(ctx);
   const posts = useMemo<PostView[]>(
     () => upcoming.map(enrich),
     [upcoming],
   );
+
+  // Lấy postId từ URL hoặc query parameters (?postId= hoặc ?id=)
+  const route = useMemo(() => resolveAdminPath(location.pathname), [location.pathname]);
+  const urlPostId = useMemo(() => {
+    if (route.tabId === "social" && (route.subParam === "baiviet" || route.subParam === "posts" || route.action === "detail")) {
+      if (route.detailId) return route.detailId;
+    }
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const q = searchParams.get("postId") || searchParams.get("id");
+      if (q) return q;
+    }
+    return initialPostId || null;
+  }, [route, initialPostId]);
+
+  const [openId, setOpenId] = useState<string | null>(urlPostId);
+
+  // Luôn đồng bộ openId khi URL thay đổi (browser back/forward, click link)
+  useEffect(() => {
+    setOpenId(urlPostId);
+  }, [urlPostId]);
+
+  const openPostDetail = useCallback((id: string) => {
+    setOpenId(id);
+    const targetUrl = `/kenhbanhang/baiviet/chitiet/${encodeURIComponent(id)}`;
+    if (location.pathname !== targetUrl) {
+      navigate({ to: targetUrl as unknown as "/" });
+    }
+  }, [location.pathname, navigate]);
+
+  const closePostDetail = useCallback(() => {
+    setOpenId(null);
+    if (location.pathname !== "/kenhbanhang/baiviet") {
+      navigate({ to: "/kenhbanhang/baiviet" as unknown as "/" });
+    }
+  }, [location.pathname, navigate]);
 
   const [tab, setTab] = useState<TabId>("all");
   const [channel, setChannel] = useState<ChannelId | "all">("all");
@@ -815,7 +927,6 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
-  const [openId, setOpenId] = useState<string | null>(null);
 
   // Modal states
   const [scheduleTarget, setScheduleTarget] = useState<PostView | null>(null);
@@ -825,6 +936,21 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [showManualCreate, setShowManualCreate] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [syncingAll, setSyncingAll] = useState(false);
+
+  const handleSyncAllMetrics = async () => {
+    setSyncingAll(true);
+    try {
+      toast.info("Đang đồng bộ chỉ số tất cả bài viết từ Instagram...");
+      const res = await adminApi.syncSocialMetrics();
+      toast.success(`Đã đồng bộ chỉ số thành công (${res.synced} bài viết)!`);
+      await ctx.reload(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Đồng bộ chỉ số thất bại");
+    } finally {
+      setSyncingAll(false);
+    }
+  };
 
   const tabCount = (id: TabId) => (id === "all" ? posts.length : posts.filter((p) => p.state === id).length);
   const channelCount = (id: ChannelId) => posts.filter((p) => p.channel === id).length;
@@ -850,7 +976,7 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
   const toggleOne = (id: string) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const run = async (id: ActionId, p: PostView) => {
-    if (OPEN_DETAIL.includes(id)) return setOpenId(p.id);
+    if (OPEN_DETAIL.includes(id)) return openPostDetail(p.id);
     switch (id) {
       case "view_original":
         if (p.permalink) window.open(p.permalink, "_blank", "noreferrer");
@@ -858,6 +984,10 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
         break;
 
       case "duplicate":
+        if (!ctx.canContentWrite) {
+          toast.error("Bạn không có quyền chỉnh sửa nội dung");
+          break;
+        }
         try {
           await adminApi.duplicateSocialContent(p.id);
           toast.success("Đã nhân bản bài viết thành bản nháp mới");
@@ -868,6 +998,10 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
         break;
 
       case "send_review":
+        if (!ctx.canContentWrite) {
+          toast.error("Bạn không có quyền gửi duyệt bài viết");
+          break;
+        }
         try {
           await adminApi.sendSocialContentForReview(p.id);
           toast.success("Đã gửi bài viết để duyệt");
@@ -878,6 +1012,10 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
         break;
 
       case "approve":
+        if (!ctx.canPublish) {
+          toast.error("Bạn không có quyền phê duyệt bài viết");
+          break;
+        }
         try {
           await adminApi.approveSocialContent(p.id, { publishNow: false });
           toast.success("Đã phê duyệt bài viết");
@@ -889,6 +1027,11 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
 
       case "approve_publish":
       case "publish_now":
+        if (!ctx.canPublish) {
+          toast.error("Bạn không có quyền xuất bản bài viết");
+          break;
+        }
+        setActionLoading(true);
         try {
           toast.info("Đang xuất bản bài viết lên Instagram...");
           await adminApi.approveSocialContent(p.id, { publishNow: true });
@@ -897,10 +1040,17 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
         } catch (err) {
           toast.error(err instanceof Error ? err.message : "Không thể đăng bài viết");
           await ctx.reload(true);
+        } finally {
+          setActionLoading(false);
         }
         break;
 
       case "retry":
+        if (!ctx.canPublish) {
+          toast.error("Bạn không có quyền đăng lại bài viết");
+          break;
+        }
+        setActionLoading(true);
         try {
           toast.info("Đang thử đăng lại bài viết...");
           await adminApi.retrySocialPublish(p.id);
@@ -909,10 +1059,16 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
         } catch (err) {
           toast.error(err instanceof Error ? err.message : "Thử lại thất bại");
           await ctx.reload(true);
+        } finally {
+          setActionLoading(false);
         }
         break;
 
       case "cancel_schedule":
+        if (!ctx.canPublish) {
+          toast.error("Bạn không có quyền hủy lịch đăng");
+          break;
+        }
         try {
           await adminApi.cancelScheduleSocialContent(p.id);
           toast.success("Đã hủy lịch đăng");
@@ -922,25 +1078,70 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
         }
         break;
 
+      case "unapprove":
+        if (!ctx.canPublish) {
+          toast.error("Bạn không có quyền hủy phê duyệt bài viết");
+          break;
+        }
+        try {
+          await adminApi.unapproveSocialContent(p.id);
+          toast.success("Đã hủy phê duyệt bài viết");
+          await ctx.reload(true);
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "Không thể hủy phê duyệt bài viết");
+        }
+        break;
+
+      case "sync_metrics":
+        try {
+          toast.info("Đang đồng bộ chỉ số bài viết từ Instagram...");
+          await adminApi.syncPostMetrics(p.id);
+          toast.success("Đã đồng bộ chỉ số mới nhất từ Instagram!");
+          await ctx.reload(true);
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "Đồng bộ chỉ số thất bại");
+        }
+        break;
+
       case "schedule":
       case "reschedule":
+        if (!ctx.canPublish) {
+          toast.error("Bạn không có quyền lên lịch đăng");
+          break;
+        }
         setScheduleTarget(p);
         break;
 
       case "reject":
+        if (!ctx.canContentWrite) {
+          toast.error("Bạn không có quyền từ chối bài viết");
+          break;
+        }
         setFeedbackTarget({ post: p, mode: "reject" });
         break;
 
       case "request_changes":
+        if (!ctx.canContentWrite) {
+          toast.error("Bạn không có quyền yêu cầu chỉnh sửa");
+          break;
+        }
         setFeedbackTarget({ post: p, mode: "request_changes" });
         break;
 
       case "delete":
+        if (!ctx.canContentWrite) {
+          toast.error("Bạn không có quyền xóa bài viết");
+          break;
+        }
         setDeleteTarget(p);
         break;
 
       case "edit":
       case "edit_reapprove":
+        if (!ctx.canContentWrite) {
+          toast.error("Bạn không có quyền chỉnh sửa bài viết");
+          break;
+        }
         setEditTarget(p);
         break;
 
@@ -984,17 +1185,25 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
     }
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async (force = false) => {
     if (!deleteTarget) return;
     setActionLoading(true);
     try {
-      await adminApi.deleteSocialContent(deleteTarget.id);
-      toast.success("Đã xóa bài viết thành công");
-      if (openId === deleteTarget.id) setOpenId(null);
+      const res = await adminApi.deleteSocialContent(deleteTarget.id, force);
+      if (res.deletedOnInstagram) {
+        toast.success("Đã xóa bài viết trên hệ thống và Instagram thành công");
+      } else if (force) {
+        toast.info("Đã xóa bài viết khỏi hệ thống nội bộ");
+      } else {
+        toast.success("Đã xóa bài viết thành công");
+      }
+      if (openId === deleteTarget.id) closePostDetail();
       setDeleteTarget(null);
       await ctx.reload(true);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Không thể xóa bài viết");
+      const msg = err instanceof Error ? err.message : "Không thể xóa bài viết";
+      toast.error(msg);
+      throw err;
     } finally {
       setActionLoading(false);
     }
@@ -1027,7 +1236,7 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
       await adminApi.createSocialContent({
         title: payload.title,
         caption: payload.caption,
-        mediaType: "IMAGE",
+        mediaType: payload.mediaUrls.length > 1 ? "CAROUSEL" : "IMAGE",
         mediaUrls: payload.mediaUrls,
         source: "manual",
         status: payload.status,
@@ -1082,7 +1291,7 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
         <CalendarScheduleModal
           posts={posts}
           onClose={() => setShowCalendarModal(false)}
-          onSelectPost={(id) => setOpenId(id)}
+          onSelectPost={(id) => openPostDetail(id)}
         />
       )}
       {showManualCreate && (
@@ -1096,16 +1305,42 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
   );
 
   const openPost = openId ? posts.find((p) => p.id === openId) : undefined;
-  if (openPost) {
+  if (openId) {
+    if (openPost) {
+      return (
+        <>
+          <PostDetailPage
+            post={{ ...openPost, timeSub: openPost.sub }}
+            onBack={closePostDetail}
+            actionLoading={actionLoading}
+            onAction={(key) => run(key as ActionId, openPost)}
+          />
+          {modals}
+        </>
+      );
+    }
+    if (posts.length === 0) {
+      return (
+        <div className="flex min-h-[460px] flex-col items-center justify-center gap-3">
+          <Loader2 className="size-8 animate-spin text-[#6941c6]" />
+          <p className="text-sm text-slate-500">Đang tải chi tiết bài viết…</p>
+        </div>
+      );
+    }
     return (
-      <>
-        <PostDetailPage
-          post={{ ...openPost, timeSub: openPost.sub }}
-          onBack={() => setOpenId(null)}
-          onAction={(key) => run(key as ActionId, openPost)}
-        />
-        {modals}
-      </>
+      <div className="flex min-h-[460px] flex-col items-center justify-center gap-4 text-center">
+        <div className="grid size-12 place-items-center rounded-full bg-slate-100 text-slate-500">
+          <FileText className="size-6" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">Không tìm thấy bài viết</h2>
+          <p className="mt-1 text-sm text-slate-500">Bài viết với mã &ldquo;{openId}&rdquo; không tồn tại hoặc đã bị xóa.</p>
+        </div>
+        <Button onClick={closePostDetail} variant="outline" className="gap-2">
+          <ArrowLeft className="size-4" />
+          Quay lại danh sách bài viết
+        </Button>
+      </div>
     );
   }
 
@@ -1115,17 +1350,28 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
 
   return (
     <div className="space-y-5 pb-8 text-slate-900">
+      {actionLoading && <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/25 p-4 backdrop-blur-[2px]" role="status" aria-live="polite"><div className="flex w-full max-w-xs flex-col items-center rounded-2xl border border-white/70 bg-white px-6 py-5 text-center shadow-2xl"><span className="grid size-12 place-items-center rounded-full bg-violet-100 text-[#6941c6]"><RefreshCw className="size-6 animate-spin" /></span><p className="mt-3 text-sm font-semibold text-slate-900">Đang xử lý bài viết…</p><p className="mt-1 text-xs leading-5 text-slate-500">Đang gửi yêu cầu lên nền tảng. Vui lòng chờ.</p></div></div>}
       <PageHeader
         onBack={() => ctx.go("overview")}
         title="Bài viết & lịch đăng"
         desc="Duyệt, lên lịch và theo dõi hiệu quả bài viết trên các kênh bán hàng."
         actions={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              disabled={syncingAll}
+              onClick={handleSyncAllMetrics}
+              className="gap-2 bg-white text-slate-700 hover:border-[#6941c6] hover:bg-violet-50 hover:text-[#6941c6]"
+              title="Đồng bộ lại toàn bộ chỉ số thực tế từ Instagram"
+            >
+              <RefreshCw className={cn("size-4", syncingAll && "animate-spin text-[#6941c6]")} />
+              {syncingAll ? "Đang đồng bộ..." : "Đồng bộ chỉ số"}
+            </Button>
             <Button variant="outline" onClick={() => setShowCalendarModal(true)} className="gap-2 bg-white">
               <CalendarDays className="size-4" />
               Xem lịch đăng
             </Button>
-            <CreateMenu onAi={() => ctx.go("ai-content")} onManual={() => setShowManualCreate(true)} />
+            {ctx.canContentWrite && <CreateMenu onAi={() => ctx.go("ai-content")} onManual={() => setShowManualCreate(true)} />}
           </div>
         }
       />
@@ -1207,7 +1453,7 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
 
         {/* Bảng */}
         <div className="overflow-x-auto">
-          <div className="min-w-[1180px]">
+          <div className="min-w-[1360px]">
             <div className={cn(COLS, "rounded-lg bg-slate-50 px-4 py-3.5 text-sm font-medium text-slate-800")}>
               <input type="checkbox" checked={allChecked} onChange={toggleAll} aria-label="Chọn tất cả" className="size-[18px] rounded border-slate-300 accent-[#6941c6]" />
               <span>Nội dung</span>
@@ -1231,13 +1477,22 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
                 <div key={p.id} className={cn(COLS, "border-b border-slate-100 px-4 py-3 text-sm last:border-b-0", selected.has(p.id) && "bg-violet-50/40")}>
                   <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleOne(p.id)} aria-label={`Chọn ${p.title}`} className="size-[18px] rounded border-slate-300 accent-[#6941c6]" />
 
-                  <button onClick={() => setOpenId(p.id)} className="flex min-w-0 items-center gap-3 text-left">
+                  <a
+                    href={`/kenhbanhang/baiviet/chitiet/${encodeURIComponent(p.id)}`}
+                    onClick={(e) => {
+                      if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
+                        e.preventDefault();
+                        openPostDetail(p.id);
+                      }
+                    }}
+                    className="group flex min-w-0 items-center gap-3 text-left cursor-pointer"
+                  >
                     <Thumb post={p} />
                     <div className="min-w-0">
-                      <p className="truncate font-semibold hover:text-[#6941c6]" title={captionTitle}>{captionTitle}</p>
+                      <p className="truncate font-semibold group-hover:text-[#6941c6] transition-colors" title={captionTitle}>{captionTitle}</p>
                       <p className="mt-1 truncate text-xs text-slate-500" title={captionSubtitle}>{captionSubtitle}</p>
                     </div>
-                  </button>
+                  </a>
 
                   <div className="flex items-center gap-2.5">
                     <ChannelLogo id={p.channel} size="xs" />
@@ -1256,22 +1511,50 @@ export function PostsPage({ ctx }: { ctx: SocialCtx }) {
 
                   <div className="text-slate-600">
                     {p.metrics ? (
-                      <span className="flex items-center gap-4">
-                        <span className="flex items-center gap-1.5"><Eye className="size-4 text-slate-400" />{p.metrics.views}</span>
-                        <span className="flex items-center gap-1.5"><Heart className="size-4 text-slate-400" />{p.metrics.likes}</span>
-                        <span className="flex items-center gap-1.5"><MessageCircle className="size-4 text-slate-400" />{p.metrics.comments}</span>
+                      <span
+                        onClick={() => openPostDetail(p.id)}
+                        className="flex cursor-pointer items-center gap-3.5 transition-opacity hover:opacity-80"
+                        title="Bấm để xem chi tiết hiệu quả bài viết"
+                      >
+                        <span className="flex items-center gap-1 text-xs font-semibold text-slate-700" title="Lượt tiếp cận (Reach)">
+                          <Eye className="size-3.5 text-[#6941c6]" />
+                          {p.metrics.views}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs font-semibold text-slate-700" title="Lượt thích (Likes)">
+                          <Heart className="size-3.5 text-rose-500 fill-rose-50" />
+                          {p.metrics.likes}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs font-semibold text-slate-700" title="Bình luận (Comments)">
+                          <MessageCircle className="size-3.5 text-blue-500" />
+                          {p.metrics.comments}
+                        </span>
                       </span>
                     ) : <span className="text-slate-400">—</span>}
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => run(primary.id, p)}
-                      className={cn("h-9 w-[125px] bg-white text-sm font-medium", primary.violet ? "border-[#6941c6]/60 text-[#6941c6] hover:bg-[#6941c6] hover:text-white" : "border-slate-200 text-slate-800")}
-                    >
-                      {primary.label}
-                    </Button>
+                    {primary.id === "view_detail" ? (
+                      <a
+                        href={`/kenhbanhang/baiviet/chitiet/${encodeURIComponent(p.id)}`}
+                        onClick={(e) => {
+                          if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
+                            e.preventDefault();
+                            openPostDetail(p.id);
+                          }
+                        }}
+                        className="inline-flex h-9 w-[125px] items-center justify-center rounded-lg border border-[#6941c6] bg-white text-sm font-medium text-[#6941c6] shadow-2xs transition-colors hover:bg-[#6941c6] hover:text-white"
+                      >
+                        {primary.label}
+                      </a>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        onClick={() => run(primary.id, p)}
+                        className={cn("h-9 w-[125px] bg-white text-sm font-medium", primary.violet ? "border-[#6941c6] bg-[#6941c6] text-white shadow-sm hover:border-[#5b36b0] hover:bg-[#5b36b0] hover:text-white hover:shadow-md" : "border-slate-200 text-slate-800")}
+                      >
+                        {primary.label}
+                      </Button>
+                    )}
                     <RowMenu post={p} onRun={run} />
                   </div>
                 </div>

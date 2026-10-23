@@ -121,6 +121,8 @@ export interface Product {
   tint: string;
   inStock: boolean;
   imageUrl?: string | null;
+  /** Toàn bộ ảnh gallery của sản phẩm, dùng để chọn ảnh tham chiếu cho AI. */
+  imageUrls?: string[];
   category?: string | null;
   description?: string | null;
   slug?: string;

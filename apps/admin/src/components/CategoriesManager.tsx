@@ -193,10 +193,11 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
   );
 }
 
-export function CategoriesManager() {
+export function CategoriesManager({ permissions = [] }: { permissions?: string[] }) {
   const navigate = useNavigate();
   const location = useLocation();
   const route = resolveAdminPath(location.pathname);
+  const canWrite = permissions.includes("*") || permissions.includes("category.write");
 
   const [items, setItems] = useState<Category[]>([]);
   const [query, setQuery] = useState("");
@@ -1017,7 +1018,7 @@ export function CategoriesManager() {
             <ArrowUpDown className="size-3.5" />
             <span>Sắp xếp lại</span>
           </Button>
-          <Button asChild className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-3.5 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer">
+          {canWrite && <Button asChild className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-3.5 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer">
             <a
               href="/danhmuc/them"
               onClick={(e) => {
@@ -1028,7 +1029,7 @@ export function CategoriesManager() {
               <Plus className="size-3.5" />
               <span>Thêm danh mục</span>
             </a>
-          </Button>
+            </Button>}
         </div>
       </div>
 

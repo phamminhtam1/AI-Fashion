@@ -109,7 +109,7 @@ export function ConnectPage({ ctx }: { ctx: SocialCtx }) {
           </section>
         )}
 
-        <ExpandPromo />
+        <ExpandPromo canChannelWrite={ctx.canChannelWrite} />
       </div>
 
       {/* ───────── Kênh có thể kết nối ───────── */}
@@ -149,7 +149,7 @@ export function ConnectPage({ ctx }: { ctx: SocialCtx }) {
                   <ChannelArt id={c.id} />
                 </div>
 
-                <Button
+                {ctx.canChannelWrite && <Button
                   variant="outline"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -159,7 +159,7 @@ export function ConnectPage({ ctx }: { ctx: SocialCtx }) {
                 >
                   Kết nối {m.name}
                   <ArrowRight className="size-4" />
-                </Button>
+                </Button>}
               </article>
             );
           })}
@@ -308,7 +308,7 @@ function Floating({ className, children }: { className: string; children: ReactN
   return <div className={cn("absolute origin-center drop-shadow-md", className)}>{children}</div>;
 }
 
-function ExpandPromo() {
+function ExpandPromo({ canChannelWrite }: { canChannelWrite: boolean }) {
   return (
     <aside className={cn(card, "p-3")}>
       <div className="flex h-full flex-col rounded-xl bg-gradient-to-b from-violet-100 via-violet-50 to-violet-100/70 p-5">
@@ -337,14 +337,14 @@ function ExpandPromo() {
 
         <h3 className="mt-3 text-lg font-semibold">Mở rộng kênh bán hàng</h3>
         <p className="mt-1.5 text-sm leading-5 text-slate-500">Kết nối thêm các nền tảng khác để tăng doanh số và quản lý tập trung trên một hệ thống.</p>
-        <Button
+        {canChannelWrite && <Button
           variant="outline"
           onClick={() => toast.info("Tính năng sẽ sớm được bổ sung")}
           className="mt-4 w-fit gap-2 border-[#6941c6]/50 bg-white font-medium text-[#6941c6] hover:bg-violet-50 hover:text-[#6941c6]"
         >
           Tìm hiểu thêm
           <ArrowRight className="size-4" />
-        </Button>
+        </Button>}
       </div>
     </aside>
   );

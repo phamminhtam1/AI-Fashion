@@ -51,6 +51,8 @@ export const env = {
   metaRedirectUri: process.env.META_REDIRECT_URI ?? "http://localhost:3001/api/v1/admin/social/instagram/callback",
   metaWebhookVerifyToken: process.env.META_WEBHOOK_VERIFY_TOKEN ?? "",
   metaGraphVersion: process.env.META_GRAPH_VERSION ?? "v23.0",
-  socialAiModel: process.env.SOCIAL_AI_MODEL ?? process.env.OPENAI_VISION_MODEL ?? "gpt-5.6-sol-max",
+  socialAiModel: process.env.SOCIAL_AI_MODEL ?? process.env.OPENAI_VISION_MODEL ?? process.env.OPENAI_CONTENT_MODEL ?? "gpt-5.6-sol-none",
   openaiBaseUrl: process.env.OPENAI_BASE_URL ?? "",
+  kieContentModel: process.env.KIE_CONTENT_MODEL ?? "deepseek-v4-1-flash",
+  kieBaseUrl: process.env.KIE_BASE_URL ?? "https://api.kie.ai",
 };

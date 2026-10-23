@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 from typing import Optional
+import httpx
 from openai import AsyncOpenAI
 from ....config import settings
 from ..models.schemas import ClassifierOutput, VisibilityFlag
@@ -108,6 +109,42 @@ class OpenAIClassifier(BaseClassifier):
                 ],
             },
         ]
+
+        # Vision classification now uses KIE DeepSeek Responses API. The KIE
+        # try-on image generation provider remains unchanged.
+        if settings.kie_content_model:
+            try:
+                async with httpx.AsyncClient(timeout=90.0) as http_client:
+                    response = await http_client.post(
+                        f"{settings.kie_base_url.rstrip('/')}/openai/v1/responses",
+                        headers={"Authorization": f"Bearer {active_key}", "Content-Type": "application/json"},
+                        json={
+                        "model": settings.kie_content_model,
+                        "stream": False,
+                        "reasoning": {"effort": "none"},
+                        "input": [{"role": "user", "content": [
+                            {"type": "input_text", "text": f"{CLASSIFIER_SYSTEM_PROMPT}\n\nAnalyze the framing and person visibility in this image."},
+                            {"type": "input_image", "image_url": f"data:image/jpeg;base64,{b64_image}"},
+                        ]}],
+                        "text": {"format": {"type": "json_object"}},
+                        },
+                    )
+                data = response.json()
+                if response.status_code >= 400:
+                    raise RuntimeError(str(data.get("error", f"KIE HTTP {response.status_code}")))
+                output = "".join(
+                    str(part.get("text", ""))
+                    for item in data.get("output", [])
+                    for part in item.get("content", [])
+                    if part.get("type") in {"output_text", "text"}
+                ).strip()
+                if output:
+                    parsed = ClassifierOutput.model_validate_json(output)
+                    logger.info(f"[classifier] KIE DeepSeek vision succeeded: framing={parsed.visibility_flag.value}, confidence={parsed.confidence:.2f}")
+                    return parsed
+                raise ValueError("KIE returned empty vision response")
+            except Exception as e:
+                logger.warning(f"[classifier] KIE DeepSeek vision failed, using default framing: {e}")
 
         # 1. Attempt structured output parse
         try:

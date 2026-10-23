@@ -47,10 +47,10 @@ class TryOnPipeline:
                     file_path=req.user_image_path,
                     url=req.user_image_url,
                 )
-                if req.openai_api_key:
+                if req.api_key:
                     classifier_output = await self.classifier.classify(
                         user_image_bytes,
-                        api_key=req.openai_api_key,
+                        api_key=req.api_key,
                     )
                 else:
                     classifier_output = await self.classifier.classify(user_image_bytes)

@@ -28,6 +28,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"  - OpenAI Base URL:        {settings.openai_base_url or 'https://api.openai.com/v1 (default)'}")
     logger.info(f"  - OpenAI Vision Model:    {settings.openai_vision_model}")
     logger.info(f"  - OpenAI Content Model:   {settings.openai_content_model}")
+    logger.info(f"  - KIE Content Model:      {settings.kie_content_model}")
     logger.info(f"  - OpenAI Key Configured:  {key_preview}")
     logger.info(f"  - Kie Model:              {settings.kie_model}")
     logger.info(f"  - Kie Key Configured:     {kie_preview}")

@@ -41,33 +41,7 @@ class ContentGenerateRequest(BaseModel):
     promotion: Optional[str] = None
     custom_instructions: Optional[str] = None
     brand_context: Optional[str] = None
-    generate_visual_brief: bool = True
-    max_revision_rounds: int = Field(default=1, ge=0, le=3)
     openai_api_key: Optional[str] = None
-
-
-class ProductBrief(BaseModel):
-    product_summary: str
-    visual_observations: list[str] = Field(default_factory=list)
-    verified_facts: list[str] = Field(default_factory=list)
-    selling_points: list[str] = Field(default_factory=list)
-    unknown_or_risky_claims: list[str] = Field(default_factory=list)
-
-
-class ChannelPlan(BaseModel):
-    channel: ContentChannel
-    format: str
-    hook_direction: str
-    structure: list[str] = Field(default_factory=list)
-    target_length: str
-
-
-class ContentPlan(BaseModel):
-    key_message: str
-    audience_insight: str
-    content_angle: str
-    call_to_action: str
-    channel_plans: list[ChannelPlan]
 
 
 class ChannelContent(BaseModel):
@@ -84,20 +58,9 @@ class ContentDraft(BaseModel):
     variants: list[ChannelContent]
 
 
-class ReviewResult(BaseModel):
-    passed: bool
-    score: int = Field(ge=0, le=100)
-    issues: list[str] = Field(default_factory=list)
-    revision_instructions: list[str] = Field(default_factory=list)
-
-
 class ContentGenerateResponse(BaseModel):
     job_id: str
     status: Literal["completed", "failed"]
-    product_brief: Optional[ProductBrief] = None
-    content_plan: Optional[ContentPlan] = None
     draft: Optional[ContentDraft] = None
-    review: Optional[ReviewResult] = None
-    revision_rounds: int = 0
     error_code: Optional[str] = None
     error_message: Optional[str] = None

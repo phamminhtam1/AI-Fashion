@@ -1,7 +1,7 @@
 import type { ComponentType } from "react";
 import {
   AlertCircle, BarChart3, CalendarClock, CalendarDays, CalendarX, CheckCircle2, Copy, ExternalLink,
-  Eye, MessageSquare, Pencil, RotateCcw, Send, Trash2, XCircle,
+  Eye, MessageSquare, Pencil, RefreshCw, RotateCcw, Send, Trash2, Undo2, XCircle,
 } from "lucide-react";
 import type { PostStatus } from "../mock";
 
@@ -10,9 +10,9 @@ export type PostState = "draft" | "pending" | "approved" | "scheduled" | "publis
 
 export type ActionId =
   | "preview" | "edit" | "edit_reapprove" | "duplicate" | "send_review" | "approve" | "request_changes" | "reject" | "delete"
-  | "schedule" | "publish_now" | "view_schedule" | "reschedule" | "cancel_schedule"
+  | "schedule" | "publish_now" | "view_schedule" | "reschedule" | "cancel_schedule" | "unapprove"
   | "view_original" | "view_insights" | "view_error" | "retry"
-  | "approve_publish" | "view_detail";
+  | "approve_publish" | "view_detail" | "sync_metrics";
 
 export const ACTIONS: Record<ActionId, { label: string; icon: ComponentType<{ className?: string }>; danger?: boolean }> = {
   preview: { label: "Xem trước", icon: Eye },
@@ -29,21 +29,23 @@ export const ACTIONS: Record<ActionId, { label: string; icon: ComponentType<{ cl
   view_schedule: { label: "Xem lịch đăng", icon: CalendarDays },
   reschedule: { label: "Đổi lịch", icon: CalendarClock },
   cancel_schedule: { label: "Hủy lịch", icon: CalendarX, danger: true },
+  unapprove: { label: "Hủy phê duyệt", icon: Undo2, danger: true },
   view_original: { label: "Xem bài gốc", icon: ExternalLink },
   view_insights: { label: "Xem hiệu quả", icon: BarChart3 },
   view_error: { label: "Xem lỗi", icon: AlertCircle },
   retry: { label: "Thử đăng lại", icon: RotateCcw },
   approve_publish: { label: "Duyệt & đăng", icon: Send },
   view_detail: { label: "Xem chi tiết", icon: Eye },
+  sync_metrics: { label: "Đồng bộ chỉ số", icon: RefreshCw },
 };
 
 /** Menu ba chấm theo trạng thái bài viết (trạng thái nào cũng có 'Xem chi tiết', bỏ 'Xem trước', danger luôn nằm cuối). */
 export const MENUS: Record<PostState, ActionId[]> = {
   draft: ["view_detail", "edit", "duplicate", "send_review", "delete"],
   pending: ["view_detail", "edit", "approve", "request_changes", "reject", "delete"],
-  approved: ["view_detail", "edit_reapprove", "schedule", "publish_now", "duplicate", "delete"],
+  approved: ["view_detail", "edit_reapprove", "unapprove", "schedule", "publish_now", "duplicate", "delete"],
   scheduled: ["view_detail", "view_schedule", "reschedule", "cancel_schedule", "duplicate", "delete"],
-  published: ["view_detail", "view_original", "view_insights", "duplicate", "delete"],
+  published: ["view_detail", "view_original", "view_insights", "sync_metrics", "duplicate", "delete"],
   failed: ["view_detail", "view_error", "retry", "edit", "duplicate", "delete"],
 };
 

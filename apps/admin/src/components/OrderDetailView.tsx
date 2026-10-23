@@ -558,13 +558,18 @@ export function OrderDetailView({
   onBack,
   onUpdated,
   onNavigateToInventory,
+  permissions = [],
 }: {
   orderId: string | null;
   orderNumber?: string | null | undefined;
   onBack: () => void;
   onUpdated?: (() => void) | undefined;
   onNavigateToInventory?: ((seed: InventorySeed) => void) | undefined;
+  permissions?: string[];
 }) {
+  const hasPermission = (permission: string) => permissions.includes("*") || permissions.includes(permission);
+  const canUpdateOrder = hasPermission("order.update");
+  const canIssueInventory = hasPermission("inventory.issue");
   const [order, setOrder] = useState<FullOrderDetail>(() => ({
     ...EMPTY_ORDER_DATA,
     id: orderId || "",
@@ -1234,15 +1239,15 @@ export function OrderDetailView({
             <span>In hóa đơn</span>
           </Button>
 
-          <Button
+          {canUpdateOrder && <Button
             variant="outline"
             onClick={() => setIsRefundModalOpen(true)}
             className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-2xs hover:bg-slate-50"
           >
             <RefreshCcw className="size-4 text-slate-600" />
             <span>Hoàn tiền</span>
-          </Button>
-          {order.paymentStatus !== "paid" && order.paymentStatus !== "refunded" && (
+          </Button>}
+          {canUpdateOrder && order.paymentStatus !== "paid" && order.paymentStatus !== "refunded" && (
             <Button
               onClick={handleMarkPaid}
               disabled={isMarkingPaid}
@@ -1258,7 +1263,7 @@ export function OrderDetailView({
           )}
 
           {/* Nút Xuất kho — Hiện khi đủ điều kiện: đã thanh toán (với QR/Bank) hoặc đặt hàng COD, và chưa xuất kho */}
-          {isReadyToFulfill && (
+          {canUpdateOrder && canIssueInventory && isReadyToFulfill && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -1322,7 +1327,7 @@ export function OrderDetailView({
           )}
 
           {/* Nút Giao hàng — Chỉ hiển thị khi đơn đã xuất kho */}
-          {isExported && (
+          {canUpdateOrder && isExported && (
             <Button
               onClick={handleToggleDeliver}
               disabled={isFulfilling}

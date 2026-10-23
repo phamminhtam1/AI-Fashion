@@ -45,6 +45,10 @@ export interface GoOptions {
 }
 
 export interface SocialCtx {
+  permissions: string[];
+  canChannelWrite: boolean;
+  canContentWrite: boolean;
+  canPublish: boolean;
   data: SocialOverview;
   settings: SocialPlatformSettings | null;
   reloadSettings: () => Promise<void>;

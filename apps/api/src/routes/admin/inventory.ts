@@ -29,7 +29,7 @@ export const adminInventoryRoutes = new Hono<AppVars>();
 adminInventoryRoutes.use("*", requireAuth);
 
 adminInventoryRoutes.get("/", async (c) => {
-  requirePerm(c.get("user")!, "product.read");
+  requirePerm(c.get("user")!, "inventory.read");
   const db = c.get("db");
   const wh = await db.select().from(warehouses).where(eq(warehouses.code, "MAIN")).limit(1);
   if (!wh[0]) throw new ApiError(500, "config_error", "Chưa có kho MAIN");
@@ -103,7 +103,7 @@ adminInventoryRoutes.get("/", async (c) => {
 });
 
 adminInventoryRoutes.get("/documents", async (c) => {
-  requirePerm(c.get("user")!, "product.read");
+  requirePerm(c.get("user")!, "inventory.read");
   const db = c.get("db");
   const status = c.req.query("status");
   const type = c.req.query("type");
@@ -150,7 +150,7 @@ adminInventoryRoutes.get("/documents", async (c) => {
 });
 
 adminInventoryRoutes.get("/documents/:id", async (c) => {
-  requirePerm(c.get("user")!, "product.read");
+  requirePerm(c.get("user")!, "inventory.read");
   const db = c.get("db");
   const docs = await db
     .select()
@@ -231,7 +231,6 @@ adminInventoryRoutes.get("/documents/:id", async (c) => {
 
 adminInventoryRoutes.post("/documents", async (c) => {
   const user = c.get("user")!;
-  requirePerm(user, "inventory.receive");
   const body = z
     .object({
       type: z.enum(["receipt", "issue", "adjustment"]),
@@ -250,6 +249,14 @@ adminInventoryRoutes.post("/documents", async (c) => {
     })
     .safeParse(await c.req.json());
   if (!body.success) throw new ApiError(400, "validation_error", "Dữ liệu phiếu không hợp lệ");
+
+  const createPermission =
+    body.data.type === "receipt"
+      ? "inventory.receive"
+      : body.data.type === "issue"
+        ? "inventory.issue"
+        : "inventory.adjust.request";
+  requirePerm(user, createPermission);
 
   const db = c.get("db");
 
@@ -309,18 +316,61 @@ adminInventoryRoutes.post("/documents", async (c) => {
   return c.json({ id: doc!.id, code: doc!.code, status: doc!.status }, 201);
 });
 
+adminInventoryRoutes.post("/documents/:id/submit", async (c) => {
+  const user = c.get("user")!;
+  const db = c.get("db");
+  const docs = await db.select().from(inventoryDocuments).where(eq(inventoryDocuments.id, c.req.param("id"))).limit(1);
+  if (!docs[0]) throw new ApiError(404, "not_found", "Không tìm thấy phiếu");
+
+  const submitPermission =
+    docs[0].type === "receipt"
+      ? "inventory.receive"
+      : docs[0].type === "issue"
+        ? "inventory.issue"
+        : "inventory.adjust.request";
+  requirePerm(user, submitPermission);
+  if (docs[0].status !== "draft") {
+    throw new ApiError(409, "invalid_state", "Chỉ có thể gửi phiếu nháp để duyệt");
+  }
+
+  const [doc] = await db
+    .update(inventoryDocuments)
+    .set({ status: "submitted", updatedAt: new Date() })
+    .where(eq(inventoryDocuments.id, docs[0].id))
+    .returning();
+  await db.insert(auditLogs).values({
+    actorAccountId: user.accountId,
+    action: "inventory.submit",
+    resourceType: "inventory_document",
+    resourceId: docs[0].id,
+    beforeRedacted: { code: docs[0].code, status: docs[0].status, type: docs[0].type },
+    requestId: requestId(c),
+  });
+  return c.json({ id: doc!.id, status: doc!.status });
+});
+
 adminInventoryRoutes.post("/documents/:id/approve", async (c) => {
   const user = c.get("user")!;
   requirePerm(user, "inventory.adjust.approve");
   const db = c.get("db");
   const docs = await db.select().from(inventoryDocuments).where(eq(inventoryDocuments.id, c.req.param("id"))).limit(1);
   if (!docs[0]) throw new ApiError(404, "not_found", "Không tìm thấy phiếu");
-  if (docs[0].status !== "draft") throw new ApiError(409, "invalid_state", "Chỉ duyệt phiếu nháp");
+  if (docs[0].status !== "submitted" && docs[0].status !== "draft") {
+    throw new ApiError(409, "invalid_state", "Chỉ duyệt phiếu đang chờ duyệt");
+  }
   const [doc] = await db
     .update(inventoryDocuments)
     .set({ status: "approved", approvedBy: user.accountId, updatedAt: new Date() })
     .where(eq(inventoryDocuments.id, docs[0].id))
     .returning();
+  await db.insert(auditLogs).values({
+    actorAccountId: user.accountId,
+    action: "inventory.approve",
+    resourceType: "inventory_document",
+    resourceId: docs[0].id,
+    beforeRedacted: { code: docs[0].code, status: docs[0].status, type: docs[0].type },
+    requestId: requestId(c),
+  });
   return c.json({ id: doc!.id, status: doc!.status });
 });
 
@@ -349,8 +399,8 @@ adminInventoryRoutes.post("/documents/:id/post", async (c) => {
   const docs = await db.select().from(inventoryDocuments).where(eq(inventoryDocuments.id, c.req.param("id"))).limit(1);
   if (!docs[0]) throw new ApiError(404, "not_found", "Không tìm thấy phiếu");
   if (docs[0].status === "posted") throw new ApiError(409, "already_posted", "Phiếu đã ghi sổ");
-  if (docs[0].status !== "approved" && docs[0].status !== "draft") {
-    throw new ApiError(409, "invalid_state", "Trạng thái phiếu không hợp lệ để ghi sổ");
+  if (docs[0].status !== "approved") {
+    throw new ApiError(409, "invalid_state", "Phiếu phải được duyệt trước khi ghi sổ");
   }
 
   const wh = await db.select().from(warehouses).where(eq(warehouses.code, "MAIN")).limit(1);
@@ -464,8 +514,17 @@ adminInventoryRoutes.delete("/documents/:id", async (c) => {
   if (docs[0].status === "void") throw new ApiError(404, "not_found", "Phiếu đã hủy");
 
   const posted = docs[0].status === "posted";
-  if (posted) requirePerm(user, "inventory.adjust.approve");
-  else requirePerm(user, "inventory.receive");
+  if (posted) {
+    requirePerm(user, "inventory.adjust.approve");
+  } else {
+    const deletePermission =
+      docs[0].type === "receipt"
+        ? "inventory.receive"
+        : docs[0].type === "issue"
+          ? "inventory.issue"
+          : "inventory.adjust.request";
+    requirePerm(user, deletePermission);
+  }
 
   const lines = await db
     .select()

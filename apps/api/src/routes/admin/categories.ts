@@ -26,7 +26,7 @@ adminCategoryRoutes.use("*", requireAuth);
 /** Upload category thumbnail / avatar */
 adminCategoryRoutes.post("/upload", async (c) => {
   const user = c.get("user")!;
-  requirePerm(user, "product.write");
+  requirePerm(user, "category.write");
 
   const body = await c.req.parseBody();
   const file = body["file"];
@@ -166,7 +166,7 @@ function mapCategory(
 }
 
 adminCategoryRoutes.get("/", async (c) => {
-  requirePerm(c.get("user")!, "product.read");
+  requirePerm(c.get("user")!, "category.read");
   const db = c.get("db");
   const status = c.req.query("status"); // active|archived|all
   const all = await db.select().from(categories);
@@ -195,8 +195,35 @@ adminCategoryRoutes.get("/", async (c) => {
   return c.json({ items });
 });
 
-adminCategoryRoutes.get("/:id", async (c) => {
+/** Category options used by product/order/promotion forms. This is not the category management API. */
+adminCategoryRoutes.get("/options", async (c) => {
   requirePerm(c.get("user")!, "product.read");
+  const db = c.get("db");
+  const status = c.req.query("status");
+  const all = await db.select().from(categories);
+  const enrichedAll = enrichTree(
+    all.map((r) => ({ id: r.id, parentId: r.parentId, sortOrder: r.sortOrder, name: r.name })),
+  );
+  const enrichById = Object.fromEntries(enrichedAll.map((e) => [e.id, e]));
+  const orderedAll = sortTreeOrder(enrichedAll);
+  const productCounts = await getSubtreeProductCounts(
+    db,
+    all.map((r) => ({ id: r.id, parentId: r.parentId })),
+  );
+  const items = orderedAll
+    .filter((n) => {
+      const row = all.find((r) => r.id === n.id)!;
+      return !status || status === "all" || row.status === status;
+    })
+    .map((n) => {
+      const row = all.find((r) => r.id === n.id)!;
+      return mapCategory(row, enrichById[n.id]!, productCounts.get(row.id) ?? 0);
+    });
+  return c.json({ items });
+});
+
+adminCategoryRoutes.get("/:id", async (c) => {
+  requirePerm(c.get("user")!, "category.read");
   const db = c.get("db");
   const rows = await db.select().from(categories).where(eq(categories.id, c.req.param("id"))).limit(1);
   if (!rows[0]) throw new ApiError(404, "not_found", "Không tìm thấy danh mục");
@@ -212,7 +239,7 @@ adminCategoryRoutes.get("/:id", async (c) => {
 
 adminCategoryRoutes.post("/", async (c) => {
   const user = c.get("user")!;
-  requirePerm(user, "product.write");
+  requirePerm(user, "category.write");
   const body = upsertSchema.safeParse(await c.req.json());
   if (!body.success) throw new ApiError(400, "validation_error", "Dữ liệu không hợp lệ");
 
@@ -260,7 +287,7 @@ adminCategoryRoutes.post("/", async (c) => {
 
 adminCategoryRoutes.patch("/:id", async (c) => {
   const user = c.get("user")!;
-  requirePerm(user, "product.write");
+  requirePerm(user, "category.write");
   const body = upsertSchema.partial().safeParse(await c.req.json());
   if (!body.success) throw new ApiError(400, "validation_error", "Dữ liệu không hợp lệ");
 
@@ -324,7 +351,7 @@ adminCategoryRoutes.patch("/:id", async (c) => {
 
 adminCategoryRoutes.delete("/:id", async (c) => {
   const user = c.get("user")!;
-  requirePerm(user, "product.write");
+  requirePerm(user, "category.write");
   const db = c.get("db");
   const existing = await db.select().from(categories).where(eq(categories.id, c.req.param("id"))).limit(1);
   if (!existing[0]) throw new ApiError(404, "not_found", "Không tìm thấy danh mục");

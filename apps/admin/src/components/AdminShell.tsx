@@ -62,7 +62,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { adminApi } from "@/lib/api";
+import { adminApi, clearAdminApiCache } from "@/lib/api";
 import { resolveAdminPath, getAdminUrl, ADMIN_ROUTES } from "@/lib/routes";
 import { CategoriesManager } from "@/components/CategoriesManager";
 import { ProductsManager } from "@/components/ProductsManager";
@@ -76,14 +76,21 @@ import { LookbookManager } from "@/components/LookbookManager";
 import { AiKeysManager } from "@/components/AiKeysManager";
 import { OverviewManager } from "@/components/OverviewManager";
 import { SocialCommerceManager, type SocialPage } from "@/components/SocialCommerceManager";
+import { RolesManager } from "@/components/RolesManager";
 
-type Me = { account_id: string; email: string; full_name: string; permissions: string[] };
+type Me = { account_id: string; email: string; full_name: string; employee_code: string | null; avatar_url: string | null; job_title: string | null; role_name: string | null; permissions: string[] };
 
 export function AuthGate() {
   const [me, setMe] = useState<Me | null>(null);
   const [booting, setBooting] = useState(true);
   const [email, setEmail] = useState("admin@elane.local");
-  const [password, setPassword] = useState("ElaneAdmin1!");
+  const [password, setPassword] = useState("Trang1234@");
+
+  const refreshMe = useCallback(async () => {
+    clearAdminApiCache();
+    const next = await adminApi.me();
+    setMe((current) => current && JSON.stringify(current) === JSON.stringify(next) ? current : next);
+  }, []);
 
   useEffect(() => {
     adminApi
@@ -110,7 +117,7 @@ export function AuthGate() {
             e.preventDefault();
             try {
               await adminApi.login(email, password);
-              setMe(await adminApi.me());
+              await refreshMe();
               toast.success("Đăng nhập thành công");
             } catch (err) {
               toast.error(err instanceof Error ? adminErrorMessage(err) : "Đăng nhập thất bại");
@@ -135,6 +142,7 @@ export function AuthGate() {
   return (
     <AdminApp
       me={me}
+      onMeRefresh={refreshMe}
       onLogout={async () => {
         await adminApi.logout().catch(() => {});
         setMe(null);
@@ -183,6 +191,61 @@ const system: NavItem[] = [
   { id: "audit", label: "Nhật ký", icon: ClipboardList },
 ];
 const allItems = [...operations, ...content, ...system];
+
+const modulePermissions: Record<string, string[]> = {
+  overview: ["dashboard.read", "product.read"],
+  orders: ["order.read"],
+  products: ["product.read"],
+  categories: ["category.read"],
+  sizes: ["product.read"],
+  inventory: ["inventory.read"],
+  customers: ["customer.read"],
+  promotions: ["promotion.read"],
+  social: ["channel.read"],
+  elanewoman: ["product.read"],
+  collections: ["content.read", "product.read"],
+  lookbook: ["content.read", "product.read"],
+  journal: ["content.read"],
+  pages: ["content.read"],
+  reviews: ["content.read"],
+  newsletter: ["content.read"],
+  ai_keys: ["settings.read", "settings.write"],
+  reports: ["report.read"],
+  settings: ["settings.read"],
+  roles: ["role.manage", "staff.manage"],
+  audit: ["audit.read"],
+};
+
+const moduleWritePermissions: Record<string, string[]> = {
+  orders: ["order.write"],
+  products: ["product.write"],
+  categories: ["category.write"],
+  sizes: ["product.write"],
+  inventory: ["inventory.receive", "inventory.issue", "inventory.adjust.request"],
+  customers: ["customer.write"],
+  promotions: ["promotion.write"],
+  social: ["channel.write", "content.write"],
+  elanewoman: ["product.write"],
+  collections: ["content.write", "product.write"],
+  lookbook: ["product.write"],
+  journal: ["content.write"],
+  pages: ["content.write"],
+  reviews: ["content.write"],
+  newsletter: ["content.write"],
+  ai_keys: ["settings.write"],
+  settings: ["settings.write"],
+  roles: ["role.manage", "staff.manage"],
+};
+
+function canAccessModule(moduleId: string, permissions: string[]) {
+  if (permissions.includes("*")) return true;
+  return (modulePermissions[moduleId] ?? []).some((permission) => permissions.includes(permission));
+}
+
+function canInteractModule(moduleId: string, permissions: string[]) {
+  if (permissions.includes("*")) return true;
+  return (moduleWritePermissions[moduleId] ?? []).some((permission) => permissions.includes(permission));
+}
 
 const configs: Record<string, ModuleConfig> = {
   orders: {
@@ -487,12 +550,26 @@ configs["categories"] = {
   ],
 };
 
-export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
+export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: () => Promise<void>; onLogout: () => void }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Parse path to active tab, action, subParam
-  const { tabId: routeTabId, action: routeAction, subParam: routeSubParam } = resolveAdminPath(location.pathname);
+  useEffect(() => {
+    const syncPermissions = () => {
+      if (document.visibilityState === "visible") void onMeRefresh().catch(() => undefined);
+    };
+    const interval = window.setInterval(syncPermissions, 10000);
+    window.addEventListener("focus", syncPermissions);
+    document.addEventListener("visibilitychange", syncPermissions);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", syncPermissions);
+      document.removeEventListener("visibilitychange", syncPermissions);
+    };
+  }, [onMeRefresh]);
+
+  // Parse path to active tab, action, subParam, detailId
+  const { tabId: routeTabId, action: routeAction, subParam: routeSubParam, detailId: routeDetailId } = resolveAdminPath(location.pathname);
   const active = routeTabId;
 
   const [query, setQuery] = useState("");
@@ -510,6 +587,7 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
   const socialSubPage = useMemo<SocialPage>(() => {
     if (active !== "social") return "overview";
     if (routeAction === "create") return "add-channel";
+    if (routeAction === "detail") return "posts";
     if (!routeSubParam) return "overview";
     const map: Record<string, SocialPage> = {
       ketnoi: "connect",
@@ -554,6 +632,32 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
 
   const title = allItems.find((item) => item.id === active)?.label ?? "Tổng quan";
   const currentConfig = liveConfigs[active] ?? productConfig;
+  const accessibleModuleIds = useMemo(
+    () => new Set(allItems.filter((item) => canAccessModule(item.id, me.permissions)).map((item) => item.id)),
+    [me.permissions],
+  );
+  const fallbackModule = allItems.find((item) => accessibleModuleIds.has(item.id))?.id ?? "overview";
+
+  useEffect(() => {
+    if (!accessibleModuleIds.has(active)) {
+      toast.error("Bạn không có quyền truy cập mục này");
+      navigate({ to: getAdminUrl(fallbackModule) });
+    }
+  }, [accessibleModuleIds, active, fallbackModule, navigate]);
+
+  useEffect(() => {
+    const writeRoute = routeAction === "create" || routeAction === "edit";
+    const routePermission = active === "social" && routeAction === "create" ? "channel.write" : null;
+    const canWriteRoute = routePermission
+      ? me.permissions.includes("*") || me.permissions.includes(routePermission)
+      : active === "orders" && routeAction === "create"
+        ? (me.permissions.includes("*") || (me.permissions.includes("order.write") && me.permissions.includes("order.customer.read")))
+      : canInteractModule(active, me.permissions);
+    if (writeRoute && !canWriteRoute) {
+      toast.error("Bạn không có quyền thực hiện thao tác này");
+      navigate({ to: getAdminUrl(active) });
+    }
+  }, [active, me.permissions, navigate, routeAction]);
 
   const CUSTOM_MANAGER_TABS = useMemo(
     () =>
@@ -570,6 +674,7 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
         "elanewoman",
         "lookbook",
         "ai_keys",
+        "roles",
       ]),
     [],
   );
@@ -593,12 +698,12 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
   useEffect(() => {
     // Hydrate Phase 1 modules with API data
     Promise.all([
-      adminApi.overview(),
-      adminApi.products({ limit: 20 }),
-      adminApi.inventory(),
-      adminApi.staff(),
-      adminApi.audit(),
-      adminApi.orders().catch(() => ({
+      canAccessModule("overview", me.permissions) ? adminApi.overview() : Promise.resolve(null),
+      canAccessModule("products", me.permissions) ? adminApi.products({ limit: 20 }) : Promise.resolve(null),
+      canAccessModule("inventory", me.permissions) ? adminApi.inventory() : Promise.resolve(null),
+      (me.permissions.includes("*") || me.permissions.includes("staff.manage")) ? adminApi.staff() : Promise.resolve(null),
+      canAccessModule("audit", me.permissions) ? adminApi.audit() : Promise.resolve(null),
+      canAccessModule("orders", me.permissions) ? adminApi.orders().catch(() => ({
         items: [] as Array<{
           id: string;
           order_number: string;
@@ -609,24 +714,26 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
           status: string;
           placed_at: string;
         }>,
-      })),
+      })) : Promise.resolve(null),
     ])
       .then(([overview, products, inventory, staff, audit, orderList]) => {
-        setOrderMeta(
-          Object.fromEntries(
-            orderList.items.map((o) => [
-              o.order_number,
-              {
-                id: o.id,
-                payment_method: o.payment_method,
-                payment_status: o.payment_status ?? "unpaid",
-              },
-            ]),
-          ),
-        );
+        if (orderList) {
+          setOrderMeta(
+            Object.fromEntries(
+              orderList.items.map((o) => [
+                o.order_number,
+                {
+                  id: o.id,
+                  payment_method: o.payment_method,
+                  payment_status: o.payment_status ?? "unpaid",
+                },
+              ]),
+            ),
+          );
+        }
         setLiveConfigs((prev) => {
           const next = { ...prev };
-          if (next.orders) {
+          if (next.orders && orderList) {
             const statusLabel: Record<string, string> = {
               pending: "Chờ xác nhận",
               confirmed: "Đã duyệt",
@@ -664,7 +771,7 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
               ]),
             };
           }
-          if (next.products) {
+          if (next.products && overview && products) {
             next.products = {
               ...next.products,
               metrics: [
@@ -686,7 +793,7 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
               ]),
             };
           }
-          if (next.inventory) {
+          if (next.inventory && overview && inventory) {
             next.inventory = {
               ...next.inventory,
               metrics: [
@@ -704,7 +811,7 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
               ]),
             };
           }
-          if (next.roles) {
+          if (next.roles && staff) {
             next.roles = {
               ...next.roles,
               metrics: [
@@ -722,7 +829,7 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
               ]),
             };
           }
-          if (next.audit) {
+          if (next.audit && audit) {
             next.audit = {
               ...next.audit,
               rows: audit.items.slice(0, 20).map((a) => [
@@ -748,17 +855,25 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
         });
       })
       .catch((e) => toast.error(e instanceof Error ? adminErrorMessage(e) : "Không tải được dữ liệu API"));
-  }, [me.full_name]);
+  }, [me.full_name, me.permissions]);
 
   // Navigate cleanly via URL
   const choose = (id: string) => {
     setMobileOpen(false);
     setQuery("");
+    if (!accessibleModuleIds.has(id)) {
+      toast.error("Bạn không có quyền truy cập mục này");
+      return;
+    }
     const targetUrl = getAdminUrl(id);
     navigate({ to: targetUrl });
   };
 
   const handleOpenCreate = () => {
+    if (!canInteractModule(active, me.permissions)) {
+      toast.error("Bạn chỉ có quyền xem mục này");
+      return;
+    }
     if (active === "products") {
       navigate({ to: "/sanpham/themsanpham" });
     } else if (active === "categories") {
@@ -789,6 +904,14 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
   };
 
   const goInventoryForProduct = (opts?: { productId?: string; productName?: string }) => {
+    if (!accessibleModuleIds.has("inventory")) {
+      toast.error("Bạn không có quyền truy cập kho hàng");
+      return;
+    }
+    if (!me.permissions.includes("*") && !me.permissions.includes("inventory.receive")) {
+      toast.error("Bạn không có quyền tạo phiếu nhập kho");
+      return;
+    }
     if (opts?.productId) {
       setInventorySeed({
         productId: opts.productId,
@@ -804,6 +927,15 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
   };
 
   const goInventoryWithSeed = (seed: InventorySeed) => {
+    if (!accessibleModuleIds.has("inventory")) {
+      toast.error("Bạn không có quyền truy cập kho hàng");
+      return;
+    }
+    const requiredPermission = seed.docType === "issue" ? "inventory.issue" : seed.docType === "adjustment" ? "inventory.adjust.request" : "inventory.receive";
+    if (!me.permissions.includes("*") && !me.permissions.includes(requiredPermission)) {
+      toast.error("Bạn không có quyền tạo loại phiếu kho này");
+      return;
+    }
     setInventorySeed(seed);
     setMobileOpen(false);
     setQuery("");
@@ -816,11 +948,12 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] text-slate-900">
+    <div className="admin-app min-h-screen bg-[#f8f9fa] text-slate-900">
       <Sidebar
         active={active}
         onChoose={choose}
         me={me}
+        allowedIds={accessibleModuleIds}
         onLogout={onLogout}
         socialPage={socialSubPage}
         onSocialPageChange={handleSocialPageChange}
@@ -833,6 +966,7 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
         active={active}
         onChoose={choose}
         me={me}
+        allowedIds={accessibleModuleIds}
         onLogout={onLogout}
         socialPage={socialSubPage}
         onSocialPageChange={handleSocialPageChange}
@@ -887,16 +1021,16 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
                 >
                   <div className="size-9 rounded-full overflow-hidden border border-slate-200 shrink-0 bg-slate-100">
                     <img
-                      src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-                      alt={me.full_name || "Rayan Anderson"}
+                      src={me.avatar_url ?? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"}
+                      alt={me.full_name || "Tài khoản quản trị"}
                       className="size-full object-cover"
                     />
                   </div>
                   <div className="hidden sm:block min-w-0 leading-tight">
                     <p className="text-sm font-semibold text-slate-900 truncate">
-                      {me.full_name || "Rayan Anderson"}
+                      {me.full_name || "Tài khoản quản trị"}
                     </p>
-                    <p className="text-xs text-slate-400 truncate">Chủ cửa hàng</p>
+                    <p className="text-xs text-slate-400 truncate">{me.role_name || me.job_title || "Nhân viên"}</p>
                   </div>
                   <ChevronDown className="size-3.5 text-slate-400 hidden sm:block" />
                 </button>
@@ -936,40 +1070,49 @@ export function AdminApp({ me, onLogout }: { me: Me; onLogout: () => void }) {
             />
           ) : active === "orders" ? (
             <OrdersManager
+              permissions={me.permissions}
               onNavigateToInventory={goInventoryWithSeed}
               targetOrderNumber={routeSubParam ?? orderSeed}
               onOrderConsumed={() => setOrderSeed(null)}
             />
           ) : active === "categories" ? (
-            <CategoriesManager />
+            <CategoriesManager permissions={me.permissions} />
           ) : active === "products" ? (
             <ProductsManager
+              permissions={me.permissions}
               onNavigate={(section, opts) => {
                 if (section === "inventory") goInventoryForProduct(opts);
                 else choose(section);
               }}
             />
           ) : active === "inventory" ? (
-            <InventoryManager seed={inventorySeed} onSeedConsumed={() => setInventorySeed(null)} />
+            <InventoryManager
+              permissions={me.permissions}
+              seed={inventorySeed}
+              onSeedConsumed={() => setInventorySeed(null)}
+            />
           ) : active === "sizes" ? (
-            <SizesManager />
+            <SizesManager permissions={me.permissions} />
           ) : active === "customers" ? (
             <CustomersManager
+              permissions={me.permissions}
               onNavigateToOrder={(orderNumber) => {
                 setOrderSeed(orderNumber);
                 navigate({ to: `/donhang/${orderNumber}` });
               }}
             />
           ) : active === "promotions" ? (
-            <DiscountCodesManager />
+            <DiscountCodesManager permissions={me.permissions} />
           ) : active === "social" ? (
-            <SocialCommerceManager page={socialSubPage} onPageChange={handleSocialPageChange} />
+            <SocialCommerceManager permissions={me.permissions} page={socialSubPage} onPageChange={handleSocialPageChange} initialPostId={routeDetailId} />
           ) : active === "elanewoman" ? (
-            <ElaneWomanManager />
+            <ElaneWomanManager permissions={me.permissions} />
           ) : active === "lookbook" ? (
-            <LookbookManager />
+            <LookbookManager permissions={me.permissions} />
           ) : active === "ai_keys" ? (
             <AiKeysManager />
+          ) : active === "roles" ? (
+            <RolesManager permissions={me.permissions} onPermissionsChanged={onMeRefresh} />
           ) : currentConfig ? (
             <ModulePage
               config={currentConfig}
@@ -1020,6 +1163,7 @@ function Sidebar({
   className,
   close,
   me,
+  allowedIds,
   onLogout,
   socialPage,
   onSocialPageChange,
@@ -1029,6 +1173,7 @@ function Sidebar({
   className?: string;
   close?: () => void;
   me: Me;
+  allowedIds: Set<string>;
   onLogout: () => void;
   socialPage?: SocialPage;
   onSocialPageChange?: (p: SocialPage) => void;
@@ -1041,7 +1186,7 @@ function Sidebar({
     .toUpperCase();
 
   return (
-    <aside className={cn("flex h-screen min-h-0 flex-col overflow-hidden border-r border-slate-200/90 bg-white p-4", className)}>
+    <aside className={cn("admin-sidebar flex h-screen min-h-0 flex-col overflow-hidden border-r border-slate-200/90 bg-white p-4", className)}>
       {/* Brand Header matching mockup */}
       <div className="flex items-center justify-between px-2 pt-1 pb-3">
         <a
@@ -1074,13 +1219,14 @@ function Sidebar({
         <NavGroup
           label="Vận hành"
           items={operations}
+          allowedIds={allowedIds}
           active={active}
           choose={onChoose}
           socialPage={socialPage}
           onSocialPageChange={onSocialPageChange}
         />
-        <NavGroup label="Thư viện" items={content} active={active} choose={onChoose} />
-        <NavGroup label="Hệ thống" items={system} active={active} choose={onChoose} />
+        <NavGroup label="Thư viện" items={content} allowedIds={allowedIds} active={active} choose={onChoose} />
+        <NavGroup label="Hệ thống" items={system} allowedIds={allowedIds} active={active} choose={onChoose} />
       </nav>
 
       {/* Bottom Profile */}
@@ -1088,13 +1234,15 @@ function Sidebar({
         <button
           className="flex min-w-0 flex-1 items-center gap-2.5 text-left hover:bg-slate-50 p-1.5 rounded-xs transition-colors cursor-pointer"
           onClick={() => onChoose("roles")}
+          disabled={!allowedIds.has("roles")}
+          aria-hidden={!allowedIds.has("roles")}
         >
-          <div className="size-8 rounded-full bg-slate-900 font-sans text-sm text-white grid place-items-center">
-            {initials || "EL"}
+          <div className="size-8 overflow-hidden rounded-full bg-slate-900 font-sans text-sm text-white grid place-items-center">
+            {me.avatar_url ? <img src={me.avatar_url} alt={me.full_name} className="size-full object-cover" /> : initials || "EL"}
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-slate-800">{me.full_name}</p>
-            <p className="truncate text-xs text-slate-400">Chủ cửa hàng</p>
+            <p className="truncate text-xs text-slate-400">{me.role_name || me.job_title || "Nhân viên"}</p>
           </div>
         </button>
         <Button variant="ghost" size="icon" aria-label="Đăng xuất" onClick={onLogout} className="size-8 text-slate-400 hover:text-rose-600 rounded-xs">
@@ -1108,6 +1256,7 @@ function Sidebar({
 function NavGroup({
   label,
   items,
+  allowedIds,
   active,
   choose,
   socialPage,
@@ -1115,16 +1264,19 @@ function NavGroup({
 }: {
   label: string;
   items: NavItem[];
+  allowedIds: Set<string>;
   active: string;
   choose: (id: string) => void;
   socialPage?: SocialPage;
   onSocialPageChange?: (p: SocialPage) => void;
 }) {
+  const visibleItems = items.filter((item) => allowedIds.has(item.id));
+  if (visibleItems.length === 0) return null;
   return (
     <div className="mb-4">
       <p className="mb-1.5 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</p>
       <div className="space-y-1">
-        {items.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const href = getAdminUrl(item.id);
           const isCurrent = active === item.id;
@@ -1137,7 +1289,7 @@ function NavGroup({
                   choose(item.id);
                 }}
                 className={cn(
-                  "group flex w-full items-center gap-3 rounded-xs px-3 py-2 text-sm font-medium transition-all cursor-pointer",
+                  "admin-sidebar-item group flex w-full items-center gap-3 rounded-xs px-3 py-2 text-sm font-medium transition-all cursor-pointer",
                   isCurrent
                     ? "bg-[#f4f3ff] text-[#6941c6] font-semibold shadow-2xs"
                     : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900",

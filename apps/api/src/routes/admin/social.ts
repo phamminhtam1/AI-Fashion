@@ -16,6 +16,7 @@ import { ApiError } from "../../lib/errors.js";
 import { decryptApiKey, encryptApiKey } from "../../lib/crypto-keys.js";
 import { env } from "../../env.js";
 import { AiKeyManagerService } from "../../modules/ai/keys/ai-key-manager.service.js";
+import { requirePerm } from "../../lib/session.js";
 
 async function graph<T>(path: string, token: string, init?: RequestInit, version = env.metaGraphVersion): Promise<T> {
   const separator = path.includes("?") ? "&" : "?";
@@ -46,20 +47,11 @@ async function loadMetaConfig(db: AppVars["Variables"]["db"], requestUrl?: strin
 
 async function runSocialAi(db: AppVars["Variables"]["db"], system: string, user: string) {
   const manager = new AiKeyManagerService(db);
-  // Chỉ lấy key thuộc nhà cung cấp OPENAI từ hệ thống quản lý khóa AI
-  const key = await manager.acquireActiveKey("openai");
+  const key = await manager.acquireActiveKey("kie");
   if (!key) {
-    throw new ApiError(
-      409,
-      "missing_ai_key",
-      "Không tìm thấy OpenAI API key đang hoạt động trong Quản lý khóa AI. Vui lòng thêm hoặc kích hoạt khóa OpenAI."
-    );
+    throw new ApiError(409, "missing_ai_key", "Không tìm thấy KIE API key đang hoạt động trong Quản lý khóa AI. Vui lòng thêm hoặc kích hoạt khóa KIE.");
   }
-
-  const isCodex = key.rawKey.startsWith("sk-codex-");
-  const baseUrl = env.openaiBaseUrl || (isCodex ? "https://api.tuongtacgpt.click/v1" : "https://api.openai.com/v1");
-  const model = isCodex ? (env.socialAiModel || "gpt-5.6-sol-max") : (process.env.SOCIAL_AI_MODEL || "gpt-4o-mini");
-  const endpoint = `${baseUrl.replace(/\/+$/, "")}/chat/completions`;
+  const endpoint = `${env.kieBaseUrl.replace(/\/+$/, "")}/openai/v1/responses`;
 
   try {
     const controller = new AbortController();
@@ -68,11 +60,7 @@ async function runSocialAi(db: AppVars["Variables"]["db"], system: string, user:
     const response = await fetch(endpoint, {
       method: "POST",
       headers: { Authorization: `Bearer ${key.rawKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model,
-        temperature: 0.7,
-        messages: [{ role: "system", content: system }, { role: "user", content: user }],
-      }),
+      body: JSON.stringify({ model: env.kieContentModel, stream: false, reasoning: { effort: "none" }, input: [{ role: "user", content: [{ type: "input_text", text: `${system}\n\n${user}` }] }] }),
       signal: controller.signal,
     });
     clearTimeout(timeout);
@@ -83,13 +71,19 @@ async function runSocialAi(db: AppVars["Variables"]["db"], system: string, user:
       throw new Error(errMsg);
     }
     await manager.recordSuccess(key.id);
-    const content = String(data?.choices?.[0]?.message?.content || "").trim();
+    const content = (data?.output || [])
+      .flatMap((item: any) => item?.content || [])
+      .filter((part: any) => part?.type === "output_text" || part?.type === "text")
+      .map((part: any) => String(part?.text || ""))
+      .join("")
+      .trim();
+    if (!content) throw new Error("KIE trả về nội dung rỗng");
     return {
       content,
       keyUsed: {
         id: key.id,
         label: key.label,
-        provider: "OPENAI",
+        provider: "KIE",
         creditsRemaining: key.creditsRemaining,
       },
     };
@@ -100,35 +94,148 @@ async function runSocialAi(db: AppVars["Variables"]["db"], system: string, user:
   }
 }
 
+function isVideoUrl(url: string): boolean {
+  return /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url);
+}
+
+async function waitForContainerReady(
+  containerId: string,
+  token: string,
+  version: string,
+  maxAttempts = 15,
+  delayMs = 2000
+): Promise<void> {
+  for (let i = 0; i < maxAttempts; i++) {
+    const res = await graph<{ status_code?: string; status?: string }>(
+      `/${containerId}?fields=status_code,status`,
+      token,
+      undefined,
+      version
+    ).catch(() => null);
+
+    if (!res || !res.status_code || res.status_code === "FINISHED") {
+      return;
+    }
+    if (res.status_code === "ERROR") {
+      throw new Error(`Xử lý media trên Instagram thất bại: ${res.status || "Lỗi xử lý file từ Meta"}`);
+    }
+    if (res.status_code === "IN_PROGRESS") {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    } else {
+      return;
+    }
+  }
+}
+
 async function publishContent(db: AppVars["Variables"]["db"], contentId: string) {
   const content = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, contentId)).limit(1))[0];
   if (!content) throw new Error("Không tìm thấy nội dung");
   if (!content.connectionId) throw new Error("Nội dung chưa gắn tài khoản Instagram");
   const connection = (await db.select().from(instagramConnections).where(eq(instagramConnections.id, content.connectionId)).limit(1))[0];
   if (!connection || connection.status !== "active") throw new Error("Kết nối Instagram không hoạt động");
-  const mediaUrl = content.mediaUrls[0];
-  if (!mediaUrl) throw new Error("Cần ít nhất một URL ảnh hoặc video công khai");
+
+  const rawUrls = Array.isArray(content.mediaUrls) ? content.mediaUrls : [];
+  const mediaUrls = rawUrls.filter((u): u is string => typeof u === "string" && u.trim().length > 0);
+  if (!mediaUrls.length) throw new Error("Cần ít nhất một URL ảnh hoặc video công khai");
+
   const token = decryptApiKey(connection.encryptedAccessToken);
   const meta = await loadMetaConfig(db);
   await db.update(socialContentItems).set({ status: "publishing", lastError: null, updatedAt: new Date() }).where(eq(socialContentItems.id, content.id));
+
   try {
-    const params = new URLSearchParams({ caption: content.caption });
+    let creationId: string;
+    const isCarousel = mediaUrls.length > 1 && content.mediaType !== "REELS";
+
     if (content.mediaType === "REELS") {
-      params.set("media_type", "REELS");
-      params.set("video_url", mediaUrl);
+      const params = new URLSearchParams({ caption: content.caption, media_type: "REELS", video_url: mediaUrls[0] });
+      const container = await graph<{ id: string }>(`/${connection.instagramUserId}/media?${params}`, token, { method: "POST" }, meta.graphVersion);
+      await waitForContainerReady(container.id, token, meta.graphVersion);
+      creationId = container.id;
+    } else if (isCarousel) {
+      // Instagram Carousel: hỗ trợ từ 2 đến tối đa 10 ảnh / video
+      const validUrls = mediaUrls.slice(0, 10);
+      const childIds: string[] = [];
+
+      for (const url of validUrls) {
+        const isVideo = isVideoUrl(url);
+        const itemParams = new URLSearchParams({ is_carousel_item: "true" });
+        if (isVideo) {
+          itemParams.set("media_type", "VIDEO");
+          itemParams.set("video_url", url);
+        } else {
+          itemParams.set("image_url", url);
+        }
+        const itemContainer = await graph<{ id: string }>(
+          `/${connection.instagramUserId}/media?${itemParams}`,
+          token,
+          { method: "POST" },
+          meta.graphVersion
+        );
+        if (isVideo) {
+          await waitForContainerReady(itemContainer.id, token, meta.graphVersion);
+        }
+        childIds.push(itemContainer.id);
+      }
+
+      const carouselParams = new URLSearchParams({
+        media_type: "CAROUSEL",
+        children: childIds.join(","),
+        caption: content.caption,
+      });
+      const carouselContainer = await graph<{ id: string }>(
+        `/${connection.instagramUserId}/media?${carouselParams}`,
+        token,
+        { method: "POST" },
+        meta.graphVersion
+      );
+      await waitForContainerReady(carouselContainer.id, token, meta.graphVersion);
+      creationId = carouselContainer.id;
     } else {
-      params.set("image_url", mediaUrl);
+      const singleUrl = mediaUrls[0];
+      const isVideo = isVideoUrl(singleUrl);
+      const params = new URLSearchParams({ caption: content.caption });
+      if (isVideo) {
+        params.set("media_type", "REELS");
+        params.set("video_url", singleUrl);
+      } else {
+        params.set("image_url", singleUrl);
+      }
+      const container = await graph<{ id: string }>(`/${connection.instagramUserId}/media?${params}`, token, { method: "POST" }, meta.graphVersion);
+      if (isVideo) {
+        await waitForContainerReady(container.id, token, meta.graphVersion);
+      }
+      creationId = container.id;
     }
-    const container = await graph<{ id: string }>(`/${connection.instagramUserId}/media?${params}`, token, { method: "POST" }, meta.graphVersion);
-    const published = await graph<{ id: string }>(`/${connection.instagramUserId}/media_publish?creation_id=${encodeURIComponent(container.id)}`, token, { method: "POST" }, meta.graphVersion);
-    const detail: { permalink?: string } = await graph<{ permalink?: string }>(`/${published.id}?fields=permalink`, token, undefined, meta.graphVersion).catch(() => ({}));
+
+    const published = await graph<{ id: string }>(
+      `/${connection.instagramUserId}/media_publish?creation_id=${encodeURIComponent(creationId)}`,
+      token,
+      { method: "POST" },
+      meta.graphVersion
+    );
+    const detail: { permalink?: string } = await graph<{ permalink?: string }>(
+      `/${published.id}?fields=permalink`,
+      token,
+      undefined,
+      meta.graphVersion
+    ).catch(() => ({}));
+
     await db.update(socialContentItems).set({
-      status: "published", externalPostId: published.id, permalink: detail.permalink ?? null,
-      publishedAt: new Date(), updatedAt: new Date(),
+      status: "published",
+      mediaType: isCarousel ? "CAROUSEL" : content.mediaType,
+      externalPostId: published.id,
+      permalink: detail.permalink ?? null,
+      publishedAt: new Date(),
+      updatedAt: new Date(),
     }).where(eq(socialContentItems.id, content.id));
+
     return published.id;
   } catch (error) {
-    await db.update(socialContentItems).set({ status: "failed", lastError: error instanceof Error ? error.message : String(error), updatedAt: new Date() }).where(eq(socialContentItems.id, content.id));
+    await db.update(socialContentItems).set({
+      status: "failed",
+      lastError: error instanceof Error ? error.message : String(error),
+      updatedAt: new Date(),
+    }).where(eq(socialContentItems.id, content.id));
     throw error;
   }
 }
@@ -148,6 +255,7 @@ adminSocialRoutes.use("*", async (c, next) => {
 });
 
 adminSocialRoutes.get("/overview", async (c) => {
+  requirePerm(c.get("user")!, "channel.read");
   const db = c.get("db");
   const [connections, contentRows, interactions, metrics, staffRows] = await Promise.all([
     db.select().from(instagramConnections).orderBy(desc(instagramConnections.createdAt)),
@@ -162,7 +270,7 @@ adminSocialRoutes.get("/overview", async (c) => {
     if (s.accountId) staffMap.set(s.accountId, s.fullName);
   }
 
-  const metricsMap = new Map<string, { impressions: number; reach: number; likes: number; comments: number; saves: number; shares: number }>();
+  const metricsMap = new Map<string, { impressions: number; reach: number; likes: number; comments: number; saves: number; shares: number; capturedAt?: Date }>();
   for (const m of metrics) {
     const cur = metricsMap.get(m.contentId) || { impressions: 0, reach: 0, likes: 0, comments: 0, saves: 0, shares: 0 };
     cur.impressions = Math.max(cur.impressions, m.impressions);
@@ -171,7 +279,82 @@ adminSocialRoutes.get("/overview", async (c) => {
     cur.comments = Math.max(cur.comments, m.comments);
     cur.saves = Math.max(cur.saves, m.saves);
     cur.shares = Math.max(cur.shares, m.shares);
+    if (!cur.capturedAt || (m.capturedAt && m.capturedAt > cur.capturedAt)) {
+      cur.capturedAt = m.capturedAt;
+    }
     metricsMap.set(m.contentId, cur);
+  }
+
+  // Đồng bộ live metrics từ Meta Graph API cho các bài viết đã xuất bản
+  const isRefresh = Boolean(c.req.query("refresh"));
+  const publishedItems = contentRows.filter((item) => item.status === "published" && item.connectionId && item.externalPostId);
+
+  if (publishedItems.length > 0) {
+    const meta = await loadMetaConfig(db, c.req.url).catch(() => null);
+    const connMap = new Map(connections.map((conn) => [conn.id, conn]));
+    const now = Date.now();
+
+    await Promise.allSettled(
+      publishedItems.map(async (item) => {
+        const existing = metricsMap.get(item.id);
+        const isStale = !existing?.capturedAt || (now - new Date(existing.capturedAt).getTime()) > 5 * 60 * 1000;
+        if (!isRefresh && !isStale) return;
+
+        const connection = connMap.get(item.connectionId!);
+        if (!connection || connection.status !== "active") return;
+
+        try {
+          const token = decryptApiKey(connection.encryptedAccessToken);
+          const version = meta?.graphVersion || env.metaGraphVersion;
+          const base = await graph<{ like_count?: number; comments_count?: number }>(
+            `/${item.externalPostId}?fields=like_count,comments_count`,
+            token,
+            undefined,
+            version
+          );
+          const insight = await graph<{ data?: Array<{ name: string; values?: Array<{ value: number }>; total_value?: { value: number } }> }>(
+            `/${item.externalPostId}/insights?metric=reach,impressions,saved,shares`,
+            token,
+            undefined,
+            version
+          ).catch(() => ({ data: [] }));
+
+          const metricVal = (name: string) => {
+            const row = insight.data?.find((i) => i.name === name);
+            return Number(row?.total_value?.value ?? row?.values?.[0]?.value ?? 0);
+          };
+
+          const impressions = metricVal("impressions");
+          const reach = metricVal("reach");
+          const likes = Number(base.like_count ?? 0);
+          const comments = Number(base.comments_count ?? 0);
+          const saves = metricVal("saved");
+          const shares = metricVal("shares");
+
+          const [snapshot] = await db.insert(socialMetricSnapshots).values({
+            contentId: item.id,
+            impressions,
+            reach,
+            likes,
+            comments,
+            saves,
+            shares,
+          }).returning();
+
+          metricsMap.set(item.id, {
+            impressions,
+            reach,
+            likes,
+            comments,
+            saves,
+            shares,
+            capturedAt: snapshot?.capturedAt || new Date(),
+          });
+        } catch (err) {
+          console.warn(`Could not sync live metrics for post ${item.id}:`, err);
+        }
+      })
+    );
   }
 
   const enrichedContent = contentRows.map((item) => {
@@ -181,10 +364,13 @@ adminSocialRoutes.get("/overview", async (c) => {
       creatorName: item.createdById ? (staffMap.get(item.createdById) || "Quản trị viên") : "ÉLANE Admin",
       approvedByName: item.approvedById ? (staffMap.get(item.approvedById) || "Quản lý") : null,
       views: m ? m.reach || m.impressions : 0,
+      reach: m ? m.reach : 0,
+      impressions: m ? m.impressions : 0,
       likes: m ? m.likes : 0,
       comments: m ? m.comments : 0,
       saves: m ? m.saves : 0,
       shares: m ? m.shares : 0,
+      lastSyncedAt: m?.capturedAt ? m.capturedAt.toISOString() : null,
     };
   });
 
@@ -214,6 +400,7 @@ adminSocialRoutes.get("/overview", async (c) => {
 });
 
 adminSocialRoutes.get("/settings", async (c) => {
+  requirePerm(c.get("user")!, "channel.read");
   const db = c.get("db");
   const row = (await db.select().from(socialPlatformConfigs).where(eq(socialPlatformConfigs.provider, "instagram")).limit(1))[0];
   const origin = new URL(c.req.url).origin;
@@ -229,6 +416,7 @@ adminSocialRoutes.get("/settings", async (c) => {
 });
 
 adminSocialRoutes.put("/settings", async (c) => {
+  requirePerm(c.get("user")!, "channel.write");
   const parsed = z.object({
     appId: z.string().min(3), appSecret: z.string().optional(), webhookVerifyToken: z.string().optional(),
     graphVersion: z.string().regex(/^v\d+\.\d+$/).default("v23.0"), redirectUri: z.string().url().optional().nullable(),
@@ -251,6 +439,7 @@ adminSocialRoutes.put("/settings", async (c) => {
 });
 
 adminSocialRoutes.get("/instagram/connect-url", async (c) => {
+  requirePerm(c.get("user")!, "channel.write");
   const meta = await loadMetaConfig(c.get("db"), c.req.url);
   if (!meta.appId || !meta.appSecret) throw new ApiError(409, "meta_not_configured", "Hãy cấu hình Meta App trong trang Kênh bán hàng trước");
   const user = c.get("user")!;
@@ -388,7 +577,7 @@ const contentSchema = z.object({
   connectionId: z.string().uuid().nullable().optional(),
   title: z.string().min(1),
   caption: z.string().default(""),
-  mediaType: z.enum(["IMAGE", "REELS"]).default("IMAGE"),
+  mediaType: z.enum(["IMAGE", "CAROUSEL", "REELS"]).default("IMAGE"),
   mediaUrls: z.array(z.string()).default([]),
   source: z.enum(["user", "ai", "ai_assisted", "manual"]).default("user"),
   campaignCode: z.string().optional().nullable(),
@@ -398,19 +587,25 @@ const contentSchema = z.object({
 });
 
 adminSocialRoutes.post("/content", async (c) => {
+  requirePerm(c.get("user")!, "content.write");
   const parsed = contentSchema.safeParse(await c.req.json().catch(() => ({})));
   if (!parsed.success) throw new ApiError(400, "invalid_input", "Nội dung không hợp lệ", parsed.error.flatten().fieldErrors as any);
-  const [row] = await c.get("db").insert(socialContentItems).values({ ...parsed.data, createdById: c.get("user")!.accountId }).returning();
+  const data = parsed.data;
+  if (data.mediaType === "IMAGE" && data.mediaUrls.length > 1) {
+    data.mediaType = "CAROUSEL";
+  }
+  const [row] = await c.get("db").insert(socialContentItems).values({ ...data, createdById: c.get("user")!.accountId }).returning();
   return c.json(row, 201);
 });
 
 adminSocialRoutes.get("/ai-key-status", async (c) => {
+  requirePerm(c.get("user")!, "content.read");
   const manager = new AiKeyManagerService(c.get("db"));
-  const key = await manager.acquireActiveKey("openai");
+  const key = await manager.acquireActiveKey("kie");
   if (!key) {
     return c.json({
       active: false,
-      message: "Chưa có khóa OpenAI nào đang hoạt động trong Quản lý khóa AI",
+      message: "Chưa có khóa KIE nào đang hoạt động trong Quản lý khóa AI",
     });
   }
   return c.json({
@@ -418,13 +613,14 @@ adminSocialRoutes.get("/ai-key-status", async (c) => {
     key: {
       id: key.id,
       label: key.label,
-      provider: "OPENAI",
+      provider: "KIE",
       creditsRemaining: key.creditsRemaining,
     },
   });
 });
 
 adminSocialRoutes.post("/content/generate", async (c) => {
+  requirePerm(c.get("user")!, "content.write");
   const body = z
     .object({
       brief: z.string().min(3),
@@ -446,8 +642,8 @@ adminSocialRoutes.post("/content/generate", async (c) => {
     })
     .parse(await c.req.json());
   const manager = new AiKeyManagerService(c.get("db"));
-  const key = await manager.acquireActiveKey("openai");
-  if (!key) throw new ApiError(409, "missing_ai_key", "Không tìm thấy OpenAI API key đang hoạt động trong Quản lý khóa AI.");
+  const key = await manager.acquireActiveKey("kie");
+  if (!key) throw new ApiError(409, "missing_ai_key", "Không tìm thấy KIE API key đang hoạt động trong Quản lý khóa AI.");
 
   const channels = body.channels?.length ? body.channels : ["facebook", "instagram", "tiktok"];
   const products = body.products?.length ? body.products : [{
@@ -461,9 +657,14 @@ adminSocialRoutes.post("/content/generate", async (c) => {
   }];
   const objectiveMap: Record<string, "awareness" | "engagement" | "conversion" | "launch"> = {
     "Nhận diện thương hiệu": "awareness",
+    "Giới thiệu sản phẩm": "awareness",
+    "Khuyến mãi": "conversion",
+    "Bộ sưu tập": "launch",
+    "Kiến thức thời trang": "awareness",
     "Tăng tương tác": "engagement",
     "Thúc đẩy bán hàng": "conversion",
     "Ra mắt sản phẩm": "launch",
+    "Khác": "engagement",
   };
   const jobId = `content-${Date.now()}-${randomUUID().slice(0, 8)}`;
 
@@ -505,7 +706,7 @@ adminSocialRoutes.post("/content/generate", async (c) => {
       jobId,
       review: result.review,
       productBrief: result.product_brief,
-      keyUsed: { id: key.id, label: key.label, provider: "OPENAI", creditsRemaining: key.creditsRemaining },
+      keyUsed: { id: key.id, label: key.label, provider: "KIE", creditsRemaining: key.creditsRemaining },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -514,13 +715,21 @@ adminSocialRoutes.post("/content/generate", async (c) => {
 });
 
 adminSocialRoutes.patch("/content/:id", async (c) => {
+  requirePerm(c.get("user")!, "content.write");
   const parsed = contentSchema.partial().safeParse(await c.req.json().catch(() => ({})));
   if (!parsed.success) throw new ApiError(400, "invalid_input", "Nội dung cập nhật không hợp lệ");
-  const [row] = await c.get("db").update(socialContentItems).set({ ...parsed.data, updatedAt: new Date() }).where(eq(socialContentItems.id, c.req.param("id"))).returning();
+  const data = { ...parsed.data };
+  if (data.mediaUrls && data.mediaUrls.length > 1 && (!data.mediaType || data.mediaType === "IMAGE")) {
+    data.mediaType = "CAROUSEL";
+  } else if (data.mediaUrls && data.mediaUrls.length <= 1 && data.mediaType === "CAROUSEL") {
+    data.mediaType = "IMAGE";
+  }
+  const [row] = await c.get("db").update(socialContentItems).set({ ...data, updatedAt: new Date() }).where(eq(socialContentItems.id, c.req.param("id"))).returning();
   return c.json(row);
 });
 
 adminSocialRoutes.post("/content/:id/approve", async (c) => {
+  requirePerm(c.get("user")!, "content.publish");
   const body = z.object({ scheduledAt: z.string().datetime().optional().nullable(), publishNow: z.boolean().default(false) }).parse(await c.req.json().catch(() => ({})));
   const now = new Date();
   const status = body.publishNow ? "approved" : body.scheduledAt ? "scheduled" : "approved";
@@ -530,16 +739,82 @@ adminSocialRoutes.post("/content/:id/approve", async (c) => {
   return c.json((await c.get("db").select().from(socialContentItems).where(eq(socialContentItems.id, row.id)).limit(1))[0]);
 });
 
-adminSocialRoutes.delete("/content/:id", async (c) => {
+adminSocialRoutes.post("/content/:id/unapprove", async (c) => {
+  requirePerm(c.get("user")!, "content.publish");
   const id = c.req.param("id");
   const db = c.get("db");
   const existing = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
   if (!existing) throw new ApiError(404, "not_found", "Không tìm thấy nội dung");
+  if (existing.status !== "approved") throw new ApiError(409, "invalid_state", "Chỉ có thể hủy phê duyệt bài chưa đăng");
+  const [updated] = await db.update(socialContentItems).set({
+    status: "pending",
+    approvedAt: null,
+    approvedById: null,
+    scheduledAt: null,
+    updatedAt: new Date(),
+  }).where(eq(socialContentItems.id, id)).returning();
+  return c.json(updated);
+});
+
+adminSocialRoutes.delete("/content/:id", async (c) => {
+  requirePerm(c.get("user")!, "content.write");
+  const id = c.req.param("id");
+  const force = c.req.query("force") === "true";
+  const db = c.get("db");
+  const existing = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
+  if (!existing) throw new ApiError(404, "not_found", "Không tìm thấy nội dung");
+
+  let deletedOnInstagram = false;
+  let instagramError: string | null = null;
+
+  if (existing.externalPostId && existing.externalPostId.trim().length > 0) {
+    let connection = existing.connectionId
+      ? (await db.select().from(instagramConnections).where(eq(instagramConnections.id, existing.connectionId)).limit(1))[0]
+      : null;
+
+    if (!connection || connection.status !== "active") {
+      connection = (await db.select().from(instagramConnections).where(eq(instagramConnections.status, "active")).limit(1))[0];
+    }
+
+    // Thử gọi Meta Graph API xóa bài (nếu được hỗ trợ)
+    if (connection && connection.status === "active") {
+      try {
+        const token = decryptApiKey(connection.encryptedAccessToken);
+        const meta = await loadMetaConfig(db, c.req.url);
+        const res = await graph<{ success?: boolean }>(
+          `/${existing.externalPostId}`,
+          token,
+          { method: "DELETE" },
+          meta.graphVersion
+        );
+        deletedOnInstagram = Boolean(res?.success ?? true);
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        if (msg.includes("does not exist") || msg.includes("Object with ID")) {
+          deletedOnInstagram = true;
+        } else {
+          instagramError = msg;
+          console.warn(`[Delete Post] Meta API không hỗ trợ xóa bài ${existing.externalPostId} qua API:`, instagramError);
+        }
+      }
+    }
+  }
+
+  await db.delete(socialMetricSnapshots).where(eq(socialMetricSnapshots.contentId, id)).catch(() => {});
+  await db.delete(socialInteractions).where(eq(socialInteractions.contentId, id)).catch(() => {});
   await db.delete(socialContentItems).where(eq(socialContentItems.id, id));
-  return c.json({ ok: true, id });
+
+  return c.json({
+    ok: true,
+    id,
+    deletedOnInstagram,
+    instagramError,
+    externalPostId: existing.externalPostId || null,
+  });
 });
 
 adminSocialRoutes.post("/content/:id/duplicate", async (c) => {
+  requirePerm(c.get("user")!, "content.write");
   const id = c.req.param("id");
   const db = c.get("db");
   const existing = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
@@ -560,6 +835,7 @@ adminSocialRoutes.post("/content/:id/duplicate", async (c) => {
 });
 
 adminSocialRoutes.post("/content/:id/send-review", async (c) => {
+  requirePerm(c.get("user")!, "content.write");
   const id = c.req.param("id");
   const db = c.get("db");
   const existing = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
@@ -573,6 +849,7 @@ adminSocialRoutes.post("/content/:id/send-review", async (c) => {
 });
 
 adminSocialRoutes.post("/content/:id/reject", async (c) => {
+  requirePerm(c.get("user")!, "content.write");
   const id = c.req.param("id");
   const body = await c.req.json().catch(() => ({}));
   const note = typeof body?.note === "string" && body.note.trim() ? body.note.trim() : "Bị từ chối duyệt";
@@ -588,6 +865,7 @@ adminSocialRoutes.post("/content/:id/reject", async (c) => {
 });
 
 adminSocialRoutes.post("/content/:id/request-changes", async (c) => {
+  requirePerm(c.get("user")!, "content.write");
   const id = c.req.param("id");
   const body = await c.req.json().catch(() => ({}));
   const note = typeof body?.note === "string" && body.note.trim() ? body.note.trim() : "Yêu cầu chỉnh sửa nội dung";
@@ -603,6 +881,7 @@ adminSocialRoutes.post("/content/:id/request-changes", async (c) => {
 });
 
 adminSocialRoutes.post("/content/:id/reschedule", async (c) => {
+  requirePerm(c.get("user")!, "content.publish");
   const id = c.req.param("id");
   const body = z.object({ scheduledAt: z.string().datetime() }).parse(await c.req.json().catch(() => ({})));
   const db = c.get("db");
@@ -617,6 +896,7 @@ adminSocialRoutes.post("/content/:id/reschedule", async (c) => {
 });
 
 adminSocialRoutes.post("/content/:id/cancel-schedule", async (c) => {
+  requirePerm(c.get("user")!, "content.publish");
   const id = c.req.param("id");
   const db = c.get("db");
   const existing = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
@@ -630,6 +910,7 @@ adminSocialRoutes.post("/content/:id/cancel-schedule", async (c) => {
 });
 
 adminSocialRoutes.post("/content/:id/retry", async (c) => {
+  requirePerm(c.get("user")!, "content.publish");
   const id = c.req.param("id");
   const db = c.get("db");
   const existing = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
@@ -640,6 +921,7 @@ adminSocialRoutes.post("/content/:id/retry", async (c) => {
 });
 
 adminSocialRoutes.post("/interactions/:id/retry-ai", async (c) => {
+  requirePerm(c.get("user")!, "content.write");
   const interaction = (await c.get("db").select().from(socialInteractions).where(eq(socialInteractions.id, c.req.param("id"))).limit(1))[0];
   if (!interaction) throw new ApiError(404, "not_found", "Không tìm thấy tương tác");
   await autoReplyToInteraction(c.get("db"), interaction.id);
@@ -647,6 +929,7 @@ adminSocialRoutes.post("/interactions/:id/retry-ai", async (c) => {
 });
 
 adminSocialRoutes.post("/metrics/sync", async (c) => {
+  requirePerm(c.get("user")!, "channel.read");
   const db = c.get("db");
   const meta = await loadMetaConfig(db, c.req.url);
   const published = await db.select().from(socialContentItems).where(eq(socialContentItems.status, "published"));
@@ -676,6 +959,76 @@ adminSocialRoutes.post("/metrics/sync", async (c) => {
     }
   }
   return c.json({ synced });
+});
+
+adminSocialRoutes.post("/content/:id/sync-metrics", async (c) => {
+  requirePerm(c.get("user")!, "channel.read");
+  const db = c.get("db");
+  const id = c.req.param("id");
+  const content = (await db.select().from(socialContentItems).where(eq(socialContentItems.id, id)).limit(1))[0];
+  if (!content) throw new ApiError(404, "not_found", "Không tìm thấy nội dung bài viết");
+  if (!content.externalPostId || !content.connectionId) {
+    throw new ApiError(400, "not_published", "Bài viết chưa được xuất bản lên Instagram nên chưa thể đồng bộ chỉ số");
+  }
+  const connection = (await db.select().from(instagramConnections).where(eq(instagramConnections.id, content.connectionId)).limit(1))[0];
+  if (!connection) throw new ApiError(400, "missing_connection", "Không tìm thấy kết nối Instagram tương ứng");
+
+  const meta = await loadMetaConfig(db, c.req.url);
+  const token = decryptApiKey(connection.encryptedAccessToken);
+
+  try {
+    const base = await graph<{ like_count?: number; comments_count?: number }>(
+      `/${content.externalPostId}?fields=like_count,comments_count`,
+      token,
+      undefined,
+      meta.graphVersion
+    );
+    const insight = await graph<{ data?: Array<{ name: string; values?: Array<{ value: number }>; total_value?: { value: number } }> }>(
+      `/${content.externalPostId}/insights?metric=reach,impressions,saved,shares`,
+      token,
+      undefined,
+      meta.graphVersion
+    ).catch(() => ({ data: [] }));
+
+    const metric = (name: string) => {
+      const row = insight.data?.find((item) => item.name === name);
+      return Number(row?.total_value?.value ?? row?.values?.[0]?.value ?? 0);
+    };
+
+    const impressions = metric("impressions");
+    const reach = metric("reach");
+    const likes = Number(base.like_count ?? 0);
+    const comments = Number(base.comments_count ?? 0);
+    const saves = metric("saved");
+    const shares = metric("shares");
+
+    const [snapshot] = await db.insert(socialMetricSnapshots).values({
+      contentId: content.id,
+      impressions,
+      reach,
+      likes,
+      comments,
+      saves,
+      shares,
+    }).returning();
+
+    return c.json({
+      success: true,
+      data: {
+        views: reach || impressions,
+        reach,
+        impressions,
+        likes,
+        comments,
+        saves,
+        shares,
+        lastSyncedAt: snapshot?.capturedAt ? snapshot.capturedAt.toISOString() : new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    throw new ApiError(502, "sync_failed", `Không thể lấy chỉ số từ Meta Graph API: ${msg}`);
+  }
 });
 
 function needsHuman(message: string) {

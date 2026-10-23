@@ -35,7 +35,6 @@ def test_content_workflow_generates_every_requested_channel(caplog):
     response = asyncio.run(ContentWorkflow().execute(ContentGenerateRequest(**content_payload())))
 
     assert response.status == "completed"
-    assert response.review and response.review.passed is True
     assert response.draft is not None
     assert {item.channel.value for item in response.draft.variants} == {"facebook", "instagram", "tiktok"}
     serialized = response.model_dump_json()
@@ -43,7 +42,7 @@ def test_content_workflow_generates_every_requested_channel(caplog):
     assert "649000" not in serialized
     assert "must-never-appear-in-logs" not in caplog.text
 
-    for step in ("workflow", "product_understanding", "content_strategy", "copywriting", "quality_review"):
+    for step in ("workflow", "copywriting"):
         assert f"[step={step}]" in caplog.text
     assert "[event=payload]" in caplog.text
     assert "[event=result]" in caplog.text

@@ -104,7 +104,7 @@ function downloadCsv(filename: string, rows: Array<Array<string | number>>) {
 
 type MainView = "stock" | "docs" | "doc_detail" | "form";
 type StockFilter = "all" | "low" | "out" | "safe";
-type DocStatusTab = "all" | "draft" | "approved" | "posted" | "void";
+type DocStatusTab = "all" | "draft" | "submitted" | "approved" | "posted" | "void";
 type DocType = "receipt" | "issue" | "adjustment";
 
 /** Các field tuỳ chọn mà API có thể trả về */
@@ -234,6 +234,7 @@ const TYPE_LABEL: Record<DocType, string> = {
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "Nháp",
+  submitted: "Chờ duyệt",
   approved: "Đã duyệt",
   posted: "Đã ghi sổ",
   void: "Đã hủy",
@@ -672,15 +673,27 @@ export function InventoryManager({
   seedProduct,
   seed,
   onSeedConsumed,
+  permissions = [],
 }: {
   seedProduct?: { productId: string; productName?: string } | null;
   seed?: InventorySeed | null;
   onSeedConsumed?: () => void;
+  permissions?: string[];
 } = {}) {
   const navigate = useNavigate();
   const location = useLocation();
   const route = resolveAdminPath(location.pathname);
   const activeDocParam = route.tabId === "inventory" ? route.subParam : null;
+  const hasPermission = (permission: string) => permissions.includes("*") || permissions.includes(permission);
+  const canReceive = hasPermission("inventory.receive");
+  const canIssue = hasPermission("inventory.issue");
+  const canAdjustRequest = hasPermission("inventory.adjust.request");
+  const canApprove = hasPermission("inventory.adjust.approve");
+  const canCreateAnyDocument = canReceive || canIssue || canAdjustRequest;
+  const canCreateDocumentType = (type: DocType) =>
+    type === "receipt" ? canReceive : type === "issue" ? canIssue : canAdjustRequest;
+  const canDeleteDocument = (type: string, status: string) =>
+    status === "posted" ? canApprove : canCreateDocumentType(type as DocType);
 
   const [view, setView] = useState<MainView>(
     route.tabId === "inventory" && route.action === "create"
@@ -723,7 +736,9 @@ export function InventoryManager({
   const [loading, setLoading] = useState(true);
 
   // Document Detail State
-  const [selectedDocId, setSelectedDocId] = useState<string | null>(activeDocParam ?? null);
+  // Khi mở trực tiếp URL /khohang/:code, cần để effect bên dưới tự tải chi tiết.
+  // Nếu khởi tạo bằng mã phiếu, effect sẽ tưởng rằng phiếu đã được tải xong.
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [docDetail, setDocDetail] = useState<InventoryDocumentDetail | null>(null);
   const [loadingDoc, setLoadingDoc] = useState(false);
   const [postingDoc, setPostingDoc] = useState(false);
@@ -862,6 +877,10 @@ export function InventoryManager({
   };
 
   const openCreateDoc = () => {
+    if (!canCreateAnyDocument) {
+      toast.error("Bạn không có quyền tạo phiếu kho");
+      return;
+    }
     setView("form");
     navigate({ to: "/khohang/taophieu" });
   };
@@ -874,11 +893,18 @@ export function InventoryManager({
       if (route.action === "create") {
         if (view !== "form") setView("form");
       } else if (activeDocParam && activeDocParam !== "taophieu") {
-        if (selectedDocId !== activeDocParam) {
-          const match = docs.find(
-            (d) => d.id === activeDocParam || d.code.toLowerCase() === activeDocParam.toLowerCase(),
-          );
-          void openDocDetailInternal(match ? match.id : activeDocParam);
+        const match = docs.find(
+          (d) => d.id === activeDocParam || d.code.toLowerCase() === activeDocParam.toLowerCase(),
+        );
+        // Chờ danh sách phiếu tải xong để đổi mã phiếu (INV-...) thành ID trước khi gọi API chi tiết.
+        if (!match && loading) return;
+        const targetId = match?.id ?? activeDocParam;
+        const routeMatchesDetail =
+          docDetail &&
+          (docDetail.id === targetId || docDetail.code.toLowerCase() === activeDocParam.toLowerCase());
+
+        if (!routeMatchesDetail && !loadingDoc && selectedDocId !== targetId) {
+          void openDocDetailInternal(targetId);
         }
       } else {
         if (view === "form" || view === "doc_detail") {
@@ -888,10 +914,27 @@ export function InventoryManager({
         }
       }
     }
-  }, [route.tabId, route.action, activeDocParam, docs, selectedDocId, view, openDocDetailInternal, seed, seedProduct]);
+  }, [
+    route.tabId,
+    route.action,
+    activeDocParam,
+    docs,
+    loading,
+    selectedDocId,
+    docDetail,
+    loadingDoc,
+    view,
+    openDocDetailInternal,
+    seed,
+    seedProduct,
+  ]);
 
   // Post Document (Ghi sổ phiếu)
   const handlePostDoc = async (id: string) => {
+    if (!canApprove) {
+      toast.error("Bạn không có quyền ghi sổ hoặc duyệt phiếu kho");
+      return;
+    }
     const ok = await confirm({
       title: "Ghi sổ phiếu kho?",
       description: "Ghi sổ sẽ chính thức cập nhật tồn kho tức thì. Không thể hoàn tác trực tiếp.",
@@ -912,8 +955,37 @@ export function InventoryManager({
     }
   };
 
+  const handleApproveDoc = async (id: string) => {
+    if (!canApprove) {
+      toast.error("Bạn không có quyền duyệt phiếu kho");
+      return;
+    }
+    const ok = await confirm({
+      title: "Duyệt phiếu kho?",
+      description: "Sau khi duyệt, phiếu sẽ sẵn sàng để ghi sổ và cập nhật tồn kho.",
+      confirmLabel: "Duyệt phiếu",
+    });
+    if (!ok) return;
+
+    setPostingDoc(true);
+    try {
+      await adminApi.approveDoc(id);
+      toast.success("Đã duyệt phiếu kho");
+      await Promise.all([reload(), openDocDetail(id)]);
+    } catch (e) {
+      toast.error(e instanceof Error ? adminErrorMessage(e) : "Duyệt phiếu thất bại");
+    } finally {
+      setPostingDoc(false);
+    }
+  };
+
   // Delete / Revert Document
   const handleDeleteDoc = async (id: string) => {
+    const target = docs.find((doc) => doc.id === id) ?? (docDetail?.id === id ? docDetail : null);
+    if (target && !canDeleteDocument(target.type, target.status)) {
+      toast.error("Bạn không có quyền xóa phiếu kho này");
+      return;
+    }
     const ok = await confirm({
       title: "Hủy phiếu kho?",
       description: "Phiếu này sẽ bị xóa khỏi hệ thống. Nếu đã ghi sổ, tồn kho sẽ được đảo ngược lại.",
@@ -942,6 +1014,10 @@ export function InventoryManager({
   // Open Form to create new doc
   const openCreateForm = async (opts?: InventorySeed) => {
     const targetType = opts?.docType ?? "receipt";
+    if (!canCreateDocumentType(targetType)) {
+      toast.error("Bạn không có quyền tạo loại phiếu kho này");
+      return;
+    }
     setFormType(targetType);
     setLinkedOrderId(opts?.orderId ?? null);
     setReason(
@@ -1186,7 +1262,15 @@ export function InventoryManager({
   }
 
   // Save Document
-  async function handleSaveDoc(andPost = false) {
+  async function handleSaveDoc(action: "draft" | "submit" | "post" = "draft") {
+    if (!canCreateDocumentType(formType)) {
+      toast.error("Bạn không có quyền tạo loại phiếu kho này");
+      return;
+    }
+    if (action === "post" && !canApprove) {
+      toast.error("Bạn chỉ có thể lưu phiếu nháp; không có quyền ghi sổ");
+      return;
+    }
     const bodyLines = lines
       .filter((l) => l.variant_id && Number(l.qty) > 0)
       .map((l) => ({
@@ -1211,9 +1295,17 @@ export function InventoryManager({
         order_id: linkedOrderId || undefined,
         lines: bodyLines,
       });
-      toast.success(`Đã tạo phiếu ${res.code}`);
+      if (action === "draft") {
+        toast.success(`Đã lưu phiếu nháp ${res.code}`);
+      }
 
-      if (andPost) {
+      if (action === "submit") {
+        await adminApi.submitDoc(res.id);
+        toast.success(`Đã tạo phiếu ${res.code}, đang chờ duyệt`);
+      }
+
+      if (action === "post") {
+        await adminApi.approveDoc(res.id);
         const key = `post-${res.id}-${Date.now()}`;
         await adminApi.postDoc(res.id, key);
         toast.success(`Đã ghi sổ phiếu ${res.code} cập nhật tồn kho!`);
@@ -1539,7 +1631,7 @@ export function InventoryManager({
                 <Download className="size-3.5 text-slate-500" />
                 <span>Xuất file</span>
               </Button>
-              <Button asChild className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer">
+              {canCreateAnyDocument && <Button asChild className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer">
                 <a
                   href="/khohang/taophieu"
                   onClick={(e) => {
@@ -1550,7 +1642,7 @@ export function InventoryManager({
                   <Plus className="size-3.5" />
                   <span>{view === "stock" ? "Tạo phiếu kho" : "Tạo phiếu"}</span>
                 </a>
-              </Button>
+              </Button>}
             </div>
           </div>
 
@@ -2115,6 +2207,7 @@ export function InventoryManager({
                 [
                   ["all", "Tất cả"],
                   ["draft", "Nháp"],
+                  ["submitted", "Chờ duyệt"],
                   ["approved", "Đã duyệt"],
                   ["posted", "Đã ghi sổ"],
                   ["void", "Đã hủy"],
@@ -2204,11 +2297,13 @@ export function InventoryManager({
                       const statusTone: Tone =
                         doc.status === "posted"
                           ? "green"
-                          : doc.status === "approved"
+                          : doc.status === "submitted"
                             ? "amber"
-                            : doc.status === "void"
-                              ? "red"
-                              : "grey";
+                            : doc.status === "approved"
+                              ? "amber"
+                              : doc.status === "void"
+                                ? "red"
+                                : "grey";
                       const dp = fmtDateParts(doc.created_at);
                       return (
                         <tr
@@ -2298,7 +2393,7 @@ export function InventoryManager({
                                     openDocDetail(doc.id, doc.code);
                                   }}
                                 />
-                                <MenuItem
+                                {canDeleteDocument(doc.type, doc.status) && <MenuItem
                                   icon={<Trash2 className="size-3.5" />}
                                   label="Xóa phiếu"
                                   destructive
@@ -2306,7 +2401,7 @@ export function InventoryManager({
                                     setDocMenu(null);
                                     void handleDeleteDoc(doc.id);
                                   }}
-                                />
+                                />}
                               </PopoverContent>
                             </Popover>
                           </td>
@@ -2425,7 +2520,7 @@ export function InventoryManager({
                     <span>In phiếu kho</span>
                   </Button>
 
-                  {docDetail.status !== "posted" && (
+                  {docDetail.status !== "posted" && canApprove && (
                     <Button
                       disabled={postingDoc}
                       onClick={() => handlePostDoc(docDetail.id)}
@@ -2440,7 +2535,7 @@ export function InventoryManager({
                     </Button>
                   )}
 
-                  <Button
+                  {canDeleteDocument(docDetail.type, docDetail.status) && <Button
                     variant="outline"
                     onClick={() => handleDeleteDoc(docDetail.id)}
                     className="h-9 gap-1.5 rounded-xs border-destructive/30 bg-white px-3.5 text-sm font-semibold text-destructive hover:bg-destructive/10 shadow-2xs transition-colors cursor-pointer"
@@ -2448,7 +2543,7 @@ export function InventoryManager({
                   >
                     <Trash2 className="size-3.5" />
                     <span>Xóa phiếu</span>
-                  </Button>
+                  </Button>}
                 </div>
               </div>
 
@@ -2481,8 +2576,22 @@ export function InventoryManager({
                     )
                   }
                   label="Trạng thái tồn kho"
-                  value={docDetail.status === "posted" ? "Đã ghi sổ" : "Chờ ghi sổ"}
-                  note={docDetail.posted_at ? fmtDate(docDetail.posted_at) : "Chưa cập nhật vào kho"}
+                  value={
+                    docDetail.status === "posted"
+                      ? "Đã ghi sổ"
+                      : docDetail.status === "submitted"
+                        ? "Chờ duyệt"
+                        : docDetail.status === "approved"
+                          ? "Chờ ghi sổ"
+                          : "Nháp"
+                  }
+                  note={
+                    docDetail.posted_at
+                      ? fmtDate(docDetail.posted_at)
+                      : docDetail.status === "submitted"
+                        ? "Chưa được duyệt"
+                        : "Chưa cập nhật vào kho"
+                  }
                 />
               </div>
 
@@ -2787,11 +2896,13 @@ export function InventoryManager({
                             "inline-flex items-center rounded-xs px-2.5 py-0.5 text-sm font-semibold border",
                             docDetail.status === "posted"
                               ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                              : docDetail.status === "approved"
-                                ? "border-blue-200 bg-blue-50 text-blue-700"
-                                : docDetail.status === "void"
-                                  ? "border-rose-200 bg-rose-50 text-rose-700"
-                                  : "border-slate-200 bg-slate-50 text-slate-700",
+                              : docDetail.status === "submitted"
+                                ? "border-amber-200 bg-amber-50 text-amber-700"
+                                : docDetail.status === "approved"
+                                  ? "border-blue-200 bg-blue-50 text-blue-700"
+                                  : docDetail.status === "void"
+                                    ? "border-rose-200 bg-rose-50 text-rose-700"
+                                    : "border-slate-200 bg-slate-50 text-slate-700",
                           )}
                         >
                           {STATUS_LABEL[docDetail.status] ?? docDetail.status}
@@ -2859,30 +2970,52 @@ export function InventoryManager({
                       {docDetail.status === "posted" ? (
                         <>
                           Chứng từ này <strong className="text-slate-950 font-semibold">đã được ghi sổ</strong>. Số lượng tồn kho thực tế và khả
-                          dụng của tất cả sản phẩm trong phiếu đã được cập nhật chính xác vào hệ thống.
+                          dụng của tất cả sản phẩm trong phiếu đã được cập nhật vào hệ thống.
                         </>
-                      ) : (
+                      ) : docDetail.status === "submitted" ? (
+                        <>
+                          Chứng từ đang <strong className="text-slate-950 font-semibold">chờ duyệt</strong>. Tồn kho thực tế chưa bị thay đổi;
+                          người có quyền duyệt cần kiểm tra trước khi cho phép ghi sổ.
+                        </>
+                      ) : docDetail.status === "approved" ? (
                         <>
                           Chứng từ đang ở trạng thái <strong className="text-slate-950 font-semibold">chờ ghi sổ</strong>. Tồn kho thực tế chưa
                           bị thay đổi. Hãy kiểm tra chính xác hàng hóa trước khi xác nhận ghi sổ.
                         </>
+                      ) : (
+                        <>
+                          Chứng từ đang ở trạng thái <strong className="text-slate-950 font-semibold">nháp</strong>. Tồn kho thực tế chưa bị
+                          thay đổi; hãy tạo phiếu để gửi duyệt khi đã hoàn tất thông tin.
+                        </>
                       )}
                     </p>
 
-                    {docDetail.status !== "posted" && (
-                      <Button
-                        size="sm"
-                        disabled={postingDoc}
-                        onClick={() => handlePostDoc(docDetail.id)}
-                        className="w-full h-9 gap-1.5 rounded-xs bg-[#6941c6] text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
-                      >
-                        {postingDoc ? (
-                          <Loader2 className="size-3.5 animate-spin" />
-                        ) : (
-                          <CheckCircle2 className="size-3.5 text-white" />
+                    {docDetail.status !== "posted" && canApprove && (
+                      <div className="space-y-2">
+                        {(docDetail.status === "submitted" || docDetail.status === "draft") && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={postingDoc}
+                            onClick={() => handleApproveDoc(docDetail.id)}
+                            className="w-full h-9 gap-1.5 rounded-xs border-[#6941c6] text-[#6941c6] text-sm font-semibold hover:bg-purple-50 transition-colors cursor-pointer"
+                          >
+                            {postingDoc ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+                            <span>Duyệt phiếu</span>
+                          </Button>
                         )}
-                        <span>Ghi sổ chứng từ ngay</span>
-                      </Button>
+                        {docDetail.status === "approved" && (
+                          <Button
+                            size="sm"
+                            disabled={postingDoc}
+                            onClick={() => handlePostDoc(docDetail.id)}
+                            className="w-full h-9 gap-1.5 rounded-xs bg-[#6941c6] text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
+                          >
+                            {postingDoc ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5 text-white" />}
+                            <span>Ghi sổ chứng từ ngay</span>
+                          </Button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -2945,21 +3078,30 @@ export function InventoryManager({
               </Button>
               <Button
                 variant="outline"
-                disabled={saving || !lines.length}
-                onClick={() => handleSaveDoc(false)}
+                disabled={saving || !lines.length || !canCreateDocumentType(formType)}
+                onClick={() => handleSaveDoc("draft")}
                 className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
               >
                 {saving ? <Loader2 className="size-3.5 animate-spin" /> : null}
                 <span>Lưu phiếu nháp</span>
               </Button>
-              <Button
+              {canCreateDocumentType(formType) && <Button
+                variant="outline"
                 disabled={saving || !lines.length}
-                onClick={() => handleSaveDoc(true)}
+                onClick={() => handleSaveDoc("submit")}
+                className="h-9 gap-1.5 rounded-xs border-[#6941c6] bg-white px-4 text-sm font-semibold text-[#6941c6] shadow-2xs hover:bg-purple-50 transition-colors cursor-pointer"
+              >
+                {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+                <span>Tạo phiếu</span>
+              </Button>}
+              {canApprove && canCreateDocumentType(formType) && <Button
+                disabled={saving || !lines.length}
+                onClick={() => handleSaveDoc("post")}
                 className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
               >
                 {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
                 <span>Ghi sổ ngay</span>
-              </Button>
+              </Button>}
             </div>
           </div>
 
@@ -2988,7 +3130,7 @@ export function InventoryManager({
                           ["issue", "Xuất kho", PackageMinus],
                           ["adjustment", "Điều chỉnh", ArrowRightLeft],
                         ] as const
-                      ).map(([t, lbl, Icon]) => (
+                      ).filter(([t]) => canCreateDocumentType(t)).map(([t, lbl, Icon]) => (
                         <button
                           key={t}
                           type="button"

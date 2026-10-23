@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight, BadgeCheck, BarChart3, CheckCircle2, ChevronRight, Clock, ExternalLink, FileText,
   Info, Layers, MessageCircle, MoreHorizontal, Package, Send, ShieldCheck, Zap,
@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 import { CHANNEL_META } from "../mock";
 import type { ChannelId, SocialCtx } from "../types";
 import { ChannelLogo, PageHeader, card } from "../ui";
-import { DEFAULT_CFG, DEFAULT_CONTENT, flowOf, type Cfg, type ContentCfg } from "./channelFlow";
-import { ApiConfigStep, ConfigAside, ConfigStep, ConnectStep, InfoPanel, ReadyAside, ReviewStep, StepBar, type ApiConfigPayload } from "./AddChannelSteps";
+import { DEFAULT_CFG, DEFAULT_CONTENT, flowOf, type Cfg, type ContentCfg, type FlowAccount } from "./channelFlow";
+import { ApiConfigStep, Badge, ConfigAside, ConfigStep, ConnectStep, InfoPanel, ReadyAside, ReviewStep, StepBar, type ApiConfigPayload } from "./AddChannelSteps";
 
 const GRID: ChannelId[] = ["facebook", "instagram", "tiktok", "shopee", "lazada", "zalo", "website", "youtube"];
 const TOTAL = GRID.length + 1; // + "Kênh khác"
@@ -65,14 +65,43 @@ export function AddChannelPage({ ctx }: { ctx: SocialCtx }) {
     }
     return false;
   });
-  // Quay lại từ OAuth (Instagram): kênh đã kết nối thì coi như đã đăng nhập
-  const [loggedIn, setLoggedIn] = useState(() => !!ctx.channels.find((c) => c.id === ctx.wizardChannel)?.connected);
+  // Với Instagram: kiểm tra xem đã có kết nối thật trong hệ thống chưa
+  const hasRealInstagram = Boolean(ctx.data.connections && ctx.data.connections.length > 0);
+  const [loggedIn, setLoggedIn] = useState(() => (ctx.wizardChannel === "instagram" ? hasRealInstagram : !!ctx.channels.find((c) => c.id === ctx.wizardChannel)?.connected));
   const [accountId, setAccountId] = useState<string | null>(null);
   const [cfg, setCfg] = useState<Cfg>(DEFAULT_CFG);
   const [content, setContent] = useState<ContentCfg>(DEFAULT_CONTENT);
 
   const meta = selected ? CHANNEL_META[selected] : null;
-  const flow = selected ? flowOf(selected) : null;
+  const rawFlow = selected ? flowOf(selected) : null;
+
+  const flow = useMemo(() => {
+    if (!rawFlow) return null;
+    if (selected === "instagram") {
+      const realAccounts: FlowAccount[] = (ctx.data.connections || []).map((c) => ({
+        id: c.id,
+        name: `@${c.username}`,
+        category: "Instagram Professional",
+        followers: c.followers || 0,
+        posts: c.mediaCount || 0,
+        suggested: true,
+      }));
+      return {
+        ...rawFlow,
+        accounts: realAccounts,
+      };
+    }
+    return rawFlow;
+  }, [rawFlow, selected, ctx.data.connections]);
+
+  // Tự động chọn tài khoản thật đầu tiên nếu đã đăng nhập Instagram
+  useEffect(() => {
+    if (selected === "instagram" && flow?.accounts.length && !accountId) {
+      setAccountId(flow.accounts[0].id);
+      setCfg((prev) => ({ ...prev, name: flow.accounts[0].name }));
+    }
+  }, [selected, flow, accountId]);
+
   const account = flow?.accounts.find((a) => a.id === accountId) ?? null;
   const patch = (p: Partial<Cfg>) => setCfg((c) => ({ ...c, ...p }));
 
@@ -80,7 +109,9 @@ export function AddChannelPage({ ctx }: { ctx: SocialCtx }) {
   const pct = Math.min(100, Math.round((connected.length / TOTAL) * 100));
 
   function pick(id: ChannelId) {
-    setSelected(id); setStep(1); setApiConfigured(false); setLoggedIn(false); setAccountId(null); setCfg(DEFAULT_CFG); setContent(DEFAULT_CONTENT);
+    setSelected(id); setStep(1); setApiConfigured(false);
+    setLoggedIn(id === "instagram" ? Boolean(ctx.data.connections?.length) : false);
+    setAccountId(null); setCfg(DEFAULT_CFG); setContent(DEFAULT_CONTENT);
   }
   function pickAccount(accId: string) {
     const a = flow?.accounts.find((x) => x.id === accId);

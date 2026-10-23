@@ -119,7 +119,7 @@ export const CHANNEL_FLOW: Record<string, ChannelFlow> = {
     features: ["Đăng ảnh, carousel và reel", "Quản lý bình luận và tin nhắn (DM)", "Đồng bộ sản phẩm (Instagram Shopping)", "Xem thống kê nội dung", "Tự động đăng theo lịch"],
     notes: ["Tài khoản cần là loại Business hoặc Creator.", "Tài khoản cần được liên kết với một Fanpage Facebook.", SAFE_NOTE, DISCONNECT_NOTE],
     commerce: true, canPost: true, shopName: "Instagram Shopping",
-    accounts: mk([["@elane.fashion", "Thời trang nữ", 18200, 210], ["@elane.official", "Thời trang nữ", 9400, 88], ["@elane.woman", "Cộng đồng", 4100, 41]]),
+    accounts: [] as FlowAccount[],
     permissions: [
       { icon: PenSquare, title: "Đăng bài và reel", desc: "Tạo, lên lịch và đăng nội dung" },
       { icon: UserRound, title: "Truy cập thông tin tài khoản", desc: "Tên, ảnh đại diện, thông tin cơ bản" },

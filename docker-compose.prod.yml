@@ -44,6 +44,10 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       AI_WORKER_URL: ${AI_WORKER_URL:-http://ai-worker:8000}
       AI_TRYON_MAX_DAILY: ${AI_TRYON_MAX_DAILY:-5}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.tuongtacgpt.click/v1}
+      OPENAI_VISION_MODEL: ${OPENAI_VISION_MODEL:-gpt-5.6-sol-none}
+      OPENAI_CONTENT_MODEL: ${OPENAI_CONTENT_MODEL:-gpt-5.6-sol-none}
+      SOCIAL_AI_MODEL: ${SOCIAL_AI_MODEL:-gpt-5.6-sol-none}
       AI_KEY_ENCRYPTION_SECRET: ${AI_KEY_ENCRYPTION_SECRET}
     ports:
       - "3001:3001"
@@ -151,8 +155,8 @@ services:
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
-      OPENAI_VISION_MODEL: ${OPENAI_VISION_MODEL:-gp-5.6-sol-max}
-      OPENAI_CONTENT_MODEL: ${OPENAI_CONTENT_MODEL:-gpt-5.6-sol-max}
+      OPENAI_VISION_MODEL: ${OPENAI_VISION_MODEL:-gpt-5.6-sol-none}
+      OPENAI_CONTENT_MODEL: ${OPENAI_CONTENT_MODEL:-gpt-5.6-sol-none}
       AI_MOCK_MODE: ${AI_MOCK_MODE:-false}
       KIE_API_KEY: ${KIE_API_KEY:-}
       KIE_BASE_URL: ${KIE_BASE_URL:-https://api.kie.ai}

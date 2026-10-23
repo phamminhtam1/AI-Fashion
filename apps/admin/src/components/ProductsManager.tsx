@@ -682,13 +682,20 @@ const DEMO_PRODUCTS: AdminProduct[] = [
 ];
 
 export function ProductsManager({
+  permissions = [],
   onNavigate,
 }: {
+  permissions?: string[];
   onNavigate?: (section: string, opts?: { productId?: string; productName?: string }) => void;
 } = {}) {
   const navigate = useNavigate();
   const location = useLocation();
   const route = resolveAdminPath(location.pathname);
+  const hasPermission = (permission: string) => permissions.includes("*") || permissions.includes(permission);
+  const canWrite = hasPermission("product.write");
+  const canPublish = hasPermission("product.publish");
+  const canDelete = hasPermission("product.delete");
+  const canReadInventory = hasPermission("inventory.read");
 
   const [items, setItems] = useState<AdminProduct[]>([]);
   const [meta, setMeta] = useState<ProductMeta | null>(null);
@@ -1215,6 +1222,11 @@ export function ProductsManager({
   useEffect(() => {
     if (route.tabId !== "products") return;
 
+    if ((route.action === "create" || route.action === "edit") && !canWrite) {
+      navigate({ to: "/sanpham" as unknown as "/" });
+      return;
+    }
+
     if (route.action === "create") {
       fetchingProductRef.current = null;
       if (viewRef.current !== "form" || editingRef.current !== null) {
@@ -1305,9 +1317,13 @@ export function ProductsManager({
     if (viewRef.current !== "list") {
       backToListInternal();
     }
-  }, [route.tabId, route.action, route.subParam, navigate]);
+  }, [canWrite, route.tabId, route.action, route.subParam, navigate]);
 
   async function save(customStatus?: "published" | "draft" | "archived", andReturnToList: boolean = false) {
+    if (!canWrite) {
+      toast.error("Bạn không có quyền tạo hoặc chỉnh sửa sản phẩm");
+      return;
+    }
     if (!form.name.trim()) {
       toast.error("Vui lòng nhập tên sản phẩm");
       return;
@@ -1421,6 +1437,10 @@ export function ProductsManager({
   }
 
   function duplicateProduct() {
+    if (!canWrite) {
+      toast.error("Bạn không có quyền tạo sản phẩm");
+      return;
+    }
     const clonedName = `${form.name || "Áo khoác len cổ điển"} (Bản sao)`;
     const price = form.price_vnd ? Number(form.price_vnd) : 0;
     const newProd: AdminProduct = {
@@ -1458,6 +1478,10 @@ export function ProductsManager({
   }
 
   async function remove(p: AdminProduct) {
+    if (!canDelete) {
+      toast.error("Bạn không có quyền xóa sản phẩm");
+      return;
+    }
     const ok = await confirm({
       title: "Xóa sản phẩm?",
       description: `Bạn có chắc chắn muốn xóa "${p.name}"? Thao tác này không thể hoàn tác.`,
@@ -1476,6 +1500,14 @@ export function ProductsManager({
   }
 
   async function updateStatus(p: AdminProduct, newStatus: string) {
+    if (newStatus === "published" && !canPublish) {
+      toast.error("Bạn không có quyền đăng bán sản phẩm");
+      return;
+    }
+    if (newStatus !== "published" && !canWrite) {
+      toast.error("Bạn không có quyền cập nhật sản phẩm");
+      return;
+    }
     try {
       await adminApi
         .updateProduct(p.id, {
@@ -1525,6 +1557,10 @@ export function ProductsManager({
 
   // Bulk actions
   async function bulkPublish() {
+    if (!canPublish) {
+      toast.error("Bạn không có quyền đăng bán sản phẩm");
+      return;
+    }
     setBulkBusy(true);
     try {
       for (const id of selected) {
@@ -1541,6 +1577,10 @@ export function ProductsManager({
   }
 
   async function bulkArchive() {
+    if (!canWrite) {
+      toast.error("Bạn không có quyền lưu trữ sản phẩm");
+      return;
+    }
     setBulkBusy(true);
     try {
       for (const id of selected) {
@@ -1557,6 +1597,10 @@ export function ProductsManager({
   }
 
   async function bulkDestroy() {
+    if (!canDelete) {
+      toast.error("Bạn không có quyền xóa sản phẩm");
+      return;
+    }
     const ok = await confirm({
       title: `Xóa ${selected.size} sản phẩm?`,
       description: "Thao tác này sẽ xóa vĩnh viễn các sản phẩm đã chọn.",
@@ -2244,27 +2288,27 @@ export function ProductsManager({
 
           <div className="flex items-center gap-2 self-end sm:self-auto">
             {/* Edit product button */}
-            <Button
-              variant="outline"
-              onClick={() => editing ? openEdit(editing) : setView("form")}
-              className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
-            >
-              <Pencil className="size-3.5 text-slate-500" />
-              Chỉnh sửa sản phẩm
-            </Button>
+            {canWrite && <Button
+                variant="outline"
+                onClick={() => editing ? openEdit(editing) : setView("form")}
+                className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
+              >
+                <Pencil className="size-3.5 text-slate-500" />
+                Chỉnh sửa sản phẩm
+              </Button>}
 
             {/* Duplicate button */}
-            <Button
-              variant="outline"
-              onClick={duplicateProduct}
-              className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
-            >
-              <Copy className="size-3.5 text-slate-500" />
-              Nhân bản
-            </Button>
+            {canWrite && <Button
+                variant="outline"
+                onClick={duplicateProduct}
+                className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
+              >
+                <Copy className="size-3.5 text-slate-500" />
+                Nhân bản
+              </Button>}
 
             {/* Update ⌵ Dropdown */}
-            <DropdownMenu>
+            {canWrite && <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   disabled={saving}
@@ -2301,7 +2345,7 @@ export function ProductsManager({
                   Lưu trữ sản phẩm
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+            </DropdownMenu>}
           </div>
         </div>
 
@@ -2331,15 +2375,15 @@ export function ProductsManager({
                         </span>
                       )}
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleOpenAddVariant}
-                      className="h-7.5 px-2.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 gap-1 shadow-2xs"
-                    >
-                      <Plus className="size-3.5 text-[#6941c6]" />
-                      <span>Thêm bộ màu</span>
-                    </Button>
+                    {canWrite && <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleOpenAddVariant}
+                        className="h-7.5 px-2.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 gap-1 shadow-2xs"
+                      >
+                        <Plus className="size-3.5 text-[#6941c6]" />
+                        <span>Thêm bộ màu</span>
+                      </Button>}
                   </div>
 
                   {/* Colorway Pills Bar */}
@@ -2426,14 +2470,14 @@ export function ProductsManager({
                 <div>
                   <div className="flex items-center justify-between">
                     <h2 className="text-slate-950 admin-section-title">Tổng quan sản phẩm</h2>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => (editing ? openEdit(editing) : setView("form"))}
-                      className="h-7.5 px-3 rounded-xs border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs"
-                    >
-                      Chỉnh sửa
-                    </Button>
+                    {canWrite && <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => (editing ? openEdit(editing) : setView("form"))}
+                        className="h-7.5 px-3 rounded-xs border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs"
+                      >
+                        Chỉnh sửa
+                      </Button>}
                   </div>
 
                   {/* Description */}
@@ -2559,15 +2603,15 @@ export function ProductsManager({
                 <h2 className="text-slate-950 admin-section-title">
                   Biến thể và tồn kho ({detailData.variants.length})
                 </h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleOpenAddVariant}
-                  className="h-7.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 gap-1.5 shadow-2xs"
-                >
-                  <Plus className="size-3.5 text-[#6941c6]" />
-                  Thêm biến thể / bộ màu
-                </Button>
+                {canWrite && <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleOpenAddVariant}
+                    className="h-7.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 gap-1.5 shadow-2xs"
+                  >
+                    <Plus className="size-3.5 text-[#6941c6]" />
+                    Thêm biến thể / bộ màu
+                  </Button>}
               </div>
 
               {/* Table */}
@@ -2603,16 +2647,16 @@ export function ProductsManager({
                             <Boxes className="mx-auto size-8 text-slate-300 mb-2" />
                             <p className="font-semibold text-slate-900 text-sm">Chưa có biến thể nào</p>
                             <p className="text-sm font-medium text-slate-500 mt-0.5">Bấm "Thêm biến thể / bộ màu" để tạo bộ màu và kích cỡ</p>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={handleOpenAddVariant}
-                              className="mt-3 text-sm font-semibold gap-1 border-slate-200 text-[#6941c6] hover:bg-purple-50"
-                            >
-                              <Plus className="size-3.5" />
-                              <span>Thêm biến thể</span>
-                            </Button>
+                            {canWrite && <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={handleOpenAddVariant}
+                                className="mt-3 text-sm font-semibold gap-1 border-slate-200 text-[#6941c6] hover:bg-purple-50"
+                              >
+                                <Plus className="size-3.5" />
+                                <span>Thêm biến thể</span>
+                              </Button>}
                           </td>
                         </tr>
                       ) : (
@@ -2696,20 +2740,20 @@ export function ProductsManager({
                                     </button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="w-40 rounded-xs p-1 shadow-lg">
-                                    <DropdownMenuItem
-                                      onClick={() => handleOpenStockIn(v)}
-                                      className="cursor-pointer text-sm text-slate-800 flex items-center gap-1.5 font-semibold"
-                                    >
-                                      <PackagePlus className="size-3.5 text-[#6941c6]" />
-                                      <span>Nhập kho</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onClick={() => handleDeleteVariant(v.id)}
-                                      className="cursor-pointer text-sm font-semibold text-rose-600"
-                                    >
-                                      Xóa biến thể
-                                    </DropdownMenuItem>
+                                    {canReadInventory && <DropdownMenuItem
+                                        onClick={() => handleOpenStockIn(v)}
+                                        className="cursor-pointer text-sm text-slate-800 flex items-center gap-1.5 font-semibold"
+                                      >
+                                        <PackagePlus className="size-3.5 text-[#6941c6]" />
+                                        <span>Nhập kho</span>
+                                      </DropdownMenuItem>}
+                                    {canWrite && <DropdownMenuSeparator />}
+                                    {canWrite && <DropdownMenuItem
+                                        onClick={() => handleDeleteVariant(v.id)}
+                                        className="cursor-pointer text-sm font-semibold text-rose-600"
+                                      >
+                                        Xóa biến thể
+                                      </DropdownMenuItem>}
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </td>
@@ -2727,14 +2771,14 @@ export function ProductsManager({
             <div className="rounded-xs border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs">
               <div className="flex items-center justify-between">
                 <h2 className="text-slate-950 admin-section-title">Nội dung và SEO</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => toast.success("Đã lưu thiết lập Content & SEO!")}
-                  className="h-7.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  Chỉnh sửa
-                </Button>
+                {canWrite && <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => toast.success("Đã lưu thiết lập Content & SEO!")}
+                    className="h-7.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Chỉnh sửa
+                  </Button>}
               </div>
 
               <div className="mt-3.5 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -2830,14 +2874,14 @@ export function ProductsManager({
             <div className="rounded-xs border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs">
               <div className="flex items-center justify-between">
                 <h2 className="text-slate-950 admin-section-title">Tóm tắt sản phẩm</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => editing ? openEdit(editing) : setView("form")}
-                  className="h-7.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs"
-                >
-                  Chỉnh sửa
-                </Button>
+                {canWrite && <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => editing ? openEdit(editing) : setView("form")}
+                    className="h-7.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs"
+                  >
+                    Chỉnh sửa
+                  </Button>}
               </div>
 
               <div className="mt-3.5 space-y-2.5 text-sm">
@@ -3305,74 +3349,76 @@ export function ProductsManager({
               Xem trước
             </Button>
 
-            {/* Save draft button */}
-            <Button
-              variant="outline"
-              onClick={() => save("draft", false)}
-              disabled={saving}
-              className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
-            >
-              <Archive className="size-3.5 text-slate-500" />
-              Lưu bản nháp
-            </Button>
-
-            {/* Create product or Update product dropdown */}
-            {!editing ? (
+            {canWrite && <>
+              {/* Save draft button */}
               <Button
-                onClick={() => save(form.status as any, false)}
+                variant="outline"
+                onClick={() => save("draft", false)}
                 disabled={saving}
-                className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
+                className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
               >
-                {saving ? "Đang tạo…" : "Tạo sản phẩm"}
+                <Archive className="size-3.5 text-slate-500" />
+                Lưu bản nháp
               </Button>
-            ) : (
-              <div className="inline-flex rounded-xs shadow-xs">
+
+              {/* Create product or Update product dropdown */}
+              {!editing ? (
                 <Button
                   onClick={() => save(form.status as any, false)}
                   disabled={saving}
-                  className="h-9 rounded-r-none bg-[#6941c6] px-3.5 text-sm font-semibold text-white hover:bg-[#53389e] transition-colors shadow-xs"
+                  className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
                 >
-                  {saving ? "Đang cập nhật…" : "Cập nhật sản phẩm"}
+                  {saving ? "Đang tạo…" : "Tạo sản phẩm"}
                 </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      disabled={saving}
-                      className="h-9 rounded-l-none border-l border-white/20 bg-[#6941c6] px-2 text-white hover:bg-[#53389e] transition-colors shadow-xs"
-                    >
-                      <ChevronDown className="size-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52 rounded-xs p-1 shadow-lg">
-                    <DropdownMenuItem
-                      onClick={() => save("published", false)}
-                      className="cursor-pointer text-sm font-medium"
-                    >
-                      Cập nhật và tiếp tục hiển thị
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => save("draft", false)}
-                      className="cursor-pointer text-sm font-medium text-slate-700"
-                    >
-                      Lưu bản nháp
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => save(undefined, true)}
-                      className="cursor-pointer text-sm font-medium text-slate-700"
-                    >
-                      Cập nhật và về danh sách
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => save("archived", false)}
-                      className="cursor-pointer text-sm font-medium text-rose-600"
-                    >
-                      Lưu trữ sản phẩm
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
+              ) : (
+                <div className="inline-flex rounded-xs shadow-xs">
+                  <Button
+                    onClick={() => save(form.status as any, false)}
+                    disabled={saving}
+                    className="h-9 rounded-r-none bg-[#6941c6] px-3.5 text-sm font-semibold text-white hover:bg-[#53389e] transition-colors shadow-xs"
+                  >
+                    {saving ? "Đang cập nhật…" : "Cập nhật sản phẩm"}
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        disabled={saving}
+                        className="h-9 rounded-l-none border-l border-white/20 bg-[#6941c6] px-2 text-white hover:bg-[#53389e] transition-colors shadow-xs"
+                      >
+                        <ChevronDown className="size-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-52 rounded-xs p-1 shadow-lg">
+                      <DropdownMenuItem
+                        onClick={() => save("published", false)}
+                        className="cursor-pointer text-sm font-medium"
+                      >
+                        Cập nhật và tiếp tục hiển thị
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => save("draft", false)}
+                        className="cursor-pointer text-sm font-medium text-slate-700"
+                      >
+                        Lưu bản nháp
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => save(undefined, true)}
+                        className="cursor-pointer text-sm font-medium text-slate-700"
+                      >
+                        Cập nhật và về danh sách
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => save("archived", false)}
+                        className="cursor-pointer text-sm font-medium text-rose-600"
+                      >
+                        Lưu trữ sản phẩm
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+            </>}
           </div>
         </div>
 
@@ -3398,15 +3444,15 @@ export function ProductsManager({
                         </span>
                       )}
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleOpenAddVariant}
-                      className="h-7.5 px-2.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 gap-1 shadow-2xs"
-                    >
-                      <Plus className="size-3.5 text-[#6941c6]" />
-                      <span>Thêm bộ màu</span>
-                    </Button>
+                    {canWrite && <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleOpenAddVariant}
+                        className="h-7.5 px-2.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 gap-1 shadow-2xs"
+                      >
+                        <Plus className="size-3.5 text-[#6941c6]" />
+                        <span>Thêm bộ màu</span>
+                      </Button>}
                   </div>
 
                   {/* Colorway Pills Bar */}
@@ -3492,14 +3538,14 @@ export function ProductsManager({
                           >
                             Tải tệp lên
                           </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleOpenAddVariant}
-                            className="h-8.5 rounded-xs border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                          >
-                            Thêm bộ màu
-                          </Button>
+                          {canWrite && <Button
+                              type="button"
+                              variant="outline"
+                              onClick={handleOpenAddVariant}
+                              className="h-8.5 rounded-xs border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                            >
+                              Thêm bộ màu
+                            </Button>}
                         </div>
                       </div>
                     </div>
@@ -3880,15 +3926,15 @@ export function ProductsManager({
                 <h2 className="text-slate-950 admin-section-title">
                   Biến thể ({detailData.variants.length})
                 </h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleOpenAddVariant}
-                  className="h-7.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 gap-1.5 shadow-2xs"
-                >
-                  <Plus className="size-3.5 text-[#6941c6]" />
-                  Thêm biến thể
-                </Button>
+                {canWrite && <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleOpenAddVariant}
+                    className="h-7.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 gap-1.5 shadow-2xs"
+                  >
+                    <Plus className="size-3.5 text-[#6941c6]" />
+                    Thêm biến thể
+                  </Button>}
               </div>
 
               {/* Table */}
@@ -3915,13 +3961,13 @@ export function ProductsManager({
                             <p className="text-sm font-medium text-slate-500 mt-1 max-w-sm mx-auto">
                               Thêm biến thể theo kích cỡ, màu sắc hoặc kiểu dáng để quản lý tồn kho và giá bán.
                             </p>
-                            <Button
-                              type="button"
-                              onClick={handleOpenAddVariant}
-                              className="mt-3.5 h-8.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white hover:bg-[#53389e] transition-colors shadow-xs"
-                            >
-                              Thêm biến thể
-                            </Button>
+                            {canWrite && <Button
+                                type="button"
+                                onClick={handleOpenAddVariant}
+                                className="mt-3.5 h-8.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white hover:bg-[#53389e] transition-colors shadow-xs"
+                              >
+                                Thêm biến thể
+                              </Button>}
                           </td>
                         </tr>
                       ) : (
@@ -4753,13 +4799,13 @@ export function ProductsManager({
             <Download className="size-3.5 text-slate-500" />
             <span>Xuất dữ liệu</span>
           </Button>
-          <Button
-            onClick={openCreate}
-            className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
-          >
-            <Plus className="size-3.5" />
-            <span>Thêm sản phẩm</span>
-          </Button>
+          {canWrite && <Button
+              onClick={openCreate}
+              className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
+            >
+              <Plus className="size-3.5" />
+              <span>Thêm sản phẩm</span>
+            </Button>}
         </div>
       </div>
 
@@ -5140,11 +5186,11 @@ export function ProductsManager({
       </div>
 
       {/* Bulk actions banner */}
-      {selectedCount > 0 && (
+      {selectedCount > 0 && (canWrite || canPublish || canDelete) && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xs border border-purple-200 bg-[#f4f3ff] px-4 py-2.5 text-sm text-[#53389e]">
           <span className="font-medium">Đã chọn {selectedCount} sản phẩm</span>
           <div className="flex items-center gap-2">
-            <Button
+            {canPublish && <Button
               size="sm"
               variant="outline"
               disabled={bulkBusy}
@@ -5152,8 +5198,8 @@ export function ProductsManager({
               className="h-8 rounded-xs bg-white border-purple-200 text-sm text-[#6941c6] hover:bg-purple-50"
             >
               Đăng bán
-            </Button>
-            <Button
+            </Button>}
+            {canWrite && <Button
               size="sm"
               variant="outline"
               disabled={bulkBusy}
@@ -5161,8 +5207,8 @@ export function ProductsManager({
               className="h-8 rounded-xs bg-white border-purple-200 text-sm text-slate-700 hover:bg-slate-50"
             >
               Lưu trữ
-            </Button>
-            <Button
+            </Button>}
+            {canDelete && <Button
               size="sm"
               variant="outline"
               disabled={bulkBusy}
@@ -5170,7 +5216,7 @@ export function ProductsManager({
               className="h-8 rounded-xs bg-white border-red-200 text-sm text-red-600 hover:bg-red-50"
             >
               Xóa
-            </Button>
+            </Button>}
             <Button
               size="sm"
               variant="ghost"
@@ -5359,53 +5405,53 @@ export function ProductsManager({
                               <Eye className="size-3.5 mr-2 text-slate-500" />
                               Xem chi tiết (Detail)
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => openEdit(p)}
-                              className="cursor-pointer text-sm font-medium text-[#6941c6]"
-                            >
-                              <Pencil className="size-3.5 mr-2 text-[#6941c6]" />
-                              Chỉnh sửa (Edit product)
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => setStockDetail(p)}
-                              className="cursor-pointer text-sm"
-                            >
-                              <Boxes className="size-3.5 mr-2 text-slate-500" />
-                              Xem chi tiết tồn kho
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                onNavigate?.("inventory", {
-                                  productId: p.id,
-                                  productName: p.name,
-                                })
-                              }
-                              className="cursor-pointer text-sm"
-                            >
-                              Quản lý tồn kho
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
+                            {canWrite && <DropdownMenuItem
+                                onClick={() => openEdit(p)}
+                                className="cursor-pointer text-sm font-medium text-[#6941c6]"
+                              >
+                                <Pencil className="size-3.5 mr-2 text-[#6941c6]" />
+                                Chỉnh sửa (Edit product)
+                              </DropdownMenuItem>}
+                            {canReadInventory && <DropdownMenuItem
+                                onClick={() => setStockDetail(p)}
+                                className="cursor-pointer text-sm"
+                              >
+                                <Boxes className="size-3.5 mr-2 text-slate-500" />
+                                Xem chi tiết tồn kho
+                              </DropdownMenuItem>}
+                            {canReadInventory && <DropdownMenuItem
+                                onClick={() =>
+                                  onNavigate?.("inventory", {
+                                    productId: p.id,
+                                    productName: p.name,
+                                  })
+                                }
+                                className="cursor-pointer text-sm"
+                              >
+                                Quản lý tồn kho
+                              </DropdownMenuItem>}
+                            {(canWrite || canPublish || canDelete) && <DropdownMenuSeparator />}
                             {p.status === "published" ? (
-                              <DropdownMenuItem
-                                onClick={() => updateStatus(p, "draft")}
-                                className="cursor-pointer text-sm text-amber-600"
-                              >
-                                Chuyển về bản nháp
-                              </DropdownMenuItem>
+                              canWrite && <DropdownMenuItem
+                                  onClick={() => updateStatus(p, "draft")}
+                                  className="cursor-pointer text-sm text-amber-600"
+                                >
+                                  Chuyển về bản nháp
+                                </DropdownMenuItem>
                             ) : (
-                              <DropdownMenuItem
-                                onClick={() => updateStatus(p, "published")}
-                                className="cursor-pointer text-sm text-emerald-600"
-                              >
-                                Đăng bán sản phẩm
-                              </DropdownMenuItem>
+                              canPublish && <DropdownMenuItem
+                                  onClick={() => updateStatus(p, "published")}
+                                  className="cursor-pointer text-sm text-emerald-600"
+                                >
+                                  Đăng bán sản phẩm
+                                </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem
-                              onClick={() => remove(p)}
-                              className="cursor-pointer text-sm text-red-600 focus:text-red-700"
-                            >
-                              Xóa sản phẩm
-                            </DropdownMenuItem>
+                            {canDelete && <DropdownMenuItem
+                                onClick={() => remove(p)}
+                                className="cursor-pointer text-sm text-red-600 focus:text-red-700"
+                              >
+                                Xóa sản phẩm
+                              </DropdownMenuItem>}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>
