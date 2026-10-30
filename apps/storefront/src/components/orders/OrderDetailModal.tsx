@@ -17,6 +17,8 @@ import { formatVND } from "@/lib/products";
 import { checkPaymentStatus, storeApi, type StoreOrderDetail } from "@/lib/api";
 import { toast } from "sonner";
 import { fireCheckoutCelebration } from "@/lib/celebrate";
+import { ProductReviewForm } from "@/components/orders/ProductReviewForm";
+import { useStore } from "@/lib/store";
 
 function copyText(label: string, value: string) {
   void navigator.clipboard.writeText(value).then(
@@ -33,6 +35,7 @@ interface OrderDetailModalProps {
 }
 
 export function OrderDetailModal({ orderId, onClose, onPayNow, onOrderUpdated }: OrderDetailModalProps) {
+  const { storeSettings } = useStore();
   const [order, setOrder] = useState<StoreOrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,9 +100,9 @@ export function OrderDetailModal({ orderId, onClose, onPayNow, onOrderUpdated }:
     };
   }, []);
 
-  const getStepProgress = (status: string, paymentStatus: string) => {
+  const getStepProgress = (status: string, paymentStatus: string, fulfillmentStatus?: string) => {
     if (status === "cancelled") return -1;
-    if (status === "completed") return 4;
+    if (status === "completed" || fulfillmentStatus === "fulfilled" || fulfillmentStatus === "delivered") return 4;
     if (status === "shipping") return 3;
     if (status === "processing" || status === "confirmed") return 2;
     if (paymentStatus === "paid") return 1;
@@ -214,7 +217,7 @@ export function OrderDetailModal({ orderId, onClose, onPayNow, onOrderUpdated }:
 
                   {/* Order lifecycle badge */}
                   <span className="bg-foreground text-background px-3 py-1 text-xs uppercase tracking-wider font-medium">
-                    {order.status === "completed"
+                    {order.status === "completed" || order.fulfillment_status === "fulfilled" || order.fulfillment_status === "delivered"
                       ? "Hoàn thành"
                       : order.status === "shipping"
                         ? "Đang giao hàng"
@@ -237,7 +240,7 @@ export function OrderDetailModal({ orderId, onClose, onPayNow, onOrderUpdated }:
                   </p>
                   <div className="grid grid-cols-5 gap-1 text-center">
                     {steps.map((st, idx) => {
-                      const cur = getStepProgress(order.status, order.payment_status);
+                      const cur = getStepProgress(order.status, order.payment_status, order.fulfillment_status);
                       const isDone = idx <= cur;
                       const isCurrent = idx === cur;
                       const Icon = st.icon;
@@ -378,7 +381,11 @@ export function OrderDetailModal({ orderId, onClose, onPayNow, onOrderUpdated }:
                         <div className="flex justify-between gap-2">
                           <div>
                             <h4 className="font-serif text-[16px] font-medium leading-[1.3] tracking-[-0.015em] text-foreground line-clamp-2" title={it.product_name}>
-                              {it.product_name}
+                              {it.product_slug ? (
+                                <Link to="/san-pham/$slug" params={{ slug: it.product_slug }} onClick={onClose} className="inline-block transition-transform duration-200 hover:-translate-y-0.5">
+                                  {it.product_name}
+                                </Link>
+                              ) : it.product_name}
                             </h4>
                             <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
                               {it.size_label && (
@@ -399,6 +406,19 @@ export function OrderDetailModal({ orderId, onClose, onPayNow, onOrderUpdated }:
                             </p>
                           </div>
                         </div>
+                        {(order.status === "completed" || order.fulfillment_status === "fulfilled" || order.fulfillment_status === "delivered") && (
+                          <ProductReviewForm
+                            orderItemId={it.id}
+                            review={it.review}
+                            onSubmitted={(review) => {
+                              setOrder((current) =>
+                                current
+                                  ? { ...current, items: current.items.map((item) => item.id === it.id ? { ...item, review } : item) }
+                                  : current,
+                              );
+                            }}
+                          />
+                        )}
                       </div>
                     </div>
                   ))}
@@ -437,7 +457,7 @@ export function OrderDetailModal({ orderId, onClose, onPayNow, onOrderUpdated }:
               <div className="flex items-center gap-3 p-3 bg-secondary/20 border border-border/50 text-xs text-muted-foreground">
                 <ShieldCheck className="h-5 w-5 text-foreground flex-shrink-0" />
                 <p>
-                  Được đảm bảo bởi ÉLANE: Đổi trả miễn phí trong 30 ngày. Hỗ trợ CSKH 24/7 hotline 1900 8888.
+                  Được đảm bảo bởi {storeSettings.brand.name}: đổi trả trong {storeSettings.returns.returnWindowDays} ngày theo chính sách. Hỗ trợ qua hotline {storeSettings.brand.supportPhone}.
                 </p>
               </div>
             </>

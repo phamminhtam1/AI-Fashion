@@ -4,14 +4,11 @@ import {
   Calendar,
   Check,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   Clock,
   Copy,
   CreditCard,
-  Crown,
   ExternalLink,
-  Heart,
   Loader2,
   Lock,
   Mail,
@@ -21,13 +18,12 @@ import {
   Pencil,
   Phone,
   Plus,
+  Repeat2,
   Save,
   Search,
-  ShoppingBag,
   SlidersHorizontal,
   TrendingUp,
   Unlock,
-  UserCheck,
   UserPlus,
   Users,
   X,
@@ -38,8 +34,10 @@ import { resolveAdminPath } from "@/lib/routes";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AdminPagination } from "@/components/AdminPagination";
 import { cn } from "@/lib/utils";
 import {
   adminApi,
@@ -58,14 +56,14 @@ const SEGMENT_LABEL: Record<CustomerSegment, string> = {
 };
 
 const SEGMENT_CLASS: Record<CustomerSegment, string> = {
-  vip: "bg-purple-50 text-purple-700 border-purple-200/60 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/60",
+  vip: "bg-[#6941c6]/10 text-[#6941c6] border-[#6941c6]/20 dark:bg-[#6941c6]/20 dark:text-[#d6c7ff] dark:border-[#6941c6]/40",
   loyal: "bg-blue-50 text-blue-700 border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60",
   new: "bg-emerald-50 text-emerald-700 border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60",
 };
 
 const AVATAR_TINTS = [
   "bg-blue-50 text-blue-700 border-blue-200/60",
-  "bg-purple-50 text-purple-700 border-purple-200/60",
+  "bg-[#6941c6]/8 text-[#6941c6] border-[#6941c6]/20",
   "bg-emerald-50 text-emerald-700 border-emerald-200/60",
   "bg-amber-50 text-amber-700 border-amber-200/60",
   "bg-rose-50 text-rose-700 border-rose-200/60",
@@ -75,6 +73,7 @@ const GENDER_LABEL: Record<string, string> = { male: "Nam", female: "Nữ", othe
 
 type CustomerExtra = Customer & {
   order_count?: number | null;
+  avg_order_value_vnd?: number | null;
   last_order_at?: string | null;
   avatar_url?: string | null;
   birth_date?: string | null;
@@ -84,6 +83,8 @@ type CustomerExtra = Customer & {
 const SORT_OPTIONS = [
   { value: "created_at_desc", label: "Mới đăng ký nhất" },
   { value: "created_at_asc", label: "Đăng ký lâu nhất" },
+  { value: "orders_desc", label: "Nhiều đơn nhất" },
+  { value: "avg_order_value_desc", label: "Giá trị đơn trung bình cao nhất" },
   { value: "spent_desc", label: "Chi tiêu cao nhất" },
   { value: "spent_asc", label: "Chi tiêu thấp nhất" },
   { value: "name_asc", label: "Tên A→Z" },
@@ -101,9 +102,9 @@ function formatVndFull(n: number) {
 }
 
 function fmtDate(s?: string | null) {
-  if (!s) return "—";
+  if (!s) return "–";
   const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "–";
   return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
@@ -114,9 +115,9 @@ function formatAddress(a: { address_line: string; administrative_units: Record<s
 }
 
 function memberSince(s?: string | null) {
-  if (!s) return "—";
+  if (!s) return "–";
   const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "–";
   const months = Math.max(0, Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24 * 30.4)));
   const span = months >= 12 ? `${Math.floor(months / 12)} năm` : `${months} tháng`;
   return `${fmtDate(s)} (${span})`;
@@ -185,44 +186,56 @@ function Avatar({ c, className }: { c: CustomerExtra; className?: string }) {
 }
 
 function MetricCard({
-  icon,
-  iconBg,
-  iconColor,
   value,
   label,
-  sublabel,
+  detail,
+  icon,
+  tone,
   active,
   onClick,
 }: {
-  icon: React.ReactNode;
-  iconBg: string;
-  iconColor: string;
   value: string;
   label: string;
-  sublabel?: string;
+  detail: string;
+  icon: React.ReactNode;
+  tone: "violet" | "green" | "blue" | "amber" | "teal";
   active?: boolean;
   onClick?: () => void;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-3.5 rounded-xs border bg-white p-3.5 text-left transition-all shadow-2xs",
-        active
-          ? "border-[#6941c6]/60 bg-[#6941c6]/5 ring-1 ring-[#6941c6]/30"
-          : "border-border/70 hover:border-border hover:bg-slate-50/50",
-      )}
-    >
-      <div className={cn("grid size-10 shrink-0 place-items-center rounded-xs", iconBg, iconColor)}>
-        {icon}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="text-xl font-semibold tabular-nums leading-tight text-slate-950">{value}</div>
-        <div className="mt-0.5 truncate text-sm font-semibold text-slate-700">{label}</div>
-        {sublabel && <div className="mt-0.5 text-xs font-medium text-slate-500 leading-tight">{sublabel}</div>}
-      </div>
+  const tones = {
+    violet: { icon: "bg-[#6941c6]/8 text-[#6941c6]", bar: "before:bg-[#6941c6]", hover: "hover:border-[#6941c6]/30" },
+    green: { icon: "bg-emerald-50 text-emerald-700", bar: "before:bg-emerald-500", hover: "hover:border-emerald-200" },
+    blue: { icon: "bg-sky-50 text-sky-700", bar: "before:bg-sky-500", hover: "hover:border-sky-200" },
+    amber: { icon: "bg-amber-50 text-amber-700", bar: "before:bg-amber-500", hover: "hover:border-amber-200" },
+    teal: { icon: "bg-teal-50 text-teal-700", bar: "before:bg-teal-500", hover: "hover:border-teal-200" },
+  };
+  const selected = active && "border-[#6941c6]/30 bg-[#6941c6]/5 ring-1 ring-[#6941c6]/10";
+  const content = (
+    <span className="relative flex h-full flex-col">
+      <span className="flex items-start justify-between gap-2.5">
+        <span className="pt-0.5 text-xs font-medium leading-5 text-slate-600">{label}</span>
+        <span className={cn("grid size-9 shrink-0 place-items-center rounded-md", tones[tone].icon)} aria-hidden="true">
+          {icon}
+        </span>
+      </span>
+      <span className="mt-2 text-[1.65rem] font-semibold tabular-nums leading-none tracking-tight text-slate-950"><AnimatedValue value={value} /></span>
+      <span className="mt-auto pt-3 text-[11px] font-medium leading-4 text-slate-500">{detail}</span>
+    </span>
+  );
+  const className = cn(
+    "group relative min-h-[132px] w-full overflow-hidden rounded-md border px-3.5 py-3.5 text-left transition duration-200 ease-out before:absolute before:inset-x-0 before:top-0 before:h-[3px]",
+    tones[tone].bar,
+    active ? selected : cn("border-border/70 bg-white", tones[tone].hover),
+    onClick && "cursor-pointer hover:-translate-y-0.5",
+    onClick && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
+  );
+
+  return onClick ? (
+    <button type="button" onClick={onClick} aria-pressed={active} className={className}>
+      {content}
     </button>
+  ) : (
+    <div className={className}>{content}</div>
   );
 }
 
@@ -258,79 +271,6 @@ function SelectBox({
   );
 }
 
-function pageItems(cur: number, total: number): Array<number | "…"> {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  if (cur <= 4) return [1, 2, 3, 4, 5, "…", total];
-  if (cur >= total - 3) return [1, "…", total - 4, total - 3, total - 2, total - 1, total];
-  return [1, "…", cur - 1, cur, cur + 1, "…", total];
-}
-
-function Pager({
-  page,
-  totalPages,
-  total,
-  pageSize,
-  shown,
-  onPage,
-  onPageSize,
-}: {
-  page: number;
-  totalPages: number;
-  total: number;
-  pageSize: number;
-  shown: number;
-  onPage: (p: number) => void;
-  onPageSize: (n: number) => void;
-}) {
-  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
-  const to = (page - 1) * pageSize + shown;
-  const btn =
-    "grid size-7.5 place-items-center rounded-xs border border-border/70 bg-white text-sm transition-colors hover:bg-secondary/60 disabled:pointer-events-none disabled:opacity-40";
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 px-4 py-3">
-      <span className="text-sm font-semibold text-slate-700">
-        Hiển thị {from} – {to} của {total.toLocaleString("vi-VN")} khách hàng
-      </span>
-      <div className="flex items-center gap-1">
-        <button type="button" className={btn} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Trang trước">
-          <ChevronLeft className="size-3.5" />
-        </button>
-        {pageItems(page, totalPages).map((it, i) =>
-          it === "…" ? (
-            <span key={`e${i}`} className="px-1 text-sm font-semibold text-slate-400">
-              …
-            </span>
-          ) : (
-            <button
-              key={it}
-              type="button"
-              onClick={() => onPage(it)}
-              className={cn(
-                btn,
-                it === page
-                  ? "border-[#6941c6] bg-[#6941c6] text-white font-semibold hover:bg-[#6941c6]"
-                  : "font-semibold text-slate-800",
-              )}
-            >
-              {it}
-            </button>
-          ),
-        )}
-        <button type="button" className={btn} disabled={page >= totalPages} onClick={() => onPage(page + 1)} aria-label="Trang sau">
-          <ChevronRight className="size-3.5" />
-        </button>
-        <SelectBox
-          label="Số dòng mỗi trang"
-          value={String(pageSize)}
-          onChange={(v) => onPageSize(Number(v))}
-          className="ml-2 w-28 [&_select]:h-7.5 [&_select]:text-sm [&_select]:rounded-xs"
-          options={[5, 10, 20, 50].map((n) => ({ value: String(n), label: `${n} / trang` }))}
-        />
-      </div>
-    </div>
-  );
-}
-
 function MenuItem({
   icon,
   label,
@@ -359,8 +299,8 @@ function MenuItem({
 
 function FormCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xs border border-border/70 bg-white p-4.5 shadow-2xs">
-      <h2 className=" admin-section-title">{title}</h2>
+    <section className="rounded-xs border border-border/70 bg-white p-4.5">
+      <h2 className="admin-section-title">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -391,6 +331,8 @@ function Field({
 type FilterState = {
   segment: CustomerSegment | "all";
   status: "" | "active" | "blocked";
+  activity: "" | "active_12m";
+  repeatOnly: boolean;
   spentMin: string;
   spentMax: string;
   dateFrom: string;
@@ -402,6 +344,8 @@ type FilterState = {
 const emptyFilters: FilterState = {
   segment: "all",
   status: "",
+  activity: "",
+  repeatOnly: false,
   spentMin: "",
   spentMax: "",
   dateFrom: "",
@@ -480,15 +424,18 @@ export function CustomersManager({
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
   const [draftFilters, setDraftFilters] = useState<FilterState>(emptyFilters);
   const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [menuId, setMenuId] = useState<string | null>(null);
 
   // View state
   const [activeTab, setActiveTab] = useState<ViewTab>(isCreateRoute ? "form" : detailParam ? "detail" : "list");
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(detailParam ?? null);
+  // Keep this empty on first mount so the URL-sync effect fetches deep-linked details after F5.
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [detail, setDetail] = useState<Customer | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(Boolean(detailParam));
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [detailTab, setDetailTab] = useState<DetailTab>("orders");
   const [showAllOrders, setShowAllOrders] = useState(false);
   const [internalNoteDraft, setInternalNoteDraft] = useState("");
@@ -513,10 +460,13 @@ export function CustomersManager({
 
   const load = useCallback(async () => {
     setLoading(true);
+    setListError(null);
     try {
       const res = await adminApi.customers({
         ...(filters.segment !== "all" ? { segment: filters.segment } : {}),
         ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.activity ? { activity: filters.activity } : {}),
+        ...(filters.repeatOnly ? { repeat_only: true } : {}),
         ...(query.trim() ? { q: query.trim() } : {}),
         ...(filters.spentMin ? { spent_min: Number(filters.spentMin) } : {}),
         ...(filters.spentMax ? { spent_max: Number(filters.spentMax) } : {}),
@@ -534,7 +484,7 @@ export function CustomersManager({
         setMetrics(res.overview_metrics);
       }
     } catch (e) {
-      toast.error(e instanceof Error ? adminErrorMessage(e) : "Không tải được khách hàng");
+      setListError(e instanceof Error ? adminErrorMessage(e) : "Không tải được danh sách khách hàng.");
     } finally {
       setLoading(false);
     }
@@ -557,6 +507,20 @@ export function CustomersManager({
 
   const activeFilterChips = useMemo(() => {
     const chips: Array<{ key: string; label: string; clear: () => void }> = [];
+    if (filters.activity === "active_12m") {
+      chips.push({
+        key: "activity",
+        label: "Hoạt động trong 12 tháng",
+        clear: () => setFilters((f) => ({ ...f, activity: "" })),
+      });
+    }
+    if (filters.repeatOnly) {
+      chips.push({
+        key: "repeat",
+        label: "Đã có từ 2 đơn",
+        clear: () => setFilters((f) => ({ ...f, repeatOnly: false })),
+      });
+    }
     if (filters.dateFrom || filters.dateTo) {
       chips.push({
         key: "date",
@@ -596,10 +560,37 @@ export function CustomersManager({
     (filters.spentMin || filters.spentMax ? 1 : 0) +
     (filters.city.trim() ? 1 : 0) +
     (filters.sortBy !== "created_at_desc" ? 1 : 0);
+  const hasActiveCustomerCriteria = Boolean(
+    queryInput.trim() ||
+      query.trim() ||
+      filters.segment !== "all" ||
+      filters.status ||
+      filters.activity ||
+      filters.repeatOnly ||
+      filters.spentMin ||
+      filters.spentMax ||
+      filters.dateFrom ||
+      filters.dateTo ||
+      filters.city.trim() ||
+      filters.sortBy !== "created_at_desc",
+  );
+  const isInitialCustomerEmpty = total === 0 && !hasActiveCustomerCriteria && !listError;
 
   function resetFilters() {
     setFilters(emptyFilters);
     setDraftFilters(emptyFilters);
+    setQueryInput("");
+    setQuery("");
+  }
+
+  function applyMetricAction(action: "all" | "active" | "orders" | "average-value" | "repeat") {
+    const next: FilterState = { ...emptyFilters };
+    if (action === "active") next.activity = "active_12m";
+    if (action === "repeat") next.repeatOnly = true;
+    if (action === "orders") next.sortBy = "orders_desc";
+    if (action === "average-value") next.sortBy = "avg_order_value_desc";
+    setFilters(next);
+    setDraftFilters(next);
     setQueryInput("");
     setQuery("");
   }
@@ -612,16 +603,20 @@ export function CustomersManager({
     setDetailTab("orders");
     setShowAllOrders(false);
     setDetailLoading(true);
+    setDetailError(null);
     if (initialCustomer) {
       setDetail(initialCustomer);
       setInternalNoteDraft(initialCustomer.internal_note || "");
+    } else {
+      setDetail(null);
+      setInternalNoteDraft("");
     }
     try {
       const full = await adminApi.customer(id);
       setDetail(full);
       setInternalNoteDraft(full.internal_note || "");
     } catch (e) {
-      toast.error(e instanceof Error ? adminErrorMessage(e) : "Không tải được hồ sơ khách hàng");
+      setDetailError(e instanceof Error ? adminErrorMessage(e) : "Không tải được hồ sơ khách hàng.");
     } finally {
       setDetailLoading(false);
     }
@@ -791,7 +786,6 @@ export function CustomersManager({
 
   // ── Derived ─────────────────────────────────────────────────────────────────
 
-  const totalPages = Math.max(1, Math.ceil(total / limit));
   const allSelected = items.length > 0 && items.every((c) => selected.has(c.id));
   const someSelected = items.some((c) => selected.has(c.id));
 
@@ -859,7 +853,7 @@ export function CustomersManager({
               onClick={saveForm}
             >
               {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
-              {saving ? "Đang lưu…" : "Lưu khách hàng"}
+              {saving ? "Đang lưu…" : editingId ? "Lưu thay đổi" : "Lưu khách hàng"}
             </Button>
           </div>
         </div>
@@ -1015,11 +1009,26 @@ export function CustomersManager({
   if (activeTab === "detail") {
     if (!detail) {
       return (
-        <div className="mt-8 grid min-h-[360px] place-items-center rounded-xs border border-border/70 bg-card text-sm text-muted-foreground">
-          <div className="flex flex-col items-center gap-2">
-            <Loader2 className="size-5 animate-spin text-[#6941c6]" />
-            <p>Đang tải hồ sơ khách hàng…</p>
-          </div>
+        <div className="mt-8 grid min-h-[320px] place-items-center rounded-xs border border-border/70 bg-white p-6 text-sm text-muted-foreground">
+          {detailLoading ? (
+            <div role="status" className="flex flex-col items-center gap-2">
+              <Loader2 className="size-5 animate-spin text-[#6941c6]" />
+              <p>Đang tải hồ sơ khách hàng…</p>
+            </div>
+          ) : (
+            <div role="alert" className="flex max-w-md flex-col items-center gap-2 text-center">
+              <h2 className="text-base font-semibold text-slate-900">Không tải được hồ sơ khách hàng</h2>
+              <p>{detailError || "Thử tải lại để tiếp tục."}</p>
+              <div className="mt-1 flex flex-wrap justify-center gap-2">
+                <Button variant="outline" onClick={handleBackToList}>Quay lại danh sách</Button>
+                {selectedCustomerId && (
+                  <Button variant="outline" onClick={() => void openDetailInternal(selectedCustomerId)}>
+                    Thử lại
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -1098,7 +1107,21 @@ export function CustomersManager({
           </div>
         </div>
 
-        <div className="grid items-start gap-4 lg:grid-cols-[380px_minmax(0,1fr)]">
+        {detailError && (
+          <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xs border border-border/70 bg-white px-3.5 py-2.5">
+            <p className="text-sm text-slate-600">Không cập nhật được hồ sơ mới nhất. {detailError}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => selectedCustomerId && void openDetailInternal(selectedCustomerId, detail)}
+              className="h-8 rounded-xs"
+            >
+              Thử lại
+            </Button>
+          </div>
+        )}
+
+        <div className="grid items-start gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
           {/* LEFT */}
           <div className="space-y-4">
             <section className="rounded-xs border border-border/70 bg-white p-4.5 shadow-2xs">
@@ -1175,15 +1198,15 @@ export function CustomersManager({
                 <dt className="font-semibold text-slate-600">Họ và tên</dt>
                 <dd className="font-semibold text-slate-900">{detail.full_name}</dd>
                 <dt className="font-semibold text-slate-600">Email</dt>
-                <dd className="break-all font-semibold text-slate-900">{detail.email || "—"}</dd>
+                <dd className="break-all font-semibold text-slate-900">{detail.email || "–"}</dd>
                 <dt className="font-semibold text-slate-600">Số điện thoại</dt>
-                <dd className="font-semibold text-slate-900">{detail.phone || "—"}</dd>
+                <dd className="font-semibold text-slate-900">{detail.phone || "–"}</dd>
                 <dt className="font-semibold text-slate-600">Ngày sinh</dt>
                 <dd className="font-semibold text-slate-800">{fmtDate(dx.birth_date)}</dd>
                 <dt className="font-semibold text-slate-600">Giới tính</dt>
-                <dd className="font-semibold text-slate-800">{dx.gender ? (GENDER_LABEL[dx.gender] ?? dx.gender) : "—"}</dd>
+                <dd className="font-semibold text-slate-800">{dx.gender ? (GENDER_LABEL[dx.gender] ?? dx.gender) : "–"}</dd>
                 <dt className="font-semibold text-slate-600">Ghi chú</dt>
-                <dd className="whitespace-pre-line font-medium text-slate-800">{detail.internal_note || "—"}</dd>
+                <dd className="whitespace-pre-line font-medium text-slate-800">{detail.internal_note || "–"}</dd>
               </dl>
             </section>
           </div>
@@ -1231,16 +1254,17 @@ export function CustomersManager({
                   </p>
                 ) : (
                   <>
-                    <div className="mt-3 overflow-x-auto rounded-xs border border-border/70">
-                      <table className="w-full min-w-[580px] text-left text-sm">
-                        <thead>
-                          <tr className="border-y border-slate-200 bg-slate-50/80 text-sm font-semibold tracking-tight text-slate-700">
-                            <th className="w-8 px-3 py-2.5 font-semibold tracking-tight text-slate-700">#</th>
-                            <th className="px-3 py-2.5 font-semibold tracking-tight text-slate-700">Mã đơn & Ngày đặt</th>
-                            <th className="px-3 py-2.5 font-semibold tracking-tight text-slate-700">Sản phẩm</th>
-                            <th className="px-3 py-2.5 text-right font-semibold tracking-tight text-slate-700">Tổng tiền</th>
-                            <th className="px-3 py-2.5 font-semibold tracking-tight text-slate-700">Trạng thái</th>
-                            <th className="w-24 whitespace-nowrap px-3 py-2.5 text-center font-semibold tracking-tight text-slate-700">Thao tác</th>
+                    <div className="admin-table-frame mt-3 overflow-hidden rounded-xs border border-slate-200 bg-white">
+                      <div className="overflow-x-auto">
+                        <table aria-label="Đơn hàng của khách hàng" className="admin-data-table w-full min-w-[580px] text-left text-sm">
+                          <thead>
+                            <tr>
+                              <th scope="col" className="w-8">#</th>
+                              <th scope="col">Mã đơn & Ngày đặt</th>
+                              <th scope="col">Sản phẩm</th>
+                              <th scope="col" className="text-right">Tổng tiền</th>
+                              <th scope="col">Trạng thái</th>
+                              <th scope="col" className="w-24 whitespace-nowrap text-center">Thao tác</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1278,7 +1302,7 @@ export function CustomersManager({
                                     {its.length > 3 && (
                                       <span className="text-xs font-semibold text-slate-600">+{its.length - 3}</span>
                                     )}
-                                    {its.length === 0 && <span className="text-xs text-slate-400">—</span>}
+                                    {its.length === 0 && <span className="text-xs text-slate-400">–</span>}
                                   </div>
                                 </td>
                                 <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-slate-950">
@@ -1320,7 +1344,8 @@ export function CustomersManager({
                             );
                           })}
                         </tbody>
-                      </table>
+                        </table>
+                      </div>
                     </div>
                     {orders.length > 5 && (
                       <div className="mt-3 text-right">
@@ -1408,19 +1433,19 @@ export function CustomersManager({
                 <div className="grid gap-3 sm:grid-cols-3">
                   {[
                     {
-                      icon: <CreditCard className="size-3.5 text-blue-600" />,
+                      icon: <CreditCard className="size-3.5 text-muted-foreground" />,
                       label: "Tổng chi tiêu thực tế (LTV)",
                       value: formatVndFull(an?.total_spent_vnd ?? detail.total_spent_vnd ?? 0),
                       note: `${an?.completed_orders ?? 0} đơn đã thanh toán`,
                     },
                     {
-                      icon: <TrendingUp className="size-3.5 text-emerald-600" />,
+                      icon: <TrendingUp className="size-3.5 text-muted-foreground" />,
                       label: "Giá trị đơn trung bình",
                       value: formatVndFull(an?.aov_vnd ?? 0),
                       note: `${an?.pending_orders ?? 0} chờ TT · ${an?.cancelled_orders ?? 0} hủy`,
                     },
                     {
-                      icon: <Clock className="size-3.5 text-purple-600" />,
+                      icon: <Clock className="size-3.5 text-muted-foreground" />,
                       label: "Lần mua gần nhất",
                       value:
                         an?.days_since_last_order !== null && an?.days_since_last_order !== undefined
@@ -1497,7 +1522,7 @@ export function CustomersManager({
   // LIST VIEW (Khách hàng)
   // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-5 font-sans pb-12">
+    <div className="customers-manager space-y-5 font-sans pb-12">
       {/* 1. Page Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -1520,49 +1545,68 @@ export function CustomersManager({
         </div>
       </div>
 
-      {/* 5 Metric Cards matching screenshot */}
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      {/* Five customer measures in one divided surface; the total is also the all-customers filter. */}
+      <section className="customers-metrics" aria-label="Chỉ số khách hàng">
         <MetricCard
-          icon={<Users className="size-4.5" />}
-          iconBg="bg-blue-50 dark:bg-blue-950/40"
-          iconColor="text-blue-600 dark:text-blue-400"
           value={(metrics?.total_customers ?? total).toLocaleString("vi-VN")}
           label="Tổng khách hàng"
-          active={filters.segment === "all"}
-          onClick={() => setFilters((f) => ({ ...f, segment: "all" }))}
+          detail="Toàn bộ hồ sơ khách hàng"
+          icon={<Users className="size-4" />}
+          tone="violet"
+          active={
+            filters.segment === "all" &&
+            !filters.status &&
+            !filters.activity &&
+            !filters.repeatOnly &&
+            !filters.spentMin &&
+            !filters.spentMax &&
+            !filters.dateFrom &&
+            !filters.dateTo &&
+            !filters.city.trim() &&
+            filters.sortBy === "created_at_desc" &&
+            !queryInput.trim()
+          }
+          onClick={() => applyMetricAction("all")}
         />
         <MetricCard
-          icon={<UserCheck className="size-4.5" />}
-          iconBg="bg-emerald-50 dark:bg-emerald-950/40"
-          iconColor="text-emerald-600 dark:text-emerald-400"
           value={(metrics?.active_customers ?? total).toLocaleString("vi-VN")}
           label="Khách hàng hoạt động"
-          sublabel="(12 tháng qua)"
+          detail="Có hoạt động trong 12 tháng qua"
+          icon={<Check className="size-4" />}
+          tone="green"
+          active={filters.activity === "active_12m"}
+          onClick={() => applyMetricAction("active")}
         />
         <MetricCard
-          icon={<ShoppingBag className="size-4.5" />}
-          iconBg="bg-purple-50 dark:bg-purple-950/40"
-          iconColor="text-[#6941c6] dark:text-purple-400"
           value={String(metrics?.avg_orders_per_customer ?? 0)}
           label="Đơn hàng trung bình mỗi khách"
+          detail="Số đơn trung bình trên mỗi khách"
+          icon={<Package className="size-4" />}
+          tone="blue"
+          active={filters.sortBy === "orders_desc"}
+          onClick={() => applyMetricAction("orders")}
         />
         <MetricCard
-          icon={<CreditCard className="size-4.5" />}
-          iconBg="bg-amber-50 dark:bg-amber-950/40"
-          iconColor="text-amber-600 dark:text-amber-400"
           value={formatVnd(metrics?.avg_order_value_vnd ?? 0)}
           label="Giá trị đơn hàng trung bình"
+          detail="Giá trị bình quân trên mỗi đơn"
+          icon={<CreditCard className="size-4" />}
+          tone="amber"
+          active={filters.sortBy === "avg_order_value_desc"}
+          onClick={() => applyMetricAction("average-value")}
         />
         <MetricCard
-          icon={<Heart className="size-4.5" />}
-          iconBg="bg-rose-50 dark:bg-rose-950/40"
-          iconColor="text-rose-600 dark:text-rose-400"
           value={`${metrics?.repeat_customer_rate ?? 0}%`}
           label="Tỷ lệ khách hàng quay lại"
+          detail="Khách đã phát sinh từ 2 đơn hàng"
+          icon={<Repeat2 className="size-4" />}
+          tone="teal"
+          active={filters.repeatOnly}
+          onClick={() => applyMetricAction("repeat")}
         />
       </section>
 
-      <section className="overflow-hidden rounded-xs border border-border/70 bg-white shadow-2xs">
+      <section className="admin-table-frame customers-table-frame overflow-hidden rounded-xs border border-slate-200 bg-white">
         {/* Toolbar */}
         <div className="border-b border-border/70 p-3">
           <div className="flex flex-wrap items-center gap-2.5">
@@ -1600,7 +1644,7 @@ export function CustomersManager({
             <SelectBox
               label="Trạng thái"
               value={filters.status}
-              onChange={(v) => setFilters((f) => ({ ...f, status: v as FilterState["status"] }))}
+              onChange={(v) => setFilters((f) => ({ ...f, status: v as FilterState["status"], activity: "" }))}
               className="w-38"
               options={[
                 { value: "", label: "Tất cả trạng thái" },
@@ -1811,11 +1855,23 @@ export function CustomersManager({
         )}
 
         {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[940px] text-left text-sm">
+        <div className="overflow-x-auto customers-table-scroll">
+            <table aria-label="Danh sách khách hàng" className="admin-data-table w-full min-w-[1214px] table-fixed text-left text-sm">
+            <colgroup>
+              <col className="w-10" />
+              <col className="w-[260px]" />
+              <col className="w-[150px]" />
+              <col className="w-[80px]" />
+              <col className="w-[130px]" />
+              <col className="w-[140px]" />
+              <col className="w-[140px]" />
+              <col className="w-[100px]" />
+              <col className="w-[110px]" />
+              <col className="w-16" />
+            </colgroup>
             <thead>
-              <tr className="border-y border-slate-200 bg-slate-50/80 text-sm font-semibold tracking-tight text-slate-700">
-                <th className="w-10 px-3.5 py-2.5">
+              <tr>
+                <th scope="col" className="sticky left-0 z-30 w-10 bg-white">
                   <input
                     type="checkbox"
                     aria-label="Chọn tất cả"
@@ -1827,36 +1883,64 @@ export function CustomersManager({
                     onChange={toggleAll}
                   />
                 </th>
-                <th className="px-3 py-2.5 text-sm font-semibold tracking-tight text-slate-700">Khách hàng</th>
-                <th className="px-3 py-2.5 text-sm font-semibold tracking-tight text-slate-700">Liên hệ</th>
-                <th className="px-3 py-2.5 text-center text-sm font-semibold tracking-tight text-slate-700">Đơn hàng</th>
-                <th className="px-3 py-2.5 text-sm font-semibold tracking-tight text-slate-700">Tổng chi tiêu</th>
-                <th className="px-3 py-2.5 text-sm font-semibold tracking-tight text-slate-700">Lần mua cuối</th>
-                <th className="px-3 py-2.5 text-sm font-semibold tracking-tight text-slate-700">Phân khúc</th>
-                <th className="px-3 py-2.5 text-sm font-semibold tracking-tight text-slate-700">Trạng thái</th>
-                <th className="w-24 whitespace-nowrap px-3 py-2.5 text-center text-sm font-semibold tracking-tight text-slate-700">Thao tác</th>
+                <th scope="col" className="sticky left-10 z-20 w-[260px] border-r border-slate-200 bg-white">Khách hàng</th>
+                <th scope="col">Liên hệ</th>
+                <th scope="col" className="text-right">Đơn hàng</th>
+                <th scope="col" className="text-right" title="Giá trị đơn hàng trung bình">Giá trị đơn TB</th>
+                <th scope="col" className="text-right">Tổng chi tiêu</th>
+                <th scope="col">Lần mua cuối</th>
+                <th scope="col">Phân khúc</th>
+                <th scope="col">Trạng thái</th>
+                <th scope="col" className="whitespace-nowrap text-center">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="py-14 text-center text-sm font-semibold text-slate-500">
+                  <td colSpan={10} className="py-14 text-center text-sm font-semibold text-slate-500">
                     <div className="flex flex-col items-center gap-2">
                       <Loader2 className="size-4.5 animate-spin text-[#6941c6]" />
                       <span>Đang tải danh sách khách hàng…</span>
                     </div>
                   </td>
                 </tr>
+              ) : listError ? (
+                <tr>
+                  <td colSpan={10} className="py-12 text-center" role="alert">
+                    <p className="text-sm font-semibold text-slate-900">Không tải được danh sách khách hàng</p>
+                    <p className="mt-1 text-xs font-medium text-slate-500">{listError}</p>
+                    <Button variant="outline" size="sm" onClick={() => void load()} className="mt-2.5 h-8 rounded-xs bg-white text-sm font-semibold text-slate-700">
+                      Thử lại
+                    </Button>
+                  </td>
+                </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-14 text-center">
-                    <p className="text-sm font-semibold text-slate-900">Không tìm thấy khách hàng phù hợp</p>
-                    <p className="mt-1 text-xs font-medium text-slate-500">
-                      Thử từ khóa khác hoặc bỏ bớt tiêu chí lọc.
-                    </p>
-                    <Button variant="outline" size="sm" onClick={resetFilters} className="mt-2.5 h-7.5 rounded-xs bg-white text-sm font-semibold text-slate-700">
-                      Bỏ lọc
-                    </Button>
+                  <td colSpan={10} className="py-14 text-center">
+                    {isInitialCustomerEmpty ? (
+                      <>
+                        <p className="text-sm font-semibold text-slate-900">Chưa có khách hàng</p>
+                        <p className="mt-1 text-xs font-medium text-slate-500">
+                          Khách hàng sẽ xuất hiện từ đơn hàng hoặc khi được thêm vào hệ thống.
+                        </p>
+                        {canWrite && (
+                          <Button variant="outline" size="sm" onClick={openCreate} className="mt-2.5 h-7.5 rounded-xs bg-white text-sm font-semibold text-slate-700">
+                            <Plus className="mr-1 size-3.5" />
+                            Thêm khách hàng
+                          </Button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm font-semibold text-slate-900">Không tìm thấy khách hàng phù hợp</p>
+                        <p className="mt-1 text-xs font-medium text-slate-500">
+                          Thử từ khóa khác hoặc bỏ bớt tiêu chí lọc.
+                        </p>
+                        <Button variant="outline" size="sm" onClick={resetFilters} className="mt-2.5 h-7.5 rounded-xs bg-white text-sm font-semibold text-slate-700">
+                          Bỏ lọc
+                        </Button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -1873,7 +1957,7 @@ export function CustomersManager({
                         checked ? "bg-[#6941c6]/5" : "hover:bg-slate-50/70",
                       )}
                     >
-                      <td className="px-3.5 py-2.5" onClick={(e) => e.stopPropagation()}>
+                      <td className="sticky left-0 z-20 w-10 bg-inherit" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           aria-label={`Chọn ${c.full_name}`}
@@ -1882,8 +1966,8 @@ export function CustomersManager({
                           onChange={() => toggleOne(c.id)}
                         />
                       </td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex items-center gap-2.5">
+                      <td className="sticky left-10 z-10 w-[260px] border-r border-slate-200 bg-inherit">
+                        <div className="flex min-w-0 items-center gap-2.5">
                           <Avatar c={x} />
                           <div className="min-w-0">
                             <a
@@ -1893,17 +1977,18 @@ export function CustomersManager({
                                 e.stopPropagation();
                                 openDetail(c);
                               }}
-                              className="block max-w-[200px] truncate text-sm font-semibold text-slate-950 hover:underline"
+                              className="block max-w-[180px] truncate text-sm font-semibold text-slate-950 hover:underline"
                             >
                               {c.full_name}
                             </a>
-                            <p className="max-w-[200px] truncate text-sm font-medium text-slate-600">{c.email || "—"}</p>
+                            <p className="max-w-[180px] truncate text-sm font-medium text-slate-600">{c.email || "–"}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 py-2.5 font-semibold text-slate-800">{c.phone || "—"}</td>
-                      <td className="px-3 py-2.5 text-center font-semibold tabular-nums text-slate-900">{orderCount ?? 0}</td>
-                      <td className="px-3 py-2.5 font-semibold tabular-nums text-slate-950">{formatVndFull(c.total_spent_vnd ?? 0)}</td>
+                      <td className="px-3 py-2.5 font-semibold text-slate-800">{c.phone || "–"}</td>
+                      <td className="text-right font-medium tabular-nums text-slate-700">{orderCount ?? 0}</td>
+                      <td className="text-right font-medium tabular-nums text-slate-700">{formatVndFull(x.avg_order_value_vnd ?? 0)}</td>
+                      <td className="text-right font-semibold tabular-nums text-slate-950">{formatVndFull(c.total_spent_vnd ?? 0)}</td>
                       <td className="px-3 py-2.5 whitespace-nowrap font-semibold text-slate-700">{fmtDate(x.last_order_at)}</td>
                       <td className="px-3 py-2.5">
                         <SegmentPill segment={c.segment} />
@@ -1957,15 +2042,14 @@ export function CustomersManager({
           </table>
         </div>
 
-        <Pager
+        <AdminPagination
+          count={total}
           page={page}
-          totalPages={totalPages}
-          total={total}
           pageSize={limit}
-          shown={items.length}
-          onPage={setPage}
-          onPageSize={(n) => {
-            setLimit(n);
+          noun="khách hàng"
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setLimit(size);
             setPage(1);
           }}
         />

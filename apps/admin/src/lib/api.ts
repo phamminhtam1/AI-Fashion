@@ -1,6 +1,7 @@
 import { adminErrorMessage } from "@/lib/admin-language";
 
 const API_URL = import.meta.env["VITE_API_URL"] ?? "http://localhost:3001";
+export const STOREFRONT_URL = (import.meta.env["VITE_STOREFRONT_URL"] ?? "http://localhost:8090").replace(/\/$/, "");
 
 export type Category = {
   id: string;
@@ -100,6 +101,12 @@ export type InventoryDocumentListItem = {
   line_count: number;
   total_qty?: number;
   total_amount_vnd?: number;
+  requested_by: string;
+  requested_by_name?: string | null;
+  requested_by_role?: string | null;
+  approved_by: string | null;
+  approved_by_name?: string | null;
+  approved_by_role?: string | null;
   created_at: string;
   posted_at: string | null;
 };
@@ -114,6 +121,10 @@ export type InventoryDocumentDetail = {
   posted_at: string | null;
   requested_by: string;
   approved_by: string | null;
+  requested_by_name: string | null;
+  requested_by_role: string | null;
+  approved_by_name: string | null;
+  approved_by_role: string | null;
   lines: Array<{
     id: string;
     variant_id: string;
@@ -369,8 +380,18 @@ export type SocialContentItem = {
 };
 export type SocialInteraction = {
   id: string; authorUsername: string | null; message: string; kind: string; status: string;
-  aiReply: string | null; escalationReason: string | null; createdAt: string;
+  aiReply: string | null; escalationReason: string | null; createdAt: string; repliedAt?: string | null;
 };
+export type SocialInboxComment = SocialInteraction & {
+  channel: "instagram";
+  post: SocialContentItem | null;
+  connection: SocialConnection | null;
+};
+export type SocialConversation = {
+  id: string; connectionId: string; name: string; handle: string; channel: "instagram"; unread: number; updatedAt: string;
+  messages: Array<{ id: string; text: string; direction: "inbound" | "outbound"; createdAt: string }>;
+};
+export type SocialReplyKeyword = { id: string; connectionId: string | null; keyword: string; createdAt: string };
 export type SocialOverview = {
   connections: SocialConnection[]; content: SocialContentItem[]; interactions: SocialInteraction[];
   metrics: Array<{ id: string; contentId: string; impressions: number; reach: number; likes: number; comments: number; saves: number; shares: number; linkClicks: number; attributedOrders: number; attributedRevenueVnd: number; capturedAt: string }>;
@@ -378,6 +399,30 @@ export type SocialOverview = {
 export type SocialPlatformSettings = {
   appId: string; graphVersion: string; redirectUri: string; webhookUrl: string;
   hasAppSecret: boolean; hasWebhookVerifyToken: boolean; source: "database" | "environment";
+};
+
+export type AdminStoreSettings = {
+  brand: { name: string; tagline: string; supportEmail: string; supportPhone: string };
+  payments: { codEnabled: boolean; bankEnabled: boolean };
+  shipping: {
+    freeShippingFromVnd: number;
+    feeVnd: number;
+    cityDeliveryDays: string;
+    otherDeliveryDays: string;
+  };
+  returns: { returnWindowDays: number; refundWindow: string; conditions: string };
+  notifications: { newOrder: boolean; paymentSuccess: boolean; lowStock: boolean };
+  bankTransferConfigured: boolean;
+  updatedAt: string | null;
+};
+
+export type AdminNotification = {
+  id: string;
+  kind: "new_order" | "payment_success" | "low_stock";
+  title: string;
+  message: string;
+  created_at: string;
+  order_number?: string;
 };
 
 const ADMIN_GET_CACHE_TTL_MS = 2 * 60 * 1000;
@@ -393,7 +438,7 @@ export function clearAdminApiCache() {
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const method = (init?.method ?? "GET").toUpperCase();
-  const isCacheableRead = method === "GET" && path.startsWith("/admin/");
+  const isCacheableRead = method === "GET" && path.startsWith("/admin/") && path !== "/admin/notifications";
 
   if (isCacheableRead) {
     const cached = adminGetCache.get(path);
@@ -406,6 +451,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const request = (async () => {
     const res = await fetch(`${API_URL}/api/v1${path}`, {
       credentials: "include",
+      ...(path === "/admin/notifications" ? { cache: "no-store" as const } : {}),
       ...init,
       headers: {
         ...(init?.body ? { "Content-Type": "application/json" } : {}),
@@ -456,6 +502,8 @@ export const adminApi = {
   customers: (params?: {
     segment?: string;
     status?: string;
+    activity?: string;
+    repeat_only?: boolean;
     q?: string;
     spent_min?: number;
     spent_max?: number;
@@ -469,6 +517,8 @@ export const adminApi = {
     const q = new URLSearchParams();
     if (params?.segment) q.set("segment", params.segment);
     if (params?.status) q.set("status", params.status);
+    if (params?.activity) q.set("activity", params.activity);
+    if (params?.repeat_only) q.set("repeat_only", "true");
     if (params?.q) q.set("q", params.q);
     if (params?.spent_min != null) q.set("spent_min", String(params.spent_min));
     if (params?.spent_max != null) q.set("spent_max", String(params.spent_max));
@@ -758,7 +808,7 @@ export const adminApi = {
     occasion_slug?: string;
     price_min?: number;
     price_max?: number;
-    stock?: "in" | "out" | "none";
+    stock?: "in" | "out" | "low";
     sort_by?: string;
     page?: number;
     limit?: number;
@@ -781,22 +831,7 @@ export const adminApi = {
       page: number;
       limit: number;
       status_counts: { all: number; published: number; draft: number; archived: number };
-    }>(`/admin/products${qs ? `?${qs}` : ""}`).catch(async () => {
-      const pubQs = new URLSearchParams();
-      if (params?.q) pubQs.set("q", params.q);
-      if (params?.category_id) pubQs.set("category", params.category_id);
-      if (params?.page) pubQs.set("page", String(params.page));
-      if (params?.limit) pubQs.set("limit", String(params.limit));
-      const pQs = pubQs.toString();
-      const pubRes = await req<{ items: AdminProduct[]; total: number; page: number; limit: number }>(`/products${pQs ? `?${pQs}` : ""}`);
-      return {
-        items: pubRes.items,
-        total: pubRes.total,
-        page: pubRes.page,
-        limit: pubRes.limit,
-        status_counts: { all: pubRes.total, published: pubRes.total, draft: 0, archived: 0 },
-      };
-    });
+    }>(`/admin/products${qs ? `?${qs}` : ""}`);
   },
   /** Walk pages when a caller needs the full catalog (inventory matrix, overview). */
   productsAll: async () => {
@@ -857,6 +892,18 @@ export const adminApi = {
     const fd = new FormData();
     fd.append("file", file);
     const res = await fetch(`${API_URL}/api/v1/admin/categories/upload`, {
+      method: "POST",
+      credentials: "include",
+      body: fd,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data as { message?: string }).message ?? `API ${res.status}`);
+    return data as { url: string; object_key: string };
+  },
+  uploadStaffAvatar: async (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`${API_URL}/api/v1/admin/staff/avatar-upload`, {
       method: "POST",
       credentials: "include",
       body: fd,
@@ -969,6 +1016,8 @@ export const adminApi = {
     avatar_url: string | null;
     work_email: string | null;
     phone: string | null;
+    job_title: string | null;
+    notes: string | null;
     joined_on: string;
     status: string;
     account_status: string | null;
@@ -976,16 +1025,26 @@ export const adminApi = {
     role: { role_id: string; role_code: string; role_name: string; scope_type: string } | null;
     roles: Array<{ role_id: string; role_code: string; role_name: string; scope_type: string }>;
   }> }>("/admin/staff"),
-  createStaff: (body: { full_name: string; work_email: string; phone?: string; role_code: string; password?: string }) => req<{ id: string; employee_code: string }>("/admin/staff", { method: "POST", body: JSON.stringify(body) }),
+  createStaff: (body: { full_name: string; work_email: string; phone?: string; job_title?: string; notes?: string; avatar_url?: string | null; role_code: string; password?: string }) => req<{ id: string; employee_code: string }>("/admin/staff", { method: "POST", body: JSON.stringify(body) }),
   updateStaff: (id: string, status: "active" | "locked" | "left") => req<{ ok: boolean }>(`/admin/staff/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  updateStaffProfile: (id: string, body: { full_name: string; work_email: string; phone?: string | null; job_title?: string | null; notes?: string | null; avatar_url?: string | null }) => req<{ ok: boolean; employee_id: string }>(`/admin/staff/${id}/profile`, { method: "PATCH", body: JSON.stringify(body) }),
+  resetStaffPassword: (id: string, password = "Trang1234@") => req<{ ok: boolean; employee_id: string }>(`/admin/staff/${id}/reset-password`, { method: "POST", body: JSON.stringify({ password }) }),
   permissions: () => req<{ items: Array<{ id: string; code: string; description: string }> }>("/admin/permissions"),
   roles: () => req<{ items: Array<{ id: string; code: string; name: string; description: string; is_system: boolean; members: number; permission_count: number; created_at: string; updated_at: string }> }>("/admin/roles"),
   role: (id: string) => req<{ role: { id: string; code: string; name: string; description: string; is_system: boolean; created_at: string; updated_at: string }; permissions: Array<{ id: string; code: string; description: string }>; members: Array<Record<string, unknown>> }>(`/admin/roles/${id}`),
-  createRole: (body: { code: string; name: string; permission_codes?: string[] }) => req<{ id: string; code: string; name: string }>("/admin/roles", { method: "POST", body: JSON.stringify(body) }),
+  roleAvailableMembers: (id: string) => req<{ items: Array<{ id: string; full_name: string; avatar_url: string | null; work_email: string | null; status: string; roles: Array<{ role_id: string; role_code: string; role_name: string }> }> }>(`/admin/roles/${id}/available-members`),
+  addRoleMembers: (roleId: string, employeeIds: string[], scopeType = "all") => req<{ ok: boolean; role_id: string; employee_ids: string[]; added_count: number }>(`/admin/roles/${roleId}/members`, { method: "POST", body: JSON.stringify({ employee_ids: employeeIds, scope_type: scopeType }) }),
+  createRole: (body: { code: string; name: string; description?: string; permission_codes?: string[] }) => req<{ id: string; code: string; name: string; description: string; is_system: boolean; created_at: string; updated_at: string }>("/admin/roles", { method: "POST", body: JSON.stringify(body) }),
+  updateRole: (id: string, body: { name: string; description: string }) => req<{ ok: boolean; role: { id: string; code: string; name: string; description: string; is_system: boolean; created_at: string; updated_at: string } }>(`/admin/roles/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteRole: (id: string) => req<{ ok: boolean; role_id: string }>(`/admin/roles/${id}`, { method: "DELETE" }),
   updateRolePermissions: (id: string, permission_codes: string[]) => req<{ ok: boolean; role_id: string; permission_codes: string[] }>(`/admin/roles/${id}/permissions`, { method: "PATCH", body: JSON.stringify({ permission_codes }) }),
   updateStaffRoles: (id: string, role_codes: string[], scope_type = "all") => req<{ ok: boolean; employee_id: string; role_codes: string[]; scope_type: string }>(`/admin/staff/${id}/roles`, { method: "PATCH", body: JSON.stringify({ role_codes, scope_type }) }),
   audit: () => req<{ items: Array<Record<string, unknown>> }>("/admin/audit-logs"),
   brand: () => req<{ value: Record<string, unknown> }>("/admin/settings/brand"),
+  storeSettings: () => req<{ value: AdminStoreSettings }>("/admin/settings/storefront"),
+  updateStoreSettings: (body: Omit<AdminStoreSettings, "bankTransferConfigured" | "updatedAt">) =>
+    req<{ ok: boolean; value: AdminStoreSettings }>("/admin/settings/storefront", { method: "PATCH", body: JSON.stringify(body) }),
+  notifications: () => req<{ items: AdminNotification[] }>("/admin/notifications"),
   discountCodes: (params?: {
     status?: string;
     q?: string;
@@ -1260,6 +1319,15 @@ export const adminApi = {
   retrySocialPublish: (id: string) =>
     req<SocialContentItem>(`/admin/social/content/${id}/retry`, { method: "POST" }),
   retrySocialAiReply: (id: string) => req<{ ok: boolean }>(`/admin/social/interactions/${id}/retry-ai`, { method: "POST" }),
+  socialInboxComments: () => req<SocialInboxComment[]>("/admin/social/inbox/comments"),
+  replySocialComment: (id: string, message: string) => req<SocialInboxComment>(`/admin/social/inbox/comments/${id}/reply`, { method: "POST", body: JSON.stringify({ message }) }),
+  updateSocialComment: (id: string, action: "resolve" | "hide" | "delete") => req<SocialInboxComment>(`/admin/social/inbox/comments/${id}/${action}`, { method: "POST" }),
+  socialConversations: () => req<SocialConversation[]>("/admin/social/inbox/conversations"),
+  sendSocialMessage: (id: string, message: string) => req<{ id: string }>(`/admin/social/inbox/conversations/${id}/messages`, { method: "POST", body: JSON.stringify({ message }) }),
+  socialReplyKeywords: () => req<SocialReplyKeyword[]>("/admin/social/inbox/keywords"),
+  addSocialReplyKeyword: (keyword: string, connectionId?: string | null) => req<SocialReplyKeyword>("/admin/social/inbox/keywords", { method: "POST", body: JSON.stringify({ keyword, connectionId }) }),
+  deleteSocialReplyKeyword: (id: string) => req<{ ok: boolean }>(`/admin/social/inbox/keywords/${id}`, { method: "DELETE" }),
+  setSocialAutoReply: (connectionId: string, enabled: boolean) => req<SocialConnection>(`/admin/social/connections/${connectionId}/auto-reply`, { method: "PATCH", body: JSON.stringify({ enabled }) }),
   syncSocialMetrics: () => req<{ synced: number }>("/admin/social/metrics/sync", { method: "POST" }),
   syncPostMetrics: (id: string) =>
     req<{

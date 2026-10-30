@@ -60,6 +60,7 @@ export type StoreOrderItem = {
   id: string;
   variant_id?: string;
   product_id: string;
+  product_slug?: string | null;
   sku?: string;
   product_name: string;
   size_label: string;
@@ -68,6 +69,16 @@ export type StoreOrderItem = {
   qty: number;
   line_total_vnd: number;
   image_url?: string | null;
+  review?: StoreReview | null;
+};
+
+export type StoreReview = {
+  id: string;
+  order_item_id?: string;
+  rating: number;
+  title?: string | null;
+  comment: string;
+  created_at: string;
 };
 
 export type StoreOrderSummary = {
@@ -77,6 +88,7 @@ export type StoreOrderSummary = {
   grand_total_vnd: number;
   payment_method: string;
   payment_status?: string;
+  fulfillment_status?: string;
   paid_at?: string | null;
   placed_at: string;
   items_count?: number;
@@ -97,6 +109,7 @@ export type StoreOrderDetail = {
   payment_status: string;
   paid_at?: string | null;
   payment_ref?: string | null;
+  fulfillment_status?: string;
   recipient?: {
     full_name?: string;
     phone?: string;
@@ -134,11 +147,11 @@ export class ApiError extends Error {
   }
 }
 
-async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${apiBase()}/api/v1${path}`);
+async function get<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${apiBase()}/api/v1${path}`, init);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error((body as { message?: string }).message ?? `API ${res.status}`);
+    throw new ApiError(res.status, (body as { message?: string }).message ?? `API ${res.status}`);
   }
   return res.json() as Promise<T>;
 }
@@ -183,6 +196,14 @@ export async function fetchProduct(slug: string) {
   return get<ApiProduct>(`/products/${slug}`);
 }
 
+export type PublicProductReview = StoreReview & { customer_name: string; verified: boolean };
+
+export async function fetchProductReviews(productId: string) {
+  return get<{ summary: { count: number; average: number }; items: PublicProductReview[] }>(
+    `/products/${productId}/reviews`,
+  );
+}
+
 export async function fetchCategories() {
   return get<{
     items: Array<{
@@ -201,6 +222,22 @@ export async function fetchFaqs() {
 
 export async function fetchHomepage() {
   return get<{ brand: Record<string, unknown>; blocks: Record<string, unknown> }>("/homepage");
+}
+
+export type StorefrontSettings = {
+  brand: { name: string; tagline: string; supportEmail: string; supportPhone: string };
+  payments: { codEnabled: boolean; bankEnabled: boolean };
+  shipping: {
+    freeShippingFromVnd: number;
+    feeVnd: number;
+    cityDeliveryDays: string;
+    otherDeliveryDays: string;
+  };
+  returns: { returnWindowDays: number; refundWindow: string; conditions: string };
+};
+
+export function fetchStorefrontSettings() {
+  return get<StorefrontSettings>("/storefront-settings", { cache: "no-store" });
 }
 
 export type ElaneWomanPost = {
@@ -298,6 +335,8 @@ export const storeApi = {
     storeReq<{ ok: boolean }>(`/me/wishlist/${productId}`, { method: "DELETE" }),
   orders: () => storeReq<{ items: StoreOrderSummary[] }>("/me/orders"),
   order: (id: string) => storeReq<StoreOrderDetail>(`/me/orders/${id}`),
+  submitReview: (body: { order_item_id: string; rating: number; title?: string; comment: string }) =>
+    storeReq<StoreReview>("/me/reviews", { method: "POST", body: JSON.stringify(body) }),
   cancelOrder: (id: string) =>
     storeReq<{ id: string; order_number: string; status: string }>(`/me/orders/${id}/cancel`, {
       method: "POST",

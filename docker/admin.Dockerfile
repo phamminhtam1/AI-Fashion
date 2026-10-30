@@ -19,6 +19,7 @@ COPY apps/admin apps/admin
 ENV PORT=8081
 ENV HOST=0.0.0.0
 ENV VITE_API_URL=http://localhost:3001
+ENV VITE_STOREFRONT_URL=http://localhost:8090
 
 EXPOSE 8081
 

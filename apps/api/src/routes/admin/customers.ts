@@ -29,6 +29,7 @@ function mapCustomer(
     default_address?: string | null;
     city?: string | null;
     order_count?: number;
+    avg_order_value_vnd?: number;
     last_order_at?: string | null;
   },
 ) {
@@ -47,6 +48,7 @@ function mapCustomer(
     ...(extras?.default_address !== undefined ? { default_address: extras.default_address } : {}),
     ...(extras?.city !== undefined ? { city: extras.city } : {}),
     ...(extras?.order_count !== undefined ? { order_count: extras.order_count } : {}),
+    ...(extras?.avg_order_value_vnd !== undefined ? { avg_order_value_vnd: extras.avg_order_value_vnd } : {}),
     ...(extras?.last_order_at !== undefined ? { last_order_at: extras.last_order_at } : {}),
   };
 }
@@ -68,6 +70,8 @@ adminCustomerRoutes.get("/", async (c) => {
   const db = c.get("db");
   const segment = c.req.query("segment");
   const status = c.req.query("status");
+  const activity = c.req.query("activity");
+  const repeatOnly = c.req.query("repeat_only") === "true";
   const q = c.req.query("q")?.trim();
   const spentMin = c.req.query("spent_min") ? Number(c.req.query("spent_min")) : undefined;
   const spentMax = c.req.query("spent_max") ? Number(c.req.query("spent_max")) : undefined;
@@ -83,6 +87,23 @@ adminCustomerRoutes.get("/", async (c) => {
   const conds = [];
   if (segment) conds.push(eq(customers.segment, segment));
   if (status) conds.push(eq(customers.status, status));
+  if (activity === "active_12m") {
+    conds.push(sql`customers.status = 'active' and (
+      customers.created_at >= now() - interval '1 year' or
+      exists (
+        select 1 from orders o
+        where o.customer_id = customers.id
+          and o.placed_at >= now() - interval '1 year'
+      )
+    )`);
+  }
+  if (repeatOnly) {
+    conds.push(sql`(
+      select count(*) from orders o
+      where o.customer_id = customers.id
+        and o.status != 'cancelled'
+    ) >= 2`);
+  }
   if (q) {
     const like = `%${q}%`;
     conds.push(
@@ -116,6 +137,16 @@ adminCustomerRoutes.get("/", async (c) => {
 
   const orderExpr = (() => {
     switch (sortBy) {
+      case "orders_desc": return sql`(
+        select count(*) from orders o
+        where o.customer_id = ${customers.id}
+          and o.status != 'cancelled'
+      ) desc`;
+      case "avg_order_value_desc": return sql`(
+        select coalesce(avg(o.grand_total_vnd), 0) from orders o
+        where o.customer_id = ${customers.id}
+          and o.status != 'cancelled'
+      ) desc`;
       case "spent_desc": return desc(customers.totalSpentVnd);
       case "spent_asc": return asc(customers.totalSpentVnd);
       case "name_asc": return asc(customers.fullName);
@@ -168,6 +199,12 @@ adminCustomerRoutes.get("/", async (c) => {
         select count(*)::int
         from orders o
         where o.customer_id = customers.id
+      )`,
+      avg_order_value_vnd: sql<number>`(
+        select coalesce(avg(o.grand_total_vnd), 0)::bigint
+        from orders o
+        where o.customer_id = customers.id
+          and o.status != 'cancelled'
       )`,
       last_order_at: sql<string | null>`(
         select max(o.placed_at)::text
@@ -231,6 +268,7 @@ adminCustomerRoutes.get("/", async (c) => {
         default_address: r.default_address || null,
         city: r.city || null,
         order_count: Number(r.order_count ?? 0),
+        avg_order_value_vnd: Number(r.avg_order_value_vnd ?? 0),
         last_order_at: r.last_order_at || null,
       }),
     ),

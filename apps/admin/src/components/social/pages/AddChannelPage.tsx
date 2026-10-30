@@ -28,7 +28,7 @@ const BENEFITS = [
 function ChannelCard({ id, done, onPick, onMenu }: { id: ChannelId; done: boolean; onPick: () => void; onMenu: () => void }) {
   const m = CHANNEL_META[id];
   return (
-    <div className="relative flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-4">
+    <div className="relative flex flex-col overflow-hidden rounded-xs border border-slate-200 bg-white p-4">
       <div className="pointer-events-none absolute right-0 top-0 size-32 bg-gradient-to-bl from-violet-50/80 to-transparent" />
       <div className="relative flex items-start justify-between">
         <div className="flex items-center gap-2">
@@ -189,7 +189,7 @@ export function AddChannelPage({ ctx }: { ctx: SocialCtx }) {
                       onMenu={() => (done ? ctx.go("channel-manage", { channel: id }) : toast.info(`Hướng dẫn kết nối ${CHANNEL_META[id].name} sẽ được bổ sung`))} />
                   );
                 })}
-                <div className="relative flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-4">
+                <div className="relative flex flex-col overflow-hidden rounded-xs border border-slate-200 bg-white p-4">
                   <div className="pointer-events-none absolute right-0 top-0 size-32 bg-gradient-to-bl from-violet-50/80 to-transparent" />
                   <div className="relative flex items-start justify-between">
                     <span className="grid size-12 place-items-center rounded-xl bg-slate-100 text-slate-500"><MoreHorizontal className="size-6" /></span>

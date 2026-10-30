@@ -3,6 +3,8 @@ import { and, asc, desc, eq, or, sql, isNull } from "drizzle-orm";
 import { banners, contentPages, contentRevisions, elaneWomanPosts, faqs, lookbooks, lookbookItems, products, settings } from "@elane/db";
 import type { AppVars } from "../../middleware/auth.js";
 import { ApiError } from "../../lib/errors.js";
+import { env } from "../../env.js";
+import { readStoreSettings, toPublicStoreSettings } from "../../lib/store-settings.js";
 
 export const publicContentRoutes = new Hono<AppVars>();
 
@@ -46,28 +48,12 @@ publicContentRoutes.get("/homepage", async (c) => {
   });
 });
 
-publicContentRoutes.get("/pages/:slug", async (c) => {
-  const db = c.get("db");
-  const slug = c.req.param("slug");
-  const page = await db
-    .select()
-    .from(contentPages)
-    .where(and(eq(contentPages.slug, slug), eq(contentPages.status, "published")))
-    .limit(1);
-  if (!page[0]?.publishedRevisionId) throw new ApiError(404, "not_found", "Không tìm thấy trang");
-  const rev = await db
-    .select()
-    .from(contentRevisions)
-    .where(eq(contentRevisions.id, page[0].publishedRevisionId))
-    .limit(1);
-  return c.json({
-    slug: page[0].slug,
-    title: page[0].title,
-    type: page[0].type,
-    seo_title: page[0].seoTitle,
-    seo_description: page[0].seoDescription,
-    blocks: rev[0]?.blocks ?? {},
-  });
+publicContentRoutes.get("/storefront-settings", async (c) => {
+  const value = await readStoreSettings(
+    c.get("db"),
+    Boolean(env.sepayBankAccount && env.sepayBankBin),
+  );
+  return c.json(toPublicStoreSettings(value));
 });
 
 publicContentRoutes.get("/faqs", async (c) => {

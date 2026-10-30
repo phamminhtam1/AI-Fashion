@@ -70,11 +70,6 @@ export const ADMIN_ROUTES: Record<string, AdminRouteConfig> = {
     aliases: ["tap-chi", "journal"],
     label: "Tạp chí",
   },
-  pages: {
-    slug: "trang",
-    aliases: ["pages", "page"],
-    label: "Trang nội dung",
-  },
   reviews: {
     slug: "danhgia",
     aliases: ["danh-gia", "reviews", "review"],
@@ -123,6 +118,10 @@ export function resolveAdminPath(path: string): {
   const second = rawParts[1];
   const third = rawParts[2];
   const fourth = rawParts[3];
+
+  if (["trang", "pages", "page"].includes(first)) {
+    return { tabId: "overview", action: null, subParam: null, detailId: null };
+  }
 
   if (!first || first === "tongquan" || first === "tong-quan" || first === "overview") {
     return { tabId: "overview", action: null, subParam: null, detailId: null };

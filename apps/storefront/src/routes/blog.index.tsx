@@ -14,7 +14,7 @@ function Blog() {
   return (
     <>
       <PageHeader title="ÉLANE Journal" crumb="Tạp chí" eyebrow="Tạp chí">Xu hướng, phong cách và những câu chuyện về thời trang.</PageHeader>
-      <div className="mx-auto max-w-[1440px] px-6 py-12 md:px-8">
+      <div className="mx-auto max-w-[1600px] px-6 py-12 md:px-8">
         {first && (
           <Link to="/blog/$slug" params={{ slug: first.slug }} className="group grid gap-8 md:grid-cols-2">
             <div className="aspect-[4/3] overflow-hidden bg-secondary"><img src={first.image} alt={first.title} className="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-105" /></div>

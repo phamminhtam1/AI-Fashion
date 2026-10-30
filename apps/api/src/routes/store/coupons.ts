@@ -12,6 +12,8 @@ import {
   normalizeCouponCode,
 } from "../../lib/discount-codes.js";
 import { shippingFeeVnd } from "../../lib/order-pricing.js";
+import { readStoreSettings } from "../../lib/store-settings.js";
+import { env } from "../../env.js";
 
 export const storeCouponRoutes = new Hono<AppVars>();
 storeCouponRoutes.use("*", requireCustomer);
@@ -47,7 +49,12 @@ storeCouponRoutes.post("/preview", async (c) => {
     throw new ApiError(400, "coupon_inactive", "Mã giảm giá không hợp lệ");
   }
 
-  const shipping = shippingFeeVnd(subtotal);
+  const storeSettings = await readStoreSettings(db, Boolean(env.sepayBankAccount && env.sepayBankBin));
+  const shipping = shippingFeeVnd(
+    subtotal,
+    storeSettings.shipping.freeShippingFromVnd,
+    storeSettings.shipping.feeVnd,
+  );
   const baseVnd = subtotal + shipping;
   const discount_vnd = computeDiscountVnd({
     type: row.type,

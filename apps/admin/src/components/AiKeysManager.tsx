@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import {
   Dialog,
   DialogContent,
@@ -368,7 +369,7 @@ export function AiKeysManager() {
             )}
           >
             <p className="section-label">{m.label}</p>
-            <p className="mt-3 admin-metric">{m.value}</p>
+            <p className="mt-3 admin-metric"><AnimatedValue value={m.value} /></p>
             <p
               className={cn(
                 "mt-1 text-sm truncate",

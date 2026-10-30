@@ -4,15 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { categories, formatVND, ensureCategories, getNavItems, products, type NavItem } from "@/lib/products";
-import { FREE_SHIP, useStore, getCartItemImage } from "@/lib/store";
+import { useStore, getCartItemImage } from "@/lib/store";
 import { toast } from "sonner";
 import heroImg from "@/assets/hero.jpg";
-
-const announcements = [
-  "Miễn phí vận chuyển đơn hàng từ 1.000.000₫",
-  "Đổi trả miễn phí trong 30 ngày",
-  "Thành viên mới giảm 10% đơn đầu tiên",
-];
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -21,7 +15,14 @@ function chunk<T>(arr: T[], size: number): T[][] {
 }
 
 export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }) {
-  const { cartCount, wishlist, setCartOpen } = useStore();
+  const { cartCount, wishlist, setCartOpen, storeSettings } = useStore();
+  const announcements = [
+    storeSettings.shipping.freeShippingFromVnd > 0
+      ? `Miễn phí vận chuyển đơn hàng từ ${formatVND(storeSettings.shipping.freeShippingFromVnd)}`
+      : "Miễn phí vận chuyển cho mọi đơn hàng",
+    `Đổi trả miễn phí trong ${storeSettings.returns.returnWindowDays} ngày`,
+    "Thành viên mới giảm 10% đơn đầu tiên",
+  ];
   const [ann, setAnn] = useState(0);
   const [mobile, setMobile] = useState(false);
   const [search, setSearch] = useState(false);
@@ -77,7 +78,7 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
       ro.disconnect();
       window.removeEventListener("resize", updateHeaderHeight);
     };
-  }, []);
+  }, [announcements.length]);
 
   useEffect(() => {
     let ticking = false;
@@ -128,7 +129,7 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
       <div
         className="relative overflow-visible border-b border-border"
       >
-        <div className="mx-auto grid min-h-18 md:min-h-22 lg:min-h-26 max-w-[1440px] grid-cols-3 items-center px-4 py-1.5 md:py-2 md:px-8">
+        <div className="mx-auto grid min-h-18 md:min-h-22 lg:min-h-26 max-w-[1600px] grid-cols-3 items-center px-4 py-1.5 md:py-2 md:px-8">
           <div className="flex items-center gap-4">
             <button className="lg:hidden" onClick={() => setMobile(true)} aria-label="Mở menu">
               <Menu className="h-5 w-5" strokeWidth={1.5} />
@@ -198,7 +199,7 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
             <div className="header-logo-wrap">
               <img
                 src="/images/elane-logo.png"
-                alt="ÉLANE - Modern Femininity"
+                alt={`${storeSettings.brand.name} - ${storeSettings.brand.tagline}`}
                 className="h-[50px] sm:h-[58px] md:h-[72px] lg:h-[86px] w-auto object-contain transition-transform duration-300"
               />
               <span className="header-logo-shimmer" aria-hidden="true" />
@@ -544,8 +545,9 @@ function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }
 }
 
 function MiniCart() {
-  const { cart, cartOpen, setCartOpen, subtotal, updateQty, removeItem } = useStore();
-  const left = FREE_SHIP - subtotal;
+  const { cart, cartOpen, setCartOpen, subtotal, updateQty, removeItem, storeSettings } = useStore();
+  const freeShippingFrom = storeSettings.shipping.freeShippingFromVnd;
+  const left = freeShippingFrom - subtotal;
   return (
     <Sheet open={cartOpen} onOpenChange={setCartOpen}>
       <SheetContent className="flex w-full flex-col sm:max-w-md">
@@ -560,7 +562,7 @@ function MiniCart() {
           <>
             <div className="px-4 text-xs">
               <p>{left > 0 ? <>Mua thêm <b>{formatVND(left)}</b> để được miễn phí vận chuyển</> : "Bạn đã được miễn phí vận chuyển ✓"}</p>
-              <div className="mt-2 h-0.5 bg-border"><div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, (subtotal / FREE_SHIP) * 100)}%` }} /></div>
+              <div className="mt-2 h-0.5 bg-border"><div className="h-full bg-primary transition-all" style={{ width: `${freeShippingFrom > 0 ? Math.min(100, (subtotal / freeShippingFrom) * 100) : 100}%` }} /></div>
             </div>
             <ul className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
               {cart.map((it, i) => {

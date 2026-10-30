@@ -1,10 +1,7 @@
 import { adminErrorMessage, adminLabel } from "@/lib/admin-language";
 import {
   Archive,
-  BarChart3,
-  Bell,
   Blocks,
-  BookOpen,
   Boxes,
   ChevronDown,
   ChevronRight,
@@ -12,13 +9,11 @@ import {
   Columns3,
   Compass,
   CreditCard,
-  FileText,
   GalleryVerticalEnd,
   Home,
   KeyRound,
   LayoutGrid,
   LogOut,
-  Mail,
   Megaphone,
   Menu,
   MessageSquareText,
@@ -32,7 +27,6 @@ import {
   Settings,
   ShieldCheck,
   ShoppingBag,
-  Sparkles,
   Store,
   Tag,
   Upload,
@@ -43,6 +37,8 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useLocation, useNavigate } from "@tanstack/react-router";
+import { AnimatedPanel } from "@/components/ui/AnimatedPanel";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,6 +73,8 @@ import { AiKeysManager } from "@/components/AiKeysManager";
 import { OverviewManager } from "@/components/OverviewManager";
 import { SocialCommerceManager, type SocialPage } from "@/components/SocialCommerceManager";
 import { RolesManager } from "@/components/RolesManager";
+import { SettingsManager } from "@/components/SettingsManager";
+import { AdminNotificationsBell } from "@/components/AdminNotificationsBell";
 
 type Me = { account_id: string; email: string; full_name: string; employee_code: string | null; avatar_url: string | null; job_title: string | null; role_name: string | null; permissions: string[] };
 
@@ -176,16 +174,11 @@ const operations: NavItem[] = [
 ];
 const content: NavItem[] = [
   { id: "elanewoman", label: "ÉLANEwoman", icon: GalleryVerticalEnd },
-  { id: "collections", label: "Bộ sưu tập", icon: Sparkles },
   { id: "lookbook", label: "Bộ ảnh", icon: GalleryVerticalEnd },
-  { id: "journal", label: "Tạp chí", icon: BookOpen, count: 3 },
-  { id: "pages", label: "Trang nội dung", icon: FileText },
   { id: "reviews", label: "Đánh giá", icon: MessageSquareText, count: 8 },
-  { id: "newsletter", label: "Bản tin", icon: Mail },
 ];
 const system: NavItem[] = [
   { id: "ai_keys", label: "Quản lý khóa AI", icon: KeyRound },
-  { id: "reports", label: "Báo cáo", icon: BarChart3 },
   { id: "settings", label: "Cài đặt", icon: Settings },
   { id: "roles", label: "Phân quyền", icon: ShieldCheck },
   { id: "audit", label: "Nhật ký", icon: ClipboardList },
@@ -206,7 +199,6 @@ const modulePermissions: Record<string, string[]> = {
   collections: ["content.read", "product.read"],
   lookbook: ["content.read", "product.read"],
   journal: ["content.read"],
-  pages: ["content.read"],
   reviews: ["content.read"],
   newsletter: ["content.read"],
   ai_keys: ["settings.read", "settings.write"],
@@ -229,7 +221,6 @@ const moduleWritePermissions: Record<string, string[]> = {
   collections: ["content.write", "product.write"],
   lookbook: ["product.write"],
   journal: ["content.write"],
-  pages: ["content.write"],
   reviews: ["content.write"],
   newsletter: ["content.write"],
   ai_keys: ["settings.write"],
@@ -390,25 +381,6 @@ const configs: Record<string, ModuleConfig> = {
       ["Chất liệu cashmere và cách bảo quản", "Chăm sóc", "An Nhiên", "20/09 · 08:00", "8.420", "Đã xuất bản"],
       ["Bảng màu của La Parisienne", "Xu hướng", "Linh Hà", "19/09 · 10:30", "6.218", "Đã xuất bản"],
       ["Tủ đồ công sở tinh giản", "Hướng dẫn", "Mai Phương", "—", "—", "Chờ duyệt"],
-    ],
-  },
-  pages: {
-    eyebrow: "Nội dung trang web",
-    title: "Trang nội dung",
-    description: "Quản lý thông tin thương hiệu, hỗ trợ, chính sách và cửa hàng.",
-    action: "Tạo trang",
-    tabs: ["Tất cả", "Thương hiệu", "Hỗ trợ", "Chính sách", "Cửa hàng"],
-    metrics: [
-      { label: "Trang công khai", value: "14", note: "Tất cả hoạt động" },
-      { label: "Cập nhật gần đây", value: "4", note: "Trong 7 ngày" },
-      { label: "Điểm SEO", value: "94", note: "Tối ưu tốt" },
-    ],
-    columns: ["Trang", "Nhóm", "Đường dẫn", "Cập nhật", "SEO", "Trạng thái"],
-    rows: [
-      ["Về chúng tôi", "Thương hiệu", "/gioi-thieu", "18/09/2026", "96/100", "Đã xuất bản"],
-      ["Hướng dẫn chọn kích cỡ", "Hỗ trợ", "/huong-dan-chon-size", "17/09/2026", "92/100", "Đã xuất bản"],
-      ["Chính sách đổi trả", "Chính sách", "/chinh-sach/doi-tra", "15/09/2026", "95/100", "Đã xuất bản"],
-      ["Hệ thống cửa hàng", "Cửa hàng", "/cua-hang", "12/09/2026", "90/100", "Đã xuất bản"],
     ],
   },
   reviews: {
@@ -674,6 +646,7 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
         "elanewoman",
         "lookbook",
         "ai_keys",
+        "settings",
         "roles",
       ]),
     [],
@@ -957,11 +930,17 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
         onLogout={onLogout}
         socialPage={socialSubPage}
         onSocialPageChange={handleSocialPageChange}
-        className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:w-[260px]"
+        className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:w-[16.25rem]"
       />
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs lg:hidden" onClick={() => setMobileOpen(false)} />
-      )}
+      <div
+        aria-hidden={!mobileOpen}
+        inert={!mobileOpen}
+        className={cn(
+          "fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 ease-in-out lg:hidden",
+          mobileOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
+        )}
+        onClick={() => setMobileOpen(false)}
+      />
       <Sidebar
         active={active}
         onChoose={choose}
@@ -971,12 +950,12 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
         socialPage={socialSubPage}
         onSocialPageChange={handleSocialPageChange}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[272px] shadow-2xl transition-transform lg:hidden",
+          "fixed inset-y-0 left-0 z-50 flex w-[17rem] shadow-2xl transition-transform duration-300 ease-in-out lg:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
         close={() => setMobileOpen(false)}
       />
-      <main className="min-h-screen min-w-0 flex flex-col lg:ml-[260px]">
+      <main className="min-h-screen min-w-0 flex flex-col lg:ml-[16.25rem]">
         {/* Top Header Bar matching mockup */}
         <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-md sm:px-5 lg:px-6">
           <div className="flex items-center gap-3 flex-1 max-w-lg">
@@ -1003,14 +982,7 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Notification Bell */}
-            <button
-              type="button"
-              className="relative flex size-9 items-center justify-center rounded-xs border border-slate-200/80 bg-white text-slate-600 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors"
-            >
-              <Bell className="size-4" />
-              <span className="absolute right-2 top-2 size-2 rounded-full bg-rose-500 ring-2 ring-white" />
-            </button>
+            <AdminNotificationsBell permissions={me.permissions} accountId={me.account_id} />
 
             {/* User Profile matching mockup */}
             <DropdownMenu>
@@ -1054,7 +1026,11 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
 
         {/* Content Body */}
         <div className="min-w-0 flex-1 px-4 py-4 sm:px-5 lg:px-6 lg:py-4">
-          <div key={active} className="admin-page-motion min-w-0">
+          <AnimatedPanel
+            animationMode="page"
+            transitionKey={`${active}:${routeAction}:${routeSubParam ?? ""}:${socialSubPage ?? ""}`}
+            className="min-w-0"
+          >
           {active === "overview" ? (
             <OverviewManager
               userName={me?.full_name || me?.email?.split("@")[0] || "Admin"}
@@ -1109,6 +1085,8 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
             <ElaneWomanManager permissions={me.permissions} />
           ) : active === "lookbook" ? (
             <LookbookManager permissions={me.permissions} />
+          ) : active === "settings" ? (
+            <SettingsManager permissions={me.permissions} />
           ) : active === "ai_keys" ? (
             <AiKeysManager />
           ) : active === "roles" ? (
@@ -1123,7 +1101,7 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
               activeTabId={active}
             />
           ) : null}
-          </div>
+          </AnimatedPanel>
         </div>
       </main>
 
@@ -1289,7 +1267,7 @@ function NavGroup({
                   choose(item.id);
                 }}
                 className={cn(
-                  "admin-sidebar-item group flex w-full items-center gap-3 rounded-xs px-3 py-2 text-sm font-medium transition-all cursor-pointer",
+                  "admin-sidebar-item group flex w-full items-center gap-3 rounded-xs px-3 py-2 text-sm font-medium transition-[background-color,color,border-color,box-shadow] duration-300 ease-in-out cursor-pointer",
                   isCurrent
                     ? "bg-[#f4f3ff] text-[#6941c6] font-semibold shadow-2xs"
                     : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900",
@@ -1297,7 +1275,7 @@ function NavGroup({
               >
                 <Icon
                   className={cn(
-                    "size-4 shrink-0 transition-colors",
+                    "size-4 shrink-0 transition-colors duration-300 ease-in-out",
                     isCurrent ? "text-[#6941c6]" : "text-slate-400 group-hover:text-slate-600",
                   )}
                 />
@@ -1312,8 +1290,16 @@ function NavGroup({
                   </span>
                 ) : null}
               </a>
-              {item.id === "social" && isCurrent && onSocialPageChange && (
-                <div className="ml-7 border-l border-slate-200/80 pl-2 space-y-0.5 py-1">
+              {item.id === "social" && onSocialPageChange && (
+                <div
+                  aria-hidden={!isCurrent}
+                  className={cn(
+                    "grid transition-[grid-template-rows,opacity] duration-300 ease-in-out",
+                    isCurrent ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                  )}
+                >
+                  <div className="min-h-0 overflow-hidden" inert={!isCurrent}>
+                    <div className={cn("ml-7 border-l border-slate-200/80 pl-2 space-y-0.5 py-1 transition-transform duration-300 ease-in-out", isCurrent ? "translate-y-0" : "-translate-y-1")}>
                   {[
                     { id: "overview" as SocialPage, label: "Báo cáo hiệu quả", href: "/kenhbanhang" },
                     { id: "connect" as SocialPage, label: "Kết nối kênh", href: "/kenhbanhang/ketnoi" },
@@ -1322,7 +1308,12 @@ function NavGroup({
                     { id: "posts" as SocialPage, label: "Bài viết & lịch đăng", href: "/kenhbanhang/baiviet" },
                     { id: "messages" as SocialPage, label: "Tin nhắn & bình luận", href: "/kenhbanhang/tinnhan" },
                   ].map((sub) => {
-                    const isSubActive = (socialPage ?? "overview") === sub.id;
+                    // “Tin nhắn & bình luận” is one sidebar destination with two
+                    // sibling pages, so both routes must retain the same active state.
+                    const currentSocialPage = socialPage ?? "overview";
+                    const isSubActive = sub.id === "messages"
+                      ? currentSocialPage === "messages" || currentSocialPage === "comments"
+                      : currentSocialPage === sub.id;
                     return (
                       <a
                         key={sub.id}
@@ -1332,7 +1323,7 @@ function NavGroup({
                           onSocialPageChange(sub.id);
                         }}
                         className={cn(
-                          "block rounded-xs px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
+                          "block rounded-xs px-2.5 py-1 text-xs font-medium transition-colors duration-300 ease-in-out cursor-pointer",
                           isSubActive
                             ? "bg-[#f4f3ff] text-[#6941c6] font-semibold"
                             : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/60",
@@ -1342,6 +1333,8 @@ function NavGroup({
                       </a>
                     );
                   })}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -1402,16 +1395,16 @@ function ModulePage({
             className={cn("rounded-xs border p-5", i === 0 ? "border-accent bg-accent/25" : "border-border")}
           >
             <p className="section-label">{m.label}</p>
-            <p className="mt-3 font-sans admin-metric">{m.value}</p>
+            <p className="mt-3 font-sans admin-metric"><AnimatedValue value={m.value} /></p>
             <p className={cn("mt-1 text-sm", i === 0 ? "text-primary" : "text-muted-foreground")}>{m.note}</p>
           </div>
         ))}
       </section>
       <section className="mt-6 overflow-hidden rounded-xs border border-border">
         <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex gap-1 overflow-x-auto pb-1 lg:pb-0">
+          <div role="tablist" aria-label={`Lọc ${config.title}`} className="flex gap-1 overflow-x-auto pb-1 lg:pb-0">
             {config.tabs.map((t) => (
-              <Button key={t} variant={tab === t ? "default" : "ghost"} size="sm" onClick={() => setTab(t)}>
+              <Button key={t} type="button" role="tab" aria-selected={tab === t} variant={tab === t ? "default" : "ghost"} size="sm" onClick={() => setTab(t)}>
                 {t}
               </Button>
             ))}
@@ -1431,6 +1424,7 @@ function ModulePage({
             </Button>
           </div>
         </div>
+        <AnimatedPanel transitionKey={tab} role="tabpanel" className="min-w-0">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] text-left text-sm">
             <thead className="bg-secondary/55">
@@ -1484,6 +1478,7 @@ function ModulePage({
             </Button>
           </div>
         </div>
+        </AnimatedPanel>
       </section>
       <Footer />
     </div>

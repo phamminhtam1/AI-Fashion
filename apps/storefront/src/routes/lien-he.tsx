@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { fetchDefaultSizeChart, type ApiSizeChart } from "@/lib/api";
+import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/lien-he")({
   head: () => ({
@@ -26,6 +27,7 @@ const COL_LABELS: Record<string, string> = {
 };
 
 function Contact() {
+  const { storeSettings } = useStore();
   const [chart, setChart] = useState<ApiSizeChart | null>(null);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ function Contact() {
   const columns = chart?.columns?.length ? chart.columns : ["bust", "waist", "hip"];
 
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-12">
+    <div className="mx-auto max-w-[1320px] px-6 py-12">
       <h1 className="text-4xl md:text-5xl">Liên hệ & Hỗ trợ</h1>
       <div className="mt-12 grid gap-16 lg:grid-cols-2">
         <div className="space-y-6 text-sm">
@@ -47,10 +49,10 @@ function Contact() {
             125 Đồng Khởi, Quận 1, TP. Hồ Chí Minh
           </p>
           <p className="flex gap-3">
-            <Phone className="h-5 w-5" strokeWidth={1.5} /> 1900 0000 (8:00 – 22:00)
+            <Phone className="h-5 w-5 shrink-0" strokeWidth={1.5} /> <a href={`tel:${storeSettings.brand.supportPhone.replaceAll(" ", "")}`} className="hover:underline">{storeSettings.brand.supportPhone}</a> (8:00 – 22:00)
           </p>
           <p className="flex gap-3">
-            <Mail className="h-5 w-5" strokeWidth={1.5} /> hello@elane.vn
+            <Mail className="h-5 w-5 shrink-0" strokeWidth={1.5} /> <a href={`mailto:${storeSettings.brand.supportEmail}`} className="hover:underline">{storeSettings.brand.supportEmail}</a>
           </p>
           <h2 className="pt-6 text-2xl">Hướng dẫn chọn size ({chart?.unit ?? "cm"})</h2>
           {chart?.instructions ? <p className="text-muted-foreground">{chart.instructions}</p> : null}
@@ -105,10 +107,15 @@ function Contact() {
         <Accordion type="single" collapsible className="mt-6">
           {(
             [
-              ["Thời gian giao hàng bao lâu?", "2–4 ngày làm việc trên toàn quốc, 1–2 ngày tại Hà Nội và TP. HCM."],
-              ["Chính sách đổi trả thế nào?", "Đổi trả miễn phí trong 30 ngày với sản phẩm còn nguyên tem mác, chưa qua sử dụng."],
-              ["Có những phương thức thanh toán nào?", "COD, chuyển khoản ngân hàng, thẻ tín dụng/ghi nợ và ví điện tử MoMo, ZaloPay."],
-              ["Phí vận chuyển là bao nhiêu?", "Miễn phí cho đơn từ 1.000.000₫, dưới mức này phí đồng giá 30.000₫."],
+              ["Thời gian giao hàng bao lâu?", `Nội thành: ${storeSettings.shipping.cityDeliveryDays}; các tỉnh thành khác: ${storeSettings.shipping.otherDeliveryDays}.`],
+              ["Chính sách đổi trả thế nào?", `Đổi trả miễn phí trong ${storeSettings.returns.returnWindowDays} ngày với sản phẩm đáp ứng điều kiện: ${storeSettings.returns.conditions}`],
+              ["Có những phương thức thanh toán nào?", [
+                storeSettings.payments.codEnabled ? "COD" : null,
+                storeSettings.payments.bankEnabled ? "chuyển khoản VietQR" : null,
+              ].filter(Boolean).join(" và ") || "Vui lòng liên hệ cửa hàng để được hướng dẫn."],
+              ["Phí vận chuyển là bao nhiêu?", storeSettings.shipping.freeShippingFromVnd > 0
+                ? `Miễn phí cho đơn từ ${new Intl.NumberFormat("vi-VN").format(storeSettings.shipping.freeShippingFromVnd)}₫, dưới mức này phí đồng giá ${new Intl.NumberFormat("vi-VN").format(storeSettings.shipping.feeVnd)}₫.`
+                : "Đơn hàng được miễn phí vận chuyển."],
             ] as const
           ).map(([q, a]) => (
             <AccordionItem key={q} value={q}>

@@ -45,14 +45,14 @@ function PostPage() {
           </section>
         ))}
       </div>
-      <section className="mx-auto max-w-[1440px] px-6 pb-16 md:px-8">
+      <section className="mx-auto max-w-[1600px] px-6 pb-16 md:px-8">
         <h2 className="mb-8 text-3xl">Mua sắm theo bài viết</h2>
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4">
           {products.filter((p) => p.bestSeller).slice(0, 4).map((p) => <ProductCard key={p.id} product={p} />)}
         </div>
       </section>
       <section className="border-t border-border bg-secondary px-6 py-16 md:px-8">
-        <div className="mx-auto max-w-[1440px]">
+        <div className="mx-auto max-w-[1600px]">
           <h2 className="mb-8 text-3xl">Bài viết khác</h2>
           <div className="grid gap-8 md:grid-cols-3">
             {others.map((p) => (

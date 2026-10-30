@@ -15,7 +15,7 @@ import {
 
 /* ───────────── Helpers & primitives ───────────── */
 const VIOLET = "bg-[#6941c6] hover:bg-[#5b36b0]";
-const FIELD = "w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-2 focus:ring-violet-100 disabled:bg-slate-50";
+const FIELD = "w-full rounded-xs border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-2 focus:ring-violet-100 disabled:bg-slate-50";
 export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const compact = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(".0", "")}K` : `${n}`);
 const soon = () => toast.info("Tính năng này sẽ được bổ sung");
@@ -63,7 +63,7 @@ function Checkbox({ on, onChange, label, desc }: { on: boolean; onChange: (v: bo
 function SelectBox({ value, onChange, options, className }: { value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; className?: string }) {
   return (
     <div className={cn("relative", className)}>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className={cn(FIELD, "h-10 appearance-none pr-9")}>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className={cn(FIELD, "h-9 appearance-none pr-9")}>
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
       <ChevronDown className="pointer-events-none absolute right-3 top-3 size-4 text-slate-500" />
@@ -190,14 +190,14 @@ export function ApiConfigStep({ id, name, configured, initial, busy, onSave, onB
       <Head id={id} title={`Cấu hình API ${name}`} desc="Hoàn tất cấu hình kỹ thuật trước khi đăng nhập tài khoản." />
       <Block n={1} title="Thông tin ứng dụng" desc={`Nhập thông tin từ trang dành cho nhà phát triển của ${name}.`}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div><Label required>{isMeta ? "Meta App ID" : "Client ID / API Key"}</Label><input value={form.appId} onChange={(e) => setForm({ ...form, appId: e.target.value })} className={cn(FIELD, "h-10")} placeholder="Nhập mã ứng dụng" /></div>
-          <div><Label required>App Secret</Label><input type="password" value={form.appSecret} onChange={(e) => setForm({ ...form, appSecret: e.target.value })} className={cn(FIELD, "h-10")} placeholder={configured ? "Để trống để giữ khóa hiện tại" : "Nhập khóa bí mật"} /></div>
-          {isMeta && <div><Label>Graph API version</Label><input value={form.graphVersion} onChange={(e) => setForm({ ...form, graphVersion: e.target.value })} className={cn(FIELD, "h-10")} /></div>}
-          <div><Label>{isMeta ? "Webhook Verify Token" : "Webhook Secret"}</Label><input type="password" value={form.webhookVerifyToken} onChange={(e) => setForm({ ...form, webhookVerifyToken: e.target.value })} className={cn(FIELD, "h-10")} placeholder={configured ? "Để trống để giữ token hiện tại" : "Nhập hoặc tự tạo token"} /></div>
+          <div><Label required>{isMeta ? "Meta App ID" : "Client ID / API Key"}</Label><input value={form.appId} onChange={(e) => setForm({ ...form, appId: e.target.value })} className={cn(FIELD, "h-9")} placeholder="Nhập mã ứng dụng" /></div>
+          <div><Label required>App Secret</Label><input type="password" value={form.appSecret} onChange={(e) => setForm({ ...form, appSecret: e.target.value })} className={cn(FIELD, "h-9")} placeholder={configured ? "Để trống để giữ khóa hiện tại" : "Nhập khóa bí mật"} /></div>
+          {isMeta && <div><Label>Graph API version</Label><input value={form.graphVersion} onChange={(e) => setForm({ ...form, graphVersion: e.target.value })} className={cn(FIELD, "h-9")} /></div>}
+          <div><Label>{isMeta ? "Webhook Verify Token" : "Webhook Secret"}</Label><input type="password" value={form.webhookVerifyToken} onChange={(e) => setForm({ ...form, webhookVerifyToken: e.target.value })} className={cn(FIELD, "h-9")} placeholder={configured ? "Để trống để giữ token hiện tại" : "Nhập hoặc tự tạo token"} /></div>
         </div>
       </Block>
       <Block n={2} title="Đường dẫn xác thực" desc="Sao chép đường dẫn này vào phần OAuth/Redirect của nền tảng.">
-        <input value={form.redirectUri} onChange={(e) => setForm({ ...form, redirectUri: e.target.value })} className={cn(FIELD, "h-10")} placeholder="https://.../oauth/callback" />
+        <input value={form.redirectUri} onChange={(e) => setForm({ ...form, redirectUri: e.target.value })} className={cn(FIELD, "h-9")} placeholder="https://.../oauth/callback" />
         <div className="mt-3 rounded-lg border border-violet-100 bg-violet-50/70 p-3 text-xs leading-5 text-slate-600">Sau khi lưu thành công, bước đăng nhập mới được mở. Bạn sẽ không cần quay sang trang cấu hình khác.</div>
       </Block>
       <Footer onBack={onBack} onNext={() => onSave(form)} disabled={!valid} busy={busy} nextLabel={configured ? "Lưu và tiếp tục" : "Lưu cấu hình API"} />
@@ -252,7 +252,7 @@ export function ConnectStep({ id, name, flow, loggedIn, busy, accountId, onLogin
       <Block n={2} title={`Chọn ${flow.accountLabel}`} desc={`Sau khi đăng nhập, chọn ${flow.accountLabel} bạn muốn kết nối với ÉLANE.`}>
         <div className="relative mb-3">
           <Search className="absolute left-3 top-3 size-4 text-slate-400" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Tìm kiếm ${flow.accountLabel}...`} className={cn(FIELD, "h-10 pl-9")} />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Tìm kiếm ${flow.accountLabel}...`} className={cn(FIELD, "h-9 pl-9")} />
         </div>
         <div className={cn("overflow-hidden rounded-lg border border-slate-200", !loggedIn && "opacity-60")}>
           {list.length === 0 && (
@@ -355,7 +355,7 @@ export function ConfigStep({ id, name, flow, cfg, patch, accountId, onAccount, o
           <div className="space-y-4">
             <div>
               <Label required>Tên hiển thị</Label>
-              <input value={cfg.name} maxLength={50} onChange={(e) => patch({ name: e.target.value })} className={cn(FIELD, "h-10")} />
+              <input value={cfg.name} maxLength={50} onChange={(e) => patch({ name: e.target.value })} className={cn(FIELD, "h-9")} />
               <Counter n={cfg.name.length} max={50} />
             </div>
             <div>

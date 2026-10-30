@@ -18,7 +18,7 @@ import {
   Truck,
 } from "lucide-react";
 import { formatVND, products } from "@/lib/products";
-import { FREE_SHIP, useStore, getCartItemImage } from "@/lib/store";
+import { useStore, getCartItemImage } from "@/lib/store";
 import {
   checkPaymentStatus,
   fetchBankInfo,
@@ -179,6 +179,7 @@ function PaymentOrderSummary({
 }
 
 function SuccessScreen({ done }: { done: Success }) {
+  const { storeSettings } = useStore();
   const { refreshOrders } = useStore();
   const [order, setOrder] = useState<StoreOrderDetail | null>(null);
   const [orderLoadFailed, setOrderLoadFailed] = useState(false);
@@ -223,7 +224,7 @@ function SuccessScreen({ done }: { done: Success }) {
 
   return (
     <main className="min-h-screen bg-[#ffffff] px-4 py-10 text-[#171717] sm:px-6 sm:py-14 lg:px-8">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[1280px]">
         {/* Thank-you header */}
         <header className="relative mb-9 border-b border-[#e5e5e5] pb-9 sm:mb-12 sm:pb-12">
           <div className="flex flex-col gap-7 sm:flex-row sm:items-center sm:justify-between">
@@ -438,7 +439,7 @@ function SuccessScreen({ done }: { done: Success }) {
           <div className="grid gap-6 sm:grid-cols-3 sm:gap-7">
             {[
               { Icon: Gift, title: "Gói ghém yêu thương", text: "Hộp quà và nơ lụa ÉLANE, chỉn chu trong từng chi tiết." },
-              { Icon: ShieldCheck, title: "Đổi size trong 30 ngày", text: "An tâm chọn thiết kế yêu thích, hỗ trợ đổi size theo chính sách." },
+              { Icon: ShieldCheck, title: `Đổi size trong ${storeSettings.returns.returnWindowDays} ngày`, text: "An tâm chọn thiết kế yêu thích, hỗ trợ đổi size theo chính sách." },
               { Icon: HeartHandshake, title: "Luôn sẵn sàng lắng nghe", text: "Đội ngũ ÉLANE đồng hành cùng bạn trong suốt quá trình mua sắm." },
             ].map(({ Icon, title, text }) => (
               <div key={title} className="flex items-start gap-3.5">
@@ -647,7 +648,7 @@ function AwaitingBankScreen({
   );
 
   return (
-    <main className="mx-auto max-w-[1160px] px-4 sm:px-8 py-10 sm:py-10">
+    <main className="mx-auto max-w-[1280px] px-4 sm:px-8 py-10 sm:py-10">
       <div className="grid gap-10 lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_440px] items-start">
         <section aria-labelledby="payment-heading">
           <div className="flex items-baseline justify-between mb-6 pb-3 border-b border-border">
@@ -814,13 +815,17 @@ function AwaitingBankScreen({
 }
 
 function Checkout() {
-  const { cart, placeOrder, user, sessionReady, refreshOrders, setCartOpen, buyNowItem } = useStore();
+  const { cart, placeOrder, user, sessionReady, refreshOrders, setCartOpen, buyNowItem, storeSettings, storeSettingsReady, refreshStoreSettings } = useStore();
   const search = Route.useSearch();
   const nav = useNavigate();
 
   useEffect(() => {
     setCartOpen(false);
   }, [setCartOpen]);
+
+  useEffect(() => {
+    void refreshStoreSettings(true);
+  }, [refreshStoreSettings]);
 
   const isBuyNowMode = Boolean(search.buyNow && buyNowItem);
   const checkoutItems = isBuyNowMode && buyNowItem ? [buyNowItem] : cart;
@@ -833,6 +838,10 @@ function Checkout() {
   const [awaiting, setAwaiting] = useState<AwaitingBank | null>(null);
   const [success, setSuccess] = useState<Success | null>(null);
   const [pay, setPay] = useState<"cod" | "bank">("cod");
+  const paymentOptions = [
+    ...(storeSettings.payments.codEnabled ? [{ value: "cod" as const, label: "Thanh toán khi nhận hàng (COD)" }] : []),
+    ...(storeSettings.payments.bankEnabled ? [{ value: "bank" as const, label: "Chuyển khoản ngân hàng" }] : []),
+  ];
   const [bankInfo, setBankInfo] = useState<BankInfo | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [loadingOrder, setLoadingOrder] = useState<boolean>(Boolean(search.orderId));
@@ -842,7 +851,19 @@ function Checkout() {
   const [couponBusy, setCouponBusy] = useState(false);
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
-  const shipping = currentSubtotal >= FREE_SHIP ? 0 : 30000;
+  useEffect(() => {
+    const selectedPaymentEnabled = pay === "cod"
+      ? storeSettings.payments.codEnabled
+      : storeSettings.payments.bankEnabled;
+    if (!selectedPaymentEnabled) {
+      if (storeSettings.payments.codEnabled) setPay("cod");
+      else if (storeSettings.payments.bankEnabled) setPay("bank");
+    }
+  }, [pay, storeSettings.payments.bankEnabled, storeSettings.payments.codEnabled]);
+
+  const shipping = currentSubtotal >= storeSettings.shipping.freeShippingFromVnd
+    ? 0
+    : storeSettings.shipping.feeVnd;
   const discount = applied?.discount_vnd ?? 0;
   const grand = Math.max(0, currentSubtotal + shipping - discount);
   const availableDistricts = selectedCity ? getDistrictsByProvince(selectedCity) : [];
@@ -1040,7 +1061,7 @@ function Checkout() {
     );
 
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-12">
+    <div className="mx-auto max-w-[1320px] px-6 py-12">
       <h1 className="text-4xl">Thanh toán</h1>
       <form
         className="mt-10 grid gap-12 lg:grid-cols-[1fr_380px]"
@@ -1221,21 +1242,19 @@ function Checkout() {
           <fieldset>
             <legend className="mb-4 text-sm uppercase tracking-widest font-semibold">Phương thức thanh toán</legend>
             <div className="divide-y divide-border border border-border">
-              {([["cod", "Thanh toán khi nhận hàng (COD)"], ["bank", "Chuyển khoản ngân hàng"]] as const).map(
-                ([v, l]) => (
-                  <label key={v} className="flex cursor-pointer items-center gap-3 px-4 py-4 text-[15px]">
+              {paymentOptions.length ? paymentOptions.map(({ value, label }) => (
+                  <label key={value} className="flex cursor-pointer items-center gap-3 px-4 py-4 text-[15px]">
                     <input
                       type="radio"
                       name="pay"
-                      value={v}
-                      checked={pay === v}
-                      onChange={() => setPay(v)}
+                      value={value}
+                      checked={pay === value}
+                      onChange={() => setPay(value)}
                       className="accent-foreground"
                     />{" "}
-                    {l}
+                    {label}
                   </label>
-                ),
-              )}
+              )) : <p className="px-4 py-4 text-sm text-muted-foreground">Hiện chưa có phương thức thanh toán khả dụng. Vui lòng liên hệ cửa hàng.</p>}
             </div>
           </fieldset>
         </div>
@@ -1325,7 +1344,7 @@ function Checkout() {
           </dl>
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || !storeSettingsReady || paymentOptions.length === 0}
             className="mt-6 w-full bg-primary py-4 text-xs sm:text-sm font-semibold uppercase tracking-widest text-primary-foreground disabled:opacity-60 transition-opacity hover:opacity-95"
           >
             {submitting ? "Đang đặt…" : "Đặt hàng"}

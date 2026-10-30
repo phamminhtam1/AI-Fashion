@@ -1,10 +1,17 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { toast } from "sonner";
 import { products, type Product } from "./products";
-import { storeApi, ApiError, type StoreOrderItem, type StoreOrderSummary } from "./api";
+import { fetchStorefrontSettings, storeApi, ApiError, type StoreOrderItem, type StoreOrderSummary, type StorefrontSettings } from "./api";
 
 /** Free-shipping threshold (VND) — matches announcement bar. */
 export const FREE_SHIP = 1_000_000;
+
+const DEFAULT_STOREFRONT_SETTINGS: StorefrontSettings = {
+  brand: { name: "ÉLANE", tagline: "Modern Femininity", supportEmail: "hello@elane.vn", supportPhone: "1900 0000" },
+  payments: { codEnabled: true, bankEnabled: true },
+  shipping: { freeShippingFromVnd: FREE_SHIP, feeVnd: 30_000, cityDeliveryDays: "1–2 ngày làm việc", otherDeliveryDays: "2–4 ngày làm việc" },
+  returns: { returnWindowDays: 30, refundWindow: "5–7 ngày làm việc", conditions: "Sản phẩm còn nguyên tem mác, chưa qua sử dụng, giặt tẩy." },
+};
 
 export type User = { id: string; name: string; email: string; phone?: string };
 export type Order = {
@@ -17,6 +24,7 @@ export type Order = {
   address: string;
   paymentMethod?: string;
   paymentStatus?: string;
+  fulfillmentStatus?: string;
   paidAt?: string | null;
   itemsCount?: number;
   itemsPreview?: StoreOrderItem[];
@@ -65,6 +73,9 @@ export type PlaceOrderResult = {
 };
 
 type Store = {
+  storeSettings: StorefrontSettings;
+  storeSettingsReady: boolean;
+  refreshStoreSettings: (force?: boolean) => Promise<void>;
   user: User | null;
   sessionReady: boolean;
   refreshSession: () => Promise<void>;
@@ -128,6 +139,7 @@ function mapOrders(items: StoreOrderSummary[]): Order[] {
     address: "",
     paymentMethod: o.payment_method,
     paymentStatus: o.payment_status,
+    ...(o.fulfillment_status ? { fulfillmentStatus: o.fulfillment_status } : {}),
     paidAt: o.paid_at,
     itemsCount: o.items_count,
     itemsPreview: o.items_preview,
@@ -135,6 +147,10 @@ function mapOrders(items: StoreOrderSummary[]): Order[] {
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
+  const [storeSettings, setStoreSettings] = useState<StorefrontSettings>(DEFAULT_STOREFRONT_SETTINGS);
+  const [storeSettingsReady, setStoreSettingsReady] = useState(false);
+  const storeSettingsRequestRef = useRef<Promise<StorefrontSettings> | null>(null);
+  const storeSettingsFetchedAtRef = useRef(0);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -168,6 +184,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setWishlist(wish.items.map((x) => x.product_id));
     } catch {
       /* keep local */
+    }
+  }, []);
+
+  const refreshStoreSettings = useCallback(async (force = false) => {
+    if (!force && Date.now() - storeSettingsFetchedAtRef.current < 60_000) return;
+    setStoreSettingsReady(false);
+    const request = storeSettingsRequestRef.current ?? fetchStorefrontSettings();
+    storeSettingsRequestRef.current = request;
+    try {
+      const settings = await request;
+      setStoreSettings(settings);
+      storeSettingsFetchedAtRef.current = Date.now();
+    } catch {
+      // Keep the last known/default values available when the public settings endpoint is offline.
+    } finally {
+      if (storeSettingsRequestRef.current === request) storeSettingsRequestRef.current = null;
+      setStoreSettingsReady(true);
     }
   }, []);
 
@@ -230,6 +263,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    void refreshStoreSettings();
+  }, [refreshStoreSettings]);
+
+  useEffect(() => {
     if (ready) localStorage.setItem("elane-cart", JSON.stringify(cart));
   }, [cart, ready]);
   useEffect(() => {
@@ -256,6 +293,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   const value: Store = {
+    storeSettings,
+    storeSettingsReady,
+    refreshStoreSettings,
     user,
     sessionReady,
     refreshSession,

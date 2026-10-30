@@ -5,7 +5,13 @@ import { formatVND, type Product } from "@/lib/products";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
-export function ProductCard({ product: p }: { product: Product }) {
+export function ProductCard({
+  product: p,
+  imageRevealOnScroll = false,
+}: {
+  product: Product;
+  imageRevealOnScroll?: boolean;
+}) {
   const { wishlist, toggleWishlist, addToCart } = useStore();
   const [selectedCwId, setSelectedCwId] = useState<string>(p.colorways[0]?.id ?? "");
 
@@ -26,13 +32,17 @@ export function ProductCard({ product: p }: { product: Product }) {
   return (
     <article className="group flex h-full flex-col">
       {/* IMAGE AREA — GIỮ NGUYÊN */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-secondary">
+      <div
+        data-category-image-reveal={imageRevealOnScroll ? "" : undefined}
+        className="relative aspect-[3/4] overflow-hidden bg-secondary"
+      >
         <Link
           to="/san-pham/$slug"
           params={{ slug: p.slug }}
           aria-label={p.name}
         >
           <img
+            data-category-reveal-image={imageRevealOnScroll ? "" : undefined}
             src={primaryImg}
             alt={p.name}
             loading="lazy"

@@ -237,13 +237,13 @@ function Account() {
       );
     }
     if (orderFilter === "processing") {
-      return orders.filter((o) => o.status === "confirmed" || o.status === "processing");
+      return orders.filter((o) => (o.status === "confirmed" || o.status === "processing") && !["fulfilled", "delivered"].includes(o.fulfillmentStatus ?? ""));
     }
     if (orderFilter === "shipping") {
       return orders.filter((o) => o.status === "shipping");
     }
     if (orderFilter === "completed") {
-      return orders.filter((o) => o.status === "completed");
+      return orders.filter((o) => o.status === "completed" || ["fulfilled", "delivered"].includes(o.fulfillmentStatus ?? ""));
     }
     if (orderFilter === "cancelled") {
       return orders.filter((o) => o.status === "cancelled");
@@ -330,7 +330,7 @@ function Account() {
   const filterTabs: Array<{ id: OrderFilter; label: string; count?: number }> = [
     { id: "all", label: "Tất cả", count: orders.length },
     { id: "awaiting", label: "Chờ thanh toán", count: awaitingCount },
-    { id: "processing", label: "Đang xử lý", count: orders.filter((o) => o.status === "confirmed" || o.status === "processing").length },
+    { id: "processing", label: "Đang xử lý", count: orders.filter((o) => (o.status === "confirmed" || o.status === "processing") && !["fulfilled", "delivered"].includes(o.fulfillmentStatus ?? "")).length },
     { id: "shipping", label: "Đang giao", count: orders.filter((o) => o.status === "shipping").length },
     { id: "completed", label: "Hoàn tất", count: orders.filter((o) => o.status === "completed").length },
     { id: "cancelled", label: "Đã hủy", count: orders.filter((o) => o.status === "cancelled").length },
@@ -350,12 +350,11 @@ function Account() {
   const initial = user.name?.trim().charAt(0).toUpperCase() || "É";
 
   return (
-    <main className="min-h-screen bg-[#ffffff] px-4 py-8 text-[#171717] sm:px-6 sm:py-12 lg:px-8">
-      <div className="mx-auto max-w-7xl">
+    <main className="min-h-screen bg-[#ffffff] px-4 py-6 text-[#171717] sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto max-w-[1440px]">
         {/* Personal welcome */}
-        <header className="mb-7 flex flex-col gap-6 border-b border-[#e5e5e5] pb-7 sm:mb-9 sm:pb-9 lg:flex-row lg:items-center lg:justify-between">
+        <header className="mb-6 flex flex-col gap-4 border-b border-[#e5e5e5] pb-5 sm:mb-7 sm:pb-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-[#666666] sm:text-xs">My ÉLANE · Không gian của bạn</p>
             <h1 className="break-words font-serif text-4xl leading-[1.2] tracking-tight sm:text-5xl">
               Xin chào, <span className="italic text-[#111111]">{user.name}.</span>
             </h1>
@@ -371,11 +370,11 @@ function Account() {
           </div>
         </header>
 
-        <div className="grid items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-8">
+        <div className="grid items-start gap-5 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6">
           {/* Sidebar; horizontal navigation on mobile */}
           <aside className="min-w-0 lg:sticky lg:top-[calc(var(--header-height,148px)+24px)]">
-            <div className="rounded-3xl border border-[#e5e5e5] bg-white p-3 sm:p-4 font-sans">
-              <div className="hidden items-center gap-3 border-b border-[#ededed] px-2 pb-5 pt-2 lg:flex">
+            <div className="rounded-3xl border border-[#e5e5e5] bg-white p-2.5 sm:p-3 font-sans">
+              <div className="hidden items-center gap-3 border-b border-[#ededed] px-2 pb-4 pt-2 lg:flex">
                 <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f0f0f0] font-serif text-xl text-[#111111]">{initial}</span>
                 <div className="min-w-0">
                   <p className="truncate font-sans text-sm font-semibold tracking-tight text-[#111111]" title={user.name}>{user.name}</p>
@@ -402,7 +401,7 @@ function Account() {
                 })}
               </nav>
             </div>
-            <div className="relative mt-5 hidden overflow-hidden rounded-3xl bg-[#f2f2f2] p-6 lg:block">
+            <div className="relative mt-4 hidden overflow-hidden rounded-3xl bg-[#f2f2f2] p-5 lg:block">
               <div aria-hidden="true" className="absolute -right-7 -top-8 h-32 w-32 rounded-full border border-white/50" />
               <Heart aria-hidden="true" className="relative mb-4 h-5 w-5 stroke-[1.4] text-[#111111]" />
               <p className="relative font-serif text-xl leading-7 text-[#171717]">Phong cách của bạn,<br /><span className="italic">dấu ấn riêng của bạn.</span></p>
@@ -417,7 +416,7 @@ function Account() {
             {/* Orders */}
             {tab === "orders" && (
               <div className="space-y-5">
-                <div className="rounded-3xl border border-[#e5e5e5] bg-white p-5 sm:p-7">
+                <div className="rounded-3xl border border-[#e5e5e5] bg-white p-4 sm:p-5">
                   <AccountSectionHeading eyebrow="Từng lựa chọn được nâng niu" title="Đơn hàng của bạn" description="Theo dõi và quản lý những thiết kế bạn đã chọn." count={`${orders.length} đơn hàng`} />
                   {awaitingCount > 0 && (
                     <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-[#dddddd] bg-[#f5f5f5] p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -455,7 +454,7 @@ function Account() {
             {/* Virtual try-on gallery */}
             {tab === "tryon" && (
               <div className="space-y-6">
-                <div className="rounded-3xl border border-[#e5e5e5] bg-white p-5 sm:p-7">
+                <div className="rounded-3xl border border-[#e5e5e5] bg-white p-4 sm:p-5">
                   <AccountSectionHeading eyebrow="ÉLANE Virtual Atelier" title="Phòng thử đồ của bạn" description="Một nơi để thử, để yêu và để tìm thấy phong cách riêng." count={`${tryOnHistory.length} lần thử`} actionLabel="Thử thiết kế mới" />
                 </div>
                 {loadingTryOns ? <AccountLoadingState label="Đang tải phòng thử đồ…" /> : tryOnHistory.length === 0 ? (
@@ -507,7 +506,7 @@ function Account() {
             {/* Wishlist */}
             {tab === "wishlist" && (
               <div className="space-y-6">
-                <div className="rounded-3xl border border-[#e5e5e5] bg-white p-5 sm:p-7">
+                <div className="rounded-3xl border border-[#e5e5e5] bg-white p-4 sm:p-5">
                   <AccountSectionHeading eyebrow="Những thiết kế khiến bạn rung động" title="Danh sách yêu thích" description="Lưu lại hôm nay, tìm thấy cảm hứng cho những ngày sắp tới." count={`${wishlist.length} thiết kế`} actionLabel="Khám phá hàng mới" />
                 </div>
                 {loadingWishlist ? <AccountLoadingState label="Đang tải danh sách yêu thích…" /> : wishlistItems.length === 0 ? (
@@ -523,7 +522,7 @@ function Account() {
             {/* Overview */}
             {tab === "overview" && (
               <div className="space-y-6">
-                <div className="rounded-3xl border border-[#e5e5e5] bg-white p-5 sm:p-7">
+                <div className="rounded-3xl border border-[#e5e5e5] bg-white p-4 sm:p-5">
                   <AccountSectionHeading eyebrow="Mọi điều bạn yêu, ở cùng một nơi" title="Tổng quan của bạn" description="Một góc nhỏ để theo dõi hành trình mua sắm cùng ÉLANE." />
                 </div>
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
@@ -543,7 +542,7 @@ function Account() {
                 </div>
 
                 {orders.length > 0 && (
-                  <div className="rounded-3xl border border-[#e5e5e5] bg-white p-5 sm:p-7">
+                  <div className="rounded-3xl border border-[#e5e5e5] bg-white p-4 sm:p-5">
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                       <h3 className="font-serif text-2xl">Đơn hàng gần nhất</h3>
                       <button type="button" onClick={() => { setOrderFilter("all"); setTab("orders"); }} className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-[#111111] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111]">Xem tất cả <ChevronRight aria-hidden="true" className="h-3.5 w-3.5" /></button>
@@ -555,7 +554,7 @@ function Account() {
                 )}
 
                 {tryOnHistory.length > 0 && (
-                  <div className="rounded-3xl border border-[#e5e5e5] bg-white p-5 sm:p-7">
+                  <div className="rounded-3xl border border-[#e5e5e5] bg-white p-4 sm:p-5">
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                       <div><p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-[#666666]">Virtual Atelier</p><h3 className="font-serif text-2xl">Những lần thử gần đây</h3></div>
                       <button type="button" onClick={() => setTab("tryon")} className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-[#111111] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111]">Xem tất cả <ChevronRight aria-hidden="true" className="h-3.5 w-3.5" /></button>
@@ -578,9 +577,9 @@ function Account() {
             {/* Personal information */}
             {tab === "profile" && (
               <div className="space-y-6">
-                <div className="rounded-3xl border border-[#e5e5e5] bg-white p-5 sm:p-7"><AccountSectionHeading eyebrow="Dành riêng cho bạn" title="Thông tin cá nhân" description="Thông tin tài khoản để ÉLANE đồng hành cùng bạn chu đáo hơn." /></div>
+                <div className="rounded-3xl border border-[#e5e5e5] bg-white p-4 sm:p-5"><AccountSectionHeading eyebrow="Dành riêng cho bạn" title="Thông tin cá nhân" description="Thông tin tài khoản để ÉLANE đồng hành cùng bạn chu đáo hơn." /></div>
                 <div className="overflow-hidden rounded-3xl border border-[#e5e5e5] bg-white">
-                  <div className="flex flex-wrap items-center gap-4 bg-[#f2f2f2] p-5 sm:p-7">
+                  <div className="flex flex-wrap items-center gap-4 bg-[#f2f2f2] p-4 sm:p-5">
                     <span aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-white/80 bg-[#e5e5e5] font-serif text-2xl text-[#111111]">{initial}</span>
                     <div className="min-w-0 flex-1"><p className="break-words font-serif text-2xl text-[#171717]">{user.name}</p><p className="mt-1 text-xs text-[#666666]">Tài khoản ÉLANE của bạn</p></div>
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-2 text-[11px] font-medium text-[#333333]"><CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5" />Đã đăng nhập</span>
@@ -654,7 +653,7 @@ function AccountSectionHeading({ eyebrow, title, description, count, actionLabel
 
 function AccountLoadingState({ label }: { label: string }) {
   return (
-    <div role="status" className="rounded-3xl border border-[#e5e5e5] bg-white px-6 py-16 text-center">
+    <div role="status" className="rounded-3xl border border-[#e5e5e5] bg-white px-5 py-10 text-center">
       <Loader2 aria-hidden="true" className="mx-auto h-7 w-7 animate-spin text-[#111111] motion-reduce:animate-none" />
       <p className="mt-4 text-xs leading-6 text-[#666666]">{label}</p>
     </div>
@@ -668,7 +667,7 @@ function AccountEmptyState({ icon: Icon, title, description, actionLabel }: {
   actionLabel: string;
 }) {
   return (
-    <div className="rounded-3xl border border-[#e5e5e5] bg-white px-5 py-12 text-center sm:px-8 sm:py-16">
+    <div className="rounded-3xl border border-[#e5e5e5] bg-white px-5 py-10 text-center sm:px-6 sm:py-12">
       <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#f2f2f2] ring-8 ring-[#fafafa]"><Icon aria-hidden="true" className="h-8 w-8 stroke-[1.2] text-[#666666]" /></span>
       <h3 className="mt-7 font-serif text-2xl leading-tight sm:text-3xl">{title}</h3>
       <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-[#666666]">{description}</p>

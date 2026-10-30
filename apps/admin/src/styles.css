@@ -5,6 +5,12 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Preserve the former 90% layout thresholds without scaling the viewport. */
+  --breakpoint-sm: 36rem;
+  --breakpoint-md: 43.2rem;
+  --breakpoint-lg: 57.6rem;
+  --breakpoint-xl: 72rem;
+  --breakpoint-2xl: 86.4rem;
   --font-sans: "Be Vietnam Pro", "Segoe UI", sans-serif;
   --font-serif: var(--font-sans);
   --text-xs: 0.75rem;
@@ -15,12 +21,12 @@
   --text-base--line-height: 1.5rem;
   --text-lg: 1.125rem;
   --text-lg--line-height: 1.75rem;
-  --radius-xs: 6px;
-  --radius-sm: 6px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 10px;
-  --radius: 6px;
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.625rem;
+  --radius: 0.375rem;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -43,7 +49,7 @@
 }
 
 :root {
-  --radius: 6px;
+  --radius: 0.375rem;
   --background: #f8f9fa;
   --foreground: #101828;
   --card: #ffffff;
@@ -68,7 +74,7 @@
 
 @layer base {
   * { border-color: var(--color-border); }
-  html { background: var(--color-background); }
+  html { background: var(--color-background); font-size: 90%; scrollbar-gutter: stable; }
   body { margin: 0; background-color: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans); font-size: var(--text-sm); line-height: var(--text-sm--line-height); letter-spacing: 0; -webkit-font-smoothing: antialiased; }
   button, a, input, textarea, select { font-family: inherit; letter-spacing: 0; }
   select {
@@ -76,19 +82,9 @@
   }
 }
 
-/* The reference admin layout is composed at the compact density users see at
-   90% browser zoom. Keep the browser at its normal 100% zoom while applying
-   that density uniformly to the app shell (including fixed navigation). */
-.admin-app {
-  zoom: 0.9;
-  min-height: 111.111111vh;
-}
-
-/* Keep the navigation rhythm stable at the compact 100% density. The fixed
-   row height prevents the sidebar from drifting relative to the main panel
-   when the browser is resized. */
+/* A smaller rem base keeps type, spacing and controls compact at normal browser zoom. */
 .admin-sidebar-item {
-  min-height: 36px;
+  min-height: 2.25rem;
 }
 
 .admin-app [role="switch"] {
@@ -100,7 +96,7 @@
 }
 
 .admin-sidebar {
-  height: 111.111111vh !important;
+  height: 100vh !important;
 }
 
 .admin-sidebar nav {
@@ -140,7 +136,7 @@
   line-height: 2rem;
   font-weight: 600;
   letter-spacing: -0.025em;
-  @media (min-width: 640px) {
+  @media (min-width: 576px) {
     font-size: 1.75rem;
     line-height: 2.25rem;
   }
@@ -182,37 +178,82 @@
 @keyframes chart-rise { from { transform: scaleY(0); opacity: .35; } to { transform: scaleY(1); opacity: 1; } }
 .chart-bar { transform-origin: bottom; animation: chart-rise .7s cubic-bezier(.2,.75,.25,1) both; }
 .chart-bar:nth-child(2n) { animation-delay: 60ms; }
+@keyframes admin-chart-line-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes admin-chart-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes admin-chart-point-enter { from { opacity: 0; transform: scale(.65); } to { opacity: 1; transform: scale(1); } }
+@keyframes admin-donut-reveal { from { stroke-dasharray: 0 var(--chart-circumference); opacity: .35; } to { stroke-dasharray: var(--chart-dasharray); opacity: 1; } }
+.admin-chart-bar { transform-box: fill-box; transform-origin: center bottom; animation: chart-rise 620ms ease-out both; }
+.admin-chart-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: admin-chart-line-draw 760ms ease-out both; }
+.admin-chart-area { animation: admin-chart-fade 420ms ease-out both; }
+.admin-chart-point { transform-box: fill-box; transform-origin: center; animation: admin-chart-point-enter 240ms ease-out both; }
+.admin-chart-donut { animation: admin-donut-reveal 640ms ease-out both; }
 
-/* A shared entrance transition keeps every admin module as lively as the
-   order-detail experience without making individual managers own animation. */
-@keyframes admin-page-enter {
+/* Shared timing for tab panels, route changes and disclosures. */
+@keyframes admin-content-enter {
   from {
     opacity: 0;
-    transform: translate3d(0, 10px, 0) scale(0.995);
-    filter: blur(2px);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-    filter: blur(0);
   }
 }
 
-.admin-page-motion {
-  animation: admin-page-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  transform-origin: 50% 0;
-  will-change: transform, opacity, filter;
+.admin-transition-panel {
+  min-width: 0;
+  overflow-anchor: none;
 }
+
+.admin-transition-content {
+  min-width: 0;
+}
+
+.admin-transition-panel[data-transitioning="true"] {
+  overflow: hidden;
+}
+
+.admin-transition-enter {
+  animation: admin-content-enter 300ms ease-in-out both;
+}
+
+.admin-app [role="tab"],
+.social-product-picker [role="tab"] {
+  transition-property: color, background-color, border-color, box-shadow;
+  transition-duration: 300ms;
+  transition-timing-function: ease-in-out;
+}
+
+.admin-app [role="tabpanel"][data-state="active"] {
+  animation: admin-content-enter 300ms ease-in-out both;
+}
+
+.admin-app [role="tabpanel"][data-state="active"] > * {
+  animation: admin-content-enter 240ms ease-in-out both;
+}
+
+.admin-app [role="tabpanel"][data-state="active"] > *:nth-child(2) { animation-delay: 28ms; }
+.admin-app [role="tabpanel"][data-state="active"] > *:nth-child(3) { animation-delay: 56ms; }
+.admin-app [role="tabpanel"][data-state="active"] > *:nth-child(4) { animation-delay: 84ms; }
+.admin-app [role="tabpanel"][data-state="active"] > *:nth-child(5) { animation-delay: 112ms; }
 
 @media (prefers-reduced-motion: reduce) {
   .chart-bar,
-  .admin-page-motion {
+  .admin-chart-bar,
+  .admin-chart-line,
+  .admin-chart-area,
+  .admin-chart-point,
+  .admin-chart-donut,
+  .admin-transition-enter,
+  .admin-app [role="tabpanel"][data-state="active"],
+  .admin-app [role="tabpanel"][data-state="active"] > * {
     animation: none;
   }
-  .admin-page-motion {
-    filter: none;
-    transform: none;
-    will-change: auto;
+  .admin-chart-line { stroke-dasharray: none; stroke-dashoffset: 0; }
+  .admin-transition-panel,
+  .admin-app [role="tab"],
+  .social-product-picker [role="tab"],
+  .admin-app *,
+  .social-product-picker * {
+    transition-duration: 1ms !important;
   }
   * { scroll-behavior: auto !important; }
 }
@@ -349,46 +390,46 @@ input:disabled,
 
 /* Dashboard layout uses explicit CSS so chart dimensions never depend on utility generation. */
 .overview-dashboard { font-family: var(--font-sans); font-size: var(--text-sm); line-height: var(--text-sm--line-height); }
-.overview-charts, .overview-operations, .overview-content { display:grid; gap:16px; align-items:start; grid-template-columns:minmax(0,1fr); }
-.overview-chart { height:280px; min-height:280px; width:100%; }
-.overview-donut { position:relative; width:158px; height:158px; flex:0 0 158px; }
-.overview-channel { display:grid; grid-template-columns:28px 80px minmax(40px,1fr) 48px 48px; align-items:center; gap:8px; font-size:12px; }
-.overview-channel > :first-child { width:28px; height:28px; }
+.overview-charts, .overview-operations, .overview-content { display:grid; gap:1rem; align-items:start; grid-template-columns:minmax(0,1fr); }
+.overview-chart { height:17.5rem; min-height:17.5rem; width:100%; }
+.overview-donut { position:relative; width:9.875rem; height:9.875rem; flex:0 0 9.875rem; }
+.overview-channel { display:grid; grid-template-columns:1.75rem 5rem minmax(2.5rem,1fr) 3rem 3rem; align-items:center; gap:0.5rem; font-size:0.75rem; }
+.overview-channel > :first-child { width:1.75rem; height:1.75rem; }
 .overview-dashboard table { font-size: var(--text-sm); }
 
 
 
 
 .overview-dashboard col { min-width:0; }
-@media (min-width:1200px) {
-  .overview-charts { grid-template-columns:minmax(0,1.65fr) minmax(360px,1fr); }
-  .overview-operations { grid-template-columns:minmax(0,1fr) minmax(340px,.7fr); }
+@media (min-width:1080px) {
+  .overview-charts { grid-template-columns:minmax(0,1.65fr) minmax(22.5rem,1fr); }
+  .overview-operations { grid-template-columns:minmax(0,1fr) minmax(21.25rem,.7fr); }
   .overview-operations > :last-child { grid-column:1 / -1; }
   .overview-content { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
-@media (min-width:1700px) {
-  .overview-operations { grid-template-columns:minmax(490px,1.15fr) minmax(330px,.8fr) minmax(470px,1.1fr); }
+@media (min-width:1530px) {
+  .overview-operations { grid-template-columns:minmax(30.625rem,1.15fr) minmax(20.625rem,.8fr) minmax(29.375rem,1.1fr); }
   .overview-operations > :last-child { grid-column:auto; }
   .overview-content { grid-template-columns:repeat(3,minmax(0,1fr)); }
 }
-@media (max-width:600px) {
-  .overview-channel { grid-template-columns:28px 72px minmax(20px,1fr) 42px 42px; gap:5px; }
+@media (max-width:540px) {
+  .overview-channel { grid-template-columns:1.75rem 4.5rem minmax(1.25rem,1fr) 2.625rem 2.625rem; gap:0.3125rem; }
 }
 
 
 /* Reserve readable widths for values and badges; names receive remaining space. */
-.overview-operations > :last-child table { min-width:760px; }
+.overview-operations > :last-child table { min-width:47.5rem; }
 .overview-operations > :last-child td:nth-child(1),
 .overview-operations > :last-child td:nth-child(3),
 .overview-operations > :last-child td:nth-child(4),
 .overview-operations > :last-child td:nth-child(5) { white-space:nowrap; overflow:visible; text-overflow:clip; }
-.overview-content table { min-width:450px; }
-@media (min-width:1200px) and (max-width:1999px) {
- .overview-operations { grid-template-columns:minmax(0,1.5fr) minmax(340px,1fr); }
+.overview-content table { min-width:28.125rem; }
+@media (min-width:1080px) and (max-width:1799px) {
+ .overview-operations { grid-template-columns:minmax(0,1.5fr) minmax(21.25rem,1fr); }
  .overview-operations > :last-child { grid-column:1 / -1; }
 }
 
-.overview-operations > :last-child table { min-width: 1080px; }
+.overview-operations > :last-child table { min-width: 67.5rem; }
 
 /* Social Commerce uses the same compact visual scale as the Admin pages. */
 .social-commerce-ui {
@@ -487,5 +528,205 @@ input:disabled,
   .social-connect-stepper .social-step-dot.is-active,
   .social-connect-stepper .social-step-line.is-complete {
     animation: none;
+  }
+}
+.orders-page .orders-table th {
+  white-space: nowrap;
+}
+
+.orders-detail-view [class*="shadow-"] {
+  box-shadow: none;
+}
+
+.orders-detail-view .animate-pulse {
+  animation: none;
+}
+
+.orders-detail-view .orders-timeline [class*="rounded-xl"][class*="size-10"] {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  box-shadow: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+.orders-detail-view .orders-timeline [class*="bg-gradient-to-b"] {
+  background: #cbd5e1 !important;
+}
+
+.orders-detail-view table thead {
+  background: transparent;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.orders-modern-progress {
+  min-width: 0;
+}
+
+.orders-progress-summary {
+  animation: order-summary-enter 360ms ease-out both;
+}
+
+.orders-progress-row {
+  opacity: 0;
+  animation: order-step-enter 360ms cubic-bezier(0.2, 0.75, 0.25, 1) forwards;
+}
+
+.orders-progress-row:not(:last-child)::after {
+  position: absolute;
+  left: 1.125rem;
+  top: 2.875rem;
+  bottom: -0.25rem;
+  width: 1px;
+  background: #d0d5dd;
+  content: "";
+  transform: scaleY(0);
+  transform-origin: top;
+  animation: order-step-line 320ms ease-out both;
+  animation-delay: inherit;
+}
+
+.orders-progress-icon {
+  position: relative;
+  z-index: 1;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.orders-progress-badge {
+  justify-self: end;
+}
+
+@keyframes order-summary-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes order-step-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes order-step-line {
+  to { transform: scaleY(1); }
+}
+
+@media (max-width: 640px) {
+  .orders-progress-row {
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+    align-items: start;
+    column-gap: 0.75rem;
+  }
+
+  .orders-progress-icon {
+    grid-row: 1 / span 2;
+  }
+
+  .orders-progress-row:not(:last-child)::after {
+    top: 2.75rem;
+    left: 1.125rem;
+    bottom: -0.25rem;
+  }
+
+  .orders-progress-badge {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 0.375rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orders-progress-summary,
+  .orders-progress-row,
+  .orders-progress-row::after {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.orders-create-view > .grid > div > div[class*="border-slate-200"][class*="bg-white"] {
+  box-shadow: none;
+}
+
+.products-manager-detail div.rounded-xs.border[class*="bg-white"][class*="p-4"],
+.products-manager-form div.rounded-xs.border[class*="bg-white"][class*="p-4"] {
+  border-color: #e4e7ec;
+  box-shadow: none;
+}
+
+.products-manager-list [role="tablist"] > [role="tab"] {
+  box-shadow: none;
+}
+
+.products-manager-list table thead th {
+  letter-spacing: 0;
+}
+
+/* Shared rhythm for the admin's primary data tables. */
+.admin-table-frame {
+  overflow: hidden;
+  border: 1px solid #e4e7ec;
+  border-radius: 0.25rem;
+  background: #fff;
+}
+
+.admin-data-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.admin-data-table thead {
+  border-bottom: 1px solid #e4e7ec;
+  background: #fff;
+  color: #667085;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.admin-data-table thead th {
+  height: 42px;
+  padding: 0.625rem 0.75rem;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.admin-data-table tbody tr:not(:has(td[colspan])) > td {
+  padding: 0.625rem 0.75rem;
+}
+
+.admin-data-table tbody tr:not(:has(td[colspan])) {
+  height: 62px;
+}
+
+.customers-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
+}
+
+.customers-table-scroll {
+  overscroll-behavior-inline: contain;
+}
+
+@media (min-width: 768px) {
+  .customers-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .customers-metrics {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .orders-page .orders-tabs {
+    gap: 1.25rem;
+    scrollbar-width: none;
+  }
+
+  .orders-page .orders-tabs::-webkit-scrollbar {
+    display: none;
   }
 }

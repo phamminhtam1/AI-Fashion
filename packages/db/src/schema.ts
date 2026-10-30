@@ -62,6 +62,7 @@ export const employees = pgTable("employees", {
   phone: text("phone"),
   departmentId: uuid("department_id").references(() => departments.id),
   jobTitle: text("job_title"),
+  notes: text("notes"),
   managerId: uuid("manager_id"),
   joinedOn: ts("joined_on").notNull().defaultNow(),
   leftOn: ts("left_on"),
@@ -74,6 +75,7 @@ export const roles = pgTable("roles", {
   id: id(),
   code: text("code").notNull().unique(),
   name: text("name").notNull(),
+  description: text("description").notNull().default(""),
   isSystem: boolean("is_system").notNull().default(false),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
@@ -525,6 +527,24 @@ export const orderItems = pgTable("order_items", {
   lineTotalVnd: integer("line_total_vnd").notNull(),
 });
 
+export const productReviews = pgTable(
+  "product_reviews",
+  {
+    id: id(),
+    productId: uuid("product_id").notNull().references(() => products.id),
+    customerId: uuid("customer_id").notNull().references(() => customers.id),
+    orderId: uuid("order_id").notNull().references(() => orders.id),
+    orderItemId: uuid("order_item_id").notNull().references(() => orderItems.id),
+    rating: integer("rating").notNull(),
+    title: text("title"),
+    comment: text("comment").notNull().default(""),
+    status: text("status").notNull().default("published"), // published|hidden
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("product_reviews_order_item_uidx").on(t.orderItemId)],
+);
+
 export const sepayWebhookEvents = pgTable("sepay_webhook_events", {
   id: id(),
   sepayId: bigint("sepay_id", { mode: "number" }).notNull().unique(),
@@ -848,6 +868,14 @@ export const socialInteractions = pgTable(
   },
   (t) => [uniqueIndex("social_interactions_external_uq").on(t.connectionId, t.externalInteractionId)],
 );
+
+export const socialReplyKeywords = pgTable("social_reply_keywords", {
+  id: id(),
+  connectionId: uuid("connection_id").references(() => instagramConnections.id, { onDelete: "cascade" }),
+  keyword: text("keyword").notNull(),
+  createdById: uuid("created_by_id").references(() => accounts.id),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex("social_reply_keywords_connection_keyword_uq").on(t.connectionId, t.keyword)]);
 
 export const socialMetricSnapshots = pgTable("social_metric_snapshots", {
   id: id(),

@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { AnimatedPanel } from "@/components/ui/AnimatedPanel";
 import { cn } from "@/lib/utils";
 import { CHANNEL_META } from "../mock";
 import type { ChannelId, SocialCtx } from "../types";
@@ -199,12 +200,12 @@ export function ChannelManagePage({ ctx }: { ctx: SocialCtx }) {
   return (
     <div className="space-y-5 pb-12 text-slate-900">
       {/* ───────── HEADER ───────── */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-start gap-3">
           <button
             type="button"
             onClick={() => ctx.go("connect")}
-            className="mt-1.5 grid size-8 place-items-center rounded-lg text-slate-700 hover:bg-slate-100"
+            className="mt-1.5 grid size-9 place-items-center rounded-xs text-slate-700 hover:bg-slate-100"
             aria-label="Quay lại"
           >
             <ArrowLeft className="size-5" />
@@ -354,7 +355,7 @@ export function ChannelManagePage({ ctx }: { ctx: SocialCtx }) {
       </section>
 
       {/* ───────── TAB BAR ───────── */}
-      <nav className={cn(card, "flex items-stretch justify-between overflow-x-auto p-0")}>
+      <nav role="tablist" aria-label="Nội dung quản lý kênh" className={cn(card, "flex items-stretch justify-between overflow-x-auto p-0")}>
         {TABS.map((t) => {
           const Icon = t.icon;
           const active = tab === t.id;
@@ -362,6 +363,8 @@ export function ChannelManagePage({ ctx }: { ctx: SocialCtx }) {
             <button
               key={t.id}
               type="button"
+              role="tab"
+              aria-selected={active}
               onClick={() => setTab(t.id)}
               className={cn(
                 "flex items-center gap-2 whitespace-nowrap border-b-2 px-6 py-4 text-sm font-medium transition-colors",
@@ -378,6 +381,7 @@ export function ChannelManagePage({ ctx }: { ctx: SocialCtx }) {
       </nav>
 
       {/* ───────── TAB TỔNG QUAN ───────── */}
+      <AnimatedPanel transitionKey={tab} role="tabpanel" className="min-w-0">
       {tab === "overview" && (
         <div className="space-y-5">
           {/* Hàng 1 */}
@@ -390,7 +394,7 @@ export function ChannelManagePage({ ctx }: { ctx: SocialCtx }) {
                   <select
                     value={period}
                     onChange={(e) => setPeriod(e.target.value)}
-                    className="h-8 appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-xs font-medium text-slate-700 outline-none hover:bg-slate-50"
+                    className="h-9 appearance-none rounded-xs border border-slate-200 bg-white pl-3 pr-8 text-xs font-medium text-slate-700 outline-none hover:bg-slate-50"
                   >
                     <option>7 ngày qua</option>
                     <option>30 ngày qua</option>
@@ -673,6 +677,7 @@ export function ChannelManagePage({ ctx }: { ctx: SocialCtx }) {
           </div>
         </section>
       )}
+      </AnimatedPanel>
     </div>
   );
 }

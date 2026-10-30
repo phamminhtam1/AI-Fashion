@@ -92,6 +92,7 @@ services:
       dockerfile: docker/admin.prod.Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-}
+        VITE_STOREFRONT_URL: ${VITE_STOREFRONT_URL:-}
     restart: unless-stopped
     environment:
       API_INTERNAL_URL: http://api:3001

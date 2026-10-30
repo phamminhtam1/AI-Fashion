@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Minus, Plus, X } from "lucide-react";
 import { formatVND, products } from "@/lib/products";
-import { FREE_SHIP, useStore, getCartItemImage } from "@/lib/store";
+import { useStore, getCartItemImage } from "@/lib/store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/gio-hang")({
@@ -19,12 +19,14 @@ export const Route = createFileRoute("/gio-hang")({
 });
 
 function CartPage() {
-  const { cart, subtotal, updateQty, removeItem, setCartOpen } = useStore();
+  const { cart, subtotal, updateQty, removeItem, setCartOpen, storeSettings } = useStore();
 
   useEffect(() => {
     setCartOpen(false);
   }, [setCartOpen]);
-  const shipping = subtotal >= FREE_SHIP || subtotal === 0 ? 0 : 30000;
+  const shipping = subtotal >= storeSettings.shipping.freeShippingFromVnd || subtotal === 0
+    ? 0
+    : storeSettings.shipping.feeVnd;
   if (cart.length === 0)
     return (
       <div className="py-32 text-center">
@@ -34,7 +36,7 @@ function CartPage() {
       </div>
     );
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-12">
+    <div className="mx-auto max-w-[1320px] px-6 py-12">
       <h1 className="text-4xl">Giỏ hàng</h1>
       <div className="mt-10 grid gap-12 lg:grid-cols-[1fr_360px]">
         <ul className="divide-y divide-border border-y border-border">

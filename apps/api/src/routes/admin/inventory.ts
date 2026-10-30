@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
+  accounts,
+  employees,
   inventoryBalances,
   inventoryDocuments,
   inventoryDocumentLines,
@@ -16,6 +18,7 @@ import {
   orders,
   idempotencyRecords,
   auditLogs,
+  type Db,
 } from "@elane/db";
 import type { AppVars } from "../../middleware/auth.js";
 import { requireAuth } from "../../middleware/auth.js";
@@ -27,6 +30,39 @@ import { createHash } from "node:crypto";
 
 export const adminInventoryRoutes = new Hono<AppVars>();
 adminInventoryRoutes.use("*", requireAuth);
+
+type InventoryActor = { name: string | null; role: string | null };
+
+async function resolveInventoryActors(
+  db: Db,
+  accountIds: Array<string | null | undefined>,
+): Promise<Map<string, InventoryActor>> {
+  const ids = Array.from(new Set(accountIds.filter((id): id is string => Boolean(id))));
+  const actors = new Map<string, InventoryActor>();
+  if (!ids.length) return actors;
+
+  const employeeRows = await db
+    .select({ accountId: employees.accountId, name: employees.fullName, role: employees.jobTitle })
+    .from(employees)
+    .where(inArray(employees.accountId, ids));
+  for (const employee of employeeRows) {
+    if (employee.accountId) {
+      actors.set(employee.accountId, { name: employee.name, role: employee.role });
+    }
+  }
+
+  const missingIds = ids.filter((id) => !actors.has(id));
+  if (missingIds.length) {
+    const accountRows = await db
+      .select({ id: accounts.id, email: accounts.email })
+      .from(accounts)
+      .where(inArray(accounts.id, missingIds));
+    for (const account of accountRows) {
+      actors.set(account.id, { name: account.email, role: null });
+    }
+  }
+  return actors;
+}
 
 adminInventoryRoutes.get("/", async (c) => {
   requirePerm(c.get("user")!, "inventory.read");
@@ -117,6 +153,8 @@ adminInventoryRoutes.get("/documents", async (c) => {
       type: inventoryDocuments.type,
       status: inventoryDocuments.status,
       reason: inventoryDocuments.reason,
+      requested_by: inventoryDocuments.requestedBy,
+      approved_by: inventoryDocuments.approvedBy,
       created_at: inventoryDocuments.createdAt,
       posted_at: inventoryDocuments.postedAt,
       line_count: sql<number>`(
@@ -146,7 +184,23 @@ adminInventoryRoutes.get("/documents", async (c) => {
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(desc(inventoryDocuments.createdAt))
     .limit(200);
-  return c.json({ items: rows });
+  const actors = await resolveInventoryActors(
+    db,
+    rows.flatMap((row) => [row.requested_by, row.approved_by]),
+  );
+  return c.json({
+    items: rows.map((row) => {
+      const requester = actors.get(row.requested_by);
+      const approver = row.approved_by ? actors.get(row.approved_by) : null;
+      return {
+        ...row,
+        requested_by_name: requester?.name ?? null,
+        requested_by_role: requester?.role ?? null,
+        approved_by_name: approver?.name ?? null,
+        approved_by_role: approver?.role ?? null,
+      };
+    }),
+  });
 });
 
 adminInventoryRoutes.get("/documents/:id", async (c) => {
@@ -212,6 +266,9 @@ adminInventoryRoutes.get("/documents/:id", async (c) => {
   }
 
   const d = docs[0];
+  const actors = await resolveInventoryActors(db, [d.requestedBy, d.approvedBy]);
+  const requester = actors.get(d.requestedBy);
+  const approver = d.approvedBy ? actors.get(d.approvedBy) : null;
   return c.json({
     id: d.id,
     code: d.code,
@@ -222,6 +279,10 @@ adminInventoryRoutes.get("/documents/:id", async (c) => {
     posted_at: d.postedAt,
     requested_by: d.requestedBy,
     approved_by: d.approvedBy,
+    requested_by_name: requester?.name ?? null,
+    requested_by_role: requester?.role ?? null,
+    approved_by_name: approver?.name ?? null,
+    approved_by_role: approver?.role ?? null,
     lines: lines.map((l) => ({
       ...l,
       image_url: (l.colorway_id ? colorwayMap.get(l.colorway_id) : null) ?? coverMap.get(l.product_id) ?? null,

@@ -61,13 +61,13 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sale: var(--sale);
   --color-success: var(--success);
-  --font-serif: "Playfair Display", Georgia, serif;
-  --font-sans: "Manrope", system-ui, sans-serif;
+  --font-serif: "Montserrat", Arial, sans-serif;
+  --font-sans: "Montserrat", Arial, sans-serif;
 }
 
 :root {
-  --font-serif: "Playfair Display", Georgia, serif;
-  --font-sans: "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Montserrat", Arial, sans-serif;
+  --font-sans: "Montserrat", Arial, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --radius: 0rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.2 0 0);
@@ -106,8 +106,8 @@
 }
 
 .dark {
-  --font-serif: "Playfair Display", Georgia, serif;
-  --font-sans: "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Montserrat", Arial, sans-serif;
+  --font-sans: "Montserrat", Arial, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
@@ -562,6 +562,98 @@ input:disabled,
 
 ::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* Reveal supporting home sections as they enter the viewport. */
+[data-home-reveal].reveal-ready:not(.reveal-visible) {
+  opacity: 0;
+  transform: translateY(22px);
+}
+
+[data-home-reveal].reveal-ready {
+  transition:
+    opacity 800ms cubic-bezier(0.22, 0.75, 0.25, 1),
+    transform 800ms cubic-bezier(0.22, 0.75, 0.25, 1);
+}
+
+/* Reveal each home product only when that card itself enters the viewport. */
+.product-reveal-grid > *.reveal-ready:not(.reveal-visible) {
+  opacity: 0;
+  transform: translateX(-24px);
+}
+
+.product-reveal-grid > :nth-child(3).reveal-ready:not(.reveal-visible),
+.product-reveal-grid > :nth-child(4).reveal-ready:not(.reveal-visible),
+.product-reveal-grid > :nth-child(7).reveal-ready:not(.reveal-visible),
+.product-reveal-grid > :nth-child(8).reveal-ready:not(.reveal-visible) {
+  transform: translateX(24px);
+}
+
+.product-reveal-grid > *.reveal-ready {
+  transition:
+    opacity 850ms cubic-bezier(0.22, 0.75, 0.25, 1),
+    transform 850ms cubic-bezier(0.22, 0.75, 0.25, 1);
+}
+
+.product-reveal-grid > *.reveal-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.product-reveal-grid > :nth-child(1).reveal-ready,
+.product-reveal-grid > :nth-child(4).reveal-ready,
+.product-reveal-grid > :nth-child(5).reveal-ready,
+.product-reveal-grid > :nth-child(8).reveal-ready { transition-delay: 0ms; }
+.product-reveal-grid > :nth-child(2).reveal-ready,
+.product-reveal-grid > :nth-child(3).reveal-ready,
+.product-reveal-grid > :nth-child(6).reveal-ready,
+.product-reveal-grid > :nth-child(7).reveal-ready { transition-delay: 120ms; }
+
+@media (min-width: 768px) {
+  .product-reveal-grid > :nth-child(3).reveal-ready:not(.reveal-visible),
+  .product-reveal-grid > :nth-child(4).reveal-ready:not(.reveal-visible),
+  .product-reveal-grid > :nth-child(7).reveal-ready:not(.reveal-visible),
+  .product-reveal-grid > :nth-child(8).reveal-ready:not(.reveal-visible) {
+    transform: translateX(-24px);
+  }
+
+  .product-reveal-grid > :nth-child(n + 5).reveal-ready:not(.reveal-visible) {
+    transform: translateX(24px);
+  }
+
+  .product-reveal-grid > :nth-child(1).reveal-ready { transition-delay: 0ms; }
+  .product-reveal-grid > :nth-child(2).reveal-ready { transition-delay: 120ms; }
+  .product-reveal-grid > :nth-child(3).reveal-ready { transition-delay: 240ms; }
+  .product-reveal-grid > :nth-child(4).reveal-ready { transition-delay: 360ms; }
+  .product-reveal-grid > :nth-child(5).reveal-ready { transition-delay: 360ms; }
+  .product-reveal-grid > :nth-child(6).reveal-ready { transition-delay: 240ms; }
+  .product-reveal-grid > :nth-child(7).reveal-ready { transition-delay: 120ms; }
+  .product-reveal-grid > :nth-child(8).reveal-ready { transition-delay: 0ms; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-reveal-grid > *.reveal-ready {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Category listings: image-led reveal, leaving product details stationary. */
+[data-category-image-reveal].reveal-ready [data-category-reveal-image] {
+  transform: scale(1.1);
+  transition: transform 1100ms cubic-bezier(0.22, 0.75, 0.25, 1);
+}
+
+[data-category-image-reveal].reveal-visible [data-category-reveal-image] {
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-category-image-reveal].reveal-ready [data-category-reveal-image] {
+    transform: none;
+    transition: none;
+  }
 }
 
 

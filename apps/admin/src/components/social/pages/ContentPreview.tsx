@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, Bookmark, ChevronLeft, ChevronRight, Globe, Heart, Loader2, MessageCircle, MoreHorizontal, Music2, Play, Search, Send, Share2, Shirt, ShoppingBag, ShoppingCart, ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AnimatedPanel } from "@/components/ui/AnimatedPanel";
 import { cn } from "@/lib/utils";
 import { CH_NAME, CONTENT_CHANNELS, TINTS, type Product } from "../mock";
 import type { ChannelAccount, ChannelId } from "../types";
@@ -350,9 +351,9 @@ export function PreviewPanel({ title, channel, onChannel, device, onDevice, draf
           </button>
         ))}
       </div>
-      <div className={cn("mx-auto mt-4", device === "mobile" && "max-w-[340px]")}>
+      <AnimatedPanel transitionKey={channel} className={cn("mx-auto mt-4", device === "mobile" && "max-w-[340px]")}>
         {channel === "facebook" ? <FacebookPreview {...props} /> : channel === "instagram" ? <InstagramPreview {...props} /> : channel === "tiktok" ? <TikTokPreview {...props} /> : channel === "shopee" ? <ShopeePreview {...props} /> : channel === "website" ? <WebsitePreview {...props} /> : <GenericPreview channel={channel} {...props} />}
-      </div>
+      </AnimatedPanel>
     </section>
   );
 }

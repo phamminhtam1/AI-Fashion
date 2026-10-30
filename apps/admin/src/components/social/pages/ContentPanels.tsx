@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode 
 import { Check, ChevronLeft, ChevronRight, Copy, Eye, FolderHeart, GripVertical, Images, Link2, List, ListOrdered, Pencil, Play, Plus, RefreshCw, Shirt, Smile, Sparkles, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { AnimatedPanel } from "@/components/ui/AnimatedPanel";
 import { cn } from "@/lib/utils";
 import { AGES, AUDIENCES, CAMPAIGN_GOALS, CH_NAME, CONTENT_CHANNELS, CTAS, GOALS, MOCK_PRODUCTS, SEGMENTS, STYLES, TONES, type Collection, type Product, type Variant } from "../mock";
 import type { AiPreset, ChannelId } from "../types";
@@ -11,7 +12,7 @@ import { fmtDuration, formatFullCta, MediaView, Placeholder, type MediaItem } fr
 const MAX_CAPTION = 2200;
 const MAX_TAGS = 30;
 const MAX_MEDIA = 10;
-const box = "rounded-lg border border-slate-200 p-4";
+const box = "rounded-xs border border-slate-200 p-4";
 const copy = async (v: string, label: string) => { await navigator.clipboard.writeText(v); toast.success(`Đã sao chép ${label}`); };
 const optional = <span className="font-normal text-slate-400">(tùy chọn)</span>;
 
@@ -23,7 +24,7 @@ const Checkbox = ({ on }: { on: boolean }) => (
 function ChannelChip({ id, on, onToggle, className }: { id: ChannelId; on: boolean; onToggle: (id: ChannelId) => void; className?: string }) {
   return (
     <button type="button" aria-pressed={on} onClick={() => onToggle(id)}
-      className={cn("flex items-center gap-2 rounded-md border px-2.5 py-2 text-xs font-medium", on ? "border-violet-300 bg-violet-50 text-slate-900" : "border-slate-200 text-slate-600 hover:bg-slate-50", className)}>
+      className={cn("flex items-center gap-2 rounded-xs border px-2.5 py-2 text-xs font-medium", on ? "border-violet-300 bg-violet-50 text-slate-900" : "border-slate-200 text-slate-600 hover:bg-slate-50", className)}>
       <Checkbox on={on} /><ChannelLogo id={id} size="xs" />{CH_NAME[id]}
     </button>
   );
@@ -366,7 +367,7 @@ export function AiInputPanel({
         </div>
       </Field>
 
-      <Button onClick={onGenerate} disabled={busy} className="h-11 w-full gap-2 bg-[#6941c6] hover:bg-[#5b36b0]">
+      <Button onClick={onGenerate} disabled={busy} className="h-9 w-full gap-2 rounded-xs bg-[#6941c6] hover:bg-[#5b36b0]">
         <Sparkles className={cn("size-4", busy && "animate-pulse")} />{busy ? "AI đang viết..." : hasResult ? "Tạo lại với thông tin mới" : "Tạo content với AI"}
       </Button>
     </section>
@@ -503,10 +504,11 @@ export function AiResultPanel({
         </div>
       ) : (
         <>
-          <div role="tablist" className="mt-4 flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs sm:text-sm">
-            {tabs.map((t) => <button key={t.id} id={`ai-result-tab-${t.id}`} role="tab" aria-selected={tab === t.id} aria-controls={`ai-result-panel-${t.id}`} onClick={() => setTab(t.id)} className={cn("flex-1 whitespace-nowrap rounded-md px-2 py-1.5 font-medium transition-colors", tab === t.id ? "bg-white text-[#6941c6] shadow-sm" : "text-slate-500 hover:bg-white/60 hover:text-slate-700")}>{t.label}</button>)}
+          <div role="tablist" className="mt-4 flex gap-1 rounded-xs border border-slate-200 bg-slate-50 p-1 text-xs sm:text-sm">
+            {tabs.map((t) => <button key={t.id} id={`ai-result-tab-${t.id}`} role="tab" aria-selected={tab === t.id} aria-controls={`ai-result-panel-${t.id}`} onClick={() => setTab(t.id)} className={cn("flex-1 whitespace-nowrap rounded-xs px-2 py-1.5 font-medium transition-colors", tab === t.id ? "bg-white text-[#6941c6] shadow-sm" : "text-slate-500 hover:bg-white/60 hover:text-slate-700")}>{t.label}</button>)}
           </div>
 
+          <AnimatedPanel transitionKey={tab} className="min-w-0">
           {tab === "content" && (
             <div id="ai-result-panel-content" role="tabpanel" aria-labelledby="ai-result-tab-content" className="mt-5">
               <div className="flex items-start justify-between gap-3">
@@ -819,6 +821,7 @@ export function AiResultPanel({
               {previewMedia && <div role="dialog" aria-modal="true" aria-label="Xem media" className="fixed inset-0 z-50 grid place-items-center bg-slate-950/75 p-6" onClick={() => setPreviewMedia(null)}><div className="relative max-h-full max-w-4xl overflow-hidden rounded-lg bg-white p-2 shadow-xl" onClick={(event) => event.stopPropagation()}><MediaView item={previewMedia} className="max-h-[80vh] w-auto object-contain" /><button type="button" aria-label="Đóng" onClick={() => setPreviewMedia(null)} className="absolute right-3 top-3 grid size-8 place-items-center rounded-full bg-black/60 text-white"><X className="size-4" /></button></div></div>}
             </div>
           )}
+          </AnimatedPanel>
         </>
       )}
     </section>

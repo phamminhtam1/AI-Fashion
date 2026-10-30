@@ -37,6 +37,7 @@ import { resolveAdminPath } from "@/lib/routes";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { AnimatedPanel } from "@/components/ui/AnimatedPanel";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -1705,7 +1706,7 @@ export function DiscountCodesManager({ permissions = [] }: { permissions?: strin
 
         <section className="overflow-hidden rounded-xl border border-border bg-card">
           {/* Tabs */}
-          <div className="flex gap-6 border-b border-border px-5 pt-3">
+          <div role="tablist" aria-label="Lọc khuyến mãi" className="flex gap-6 border-b border-border px-5 pt-3">
             {(
               [
                 ["all", "Tất cả"],
@@ -1717,6 +1718,8 @@ export function DiscountCodesManager({ permissions = [] }: { permissions?: strin
               <button
                 key={id}
                 type="button"
+                role="tab"
+                aria-selected={tab === id}
                 onClick={() => setTab(id)}
                 className={cn(
                   "-mb-px border-b-2 px-1 pb-3 text-sm font-medium transition-colors",
@@ -1933,6 +1936,7 @@ export function DiscountCodesManager({ permissions = [] }: { permissions?: strin
           </div>
 
           {/* Table */}
+          <AnimatedPanel transitionKey={tab} className="min-w-0">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1080px] table-fixed text-left text-sm">
               <thead className="bg-slate-50/80">
@@ -2087,6 +2091,7 @@ export function DiscountCodesManager({ permissions = [] }: { permissions?: strin
               </tbody>
             </table>
           </div>
+          </AnimatedPanel>
 
           <Pager
             page={page}

@@ -55,7 +55,7 @@ function CollectionDetail() {
           </div>
         </div>
       </section>
-      <section className="mx-auto max-w-[1440px] px-6 py-16 md:px-8">
+      <section className="mx-auto max-w-[1600px] px-6 py-16 md:px-8">
         <p className="mb-8 text-sm text-muted-foreground">{items.length} thiết kế</p>
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4">
           {items.map((p) => <ProductCard key={p.id} product={p} />)}

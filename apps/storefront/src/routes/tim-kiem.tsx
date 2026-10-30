@@ -21,7 +21,7 @@ function SearchPage() {
   const { q } = Route.useSearch();
   const items = products.filter((p) => p.name.toLowerCase().includes(q.toLowerCase()));
   return (
-    <div className="mx-auto max-w-[1440px] px-6 py-12 md:px-8">
+    <div className="mx-auto max-w-[1600px] px-6 py-12 md:px-8">
       <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Kết quả tìm kiếm</p>
       <h1 className="mt-2 text-4xl">"{q}" <span className="text-lg text-muted-foreground">({items.length})</span></h1>
       {items.length === 0 ? (

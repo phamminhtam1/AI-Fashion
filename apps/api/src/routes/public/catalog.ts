@@ -16,6 +16,8 @@ import {
   collectionProducts,
   inventoryBalances,
   warehouses,
+  productReviews,
+  customers,
 } from "@elane/db";
 import type { AppVars } from "../../middleware/auth.js";
 import { mediaPublicUrl } from "../../lib/media-storage.js";
@@ -383,6 +385,36 @@ publicCatalogRoutes.get("/products", async (c) => {
   const items = [];
   for (const p of rows) items.push(await mapProduct(db, p));
   return c.json({ items, page, limit, total: countRows[0]?.count ?? 0 });
+});
+
+publicCatalogRoutes.get("/products/:id/reviews", async (c) => {
+  const db = c.get("db");
+  const productId = c.req.param("id");
+  const product = (await db.select({ id: products.id }).from(products).where(eq(products.id, productId)).limit(1))[0];
+  if (!product) throw new ApiError(404, "not_found", "Không tìm thấy sản phẩm");
+
+  const rows = await db
+    .select({
+      id: productReviews.id,
+      rating: productReviews.rating,
+      title: productReviews.title,
+      comment: productReviews.comment,
+      created_at: productReviews.createdAt,
+      customer_name: customers.fullName,
+    })
+    .from(productReviews)
+    .innerJoin(customers, eq(customers.id, productReviews.customerId))
+    .where(and(eq(productReviews.productId, productId), eq(productReviews.status, "published")))
+    .orderBy(desc(productReviews.createdAt))
+    .limit(50);
+  const summary = await db
+    .select({ count: sql<number>`count(*)::int`, average: sql<number>`coalesce(avg(${productReviews.rating}), 0)::float` })
+    .from(productReviews)
+    .where(and(eq(productReviews.productId, productId), eq(productReviews.status, "published")));
+  return c.json({
+    summary: { count: summary[0]?.count ?? 0, average: Number((summary[0]?.average ?? 0).toFixed(1)) },
+    items: rows.map((r) => ({ ...r, customer_name: r.customer_name || "Khách hàng", verified: true })),
+  });
 });
 
 publicCatalogRoutes.get("/products/:slug", async (c) => {

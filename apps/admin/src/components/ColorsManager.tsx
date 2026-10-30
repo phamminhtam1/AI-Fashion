@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { Input } from "@/components/ui/input";
 import { adminApi, type ColorRow } from "@/lib/api";
 import { useConfirmDialog } from "@/components/ConfirmDialog";
@@ -227,20 +228,20 @@ export function ColorsManager() {
       <section className="mt-6 grid gap-4 sm:grid-cols-3">
         <div className="rounded-xs border border-accent bg-accent/25 p-5">
           <p className="section-label">Tổng màu</p>
-          <p className="mt-3 font-sans admin-metric">{loading ? "…" : items.length}</p>
+          <p className="mt-3 font-sans admin-metric"><AnimatedValue value={loading ? "…" : items.length} /></p>
           <p className="mt-1 text-sm text-primary">Trong hệ thống</p>
         </div>
         <div className="rounded-xs border border-border p-5">
           <p className="section-label">Đang dùng</p>
           <p className="mt-3 font-sans admin-metric">
-            {loading ? "…" : items.filter((c) => c.variant_count > 0).length}
+            <AnimatedValue value={loading ? "…" : items.filter((c) => c.variant_count > 0).length} />
           </p>
           <p className="mt-1 text-sm text-muted-foreground">Có gắn biến thể</p>
         </div>
         <div className="rounded-xs border border-border p-5">
           <p className="section-label">Chưa dùng</p>
           <p className="mt-3 font-sans admin-metric">
-            {loading ? "…" : items.filter((c) => c.variant_count === 0).length}
+            <AnimatedValue value={loading ? "…" : items.filter((c) => c.variant_count === 0).length} />
           </p>
           <p className="mt-1 text-sm text-muted-foreground">Có thể xóa</p>
         </div>

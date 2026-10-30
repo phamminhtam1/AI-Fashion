@@ -10,13 +10,14 @@ export const Route = createFileRoute("/cua-hang")({
 });
 
 function Stores() {
+  const cmsPage = Route.useLoaderData();
   const cities = ["Tất cả", ...new Set(stores.map((s) => s.city))];
   const [city, setCity] = useState("Tất cả");
   const list = city === "Tất cả" ? stores : stores.filter((s) => s.city === city);
   return (
     <>
       <PageHeader title="Hệ thống cửa hàng" eyebrow="Store locator">Ghé thăm ÉLANE để được stylist tư vấn trực tiếp.</PageHeader>
-      <div className="mx-auto max-w-[1440px] px-6 py-10 md:px-8">
+      <div className="mx-auto max-w-[1600px] px-6 py-10 md:px-8">
         <div className="flex flex-wrap gap-2">
           {cities.map((c) => (
             <button key={c} onClick={() => setCity(c)} className={`border px-5 py-2 text-xs uppercase tracking-widest ${city === c ? "border-foreground bg-primary text-primary-foreground" : "border-border hover:border-foreground"}`}>{c}</button>

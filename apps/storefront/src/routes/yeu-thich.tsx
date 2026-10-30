@@ -43,7 +43,7 @@ function Wishlist() {
   }, [wishlist]);
 
   return (
-    <div className="mx-auto max-w-[1440px] px-6 py-12 md:px-8">
+    <div className="mx-auto max-w-[1600px] px-6 py-12 md:px-8">
       <div className="flex flex-col gap-2 border-b border-border/60 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-foreground/75">

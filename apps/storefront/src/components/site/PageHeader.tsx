@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 export function PageHeader({ title, eyebrow, crumb, children }: { title: string; eyebrow?: string; crumb?: string; children?: ReactNode }) {
   return (
-    <header className="mx-auto max-w-[1440px] px-6 pt-10 md:px-8">
+    <header className="mx-auto max-w-[1600px] px-6 pt-10 md:px-8">
       <nav aria-label="Breadcrumb" className="text-base text-muted-foreground flex items-center gap-2 flex-wrap font-medium">
         <Link to="/" className="hover:text-foreground transition-colors">Trang chủ</Link>
         <span className="opacity-40">/</span>

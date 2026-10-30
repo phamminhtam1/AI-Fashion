@@ -68,7 +68,7 @@ export function PageHeader({ title, desc, actions, onBack }: { title: ReactNode;
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-3">
-        {onBack && <button onClick={onBack} aria-label="Quay lại" className="mt-1 grid size-8 place-items-center rounded-md hover:bg-slate-100"><ArrowLeft className="size-5" /></button>}
+        {onBack && <button onClick={onBack} aria-label="Quay lại" className="mt-1 grid size-8 place-items-center rounded-xs hover:bg-slate-100"><ArrowLeft className="size-5" /></button>}
         <div><h1 className="admin-page-title flex flex-wrap items-center gap-2">{title}</h1>{desc && <p className="mt-1 text-sm text-slate-500">{desc}</p>}</div>
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}

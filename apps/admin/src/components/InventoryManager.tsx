@@ -10,8 +10,6 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Copy,
   Download,
   Eye,
@@ -35,8 +33,11 @@ import {
 import { toast } from "sonner";
 import { adminApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { AnimatedPanel } from "@/components/ui/AnimatedPanel";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AdminPagination } from "@/components/AdminPagination";
 import { cn } from "@/lib/utils";
 import { useConfirmDialog } from "@/components/ConfirmDialog";
 import type {
@@ -80,6 +81,13 @@ function fmtDateParts(s: string | null | undefined) {
   };
 }
 
+function toLocalDateInput(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function copyText(label: string, value: string) {
   void navigator.clipboard.writeText(value).then(
     () => toast.success(`Đã sao chép ${label}`),
@@ -115,10 +123,6 @@ type StockRow = InventoryItem & {
 };
 type DocRow = InventoryDocumentListItem & {
   warehouse_code?: string | null;
-  created_by_name?: string | null;
-  created_by_role?: string | null;
-  approved_by_name?: string | null;
-  approved_by_role?: string | null;
 };
 
 type CatalogVariant = {
@@ -306,28 +310,68 @@ function MetricCard({
   value,
   note,
   extra,
+  variant = "card",
+  tone = "neutral",
+  active = false,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   note: string;
   extra?: string;
+  variant?: "card" | "strip" | "tile";
+  tone?: "brand" | "neutral" | "warning" | "danger" | "success";
+  active?: boolean;
+  onClick?: () => void;
 }) {
-  return (
-    <div className="rounded-xs border border-slate-200/90 bg-white p-4.5 shadow-2xs">
-      <div className="flex items-center gap-2 text-slate-500">
-        {icon}
-        <p className="text-sm font-semibold uppercase tracking-wider text-slate-600">{label}</p>
-      </div>
-      <p className="mt-2 text-xl  font-semibold tracking-tight tabular-nums text-slate-950 truncate" title={value}>
-        {value}
-      </p>
-      <div className="mt-2 flex items-center justify-between gap-2 text-sm font-semibold text-slate-600">
+  const toneStyles = {
+    brand: { border: "border-t-[#6941c6]", icon: "text-[#6941c6]", value: "text-slate-950" },
+    neutral: { border: "border-t-slate-300", icon: "text-slate-400", value: "text-slate-950" },
+    warning: { border: "border-t-amber-500", icon: "text-amber-600", value: "text-amber-700" },
+    danger: { border: "border-t-rose-500", icon: "text-rose-600", value: "text-rose-700" },
+    success: { border: "border-t-emerald-500", icon: "text-emerald-600", value: "text-emerald-700" },
+  }[tone];
+  const className = cn(
+      "min-w-0",
+      variant === "strip"
+        ? "px-4 py-3"
+        : variant === "tile"
+          ? `rounded-xs border border-slate-200 border-t-2 bg-white px-4 py-3.5 ${toneStyles.border}`
+          : "rounded-xs border border-slate-200 bg-white p-4",
+      onClick && "w-full cursor-pointer text-left transition duration-200 ease-out hover:-translate-y-0.5 hover:border-x-slate-300 hover:border-b-slate-300 hover:bg-slate-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
+      active && "border-[#6941c6]/50 bg-[#f8f7ff]",
+    );
+  const content = (
+    <>
+      <span className="flex items-center justify-between gap-2 text-slate-500">
+        <span className="flex min-w-0 items-center gap-2 truncate text-sm font-medium text-slate-600">
+          {variant === "tile" && <span className={cn("shrink-0 [&>svg]:size-4", toneStyles.icon)}>{icon}</span>}
+          <span className="truncate">{label}</span>
+        </span>
+        {variant === "card" && <span className="shrink-0 text-slate-400 [&>svg]:size-4">{icon}</span>}
+      </span>
+      <span className={cn(
+        "mt-1.5 block truncate font-semibold tracking-tight tabular-nums",
+        variant === "tile" ? "text-2xl" : "text-xl",
+        variant === "tile" ? toneStyles.value : "text-slate-950",
+      )} title={value}>
+        <AnimatedValue value={value} />
+      </span>
+      <span className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-500">
         <span className="truncate">{note}</span>
-        {extra && <span className="shrink-0 text-slate-500 font-medium text-sm">{extra}</span>}
-      </div>
-    </div>
+        {extra && <span className="shrink-0 font-medium text-slate-500">{extra}</span>}
+      </span>
+    </>
   );
+  if (onClick) {
+    return (
+      <button type="button" aria-pressed={active} onClick={onClick} className={className}>
+        {content}
+      </button>
+    );
+  }
+  return <div className={className}>{content}</div>;
 }
 
 function SelectBox({
@@ -358,70 +402,6 @@ function SelectBox({
         ))}
       </select>
       <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
-    </div>
-  );
-}
-
-function pageItems(cur: number, total: number): Array<number | "…"> {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  if (cur <= 4) return [1, 2, 3, 4, 5, "…", total];
-  if (cur >= total - 3) return [1, "…", total - 4, total - 3, total - 2, total - 1, total];
-  return [1, "…", cur - 1, cur, cur + 1, "…", total];
-}
-
-function Pager({
-  page,
-  totalPages,
-  total,
-  itemName,
-  pageSize = PAGE_SIZE,
-  onPage,
-}: {
-  page: number;
-  totalPages: number;
-  total: number;
-  itemName: string;
-  pageSize?: number;
-  onPage: (p: number) => void;
-}) {
-  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
-  const to = Math.min(page * pageSize, total);
-  const btn =
-    "grid size-8 place-items-center rounded-xs border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 cursor-pointer";
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-3.5 py-2.5">
-      <span className="text-sm font-medium text-slate-600">
-        Hiển thị {from}–{to} trong {total} {itemName}
-      </span>
-      <div className="flex items-center gap-1">
-        <button type="button" className={btn} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Trang trước">
-          <ChevronLeft className="size-3.5" />
-        </button>
-        {pageItems(page, totalPages).map((it, i) =>
-          it === "…" ? (
-            <span key={`e${i}`} className="px-1 text-sm font-semibold text-slate-400">
-              …
-            </span>
-          ) : (
-            <button
-              key={it}
-              type="button"
-              onClick={() => onPage(it)}
-              className={cn(
-                btn,
-                it === page
-                  ? "border-[#6941c6] bg-[#6941c6] text-white hover:bg-[#53389e] font-semibold"
-                  : "text-slate-700 hover:text-slate-900",
-              )}
-            >
-              {it}
-            </button>
-          ),
-        )}
-        <button type="button" className={btn} disabled={page >= totalPages} onClick={() => onPage(page + 1)} aria-label="Trang sau">
-          <ChevronRight className="size-3.5" />
-        </button>
-      </div>
     </div>
   );
 }
@@ -716,6 +696,7 @@ export function InventoryManager({
     new Set(STOCK_COLS.map((c) => c.key)),
   );
   const [stockPage, setStockPage] = useState(1);
+  const [stockPageSize, setStockPageSize] = useState(PAGE_SIZE);
   const [stockSelected, setStockSelected] = useState<Set<string>>(new Set());
   const [rowMenu, setRowMenu] = useState<string | null>(null);
 
@@ -726,7 +707,9 @@ export function InventoryManager({
   const [docQuery, setDocQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [postedTodayOnly, setPostedTodayOnly] = useState(false);
   const [docPage, setDocPage] = useState(1);
+  const [docPageSize, setDocPageSize] = useState(PAGE_SIZE);
   const [docSelected, setDocSelected] = useState<Set<string>>(new Set());
   const [docMenu, setDocMenu] = useState<string | null>(null);
 
@@ -1336,21 +1319,13 @@ export function InventoryManager({
 
   const docMetrics = useMemo(() => {
     const today = new Date().toDateString();
-    const receipts = docs.filter((d) => d.type === "receipt");
-    const issues = docs.filter((d) => d.type === "issue");
     return {
       draft: docs.filter((d) => d.status === "draft").length,
+      submitted: docs.filter((d) => d.status === "submitted").length,
       approved: docs.filter((d) => d.status === "approved").length,
       postedToday: docs.filter(
         (d) => d.status === "posted" && d.posted_at && new Date(d.posted_at).toDateString() === today,
       ).length,
-      adjustments: docs.filter((d) => d.type === "adjustment").length,
-      totalReceiptAmount: receipts.reduce((s, d) => s + (Number(d.total_amount_vnd) || 0), 0),
-      totalReceiptQty: receipts.reduce((s, d) => s + (Number(d.total_qty) || 0), 0),
-      receiptCount: receipts.length,
-      totalIssueAmount: issues.reduce((s, d) => s + (Number(d.total_amount_vnd) || 0), 0),
-      totalIssueQty: issues.reduce((s, d) => s + (Number(d.total_qty) || 0), 0),
-      issueCount: issues.length,
     };
   }, [docs]);
 
@@ -1412,6 +1387,12 @@ export function InventoryManager({
       const to = new Date(`${dateTo}T23:59:59.999`).getTime();
       list = list.filter((d) => new Date(d.created_at).getTime() <= to);
     }
+    if (postedTodayOnly) {
+      const today = toLocalDateInput(new Date());
+      list = list.filter(
+        (d) => d.status === "posted" && d.posted_at && toLocalDateInput(new Date(d.posted_at)) === today,
+      );
+    }
 
     const q = docQuery.trim().toLowerCase();
     if (q) {
@@ -1419,12 +1400,13 @@ export function InventoryManager({
         (d) =>
           d.code.toLowerCase().includes(q) ||
           d.reason?.toLowerCase().includes(q) ||
-          d.created_by_name?.toLowerCase().includes(q) ||
+          d.requested_by_name?.toLowerCase().includes(q) ||
+          d.approved_by_name?.toLowerCase().includes(q) ||
           d.type.toLowerCase().includes(q),
       );
     }
     return list;
-  }, [docs, docTab, docTypeFilter, docWhFilter, dateFrom, dateTo, docQuery, warehouseLabel]);
+  }, [docs, docTab, docTypeFilter, docWhFilter, dateFrom, dateTo, postedTodayOnly, docQuery, warehouseLabel]);
 
   // Reset pagination / selection when filters change
   useEffect(() => {
@@ -1435,18 +1417,16 @@ export function InventoryManager({
   useEffect(() => {
     setDocPage(1);
     setDocSelected(new Set());
-  }, [docTab, docTypeFilter, docWhFilter, dateFrom, dateTo, docQuery]);
+  }, [docTab, docTypeFilter, docWhFilter, dateFrom, dateTo, postedTodayOnly, docQuery]);
 
-  const totalStockPages = Math.max(1, Math.ceil(filteredStock.length / PAGE_SIZE));
   const pagedStock = useMemo(
-    () => filteredStock.slice((stockPage - 1) * PAGE_SIZE, stockPage * PAGE_SIZE),
-    [filteredStock, stockPage],
+    () => filteredStock.slice((stockPage - 1) * stockPageSize, stockPage * stockPageSize),
+    [filteredStock, stockPage, stockPageSize],
   );
 
-  const totalDocPages = Math.max(1, Math.ceil(filteredDocs.length / PAGE_SIZE));
   const pagedDocs = useMemo(
-    () => filteredDocs.slice((docPage - 1) * PAGE_SIZE, docPage * PAGE_SIZE),
-    [filteredDocs, docPage],
+    () => filteredDocs.slice((docPage - 1) * docPageSize, docPage * docPageSize),
+    [filteredDocs, docPage, docPageSize],
   );
 
   const filteredDocLines = useMemo(() => {
@@ -1463,7 +1443,6 @@ export function InventoryManager({
     );
   }, [docDetail?.lines, docLineQuery]);
 
-  const totalDocLinePages = Math.max(1, Math.ceil(filteredDocLines.length / docLinePageSize));
   const pagedDocLines = useMemo(
     () => filteredDocLines.slice((docLinePage - 1) * docLinePageSize, docLinePage * docLinePageSize),
     [filteredDocLines, docLinePage, docLinePageSize],
@@ -1578,6 +1557,28 @@ export function InventoryManager({
     ]);
   }
 
+  function applyStockMetricFilter(filter: "all" | "reserved" | "low" | "out") {
+    setStockTab(filter === "low" || filter === "out" ? filter : "all");
+    setOnlyReserved(filter === "reserved");
+    setStockQuery("");
+    setWhFilter("all");
+    setCatFilter("all");
+    setStockPage(1);
+    setStockSelected(new Set());
+  }
+
+  function applyDocMetricFilter(status: DocStatusTab, postedToday = false) {
+    setDocTab(status);
+    setDocTypeFilter("all");
+    setDocWhFilter("all");
+    setDocQuery("");
+    setPostedTodayOnly(postedToday);
+    setDateFrom("");
+    setDateTo("");
+    setDocPage(1);
+    setDocSelected(new Set());
+  }
+
   function exportDocs() {
     const rows = docSelected.size ? filteredDocs.filter((d) => docSelected.has(d.id)) : filteredDocs;
     downloadCsv("phieu-kho.csv", [
@@ -1586,7 +1587,7 @@ export function InventoryManager({
         d.code,
         TYPE_LABEL[d.type as DocType] ?? d.type,
         d.warehouse_code ?? warehouseLabel,
-        d.created_by_name ?? "",
+        d.requested_by_name ?? "",
         d.approved_by_name ?? "",
         Number(d.total_qty) || 0,
         STATUS_LABEL[d.status] ?? d.status,
@@ -1598,7 +1599,15 @@ export function InventoryManager({
   const isListView = view === "stock" || view === "docs";
 
   return (
-    <div className="space-y-5 font-sans pb-12">
+    <div className="inventory-manager space-y-5 font-sans pb-12">
+      <style>{`
+        .inventory-manager table thead { background: #fff; color: #667085; }
+        .inventory-manager table th { color: #667085; font-size: 12px; font-weight: 500; text-transform: none; }
+        .inventory-manager table tbody tr { border-color: #f0f1f3; }
+        .inventory-manager table tbody tr:hover { background: #fafafa; }
+        .inventory-manager .admin-subsection-title { text-transform: none; letter-spacing: 0; }
+        .inventory-manager .shadow-2xs, .inventory-manager .shadow-xs { box-shadow: none; }
+      `}</style>
       {confirmDialog}
 
       {/* Print Document Modal */}
@@ -1613,13 +1622,9 @@ export function InventoryManager({
         <>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-slate-950 admin-page-title">
-                {view === "stock" ? "Tồn kho" : "Phiếu kho"}
-              </h1>
+              <h1 className="text-slate-950 admin-page-title">Kho hàng</h1>
               <p className="mt-1 text-sm font-medium text-slate-600">
-                {view === "stock"
-                  ? "Theo dõi tồn kho theo kho, sản phẩm và biến thể."
-                  : "Quản lý các chứng từ nhập, xuất và điều chỉnh tồn kho."}
+                Theo dõi tồn kho và quản lý các phiếu nhập, xuất, điều chỉnh trong hệ thống.
               </p>
             </div>
             <div className="flex items-center gap-2.5">
@@ -1646,462 +1651,524 @@ export function InventoryManager({
             </div>
           </div>
 
-          <div className="inline-flex items-center gap-1 rounded-xs border border-slate-200/90 bg-slate-100/80 p-1 shadow-2xs">
-            {(
-              [
-                ["stock", "Tồn kho", items.length.toLocaleString("vi-VN"), Package],
-                ["docs", "Phiếu kho", docs.length, FileText],
-              ] as const
-            ).map(([id, label, count, Icon]) => {
+          <nav aria-label="Kho hàng" className="mb-2 inline-flex w-fit items-center gap-0.5 rounded-sm border border-slate-200 bg-slate-100/70 p-1">
+            {([
+              ["stock", "Tồn kho", Package],
+              ["docs", "Phiếu kho", FileText],
+            ] as const).map(([id, label]) => {
               const active = view === id;
+              const Icon = id === "stock" ? Package : FileText;
               return (
                 <a
                   key={id}
                   href="/khohang"
+                  aria-current={active ? "page" : undefined}
                   onClick={(e) => {
                     e.preventDefault();
                     handleBackToList(id);
                   }}
                   className={cn(
-                    "inline-flex items-center gap-2 rounded-xs px-3.5 py-1.5 text-sm font-semibold transition-all cursor-pointer",
+                    "inline-flex items-center gap-2 rounded-xs px-4 py-2 text-sm transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2 cursor-pointer",
                     active
-                      ? "border border-slate-200/90 bg-white text-slate-950 shadow-2xs"
-                      : "border border-transparent text-slate-600 hover:text-slate-950 hover:bg-white/50",
+                      ? "border border-slate-200 bg-white font-semibold text-slate-900"
+                      : "border border-transparent font-medium text-slate-600 hover:bg-white/70 hover:text-slate-900",
                   )}
                 >
-                  <Icon className={cn("size-3.5", active ? "text-[#6941c6]" : "text-slate-400")} />
-                  <span>{label}</span>
-                  <span
-                    className={cn(
-                      "inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-xs px-1.5 tabular-nums text-sm leading-none font-semibold tabular-nums transition-colors",
-                      active
-                        ? "border border-[#6941c6]/20 bg-[#f4f3ff] text-[#6941c6]"
-                        : "border border-slate-200/60 bg-slate-200/70 text-slate-600",
-                    )}
-                  >
-                    {count}
-                  </span>
+                  <Icon aria-hidden="true" className={cn("size-4", active ? "text-slate-600" : "text-slate-400")} />
+                  {label}
                 </a>
               );
             })}
-          </div>
+          </nav>
         </>
       )}
 
+      {isListView && (
+      <AnimatedPanel transitionKey={view} className="min-w-0">
+      <div className="space-y-5">
       {/* ── VIEW 1: TỒN KHO ─────────────────────────────────────────────────── */}
       {view === "stock" && (
         <>
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <section aria-label="Lọc nhanh tồn kho" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
               icon={<Package className="size-4" />}
               label="Tổng tồn thực tế"
               value={stockMetrics.onHand.toLocaleString("vi-VN")}
               note={`${items.length} biến thể SKU`}
               extra={`Kho ${warehouseLabel}`}
+              variant="tile"
+              tone="brand"
+              active={stockTab === "all" && !onlyReserved}
+              onClick={() => applyStockMetricFilter("all")}
             />
             <MetricCard
               icon={<Lock className="size-4" />}
               label="Đang giữ chỗ"
               value={stockMetrics.reserved.toLocaleString("vi-VN")}
               note={`${stockMetrics.reservedSkus} SKU chờ xuất đơn`}
+              variant="tile"
+              tone="neutral"
+              active={stockTab === "all" && onlyReserved}
+              onClick={() => applyStockMetricFilter("reserved")}
             />
             <MetricCard
               icon={<AlertTriangle className="size-4" />}
               label="SKU sắp hết hàng"
               value={String(stockMetrics.low)}
               note={stockMetrics.low > 0 ? "Cần lập phiếu nhập" : "Trong mức an toàn"}
+              variant="tile"
+              tone="warning"
+              active={stockTab === "low"}
+              onClick={() => applyStockMetricFilter("low")}
             />
             <MetricCard
               icon={<Ban className="size-4" />}
               label="Hết hàng"
               value={String(stockMetrics.out)}
               note={stockMetrics.out > 0 ? "Đang ngừng bán" : "Không có SKU hết hàng"}
+              variant="tile"
+              tone={stockMetrics.out > 0 ? "danger" : "neutral"}
+              active={stockTab === "out"}
+              onClick={() => applyStockMetricFilter("out")}
             />
           </section>
 
-          {/* Toolbar */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="relative min-w-[240px] flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
-              <Input
-                value={stockQuery}
-                onChange={(e) => setStockQuery(e.target.value)}
-                className="h-9 rounded-xs border-slate-200 bg-white pl-8.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
-                placeholder="Tìm theo SKU, tên sản phẩm hoặc biến thể…"
-              />
-            </div>
-            <SelectBox
-              label="Kho"
-              value={whFilter}
-              onChange={setWhFilter}
-              className="w-36"
-              options={[
-                { value: "all", label: "Tất cả kho" },
-                ...warehouseOptions.map((w) => ({ value: w, label: `Kho ${w}` })),
-              ]}
-            />
-            <SelectBox
-              label="Trạng thái"
-              value={stockTab}
-              onChange={(v) => setStockTab(v as StockFilter)}
-              className="w-44"
-              options={[
-                { value: "all", label: "Mọi trạng thái" },
-                { value: "safe", label: `Còn hàng (${stockMetrics.safe})` },
-                { value: "low", label: `Sắp hết (${stockMetrics.low})` },
-                { value: "out", label: `Hết hàng (${stockMetrics.out})` },
-              ]}
-            />
-            {categoryOptions.length > 0 && (
-              <SelectBox
-                label="Danh mục"
-                value={catFilter}
-                onChange={setCatFilter}
-                className="w-40"
-                options={[
-                  { value: "all", label: "Mọi danh mục" },
-                  ...categoryOptions.map((c) => ({ value: c, label: c })),
-                ]}
-              />
-            )}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50",
-                    onlyReserved && "border-primary/40 bg-accent/40",
-                  )}
-                >
-                  <SlidersHorizontal className="size-3.5 text-slate-500" />
-                  <span>Bộ lọc khác</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="w-60 p-3 rounded-xs shadow-xl text-sm">
-                <label className="flex cursor-pointer items-center gap-2.5 font-semibold text-slate-800">
-                  <input
-                    type="checkbox"
-                    className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
-                    checked={onlyReserved}
-                    onChange={(e) => setOnlyReserved(e.target.checked)}
+          <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_272px]">
+            <div className="min-w-0 space-y-3">
+              {/* Toolbar */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative min-w-[240px] flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    value={stockQuery}
+                    onChange={(e) => setStockQuery(e.target.value)}
+                    className="h-9 rounded-xs border-slate-200 bg-white pl-8.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                    placeholder="Tìm theo SKU, tên sản phẩm hoặc biến thể…"
                   />
-                  <span>Chỉ SKU đang giữ chỗ</span>
-                </label>
-              </PopoverContent>
-            </Popover>
-
-            <div className="ml-auto flex items-center gap-2.5">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50">
-                    <LayoutGrid className="size-3.5 text-slate-500" />
-                    <span>Cột hiển thị</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-52 p-2 rounded-xs shadow-xl text-sm">
-                  {STOCK_COLS.map((c) => (
-                    <label
-                      key={c.key}
-                      className="flex cursor-pointer items-center gap-2.5 rounded-xs px-2.5 py-1.5 font-semibold text-slate-800 hover:bg-slate-100"
+                </div>
+                <SelectBox
+                  label="Kho"
+                  value={whFilter}
+                  onChange={setWhFilter}
+                  className="w-36"
+                  options={[
+                    { value: "all", label: "Tất cả kho" },
+                    ...warehouseOptions.map((w) => ({ value: w, label: `Kho ${w}` })),
+                  ]}
+                />
+                <SelectBox
+                  label="Trạng thái"
+                  value={stockTab}
+                  onChange={(v) => setStockTab(v as StockFilter)}
+                  className="w-44"
+                  options={[
+                    { value: "all", label: "Mọi trạng thái" },
+                    { value: "safe", label: `Còn hàng (${stockMetrics.safe})` },
+                    { value: "low", label: `Sắp hết (${stockMetrics.low})` },
+                    { value: "out", label: `Hết hàng (${stockMetrics.out})` },
+                  ]}
+                />
+                {categoryOptions.length > 0 && (
+                  <SelectBox
+                    label="Danh mục"
+                    value={catFilter}
+                    onChange={setCatFilter}
+                    className="w-40"
+                    options={[
+                      { value: "all", label: "Mọi danh mục" },
+                      ...categoryOptions.map((c) => ({ value: c, label: c })),
+                    ]}
+                  />
+                )}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50",
+                        onlyReserved && "border-primary/40 bg-accent/40",
+                      )}
                     >
+                      <SlidersHorizontal className="size-3.5 text-slate-500" />
+                      <span>Bộ lọc khác</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-60 p-3 rounded-xs shadow-xl text-sm">
+                    <label className="flex cursor-pointer items-center gap-2.5 font-semibold text-slate-800">
                       <input
                         type="checkbox"
                         className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
-                        checked={visibleCols.has(c.key)}
-                        onChange={() =>
-                          setVisibleCols((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(c.key)) next.delete(c.key);
-                            else next.add(c.key);
-                            return next;
-                          })
-                        }
+                        checked={onlyReserved}
+                        onChange={(e) => setOnlyReserved(e.target.checked)}
                       />
-                      <span>{c.label}</span>
+                      <span>Chỉ SKU đang giữ chỗ</span>
                     </label>
-                  ))}
-                </PopoverContent>
-              </Popover>
-              <SelectBox
-                label="Sắp xếp"
-                value={stockSort}
-                onChange={(v) => setStockSort(v as typeof stockSort)}
-                className="w-48"
-                options={[
-                  { value: "available_asc", label: "Sắp xếp: Tồn thấp nhất" },
-                  { value: "available_desc", label: "Sắp xếp: Tồn cao nhất" },
-                  { value: "name", label: "Sắp xếp: Tên A→Z" },
-                  { value: "sku", label: "Sắp xếp: SKU" },
-                ]}
-              />
-            </div>
-          </div>
+                  </PopoverContent>
+                </Popover>
 
-          {/* Bulk bar */}
-          {stockSelected.size > 0 && (
-            <div className="flex flex-wrap items-center gap-2.5 rounded-xs border border-slate-200 bg-purple-50/40 px-3.5 py-2 text-sm">
-              <span className="font-semibold text-slate-950">Đã chọn {stockSelected.size}</span>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1 rounded-xs bg-white px-3 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50"
-                onClick={() =>
-                  createSlipForRows(
-                    filteredStock.filter((r) => stockSelected.has(r.variant_id)),
-                    "receipt",
-                  )
-                }
-              >
-                <PackagePlus className="size-3.5 text-slate-600" />
-                <span>Lập phiếu nhập</span>
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1 rounded-xs bg-white px-3 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50"
-                onClick={() =>
-                  createSlipForRows(
-                    filteredStock.filter((r) => stockSelected.has(r.variant_id)),
-                    "issue",
-                  )
-                }
-              >
-                <PackageMinus className="size-3.5 text-slate-600" />
-                <span>Lập phiếu xuất</span>
-              </Button>
-              <Button size="sm" variant="ghost" className="h-8 px-2.5 text-sm font-semibold text-slate-600 hover:text-slate-900 rounded-xs" onClick={() => setStockSelected(new Set())}>
-                Bỏ chọn
-              </Button>
-            </div>
-          )}
-
-          {/* Table */}
-          <section className="overflow-hidden rounded-xs border border-slate-200 bg-white shadow-2xs">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1000px] text-left text-sm">
-                <thead className="border-y border-slate-200 bg-slate-50/80 text-sm font-semibold text-slate-700">
-                  <tr>
-                    <th className="w-12 px-3 py-2.5">
-                      <input
-                        type="checkbox"
-                        aria-label="Chọn tất cả"
-                        className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
-                        checked={allStockPageSelected}
-                        ref={(el) => {
-                          if (el) el.indeterminate = someStockPageSelected && !allStockPageSelected;
-                        }}
-                        onChange={toggleStockPage}
-                      />
-                    </th>
-                    <th className="px-3 py-2.5 font-semibold text-slate-700">SKU</th>
-                    {visibleCols.has("product") && <th className="px-3 py-2.5 font-semibold text-slate-700">Sản phẩm</th>}
-                    {visibleCols.has("variant") && <th className="px-3 py-2.5 font-semibold text-slate-700">Phân loại</th>}
-                    {visibleCols.has("warehouse") && <th className="px-3 py-2.5 font-semibold text-slate-700">Kho</th>}
-                    {visibleCols.has("available") && (
-                      <th className="px-3 py-2.5 text-center font-semibold text-slate-700">Khả dụng</th>
-                    )}
-                    {visibleCols.has("reserved") && (
-                      <th className="px-3 py-2.5 text-center font-semibold text-slate-700">Giữ chỗ</th>
-                    )}
-                    {visibleCols.has("incoming") && (
-                      <th className="px-3 py-2.5 text-center font-semibold text-slate-700">Đang về</th>
-                    )}
-                    {visibleCols.has("reorder") && (
-                      <th className="px-3 py-2.5 text-center font-semibold text-slate-700">Mức đặt lại</th>
-                    )}
-                    {visibleCols.has("status") && <th className="px-3 py-2.5 font-semibold text-slate-700">Trạng thái</th>}
-                    <th className="w-24 whitespace-nowrap px-3 py-2.5 text-center font-semibold text-slate-700">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading && items.length === 0 ? (
-                    <tr>
-                      <td colSpan={11} className="py-14 text-center text-sm text-slate-500">
-                        <div className="flex flex-col items-center gap-2">
-                          <Loader2 className="size-5 animate-spin text-[#6941c6]" />
-                          <span className="font-semibold text-slate-700">Đang tải số liệu tồn kho…</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : filteredStock.length === 0 ? (
-                    <tr>
-                      <td colSpan={11} className="py-14 text-center text-sm font-medium text-slate-500">
-                        Không tìm thấy mặt hàng nào phù hợp với bộ lọc.
-                      </td>
-                    </tr>
-                  ) : (
-                    pagedStock.map((row) => {
-                      const imgUrl = resolveImageUrl(row.image_url);
-                      const st = stockStatus(row);
-                      const checked = stockSelected.has(row.variant_id);
-                      return (
-                        <tr
-                          key={row.variant_id}
-                          className={cn(
-                            "border-b border-slate-100 transition-colors last:border-b-0 hover:bg-slate-50/80",
-                            checked && "bg-purple-50/30",
-                          )}
+                <div className="ml-auto flex items-center gap-2.5">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50">
+                        <LayoutGrid className="size-3.5 text-slate-500" />
+                        <span>Cột hiển thị</span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-52 p-2 rounded-xs shadow-xl text-sm">
+                      {STOCK_COLS.map((c) => (
+                        <label
+                          key={c.key}
+                          className="flex cursor-pointer items-center gap-2.5 rounded-xs px-2.5 py-1.5 font-semibold text-slate-800 hover:bg-slate-100"
                         >
-                          <td className="px-3 py-2">
-                            <input
-                              type="checkbox"
-                              aria-label={`Chọn ${row.sku}`}
-                              className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
-                              checked={checked}
-                              onChange={() => toggleSet(setStockSelected, row.variant_id)}
-                            />
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="flex items-center gap-2.5">
-                              <div className="relative size-9 shrink-0 overflow-hidden rounded-xs border border-slate-200 bg-slate-100">
-                                {imgUrl ? (
-                                  <img
-                                    src={imgUrl}
-                                    alt={row.product_name}
-                                    className="size-full object-cover"
-                                    onError={(e) => {
-                                      (e.target as HTMLElement).style.display = "none";
-                                    }}
-                                  />
-                                ) : (
-                                  <div className="flex size-full items-center justify-center text-slate-400">
-                                    <Package className="size-3.5 stroke-[1.5]" />
-                                  </div>
-                                )}
-                              </div>
-                              <span className="max-w-[130px] break-all tabular-nums text-sm font-semibold leading-tight text-slate-950">{row.sku}</span>
+                          <input
+                            type="checkbox"
+                            className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
+                            checked={visibleCols.has(c.key)}
+                            onChange={() =>
+                              setVisibleCols((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(c.key)) next.delete(c.key);
+                                else next.add(c.key);
+                                return next;
+                              })
+                            }
+                          />
+                          <span>{c.label}</span>
+                        </label>
+                      ))}
+                    </PopoverContent>
+                  </Popover>
+                  <SelectBox
+                    label="Sắp xếp"
+                    value={stockSort}
+                    onChange={(v) => setStockSort(v as typeof stockSort)}
+                    className="w-48"
+                    options={[
+                      { value: "available_asc", label: "Sắp xếp: Tồn thấp nhất" },
+                      { value: "available_desc", label: "Sắp xếp: Tồn cao nhất" },
+                      { value: "name", label: "Sắp xếp: Tên A→Z" },
+                      { value: "sku", label: "Sắp xếp: SKU" },
+                    ]}
+                  />
+                </div>
+              </div>
+
+              {/* Bulk bar */}
+              {stockSelected.size > 0 && (
+                <div className="flex flex-wrap items-center gap-2.5 rounded-xs border border-slate-200 bg-purple-50/40 px-3.5 py-2 text-sm">
+                  <span className="font-semibold text-slate-950">Đã chọn {stockSelected.size}</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 gap-1 rounded-xs bg-white px-3 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50"
+                    onClick={() =>
+                      createSlipForRows(
+                        filteredStock.filter((r) => stockSelected.has(r.variant_id)),
+                        "receipt",
+                      )
+                    }
+                  >
+                    <PackagePlus className="size-3.5 text-slate-600" />
+                    <span>Lập phiếu nhập</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 gap-1 rounded-xs bg-white px-3 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50"
+                    onClick={() =>
+                      createSlipForRows(
+                        filteredStock.filter((r) => stockSelected.has(r.variant_id)),
+                        "issue",
+                      )
+                    }
+                  >
+                    <PackageMinus className="size-3.5 text-slate-600" />
+                    <span>Lập phiếu xuất</span>
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-8 px-2.5 text-sm font-semibold text-slate-600 hover:text-slate-900 rounded-xs" onClick={() => setStockSelected(new Set())}>
+                    Bỏ chọn
+                  </Button>
+                </div>
+              )}
+
+              {/* Table */}
+              <section className="admin-table-frame overflow-hidden rounded-xs border border-slate-200 bg-white">
+                <div className="overflow-x-auto">
+                  <table className="admin-data-table w-full min-w-[1000px] text-left text-sm">
+                    <thead className="border-b border-slate-200 bg-white text-xs font-medium text-slate-500">
+                      <tr>
+                        <th className="w-12 px-3 py-2.5">
+                          <input
+                            type="checkbox"
+                            aria-label="Chọn tất cả"
+                            className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
+                            checked={allStockPageSelected}
+                            ref={(el) => {
+                              if (el) el.indeterminate = someStockPageSelected && !allStockPageSelected;
+                            }}
+                            onChange={toggleStockPage}
+                          />
+                        </th>
+                        <th className="px-3 py-2.5 font-semibold text-slate-700">SKU</th>
+                        {visibleCols.has("product") && <th className="px-3 py-2.5 font-semibold text-slate-700">Sản phẩm</th>}
+                        {visibleCols.has("variant") && <th className="px-3 py-2.5 font-semibold text-slate-700">Phân loại</th>}
+                        {visibleCols.has("warehouse") && <th className="px-3 py-2.5 font-semibold text-slate-700">Kho</th>}
+                        {visibleCols.has("available") && (
+                          <th className="px-3 py-2.5 text-center font-semibold text-slate-700">Khả dụng</th>
+                        )}
+                        {visibleCols.has("reserved") && (
+                          <th className="px-3 py-2.5 text-center font-semibold text-slate-700">Giữ chỗ</th>
+                        )}
+                        {visibleCols.has("incoming") && (
+                          <th className="px-3 py-2.5 text-center font-semibold text-slate-700">Đang về</th>
+                        )}
+                        {visibleCols.has("reorder") && (
+                          <th className="px-3 py-2.5 text-center font-semibold text-slate-700">Mức đặt lại</th>
+                        )}
+                        {visibleCols.has("status") && <th className="px-3 py-2.5 font-semibold text-slate-700">Trạng thái</th>}
+                        <th className="w-24 whitespace-nowrap px-3 py-2.5 text-center font-semibold text-slate-700">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loading && items.length === 0 ? (
+                        <tr>
+                          <td colSpan={11} className="py-14 text-center text-sm text-slate-500">
+                            <div className="flex flex-col items-center gap-2">
+                              <Loader2 className="size-5 animate-spin text-[#6941c6]" />
+                              <span className="font-semibold text-slate-700">Đang tải số liệu tồn kho…</span>
                             </div>
                           </td>
-                          {visibleCols.has("product") && (
-                            <td className="px-3 py-2">
-                              <p className="max-w-[200px] truncate text-sm font-semibold text-slate-950">
-                                {row.product_name}
-                              </p>
-                              {row.category_name && (
-                                <p className="text-sm font-medium text-slate-500 mt-0.5">{row.category_name}</p>
-                              )}
-                            </td>
-                          )}
-                          {visibleCols.has("variant") && (
-                            <td className="px-3 py-2 text-sm font-semibold text-slate-800">
-                              {row.size_label} / {row.color_name}
-                            </td>
-                          )}
-                          {visibleCols.has("warehouse") && (
-                            <td className="px-3 py-2 text-sm font-semibold text-slate-700">
-                              {row.warehouse_code ?? warehouseLabel}
-                            </td>
-                          )}
-                          {visibleCols.has("available") && (
-                            <td className="px-3 py-2 text-center tabular-nums font-semibold text-slate-950 text-sm">{row.available}</td>
-                          )}
-                          {visibleCols.has("reserved") && (
-                            <td className="px-3 py-2 text-center tabular-nums text-sm font-semibold text-slate-700">{row.reserved ?? 0}</td>
-                          )}
-                          {visibleCols.has("incoming") && (
-                            <td className="px-3 py-2 text-center tabular-nums text-sm font-semibold text-slate-700">{row.incoming ?? "—"}</td>
-                          )}
-                          {visibleCols.has("reorder") && (
-                            <td className="px-3 py-2 text-center tabular-nums text-sm font-semibold text-slate-700">{row.reorder_point}</td>
-                          )}
-                          {visibleCols.has("status") && (
-                            <td className="px-3 py-2">
-                              <DotPill tone={st.tone}>{st.label}</DotPill>
-                            </td>
-                          )}
-                          <td className="px-3 py-2 text-center">
-                            <Popover
-                              open={rowMenu === row.variant_id}
-                              onOpenChange={(o) => setRowMenu(o ? row.variant_id : null)}
-                            >
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="size-7 rounded-xs text-slate-500 hover:text-slate-800"
-                                  aria-label={`Thao tác với ${row.sku}`}
-                                >
-                                  <MoreHorizontal className="size-3.5" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent align="end" className="w-48 p-1 rounded-xs shadow-xl">
-                                <MenuItem
-                                  icon={<PackagePlus className="size-3.5" />}
-                                  label="Lập phiếu nhập"
-                                  onClick={() => {
-                                    setRowMenu(null);
-                                    createSlipForRows([row], "receipt");
-                                  }}
-                                />
-                                <MenuItem
-                                  icon={<PackageMinus className="size-3.5" />}
-                                  label="Lập phiếu xuất"
-                                  onClick={() => {
-                                    setRowMenu(null);
-                                    createSlipForRows([row], "issue");
-                                  }}
-                                />
-                                <MenuItem
-                                  icon={<Copy className="size-3.5" />}
-                                  label="Sao chép SKU"
-                                  onClick={() => {
-                                    setRowMenu(null);
-                                    copyText("mã SKU", row.sku);
-                                  }}
-                                />
-                              </PopoverContent>
-                            </Popover>
+                        </tr>
+                      ) : filteredStock.length === 0 ? (
+                        <tr>
+                          <td colSpan={11} className="py-14 text-center text-sm font-medium text-slate-500">
+                            Không tìm thấy mặt hàng nào phù hợp với bộ lọc.
                           </td>
                         </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                      ) : (
+                        pagedStock.map((row) => {
+                          const imgUrl = resolveImageUrl(row.image_url);
+                          const st = stockStatus(row);
+                          const checked = stockSelected.has(row.variant_id);
+                          return (
+                            <tr
+                              key={row.variant_id}
+                              className={cn(
+                                "border-b border-slate-100 transition-colors last:border-b-0 hover:bg-slate-50/80",
+                                checked && "bg-purple-50/30",
+                              )}
+                            >
+                              <td className="px-3 py-2">
+                                <input
+                                  type="checkbox"
+                                  aria-label={`Chọn ${row.sku}`}
+                                  className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
+                                  checked={checked}
+                                  onChange={() => toggleSet(setStockSelected, row.variant_id)}
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="relative size-9 shrink-0 overflow-hidden rounded-xs border border-slate-200 bg-slate-100">
+                                    {imgUrl ? (
+                                      <img
+                                        src={imgUrl}
+                                        alt={row.product_name}
+                                        className="size-full object-cover"
+                                        onError={(e) => {
+                                          (e.target as HTMLElement).style.display = "none";
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="flex size-full items-center justify-center text-slate-400">
+                                        <Package className="size-3.5 stroke-[1.5]" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <span className="max-w-[130px] break-all tabular-nums text-sm font-semibold leading-tight text-slate-950">{row.sku}</span>
+                                </div>
+                              </td>
+                              {visibleCols.has("product") && (
+                                <td className="px-3 py-2">
+                                  <p className="max-w-[200px] truncate text-sm font-semibold text-slate-950">
+                                    {row.product_name}
+                                  </p>
+                                  {row.category_name && (
+                                    <p className="text-sm font-medium text-slate-500 mt-0.5">{row.category_name}</p>
+                                  )}
+                                </td>
+                              )}
+                              {visibleCols.has("variant") && (
+                                <td className="px-3 py-2 text-sm font-semibold text-slate-800">
+                                  {row.size_label} / {row.color_name}
+                                </td>
+                              )}
+                              {visibleCols.has("warehouse") && (
+                                <td className="px-3 py-2 text-sm font-semibold text-slate-700">
+                                  {row.warehouse_code ?? warehouseLabel}
+                                </td>
+                              )}
+                              {visibleCols.has("available") && (
+                                <td className="px-3 py-2 text-center tabular-nums font-semibold text-slate-950 text-sm">{row.available}</td>
+                              )}
+                              {visibleCols.has("reserved") && (
+                                <td className="px-3 py-2 text-center tabular-nums text-sm font-semibold text-slate-700">{row.reserved ?? 0}</td>
+                              )}
+                              {visibleCols.has("incoming") && (
+                                <td className="px-3 py-2 text-center tabular-nums text-sm font-semibold text-slate-700">{row.incoming ?? "—"}</td>
+                              )}
+                              {visibleCols.has("reorder") && (
+                                <td className="px-3 py-2 text-center tabular-nums text-sm font-semibold text-slate-700">{row.reorder_point}</td>
+                              )}
+                              {visibleCols.has("status") && (
+                                <td className="px-3 py-2">
+                                  <DotPill tone={st.tone}>{st.label}</DotPill>
+                                </td>
+                              )}
+                              <td className="px-3 py-2 text-center">
+                                <Popover
+                                  open={rowMenu === row.variant_id}
+                                  onOpenChange={(o) => setRowMenu(o ? row.variant_id : null)}
+                                >
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="size-7 rounded-xs text-slate-500 hover:text-slate-800"
+                                      aria-label={`Thao tác với ${row.sku}`}
+                                    >
+                                      <MoreHorizontal className="size-3.5" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent align="end" className="w-48 p-1 rounded-xs shadow-xl">
+                                    <MenuItem
+                                      icon={<PackagePlus className="size-3.5" />}
+                                      label="Lập phiếu nhập"
+                                      onClick={() => {
+                                        setRowMenu(null);
+                                        createSlipForRows([row], "receipt");
+                                      }}
+                                    />
+                                    <MenuItem
+                                      icon={<PackageMinus className="size-3.5" />}
+                                      label="Lập phiếu xuất"
+                                      onClick={() => {
+                                        setRowMenu(null);
+                                        createSlipForRows([row], "issue");
+                                      }}
+                                    />
+                                    <MenuItem
+                                      icon={<Copy className="size-3.5" />}
+                                      label="Sao chép SKU"
+                                      onClick={() => {
+                                        setRowMenu(null);
+                                        copyText("mã SKU", row.sku);
+                                      }}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+              <AdminPagination
+                count={filteredStock.length}
+                page={stockPage}
+                pageSize={stockPageSize}
+                noun="SKU tồn kho"
+                onPageChange={setStockPage}
+                onPageSizeChange={(size) => {
+                  setStockPageSize(size);
+                  setStockPage(1);
+                }}
+              />
             </div>
-            <Pager
-              page={stockPage}
-              totalPages={totalStockPages}
-              total={filteredStock.length}
-              itemName="mặt hàng tồn kho"
-              onPage={setStockPage}
-            />
-          </section>
+
+            <aside className="min-w-0 border-t border-slate-200 pt-4 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0">
+              <div className="flex items-baseline justify-between gap-2">
+                <h2 className="text-sm font-semibold text-slate-900">Cần xử lý</h2>
+                <span className="text-xs tabular-nums text-slate-500">{stockMetrics.low + stockMetrics.out} SKU</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setStockTab("low"); setStockQuery(""); setWhFilter("all"); setCatFilter("all"); setOnlyReserved(false); }}
+                className="mt-3 flex w-full items-center justify-between gap-3 border-t border-slate-200 py-3 text-left hover:bg-slate-50"
+              >
+                <span><strong className="block text-sm font-semibold text-slate-900">Sắp hết hàng</strong><span className="mt-0.5 block text-xs text-slate-500">Dưới mức đặt lại</span></span>
+                <span className="tabular-nums text-base font-semibold text-amber-700">{stockMetrics.low}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setStockTab("out"); setStockQuery(""); setWhFilter("all"); setCatFilter("all"); setOnlyReserved(false); }}
+                className="flex w-full items-center justify-between gap-3 border-t border-slate-200 py-3 text-left hover:bg-slate-50"
+              >
+                <span><strong className="block text-sm font-semibold text-slate-900">Hết hàng</strong><span className="mt-0.5 block text-xs text-slate-500">Cần kiểm tra tồn</span></span>
+                <span className="tabular-nums text-base font-semibold text-rose-700">{stockMetrics.out}</span>
+              </button>
+              <h3 className="mb-1 mt-5 text-sm font-semibold text-slate-900">SKU cần chú ý</h3>
+              {[...items].filter((row) => isLow(row) || isOut(row)).sort((a, b) => a.available - b.available).slice(0, 4).map((row) => (
+                <button
+                  key={row.variant_id}
+                  type="button"
+                  onClick={() => { setStockTab("all"); setWhFilter("all"); setCatFilter("all"); setOnlyReserved(false); setStockQuery(row.sku); }}
+                  className="block w-full border-t border-slate-200 py-2.5 text-left hover:bg-slate-50"
+                >
+                  <span className="block truncate text-xs font-semibold text-slate-800">{row.sku}</span>
+                  <span className="mt-0.5 flex items-center justify-between gap-2 text-xs text-slate-500">
+                    <span className="truncate">{row.product_name}</span>
+                    <span className="shrink-0 tabular-nums font-medium text-slate-700">{row.available} còn</span>
+                  </span>
+                </button>
+              ))}
+              {stockMetrics.low + stockMetrics.out === 0 && (
+                <p className="mt-3 border-t border-slate-200 pt-3 text-xs text-slate-500">Không có SKU nào dưới mức đặt lại.</p>
+              )}
+            </aside>
+          </div>
         </>
       )}
 
       {/* ── VIEW 2: PHIẾU KHO ───────────────────────────────────────────────── */}
       {view === "docs" && (
         <>
-          <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <section aria-label="Lọc nhanh phiếu kho" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MetricCard
-              icon={<PackagePlus className="size-4 text-emerald-600" />}
-              label="Tiền nhập kho"
-              value={fmtVND(docMetrics.totalReceiptAmount)}
-              note={`${docMetrics.receiptCount} phiếu nhập`}
-              extra={`${docMetrics.totalReceiptQty.toLocaleString("vi-VN")} cái`}
-            />
-            <MetricCard
-              icon={<PackageMinus className="size-4 text-rose-600" />}
-              label="Tiền xuất kho"
-              value={fmtVND(docMetrics.totalIssueAmount)}
-              note={`${docMetrics.issueCount} phiếu xuất`}
-              extra={`${docMetrics.totalIssueQty.toLocaleString("vi-VN")} cái`}
-            />
-            <MetricCard
-              icon={<FileText className="size-4 text-[#6941c6]" />}
+              icon={<FileText className="size-4" />}
               label="Phiếu nháp"
               value={String(docMetrics.draft)}
               note={`${docs.length} phiếu tổng cộng`}
+              variant="tile"
+              tone="neutral"
+              active={docTab === "draft"}
+              onClick={() => applyDocMetricFilter("draft")}
             />
             <MetricCard
-              icon={<Clock className="size-4 text-amber-600" />}
-              label="Đã duyệt, chờ ghi sổ"
+              icon={<Clock className="size-4" />}
+              label="Chờ duyệt"
+              value={String(docMetrics.submitted)}
+              note="Đang chờ xác nhận"
+              variant="tile"
+              tone={docMetrics.submitted > 0 ? "warning" : "neutral"}
+              active={docTab === "submitted"}
+              onClick={() => applyDocMetricFilter("submitted")}
+            />
+            <MetricCard
+              icon={<Package className="size-4" />}
+              label="Chờ ghi sổ"
               value={String(docMetrics.approved)}
               note="Cần ghi sổ để cập nhật tồn"
+              variant="tile"
+              tone={docMetrics.approved > 0 ? "brand" : "neutral"}
+              active={docTab === "approved"}
+              onClick={() => applyDocMetricFilter("approved")}
             />
             <MetricCard
-              icon={<CheckCircle2 className="size-4 text-emerald-600" />}
+              icon={<CheckCircle2 className="size-4" />}
               label="Ghi sổ hôm nay"
               value={String(docMetrics.postedToday)}
               note={
@@ -2109,12 +2176,10 @@ export function InventoryManager({
                   ? "Phiếu đã cập nhật tồn kho"
                   : `${docs.filter((d) => d.status === "posted").length} phiếu đã ghi sổ trước đó`
               }
-            />
-            <MetricCard
-              icon={<ArrowRightLeft className="size-4 text-slate-600" />}
-              label="Điều chỉnh"
-              value={String(docMetrics.adjustments)}
-              note="Phiếu điều chỉnh tồn kho"
+              variant="tile"
+              tone={docMetrics.postedToday > 0 ? "success" : "neutral"}
+              active={docTab === "posted" && postedTodayOnly}
+              onClick={() => applyDocMetricFilter("posted", true)}
             />
           </section>
 
@@ -2157,12 +2222,14 @@ export function InventoryManager({
                   variant="outline"
                   className={cn(
                     "h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50",
-                    (dateFrom || dateTo) && "border-primary/40 bg-accent/40",
+                    (dateFrom || dateTo || postedTodayOnly) && "border-primary/40 bg-accent/40",
                   )}
                 >
                   <Calendar className="size-3.5 text-slate-500" />
                   <span>
-                    {dateFrom || dateTo
+                    {postedTodayOnly
+                      ? "Ghi sổ hôm nay"
+                      : dateFrom || dateTo
                       ? `${dateFrom ? new Date(dateFrom).toLocaleDateString("vi-VN") : "…"} – ${dateTo ? new Date(dateTo).toLocaleDateString("vi-VN") : "…"}`
                       : "Khoảng ngày"}
                   </span>
@@ -2176,7 +2243,10 @@ export function InventoryManager({
                     type="date"
                     className="mt-1 h-8.5 rounded-xs text-sm font-semibold text-slate-900"
                     value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
+                    onChange={(e) => {
+                      setPostedTodayOnly(false);
+                      setDateFrom(e.target.value);
+                    }}
                   />
                 </label>
                 <label className="block font-semibold text-slate-700">
@@ -2185,7 +2255,10 @@ export function InventoryManager({
                     type="date"
                     className="mt-1 h-8.5 rounded-xs text-sm font-semibold text-slate-900"
                     value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
+                    onChange={(e) => {
+                      setPostedTodayOnly(false);
+                      setDateTo(e.target.value);
+                    }}
                   />
                 </label>
                 <Button
@@ -2195,6 +2268,7 @@ export function InventoryManager({
                   onClick={() => {
                     setDateFrom("");
                     setDateTo("");
+                    setPostedTodayOnly(false);
                   }}
                 >
                   Xóa khoảng ngày
@@ -2216,7 +2290,10 @@ export function InventoryManager({
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setDocTab(id)}
+                  onClick={() => {
+                    setPostedTodayOnly(false);
+                    setDocTab(id);
+                  }}
                   className={cn(
                     "rounded-xs px-3 py-1.5 text-sm font-semibold transition-all cursor-pointer",
                     docTab === id
@@ -2244,10 +2321,10 @@ export function InventoryManager({
           )}
 
           {/* Table */}
-          <section className="overflow-hidden rounded-xs border border-slate-200 bg-white shadow-2xs">
+          <section className="admin-table-frame overflow-hidden rounded-xs border border-slate-200 bg-white">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1000px] text-left text-sm">
-                <thead className="border-y border-slate-200 bg-slate-50/80 text-sm font-semibold text-slate-700">
+              <table className="admin-data-table w-full min-w-[1000px] text-left text-sm">
+                <thead className="border-b border-slate-200 bg-white text-xs font-medium text-slate-500">
                   <tr>
                     <th className="w-12 px-3 py-2.5">
                       <input
@@ -2345,9 +2422,9 @@ export function InventoryManager({
                             {doc.warehouse_code ?? warehouseLabel}
                           </td>
                           <td className="px-3 py-2">
-                            <p className="text-sm font-semibold text-slate-900">{doc.created_by_name || "—"}</p>
-                            {doc.created_by_role && (
-                              <p className="text-sm font-medium text-slate-500 mt-0.5">{doc.created_by_role}</p>
+                            <p className="text-sm font-semibold text-slate-900">{doc.requested_by_name || "—"}</p>
+                            {doc.requested_by_role && (
+                              <p className="text-sm font-medium text-slate-500 mt-0.5">{doc.requested_by_role}</p>
                             )}
                           </td>
                           <td className="px-3 py-2">
@@ -2412,15 +2489,23 @@ export function InventoryManager({
                 </tbody>
               </table>
             </div>
-            <Pager
-              page={docPage}
-              totalPages={totalDocPages}
-              total={filteredDocs.length}
-              itemName="phiếu kho"
-              onPage={setDocPage}
-            />
           </section>
+          <AdminPagination
+            count={filteredDocs.length}
+            page={docPage}
+            pageSize={docPageSize}
+            noun="phiếu kho"
+            onPageChange={setDocPage}
+            onPageSizeChange={(size) => {
+              setDocPageSize(size);
+              setDocPage(1);
+            }}
+          />
         </>
+      )}
+
+      </div>
+      </AnimatedPanel>
       )}
 
       {/* ── VIEW 3: XEM CHI TIẾT PHIẾU KHO (DOC DETAIL) ────────────────────── */}
@@ -2548,24 +2633,27 @@ export function InventoryManager({
               </div>
 
               {/* Metric Overview Strip */}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-2 divide-x divide-y divide-slate-200 overflow-hidden rounded-xs border border-slate-200 bg-white sm:grid-cols-4 sm:divide-y-0">
                 <MetricCard
                   icon={<FileText className="size-4 text-[#6941c6]" />}
                   label="Loại chứng từ"
                   value={TYPE_LABEL[docDetail.type as DocType] ?? docDetail.type}
                   note={docDetail.reason || "Vận hành kho thường kỳ"}
+                  variant="strip"
                 />
                 <MetricCard
                   icon={<Package className="size-4 text-blue-600" />}
                   label="Tổng hàng hóa"
                   value={`${docDetail.lines.reduce((s, l) => s + l.qty, 0)} cái`}
                   note={`${docDetail.lines.length} dòng sản phẩm`}
+                  variant="strip"
                 />
                 <MetricCard
                   icon={<ArrowRightLeft className="size-4 text-amber-600" />}
                   label={docDetail.type === "issue" ? "Tổng giá trị xuất" : "Tổng giá trị vốn"}
                   value={fmtVND(totalDocAmount)}
                   note="Theo đơn giá chứng từ"
+                  variant="strip"
                 />
                 <MetricCard
                   icon={
@@ -2592,6 +2680,7 @@ export function InventoryManager({
                         ? "Chưa được duyệt"
                         : "Chưa cập nhật vào kho"
                   }
+                  variant="strip"
                 />
               </div>
 
@@ -2599,7 +2688,7 @@ export function InventoryManager({
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
                 {/* Left (8 cols): Line items table */}
                 <div className="space-y-4 lg:col-span-8">
-                  <div className="overflow-hidden rounded-xs border border-slate-200 bg-white shadow-2xs">
+                  <div className="admin-table-frame overflow-hidden rounded-xs border border-slate-200 bg-white">
                     <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/50 p-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <div className="flex items-center gap-2">
@@ -2619,7 +2708,7 @@ export function InventoryManager({
                       </span>
                     </div>
 
-                    {/* Search & Pagination Controls Toolbar */}
+                    {/* Search toolbar */}
                     <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-slate-200 bg-white px-4 py-2.5">
                       <div className="relative flex-1 min-w-[200px] max-w-sm">
                         <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
@@ -2647,28 +2736,11 @@ export function InventoryManager({
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
-                        <span>Hiển thị:</span>
-                        <select
-                          aria-label="Số dòng mỗi trang"
-                          value={docLinePageSize}
-                          onChange={(e) => {
-                            setDocLinePageSize(Number(e.target.value));
-                            setDocLinePage(1);
-                          }}
-                          className="h-7.5 rounded-xs border border-slate-200 bg-white px-2 text-sm font-semibold text-slate-800 outline-none focus:border-[#6941c6]"
-                        >
-                          <option value={10}>10 dòng</option>
-                          <option value={20}>20 dòng</option>
-                          <option value={50}>50 dòng</option>
-                          <option value={100}>100 dòng</option>
-                        </select>
-                      </div>
                     </div>
 
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
-                        <thead className="border-b border-slate-200 bg-slate-50/80 text-sm font-semibold text-slate-700">
+                      <table className="admin-data-table w-full min-w-[980px] text-left text-sm p-2">
+                        <thead className="border-b border-slate-200 bg-white text-xs font-medium text-slate-500">
                           <tr>
                             <th className="py-2.5 pl-4 pr-3 font-semibold text-slate-700 min-w-[240px]">Sản phẩm</th>
                             <th className="px-3 py-2.5 font-semibold text-slate-700 whitespace-nowrap">Phân loại</th>
@@ -2796,16 +2868,17 @@ export function InventoryManager({
                     </div>
 
                     {/* Phân trang danh sách sản phẩm */}
-                    {filteredDocLines.length > docLinePageSize && (
-                      <Pager
-                        page={docLinePage}
-                        totalPages={totalDocLinePages}
-                        total={filteredDocLines.length}
-                        itemName="sản phẩm"
-                        pageSize={docLinePageSize}
-                        onPage={setDocLinePage}
-                      />
-                    )}
+                    <AdminPagination
+                      count={filteredDocLines.length}
+                      page={docLinePage}
+                      pageSize={docLinePageSize}
+                      noun="sản phẩm"
+                      onPageChange={setDocLinePage}
+                      onPageSizeChange={(size) => {
+                        setDocLinePageSize(size);
+                        setDocLinePage(1);
+                      }}
+                    />
 
                     {/* Summary Footer */}
                     <div className="border-t border-slate-200 bg-slate-50/40 p-4">
@@ -2923,16 +2996,16 @@ export function InventoryManager({
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-slate-600">Người lập:</span>
+                          <span className="font-semibold text-slate-600">Người yêu cầu:</span>
                           <span className="font-semibold text-slate-950">
-                            {docDetail.requested_by || "Quản trị viên"}
+                            {docDetail.requested_by_name || "—"}
                           </span>
                         </div>
 
                         {docDetail.approved_by && (
                           <div className="flex items-center justify-between">
                             <span className="font-semibold text-slate-600">Người duyệt:</span>
-                            <span className="font-semibold text-slate-950">{docDetail.approved_by}</span>
+                            <span className="font-semibold text-slate-950">{docDetail.approved_by_name || "—"}</span>
                           </div>
                         )}
 

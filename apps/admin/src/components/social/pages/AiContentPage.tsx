@@ -842,7 +842,7 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
                 <MoreHorizontal className="size-4" />
               </Button>
               {menu && (
-                <div className="absolute right-0 top-11 z-20 w-48 rounded-md border border-slate-200 bg-white p-1 shadow-md">
+                <div className="absolute right-0 top-11 z-20 w-48 rounded-xs border border-slate-200 bg-white p-1 shadow-md">
                   <button
                     type="button"
                     onClick={reset}

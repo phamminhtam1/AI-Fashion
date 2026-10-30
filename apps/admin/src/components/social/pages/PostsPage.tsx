@@ -9,6 +9,7 @@ import {
 import { toast } from "sonner";
 import { adminApi, type SocialContentItem } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { AnimatedPanel } from "@/components/ui/AnimatedPanel";
 import { cn } from "@/lib/utils";
 import { resolveAdminPath } from "@/lib/routes";
 import { CHANNEL_META, type PostRow, type PostStatus } from "../mock";
@@ -164,7 +165,7 @@ function RowMenu({ post, onRun }: { post: PostView; onRun: (id: ActionId, p: Pos
       {pos && createPortal(
         <>
           <div className="fixed inset-0 z-40" onClick={() => setPos(null)} />
-          <div role="menu" style={{ top: pos.top, left: pos.left }} className="fixed z-50 w-44 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+          <div role="menu" style={{ top: pos.top, left: pos.left }} className="fixed z-50 w-44 overflow-hidden rounded-xs border border-slate-200 bg-white py-1 shadow-lg">
             {ids.map((id, i) => {
               const a = ACTIONS[id];
               const Icon = a.icon;
@@ -224,7 +225,7 @@ function CreateMenu({ onAi, onManual }: { onAi: () => void; onManual: () => void
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1.5 text-sm shadow-xl">
+          <div className="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-xs border border-slate-200 bg-white py-1.5 text-sm shadow-xl">
             <button className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-50" onClick={() => { setOpen(false); onAi(); }}>
               <Sparkles className="size-4 text-[#6941c6]" />Tạo bằng AI
             </button>
@@ -283,7 +284,7 @@ function ScheduleModal({
               {post.state === "scheduled" ? "Đổi lịch đăng bài" : "Lên lịch đăng bài viết"}
             </h3>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100" aria-label="Đóng">
+          <button onClick={onClose} className="rounded-xs p-1 text-slate-400 hover:bg-slate-100" aria-label="Đóng">
             <X className="size-4" />
           </button>
         </div>
@@ -302,23 +303,23 @@ function ScheduleModal({
             type="datetime-local"
             value={val}
             onChange={(e) => setVal(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+            className="h-9 w-full rounded-xs border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-800 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
           />
         </div>
 
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-slate-500">Gợi ý nhanh:</label>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => setShortcut(1)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50">
+            <button type="button" onClick={() => setShortcut(1)} className="rounded-xs border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50">
               +1 giờ nữa
             </button>
-            <button type="button" onClick={() => setShortcut(3)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50">
+            <button type="button" onClick={() => setShortcut(3)} className="rounded-xs border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50">
               +3 giờ nữa
             </button>
-            <button type="button" onClick={setTonightPrime} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50">
+            <button type="button" onClick={setTonightPrime} className="rounded-xs border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50">
               Tối nay 20:00
             </button>
-            <button type="button" onClick={setTomorrowMorning} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50">
+            <button type="button" onClick={setTomorrowMorning} className="rounded-xs border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50">
               Sáng mai 09:00
             </button>
           </div>
@@ -361,7 +362,7 @@ function FeedbackModal({
               {isReject ? "Từ chối bài viết" : "Yêu cầu chỉnh sửa bài viết"}
             </h3>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100" aria-label="Đóng">
+          <button onClick={onClose} className="rounded-xs p-1 text-slate-400 hover:bg-slate-100" aria-label="Đóng">
             <X className="size-4" />
           </button>
         </div>
@@ -513,7 +514,7 @@ function EditPostModal({
             <Pencil className="size-5 text-[#6941c6]" />
             <h3 className="text-base font-bold text-slate-900">Chỉnh sửa bài viết</h3>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100" aria-label="Đóng">
+          <button onClick={onClose} className="rounded-xs p-1 text-slate-400 hover:bg-slate-100" aria-label="Đóng">
             <X className="size-4" />
           </button>
         </div>
@@ -663,7 +664,7 @@ function CalendarScheduleModal({
             <CalendarDays className="size-5 text-[#6941c6]" />
             <h3 className="text-base font-bold text-slate-900">Lịch đăng bài viết</h3>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100" aria-label="Đóng">
+          <button onClick={onClose} className="rounded-xs p-1 text-slate-400 hover:bg-slate-100" aria-label="Đóng">
             <X className="size-4" />
           </button>
         </div>
@@ -1345,12 +1346,21 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
   }
 
   const chip = (active: boolean) =>
-    cn("inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors",
+    cn("inline-flex h-9 items-center gap-2 rounded-xs border px-3.5 text-sm font-medium transition-colors",
       active ? "border-[#6941c6] bg-violet-50 text-[#6941c6]" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50");
 
   return (
     <div className="space-y-5 pb-8 text-slate-900">
-      {actionLoading && <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/25 p-4 backdrop-blur-[2px]" role="status" aria-live="polite"><div className="flex w-full max-w-xs flex-col items-center rounded-2xl border border-white/70 bg-white px-6 py-5 text-center shadow-2xl"><span className="grid size-12 place-items-center rounded-full bg-violet-100 text-[#6941c6]"><RefreshCw className="size-6 animate-spin" /></span><p className="mt-3 text-sm font-semibold text-slate-900">Đang xử lý bài viết…</p><p className="mt-1 text-xs leading-5 text-slate-500">Đang gửi yêu cầu lên nền tảng. Vui lòng chờ.</p></div></div>}
+      {actionLoading && createPortal(
+        <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/25 p-4 backdrop-blur-[2px]" role="status" aria-live="polite">
+          <div className="flex w-full max-w-xs flex-col items-center rounded-2xl border border-white/70 bg-white px-6 py-5 text-center shadow-2xl">
+            <span className="grid size-12 place-items-center rounded-full bg-violet-100 text-[#6941c6]"><RefreshCw className="size-6 animate-spin" /></span>
+            <p className="mt-3 text-sm font-semibold text-slate-900">Đang xử lý bài viết…</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Đang gửi yêu cầu lên nền tảng. Vui lòng chờ.</p>
+          </div>
+        </div>,
+        document.body,
+      )}
       <PageHeader
         onBack={() => ctx.go("overview")}
         title="Bài viết & lịch đăng"
@@ -1378,13 +1388,16 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
 
       <section className={cn(card, "space-y-4 p-5")}>
         {/* Tabs trạng thái */}
-        <div className="flex flex-wrap gap-2">
+        <div role="tablist" aria-label="Lọc bài viết theo trạng thái" className="flex flex-wrap gap-2">
           {TABS.map((t) => (
             <button
               key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.id}
               onClick={() => { setTab(t.id); setPage(1); }}
               className={cn(
-                "whitespace-nowrap rounded-lg border-b-2 px-4 py-2 text-sm transition-colors",
+                "whitespace-nowrap rounded-xs border-b-2 px-4 py-2 text-sm transition-colors",
                 tab === t.id ? "border-[#6941c6] bg-violet-50 font-semibold text-[#6941c6]" : "border-transparent bg-slate-50 font-medium text-slate-700 hover:bg-slate-100",
               )}
             >
@@ -1399,7 +1412,7 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
             <select
               value={channel}
               onChange={(e) => { setChannel(e.target.value as ChannelId | "all"); setPage(1); }}
-              className="h-10 appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-9 text-sm font-medium text-slate-800 outline-none hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-[#6941c6]/30"
+              className="h-9 appearance-none rounded-xs border border-slate-200 bg-white pl-3 pr-9 text-sm font-medium text-slate-800 outline-none hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-[#6941c6]/30"
             >
               <option value="all">Tất cả nền tảng</option>
               {PLATFORMS.map((id) => <option key={id} value={id}>{CHANNEL_META[id].name}</option>)}
@@ -1421,7 +1434,7 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setPage(1); }}
                 placeholder="Tìm kiếm bài viết..."
-                className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#6941c6]/30"
+                className="h-9 w-full rounded-xs border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#6941c6]/30"
               />
             </div>
             <button onClick={() => setShowFilter((v) => !v)} className={cn(chip(showFilter || kind !== "all"), "relative")}>
@@ -1436,7 +1449,7 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
           <div className="flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 px-4 py-3 text-sm">
             <span className="mr-1 font-medium text-slate-700">Loại nội dung:</span>
             {KINDS.map((k) => (
-              <button key={k.id} onClick={() => { setKind(k.id); setPage(1); }} className={cn("rounded-lg border px-3 py-1.5 font-medium", kind === k.id ? "border-[#6941c6] bg-white text-[#6941c6]" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}>
+              <button key={k.id} onClick={() => { setKind(k.id); setPage(1); }} className={cn("rounded-xs border px-3.5 py-1.5 font-medium", kind === k.id ? "border-[#6941c6] bg-white text-[#6941c6]" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}>
                 {k.label}
               </button>
             ))}
@@ -1452,7 +1465,8 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
         )}
 
         {/* Bảng */}
-        <div className="overflow-x-auto">
+          <AnimatedPanel transitionKey={tab} className="min-w-0">
+          <div className="overflow-x-auto">
           <div className="min-w-[1360px]">
             <div className={cn(COLS, "rounded-lg bg-slate-50 px-4 py-3.5 text-sm font-medium text-slate-800")}>
               <input type="checkbox" checked={allChecked} onChange={toggleAll} aria-label="Chọn tất cả" className="size-[18px] rounded border-slate-300 accent-[#6941c6]" />
@@ -1542,7 +1556,7 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
                             openPostDetail(p.id);
                           }
                         }}
-                        className="inline-flex h-9 w-[125px] items-center justify-center rounded-lg border border-[#6941c6] bg-white text-sm font-medium text-[#6941c6] shadow-2xs transition-colors hover:bg-[#6941c6] hover:text-white"
+                        className="inline-flex h-9 w-[125px] items-center justify-center rounded-xs border border-[#6941c6] bg-white text-sm font-medium text-[#6941c6] shadow-2xs transition-colors hover:bg-[#6941c6] hover:text-white"
                       >
                         {primary.label}
                       </a>
@@ -1563,7 +1577,8 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
 
             {!rows.length && <Empty>Chưa có bài viết nào.</Empty>}
           </div>
-        </div>
+          </div>
+          </AnimatedPanel>
 
         {/* Phân trang */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-sm text-slate-500">
@@ -1574,7 +1589,7 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
               <select
                 value={pageSize}
                 onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-                className="h-10 appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-sm text-slate-800 outline-none"
+              className="h-9 appearance-none rounded-xs border border-slate-200 bg-white pl-3 pr-8 text-sm text-slate-800 outline-none"
               >
                 {[10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
               </select>

@@ -1,4 +1,7 @@
 import { PaymentStatusBadge, OrderStatusBadge } from "./OrderStatusBadges";
+import { AdminPagination } from "@/components/AdminPagination";
+import { AnimatedPanel } from "@/components/ui/AnimatedPanel";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { adminErrorMessage, adminLabel, paymentStatusLabel } from "@/lib/admin-language";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
@@ -10,7 +13,6 @@ import {
   Calendar,
   Check,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   CircleDollarSign,
   Clock,
@@ -1800,6 +1802,16 @@ export function OrdersManager({
           const matchLoc = o.customer_location?.toLowerCase().includes(q);
           if (!matchNum && !matchCust && !matchLoc) return false;
         }
+
+        if (dateRangeLabel !== "Tất cả thời gian") {
+          const orderDate = new Date(o.placed_at);
+          const now = new Date();
+          const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          if (dateRangeLabel === "7 ngày qua") start.setDate(start.getDate() - 6);
+          else if (dateRangeLabel === "30 ngày qua") start.setDate(start.getDate() - 29);
+          else if (dateRangeLabel === "Tháng này") start.setDate(1);
+          if (orderDate < start || orderDate > now) return false;
+        }
         return true;
       })
       .sort((a, b) => {
@@ -1814,13 +1826,12 @@ export function OrdersManager({
         }
         return 0;
       });
-  }, [orders, statusFilter, search, sortByOption]);
+  }, [orders, statusFilter, search, sortByOption, dateRangeLabel]);
 
   const pagedOrders = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filtered.slice(start, start + pageSize);
   }, [filtered, page, pageSize]);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
 
   // Status Tabs definitions
   const ORDER_TABS: Array<{ label: string; key: OrderFilterTab; count: number | string }> = [
@@ -1876,7 +1887,7 @@ export function OrdersManager({
   }
 
   return (
-    <div className="space-y-5 font-sans pb-12">
+    <div className="orders-page space-y-6 font-sans pb-12">
       {/* 1. Page Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -1910,128 +1921,146 @@ export function OrdersManager({
         </div>
       </div>
 
-      {/* 2. Metric / Stat Cards (4 Cards Grid) */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Card 1: TOTAL ORDERS */}
-        <div className="rounded-xs border border-slate-200/90 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-500">
-            <div className="flex items-center gap-2">
-              <ShoppingCart className="size-3.5 text-slate-400" />
-              <span className="text-sm font-semibold tracking-wider uppercase text-slate-600">
-                Tổng đơn hàng
-              </span>
-            </div>
-            <button type="button" className="text-slate-400 hover:text-slate-700 p-0.5">
-              <MoreVertical className="size-3.5" />
-            </button>
-          </div>
-          <p className="mt-2 admin-metric  font-semibold tracking-tight text-slate-950">
-            {orderStats.total.toLocaleString("vi-VN")}
-          </p>
-          <div className="mt-2 flex items-center justify-between text-sm">
-            <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-600">
-              {orderStats.today_orders.toLocaleString("vi-VN")}
-            </span>
-            <span className="text-slate-500 font-semibold text-sm">đơn hôm nay</span>
-          </div>
-        </div>
+      {/* Order overview */}
+      <section aria-label="Tổng quan đơn hàng" className="orders-summary grid grid-cols-1 gap-3 min-[560px]:grid-cols-2 xl:grid-cols-4">
+        <button
+          type="button"
+          aria-pressed={statusFilter === "all" && sortByOption === "newest"}
+          onClick={() => {
+            setStatusFilter("all");
+            setSortByOption("newest");
+            setPage(1);
+          }}
+          className={cn(
+            "group w-full rounded-xs border px-4 py-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
+            statusFilter === "all" && sortByOption === "newest"
+              ? "border-[#6941c6]/35 bg-[#6941c6]/5 ring-1 ring-[#6941c6]/10"
+              : "border-slate-200 bg-white hover:border-[#6941c6]/30 hover:bg-slate-50/40",
+          )}
+        >
+          <span className="flex items-center justify-between gap-3">
+            <span className="text-sm font-medium text-slate-600">Tổng đơn hàng</span>
+            <ShoppingBag className="size-4 shrink-0 text-[#6941c6]" aria-hidden="true" />
+          </span>
+          <span className="mt-3 block text-[26px] font-semibold leading-none tracking-tight tabular-nums text-[#6941c6]">
+            <AnimatedValue value={orderStats.total.toLocaleString("vi-VN")} />
+          </span>
+          <span className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
+            <span className="size-1.5 rounded-full bg-[#6941c6]" aria-hidden="true" />
+            <span><AnimatedValue value={orderStats.today_orders.toLocaleString("vi-VN")} /> đơn hôm nay</span>
+          </span>
+        </button>
 
-        {/* Card 2: REVENUE */}
-        <div className="rounded-xs border border-slate-200/90 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-500">
-            <div className="flex items-center gap-2">
-              <DollarSign className="size-3.5 text-slate-400" />
-              <span className="text-sm font-semibold tracking-wider uppercase text-slate-600">
-                Doanh thu
-              </span>
-            </div>
-            <button type="button" className="text-slate-400 hover:text-slate-700 p-0.5">
-              <MoreVertical className="size-3.5" />
-            </button>
-          </div>
-          <p className="mt-2 admin-metric  font-semibold tracking-tight text-slate-950">
-            {fmtVND(orderStats.revenue_vnd)}
-          </p>
-          <div className="mt-2 flex items-center justify-between text-sm">
-            <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-600">
-              {fmtVND(orderStats.today_revenue_vnd)}
-            </span>
-            <span className="text-slate-500 font-semibold text-sm">hôm nay</span>
-          </div>
-        </div>
+        <button
+          type="button"
+          aria-pressed={statusFilter === "all" && sortByOption === "highest"}
+          onClick={() => {
+            setStatusFilter("all");
+            setSortByOption("highest");
+            setPage(1);
+          }}
+          className={cn(
+            "group w-full rounded-xs border px-4 py-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
+            statusFilter === "all" && sortByOption === "highest"
+              ? "border-emerald-300 bg-emerald-50/50 ring-1 ring-emerald-100"
+              : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/30",
+          )}
+        >
+          <span className="flex items-center justify-between gap-3">
+            <span className="text-sm font-medium text-slate-600">Doanh thu</span>
+            <CircleDollarSign className="size-4 shrink-0 text-emerald-600" aria-hidden="true" />
+          </span>
+          <span className="mt-3 block truncate text-[26px] font-semibold leading-none tracking-tight tabular-nums text-emerald-700">
+            <AnimatedValue value={fmtVND(orderStats.revenue_vnd)} />
+          </span>
+          <span className="mt-4 flex min-w-0 items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
+            <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true" />
+            <span className="truncate"><AnimatedValue value={fmtVND(orderStats.today_revenue_vnd)} /> hôm nay</span>
+          </span>
+        </button>
 
-        {/* Card 3: PENDING PAYMENT */}
-        <div className="rounded-xs border border-slate-200/90 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-500">
-            <div className="flex items-center gap-2">
-              <CreditCard className="size-3.5 text-slate-400" />
-              <span className="text-sm font-semibold tracking-wider uppercase text-slate-600">
-                Chờ thanh toán
-              </span>
-            </div>
-            <button type="button" className="text-slate-400 hover:text-slate-700 p-0.5">
-              <MoreVertical className="size-3.5" />
-            </button>
-          </div>
-          <p className="mt-2 admin-metric  font-semibold tracking-tight text-slate-950">
-            {orderStats.pending_payment.toLocaleString("vi-VN")}
-          </p>
-          <div className="mt-2 flex items-center justify-between text-sm">
-            <span className="inline-flex items-center gap-0.5 font-semibold text-rose-600">
-              Dữ liệu hiện tại
-            </span>
-          </div>
-        </div>
+        <button
+          type="button"
+          aria-pressed={statusFilter === "pending_payment"}
+          onClick={() => {
+            setStatusFilter("pending_payment");
+            setPage(1);
+          }}
+          className={cn(
+            "group w-full rounded-xs border px-4 py-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
+            statusFilter === "pending_payment"
+              ? "border-amber-300 bg-amber-50/60 ring-1 ring-amber-100"
+              : "border-slate-200 bg-white hover:border-amber-200 hover:bg-amber-50/30",
+          )}
+        >
+          <span className="flex items-center justify-between gap-3">
+            <span className="text-sm font-medium text-slate-600">Chờ thanh toán</span>
+            <Clock className="size-4 shrink-0 text-amber-600" aria-hidden="true" />
+          </span>
+          <span className="mt-3 block text-[26px] font-semibold leading-none tracking-tight tabular-nums text-amber-700">
+            <AnimatedValue value={orderStats.pending_payment.toLocaleString("vi-VN")} />
+          </span>
+          <span className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
+            <span className="size-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+            <span>Cần xác nhận</span>
+          </span>
+        </button>
 
-        {/* Card 4: TO SHIP */}
-        <div className="rounded-xs border border-slate-200/90 bg-white p-4.5 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-500">
-            <div className="flex items-center gap-2">
-              <Truck className="size-3.5 text-slate-400" />
-              <span className="text-sm font-semibold tracking-wider uppercase text-slate-600">
-                Chờ giao hàng
-              </span>
-            </div>
-            <button type="button" className="text-slate-400 hover:text-slate-700 p-0.5">
-              <MoreVertical className="size-3.5" />
-            </button>
-          </div>
-          <p className="mt-2 admin-metric  font-semibold tracking-tight text-slate-950">
-            {orderStats.shipping.toLocaleString("vi-VN")}
-          </p>
-          <div className="mt-2 flex items-center justify-between text-sm">
-            <span className="inline-flex items-center gap-0.5 font-semibold text-emerald-600">
-              Dữ liệu hiện tại
-            </span>
-          </div>
-        </div>
-      </div>
+        <button
+          type="button"
+          aria-pressed={statusFilter === "shipping"}
+          onClick={() => {
+            setStatusFilter("shipping");
+            setPage(1);
+          }}
+          className={cn(
+            "group w-full rounded-xs border px-4 py-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
+            statusFilter === "shipping"
+              ? "border-sky-300 bg-sky-50/60 ring-1 ring-sky-100"
+              : "border-slate-200 bg-white hover:border-sky-200 hover:bg-sky-50/30",
+          )}
+        >
+          <span className="flex items-center justify-between gap-3">
+            <span className="text-sm font-medium text-slate-600">Đang giao</span>
+            <Truck className="size-4 shrink-0 text-sky-600" aria-hidden="true" />
+          </span>
+          <span className="mt-3 block text-[26px] font-semibold leading-none tracking-tight tabular-nums text-sky-700">
+            <AnimatedValue value={orderStats.shipping.toLocaleString("vi-VN")} />
+          </span>
+          <span className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
+            <span className="size-1.5 rounded-full bg-sky-500" aria-hidden="true" />
+            <span>Đơn đã bàn giao</span>
+          </span>
+        </button>
+      </section>
 
       {/* 3. Status Filter Tabs Bar */}
-      <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-0.5 select-none">
+      <div className="orders-tabs flex w-full items-center gap-6 overflow-x-auto border-b border-slate-200 select-none" role="tablist" aria-label="Lọc đơn hàng theo trạng thái">
         {ORDER_TABS.map((tab) => {
           const isActive = statusFilter === tab.key;
           return (
             <button
               key={tab.key}
               type="button"
+              role="tab"
+              aria-selected={isActive}
               onClick={() => {
                 setStatusFilter(tab.key);
                 setPage(1);
               }}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-xs border px-3.5 py-1.5 text-sm font-semibold transition-all cursor-pointer",
+                "inline-flex shrink-0 items-center gap-2 border-b-2 px-0.5 py-3 text-sm font-medium transition-colors cursor-pointer",
                 isActive
-                  ? "border-[#6941c6] bg-purple-50/60 text-[#6941c6] shadow-2xs"
-                  : "border-slate-200/90 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-950",
+                  ? "border-[#6941c6] text-slate-950"
+                  : "border-transparent text-slate-600 hover:text-slate-950",
               )}
             >
               <span>{tab.label}</span>
               {tab.count !== "" && (
                 <span
                   className={cn(
-                    "rounded-xs px-1.5 py-0.5 text-sm leading-tight font-semibold transition-colors",
-                    isActive ? "bg-purple-100 text-[#6941c6]" : "bg-slate-100 text-slate-600",
+                    "min-w-4 text-xs tabular-nums leading-tight",
+                    tab.count > 0 ? (isActive ? "font-semibold text-[#6941c6]" : "text-slate-600") : "text-slate-400",
                   )}
                 >
                   {tab.count}
@@ -2050,7 +2079,7 @@ export function OrdersManager({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
             <Input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder="Tìm kiếm theo mã đơn, tên khách hàng hoặc SĐT..."
               className="h-9 pl-8.5 rounded-xs border-slate-200 bg-white text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
             />
@@ -2128,10 +2157,10 @@ export function OrdersManager({
       </div>
 
       {/* 5. Orders Table */}
-      <div className="overflow-hidden rounded-xs border border-slate-200 bg-white shadow-2xs">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-left text-sm">
-            <thead className="border-y border-slate-200 bg-slate-50/80 text-sm font-semibold text-slate-700">
+      <AnimatedPanel transitionKey={statusFilter} className="admin-table-frame orders-table rounded-xs border border-slate-200 bg-white">
+        <div className="hidden overflow-x-auto md:block">
+          <table className="admin-data-table w-full min-w-[980px] text-left text-sm">
+            <thead className="border-b border-slate-200 bg-transparent text-sm font-medium text-slate-600">
               <tr>
                 <th className="w-10 px-3.5 py-3">
                   <input
@@ -2141,14 +2170,14 @@ export function OrdersManager({
                     className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
                   />
                 </th>
-                <th className="px-3.5 py-3 font-semibold text-slate-700">Mã đơn</th>
-                <th className="px-3.5 py-3 font-semibold text-slate-700">Khách hàng</th>
-                <th className="px-3.5 py-3 font-semibold text-slate-700">Sản phẩm</th>
-                <th className="px-3.5 py-3 font-semibold text-slate-700">Tổng tiền</th>
-                <th className="px-3.5 py-3 font-semibold text-slate-700">Thanh toán</th>
-                <th className="px-3.5 py-3 font-semibold text-slate-700">Xuất kho</th>
-                <th className="px-3.5 py-3 font-semibold text-slate-700">Giao hàng</th>
-                <th className="px-3.5 py-3 font-semibold text-slate-700">Ngày đặt</th>
+                <th className="px-3.5 py-3 font-medium">Mã đơn</th>
+                <th className="px-3.5 py-3 font-medium">Khách hàng</th>
+                <th className="px-3.5 py-3 font-medium">Sản phẩm</th>
+                <th className="px-3.5 py-3 text-right font-medium">Tổng tiền</th>
+                <th className="px-3.5 py-3 font-medium">Thanh toán</th>
+                <th className="px-3.5 py-3 font-medium">Xuất kho</th>
+                <th className="px-3.5 py-3 font-medium">Giao hàng</th>
+                <th className="px-3.5 py-3 font-medium">Ngày đặt</th>
                 <th className="w-24 whitespace-nowrap px-3.5 py-3 text-right font-semibold text-slate-700">Thao tác</th>
               </tr>
             </thead>
@@ -2173,7 +2202,7 @@ export function OrdersManager({
                       onClick={() => handleOpenDetail(order)}
                       className={cn(
                         "cursor-pointer transition-colors hover:bg-slate-50/80",
-                        isSelected && "bg-purple-50/30",
+                        isSelected && "bg-[#f8f7ff]",
                       )}
                     >
                       {/* Checkbox */}
@@ -2227,7 +2256,7 @@ export function OrdersManager({
                       </td>
 
                       {/* Total */}
-                      <td className="px-3.5 py-2">
+                      <td className="px-3.5 py-2 text-right">
                         <div>
                           <p className="font-semibold text-slate-950 text-sm leading-tight">
                             {fmtVND(order.grand_total_vnd)}
@@ -2308,53 +2337,46 @@ export function OrdersManager({
             </tbody>
           </table>
         </div>
-      </div>
-
-      {/* 6. Pagination Footer */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm font-medium text-slate-600 pt-1">
-        <p>
-          Hiển thị {filtered.length ? (page - 1) * pageSize + 1 : 0}–{Math.min(page * pageSize, filtered.length)} trên tổng {filtered.length.toLocaleString("vi-VN")} đơn hàng
-        </p>
-
-        <div className="flex items-center gap-1.5 self-end sm:self-auto">
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={page === 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="size-8 rounded-xs border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-          >
-            <ChevronLeft className="size-3.5" />
-          </Button>
-
-          {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
-            <Button
-              key={pageNumber}
-              variant={pageNumber === page ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPage(pageNumber)}
-              className={cn(
-                "size-8 rounded-xs p-0 text-sm font-semibold",
-                pageNumber === page
-                  ? "bg-[#6941c6] text-white hover:bg-[#53389e]"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-              )}
-            >
-              {pageNumber}
-            </Button>
-          ))}
-
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            className="size-8 rounded-xs border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-          >
-            <ChevronRight className="size-3.5" />
-          </Button>
+        <div className="divide-y divide-slate-200 md:hidden">
+          {pagedOrders.length === 0 ? (
+            <div className="py-12 text-center text-sm text-slate-500">
+              <ShoppingBag className="mx-auto mb-2 size-7 text-slate-300" />
+              <p className="font-medium text-slate-800">Không tìm thấy đơn hàng</p>
+              <p className="mt-1">Thử đổi từ khóa hoặc bộ lọc trạng thái.</p>
+            </div>
+          ) : pagedOrders.map((order) => {
+            const { dateFormatted } = formatOrderDate(order.placed_at);
+            return (
+              <button key={order.id} type="button" onClick={() => handleOpenDetail(order)} className="flex w-full items-start gap-3 px-3 py-3.5 text-left hover:bg-slate-50">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-semibold tabular-nums text-slate-950">#{order.order_number}</span>
+                    <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">{fmtVND(order.grand_total_vnd)}</span>
+                  </div>
+                  <p className="mt-1 truncate text-sm text-slate-800">{order.customer_name} <span className="text-slate-500">· {order.items_count} sản phẩm · {dateFormatted}</span></p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <PaymentStatusBadge status={order.payment_status} orderStatus={order.status} />
+                    <FulfillmentStatusBadge status={order.fulfillment_status} orderStatus={order.status} />
+                  </div>
+                </div>
+                <ChevronRight className="mt-1 size-4 shrink-0 text-slate-400" />
+              </button>
+            );
+          })}
         </div>
-      </div>
+      </AnimatedPanel>
+
+      <AdminPagination
+        count={filtered.length}
+        page={page}
+        pageSize={pageSize}
+        noun="đơn hàng"
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
+      />
 
       {/* ─── MODALS ─── */}
 

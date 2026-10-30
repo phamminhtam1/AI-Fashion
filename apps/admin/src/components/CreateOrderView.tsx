@@ -664,7 +664,7 @@ export function CreateOrderView({
   };
 
   return (
-    <div className="space-y-6 font-sans pb-16">
+    <div className="orders-create-view space-y-6 font-sans pb-16">
       {/* ── Top Header Bar ── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-4">
         <div className="flex items-center gap-3">
@@ -1013,7 +1013,16 @@ export function CreateOrderView({
                     <select
                       value={paymentStatus}
                       onChange={(e) => setPaymentStatus(e.target.value as any)}
-                      className="w-full h-9 rounded-xs border border-slate-200 bg-white px-2.5 text-sm text-slate-800 font-medium focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6] outline-none"
+                      className={cn(
+                        "w-full h-9 rounded-xs border border-slate-200 bg-white px-2.5 text-sm font-medium focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6] outline-none transition-colors",
+                        paymentStatus === "paid"
+                          ? "text-emerald-700"
+                          : paymentStatus === "pending"
+                            ? "text-amber-700"
+                            : paymentStatus === "failed"
+                              ? "text-rose-700"
+                              : "text-purple-700",
+                      )}
                     >
                       <option value="pending">● Chờ thanh toán</option>
                       <option value="paid">● Đã thanh toán</option>
@@ -1030,7 +1039,16 @@ export function CreateOrderView({
                     <select
                       value={fulfillmentStatus}
                       onChange={(e) => setFulfillmentStatus(e.target.value as any)}
-                      className="w-full h-9 rounded-xs border border-slate-200 bg-white px-2.5 text-sm text-slate-800 font-medium focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6] outline-none"
+                      className={cn(
+                        "w-full h-9 rounded-xs border border-slate-200 bg-white px-2.5 text-sm font-medium focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6] outline-none transition-colors",
+                        fulfillmentStatus === "delivered"
+                          ? "text-emerald-700"
+                          : fulfillmentStatus === "shipping"
+                            ? "text-indigo-700"
+                            : fulfillmentStatus === "processing"
+                              ? "text-blue-700"
+                              : "text-amber-700",
+                      )}
                     >
                       <option value="unfulfilled">● Chưa xử lý</option>
                       <option value="processing">● Đang xử lý</option>

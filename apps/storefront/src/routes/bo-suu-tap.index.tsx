@@ -12,7 +12,7 @@ function Collections() {
   return (
     <>
       <PageHeader title="Bộ sưu tập" eyebrow="Collections">Mỗi bộ sưu tập là một câu chuyện — về chất liệu, cảm hứng và người phụ nữ hiện đại.</PageHeader>
-      <div className="mx-auto grid max-w-[1440px] gap-6 px-6 py-12 md:grid-cols-2 md:px-8">
+      <div className="mx-auto grid max-w-[1600px] gap-6 px-6 py-12 md:grid-cols-2 md:px-8">
         {collections.map((c, i) => {
           const lookbookSlug =
             c.slug === "thu-dong-2026"

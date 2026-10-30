@@ -488,7 +488,7 @@ function LookbookPage() {
   return (
     <>
       {/* Standard Breadcrumb matching other pages */}
-      <div className="mx-auto max-w-[1440px] px-6 pt-6 pb-2 md:px-8 md:pt-8">
+      <div className="mx-auto max-w-[1600px] px-6 pt-6 pb-2 md:px-8 md:pt-8">
         <nav aria-label="Breadcrumb" className="text-base text-muted-foreground flex items-center gap-2 flex-wrap font-medium">
           <Link to="/" className="hover:text-foreground transition-colors">
             Trang chủ
@@ -560,7 +560,7 @@ function LookbookPage() {
 
       {/* Sticky Editorial Collection Switcher Tabs */}
       <div className="sticky top-0 z-30 backdrop-blur-md py-3 shadow-xs">
-        <div className="mx-auto max-w-[1440px] px-4 md:px-8">
+        <div className="mx-auto max-w-[1600px] px-4 md:px-8">
           <div className="flex items-center justify-start md:justify-center gap-2 overflow-x-auto no-scrollbar py-0.5">
             <Link
               to="/lookbook"
@@ -640,7 +640,7 @@ function LookbookPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1440px] px-6 py-4 md:px-8">
+      <div className="mx-auto max-w-[1600px] px-6 py-4 md:px-8">
         {/* EMPTY STATE */}
         {displayItems.length === 0 ? (
           <div className="py-24 text-center">

@@ -12,6 +12,7 @@ import {
   productMedia,
   products,
   productVariants,
+  productReviews,
   sizes,
   warehouses,
   wishlistItems,
@@ -20,6 +21,8 @@ import type { AppVars } from "../../middleware/auth.js";
 import { requireCustomer } from "../../middleware/auth.js";
 import { ApiError } from "../../lib/errors.js";
 import { availableQty, newOrderNumber, shippingFeeVnd } from "../../lib/order-pricing.js";
+import { readStoreSettings } from "../../lib/store-settings.js";
+import { env } from "../../env.js";
 import { mediaPublicUrl } from "../../lib/media-storage.js";
 import {
   assertCouponApplicable,
@@ -217,6 +220,10 @@ meRoutes.get("/orders", async (c) => {
   const variantColorwayMap = new Map(variants.map((v) => [v.id, v.colorwayId]));
 
   const productIds = Array.from(new Set(items.map((i) => i.productId)));
+  const productRows = productIds.length
+    ? await db.select({ id: products.id, slug: products.slug }).from(products).where(inArray(products.id, productIds))
+    : [];
+  const productSlugMap = new Map(productRows.map((p) => [p.id, p.slug]));
   const covers =
     productIds.length > 0
       ? await db
@@ -256,10 +263,11 @@ meRoutes.get("/orders", async (c) => {
       return {
         id: o.id,
         order_number: o.orderNumber,
-        status: o.status,
+        status: ["fulfilled", "delivered"].includes(o.fulfillmentStatus) ? "completed" : o.status,
         grand_total_vnd: o.grandTotalVnd,
         payment_method: o.paymentMethod,
         payment_status: o.paymentStatus,
+        fulfillment_status: o.fulfillmentStatus,
         paid_at: o.paidAt,
         placed_at: o.placedAt,
         items_count: orderIts.reduce((sum, i) => sum + i.qty, 0),
@@ -268,6 +276,7 @@ meRoutes.get("/orders", async (c) => {
           return {
             id: it.id,
             product_id: it.productId,
+            product_slug: productSlugMap.get(it.productId) ?? null,
             product_name: it.productName,
             size_label: it.sizeLabel,
             color_label: it.colorLabel,
@@ -295,6 +304,11 @@ meRoutes.get("/orders/:id", async (c) => {
   )[0];
   if (!order) throw new ApiError(404, "not_found", "Không tìm thấy đơn hàng");
   const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+  const reviews = await db
+    .select()
+    .from(productReviews)
+    .where(and(eq(productReviews.orderId, order.id), eq(productReviews.customerId, customerId)));
+  const reviewByItem = new Map(reviews.map((review) => [review.orderItemId, review]));
 
   const variantIds = Array.from(new Set(items.map((i) => i.variantId)));
   const variants =
@@ -310,6 +324,10 @@ meRoutes.get("/orders/:id", async (c) => {
   const variantColorwayMap = new Map(variants.map((v) => [v.id, v.colorwayId]));
 
   const productIds = Array.from(new Set(items.map((i) => i.productId)));
+  const productRows = productIds.length
+    ? await db.select({ id: products.id, slug: products.slug }).from(products).where(inArray(products.id, productIds))
+    : [];
+  const productSlugMap = new Map(productRows.map((p) => [p.id, p.slug]));
   const covers =
     productIds.length > 0
       ? await db
@@ -339,7 +357,7 @@ meRoutes.get("/orders/:id", async (c) => {
   return c.json({
     id: order.id,
     order_number: order.orderNumber,
-    status: order.status,
+    status: ["fulfilled", "delivered"].includes(order.fulfillmentStatus) ? "completed" : order.status,
     currency: order.currency,
     subtotal_vnd: order.subtotalVnd,
     shipping_vnd: order.shippingVnd,
@@ -350,6 +368,7 @@ meRoutes.get("/orders/:id", async (c) => {
     payment_status: order.paymentStatus,
     paid_at: order.paidAt,
     payment_ref: order.paymentRef,
+    fulfillment_status: order.fulfillmentStatus,
     recipient: order.recipientSnapshot,
     shipping_address: order.shippingAddressSnapshot,
     placed_at: order.placedAt,
@@ -359,6 +378,7 @@ meRoutes.get("/orders/:id", async (c) => {
         id: it.id,
         variant_id: it.variantId,
         product_id: it.productId,
+        product_slug: productSlugMap.get(it.productId) ?? null,
         sku: it.sku,
         product_name: it.productName,
         size_label: it.sizeLabel,
@@ -366,10 +386,81 @@ meRoutes.get("/orders/:id", async (c) => {
         unit_price_vnd: it.unitPriceVnd,
         qty: it.qty,
         line_total_vnd: it.lineTotalVnd,
+        review: reviewByItem.has(it.id)
+          ? {
+              id: reviewByItem.get(it.id)!.id,
+              rating: reviewByItem.get(it.id)!.rating,
+              title: reviewByItem.get(it.id)!.title,
+              comment: reviewByItem.get(it.id)!.comment,
+              created_at: reviewByItem.get(it.id)!.createdAt,
+            }
+          : null,
         image_url: (cwId ? colorwayMap.get(cwId) : null) ?? coverMap.get(it.productId) ?? null,
       };
     }),
   });
+});
+
+meRoutes.post("/reviews", async (c) => {
+  const body = z
+    .object({
+      order_item_id: z.string().uuid(),
+      rating: z.number().int().min(1).max(5),
+      title: z.string().trim().max(120).optional().nullable(),
+      comment: z.string().trim().max(2000).default(""),
+    })
+    .safeParse(await c.req.json());
+  if (!body.success) throw new ApiError(400, "validation_error", "Đánh giá chưa hợp lệ");
+
+  const db = c.get("db");
+  const customerId = c.get("customer")!.customerId;
+  const item = (
+    await db
+      .select({ item: orderItems, order: orders })
+      .from(orderItems)
+      .innerJoin(orders, eq(orders.id, orderItems.orderId))
+      .where(and(eq(orderItems.id, body.data.order_item_id), eq(orders.customerId, customerId)))
+      .limit(1)
+  )[0];
+  if (!item) throw new ApiError(404, "not_found", "Không tìm thấy sản phẩm trong đơn hàng");
+  const fulfillmentStatus = item.order.fulfillmentStatus?.trim().toLowerCase();
+  const isDelivered =
+    item.order.status === "completed" ||
+    Boolean(item.order.fulfilledAt) ||
+    ["fulfilled", "delivered", "completed"].includes(fulfillmentStatus ?? "");
+  if (!isDelivered) {
+    throw new ApiError(400, "review_not_allowed", "Bạn chỉ có thể đánh giá sau khi đơn đã giao thành công");
+  }
+  const existing = await db
+    .select({ id: productReviews.id })
+    .from(productReviews)
+    .where(eq(productReviews.orderItemId, item.item.id))
+    .limit(1);
+  if (existing[0]) throw new ApiError(409, "already_reviewed", "Sản phẩm này đã được đánh giá");
+
+  const [review] = await db
+    .insert(productReviews)
+    .values({
+      productId: item.item.productId,
+      customerId,
+      orderId: item.item.orderId,
+      orderItemId: item.item.id,
+      rating: body.data.rating,
+      title: body.data.title || null,
+      comment: body.data.comment,
+    })
+    .returning();
+  return c.json(
+    {
+      id: review!.id,
+      order_item_id: review!.orderItemId,
+      rating: review!.rating,
+      title: review!.title,
+      comment: review!.comment,
+      created_at: review!.createdAt,
+    },
+    201,
+  );
 });
 
 meRoutes.post("/orders/:id/cancel", async (c) => {
@@ -466,6 +557,13 @@ meRoutes.post("/orders", async (c) => {
 
   const db = c.get("db");
   const customerId = c.get("customer")!.customerId;
+  const storeSettings = await readStoreSettings(db, Boolean(env.sepayBankAccount && env.sepayBankBin));
+  const paymentAllowed = body.data.payment_method === "cod"
+    ? storeSettings.payments.codEnabled
+    : storeSettings.payments.bankEnabled && storeSettings.bankTransferConfigured;
+  if (!paymentAllowed) {
+    throw new ApiError(400, "payment_method_unavailable", "Phương thức thanh toán này hiện không khả dụng");
+  }
   const wh = (await db.select().from(warehouses).where(eq(warehouses.code, "MAIN")).limit(1))[0];
   if (!wh) throw new ApiError(500, "internal_error", "Chưa cấu hình kho");
 
@@ -535,7 +633,11 @@ meRoutes.post("/orders", async (c) => {
   }
 
   const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
-  const shipping = shippingFeeVnd(subtotal);
+  const shipping = shippingFeeVnd(
+    subtotal,
+    storeSettings.shipping.freeShippingFromVnd,
+    storeSettings.shipping.feeVnd,
+  );
   const note = body.data.note ?? body.data.shipping.note ?? "";
   const couponRaw = body.data.coupon_code;
 
@@ -680,7 +782,7 @@ meRoutes.post("/orders", async (c) => {
         );
 
         // only bump customer spend for COD (bank transfer will bump when paid)
-        if (body.payment_method === "cod") {
+        if (body.data.payment_method === "cod") {
           await tx
             .update(customers)
             .set({

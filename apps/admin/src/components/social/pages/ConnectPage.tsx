@@ -180,7 +180,7 @@ function ConnectedChannel({ ctx, channel: c, open, onToggle }: { ctx: SocialCtx;
   const [flags, setFlags] = useState<Record<string, boolean>>({ products: true, orders: true, posts: true, replies: true });
 
   return (
-    <article className={cn("rounded-xl border border-slate-200 bg-white", open && "border-[#6941c6] ring-1 ring-[#6941c6]/20")}>
+    <article className={cn("rounded-xs border border-slate-200 bg-white", open && "border-[#6941c6] ring-1 ring-[#6941c6]/20")}>
       <div className="flex flex-wrap items-start gap-x-6 gap-y-4 p-4">
         <ChannelLogo id={c.id} size="lg" />
 
@@ -228,7 +228,7 @@ function ConnectedChannel({ ctx, channel: c, open, onToggle }: { ctx: SocialCtx;
             <MoreHorizontal className="size-4" />
           </Button>
           {menu && (
-            <div className="absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg">
+            <div className="absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-xs border border-slate-200 bg-white py-1 text-sm shadow-lg">
               <button
                 className="block w-full px-3 py-2 text-left hover:bg-slate-50"
                 onClick={() => {

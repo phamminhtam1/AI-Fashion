@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { adminApi, type AdminProduct } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { AnimatedPanel } from "@/components/ui/AnimatedPanel";
 import { cn } from "@/lib/utils";
 import { TINTS, type Collection, type Product } from "../mock";
 
@@ -120,7 +121,7 @@ function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: 
 function FilterSelect({ value, onChange, children, label }: { value: string; onChange: (v: string) => void; children: ReactNode; label: string }) {
   return (
     <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}
-      className="h-11 min-w-[7.5rem] cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition-colors hover:border-violet-200 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]">
+      className="h-9 min-w-[7.5rem] cursor-pointer rounded-xs border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition-colors hover:border-violet-200 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]">
       {children}
     </select>
   );
@@ -407,7 +408,7 @@ export function ProductBstPickerModal({
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={tab === "products" ? "Tìm theo tên sản phẩm, mã SKU (gọi API real)..." : "Tìm theo tên bộ sưu tập..."}
-                className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-9 text-sm outline-none placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                className="h-9 w-full rounded-xs border border-slate-200 bg-white pl-10 pr-9 text-sm outline-none placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
               />
               {loading && tab === "products" && (
                 <Loader2 className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-[#6941c6]" />
@@ -442,10 +443,10 @@ export function ProductBstPickerModal({
                 <span className="text-sm font-semibold">Đã chọn: {total}</span>
                 <Button type="button" variant="outline" size="sm" disabled={!ids.length} onClick={() => setIds([])}>Bỏ chọn tất cả</Button>
               </div>
-              <div className="flex rounded-lg border border-slate-200 p-0.5">
+              <div className="flex rounded-xs border border-slate-200 p-0.5">
                 {([["grid", LayoutGrid, "Dạng lưới"], ["list", List, "Dạng danh sách"]] as const).map(([id, Icon, label]) => (
                   <button key={id} type="button" aria-label={label} aria-pressed={view === id} onClick={() => setView(id)}
-                    className={cn("grid size-8 place-items-center rounded-md transition-colors", view === id ? "bg-violet-100 text-[#6941c6]" : "text-slate-400 hover:text-slate-700")}>
+                    className={cn("grid size-8 place-items-center rounded-xs transition-colors", view === id ? "bg-violet-100 text-[#6941c6]" : "text-slate-400 hover:text-slate-700")}>
                     <Icon className="size-4" />
                   </button>
                 ))}
@@ -455,6 +456,7 @@ export function ProductBstPickerModal({
 
           {/* Danh sách */}
           <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+          <AnimatedPanel transitionKey={tab} className="min-w-0">
             {tab === "products" ? (
               loading && displayProducts.length === 0 ? (
                 <div className="grid h-56 place-items-center rounded-xl border border-dashed border-slate-200 text-center text-sm text-slate-500">
@@ -565,6 +567,7 @@ export function ProductBstPickerModal({
                 })}
               </div>
             )}
+          </AnimatedPanel>
           </div>
 
           {/* Phân trang API cho sản phẩm */}

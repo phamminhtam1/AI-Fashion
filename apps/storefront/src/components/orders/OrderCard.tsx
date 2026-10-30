@@ -88,7 +88,7 @@ export function OrderCard({
   };
 
   const fulfillment =
-    order.status === "completed"
+    order.status === "completed" || order.fulfillmentStatus === "fulfilled" || order.fulfillmentStatus === "delivered"
       ? { label: "Hoàn thành", Icon: CheckCircle2, tone: "border-[#e0e0e0] bg-[#f5f5f5] text-[#333333]" }
       : order.status === "shipping"
         ? { label: "Đang giao hàng", Icon: Truck, tone: "border-[#e0e0e0] bg-[#f5f5f5] text-[#444444]" }
@@ -118,7 +118,7 @@ export function OrderCard({
       className="overflow-hidden rounded-3xl border border-[#e5e5e5] bg-white text-[#171717] shadow-[0_8px_32px_-24px_rgba(0,0,0,0.08)]"
     >
       {/* Order identity and live status */}
-      <header className="flex flex-col gap-4 border-b border-[#ededed] px-5 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5 sm:px-7 sm:py-3">
+      <header className="flex flex-col gap-3 border-b border-[#ededed] px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-5 sm:py-3">
         <div className="flex min-w-0 items-center gap-3.5">
           <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f2f2f2] text-[#111111]">
             <ShoppingBag className="h-5 w-5 stroke-[1.4]" />
@@ -166,11 +166,11 @@ export function OrderCard({
       </header>
 
       {/* Purchased designs */}
-      <div className="px-5 py-5 sm:px-7 sm:py-6">
+      <div className="px-4 py-4 sm:px-5 sm:py-5">
         {order.itemsPreview && order.itemsPreview.length > 0 ? (
           <ul className="divide-y divide-[#ededed]">
             {order.itemsPreview.map((item) => (
-              <li key={item.id} className="flex items-start gap-3.5 py-5 first:pt-0 last:pb-0 sm:items-center sm:gap-5">
+              <li key={item.id} className="flex items-start gap-3 py-4 first:pt-0 last:pb-0 sm:items-center sm:gap-4">
                 <div className="h-24 w-[72px] shrink-0 overflow-hidden rounded-xl bg-[#f0f0f0] sm:h-28 sm:w-[84px]">
                   {item.image_url ? (
                     <img src={item.image_url} alt={item.product_name} loading="lazy" className="h-full w-full object-cover" />
@@ -180,7 +180,17 @@ export function OrderCard({
                 </div>
                 <div className="min-w-0 flex-1 sm:flex sm:items-center sm:justify-between sm:gap-5">
                   <div className="min-w-0">
-                    <p className="break-words font-serif text-sm font-medium leading-6 sm:text-base">{item.product_name}</p>
+                    {item.product_slug ? (
+                      <Link
+                        to="/san-pham/$slug"
+                        params={{ slug: item.product_slug }}
+                        className="inline-block break-words font-serif text-sm font-medium leading-6 transition-transform duration-200 hover:-translate-y-0.5 sm:text-base"
+                      >
+                        {item.product_name}
+                      </Link>
+                    ) : (
+                      <p className="break-words font-serif text-sm font-medium leading-6 sm:text-base">{item.product_name}</p>
+                    )}
                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] leading-5 text-[#666666]">
                       {item.size_label && <span className="rounded-md bg-[#f7f7f7] px-2 py-0.5 font-medium text-[#666666]">Size {item.size_label}</span>}
                       {item.color_label && <span>{item.color_label}</span>}

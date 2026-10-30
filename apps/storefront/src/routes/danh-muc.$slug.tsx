@@ -34,7 +34,7 @@ function Listing() {
 
   if (!loaderData) {
     return (
-      <div className="mx-auto max-w-[1440px] px-6 py-24 text-center">
+      <div className="mx-auto max-w-[1600px] px-6 py-24 text-center">
         <h1 className="text-2xl font-serif">Danh mục không tồn tại</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Danh mục bạn đang tìm kiếm không tồn tại hoặc đã được thay đổi.
@@ -131,6 +131,7 @@ function ListingContent({
 
   // Sentinel for automatic infinite scroll when user scrolls to bottom
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const productGridRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
@@ -186,8 +187,43 @@ function ListingContent({
     return r;
   }, [rawItems, sort, size, maxPrice, slug]);
 
+  useEffect(() => {
+    const targets = Array.from(
+      productGridRef.current?.querySelectorAll<HTMLElement>(
+        "[data-category-image-reveal]",
+      ) ?? [],
+    );
+    if (targets.length === 0) return;
+
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      !("IntersectionObserver" in window)
+    ) {
+      targets.forEach((target) => target.classList.add("reveal-visible"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("reveal-visible");
+          observer.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" },
+    );
+
+    targets.forEach((target) => {
+      target.classList.add("reveal-ready");
+      observer.observe(target);
+    });
+
+    return () => observer.disconnect();
+  }, [items]);
+
   return (
-    <div className="mx-auto max-w-[1440px] px-6 py-10 md:px-8">
+    <div className="mx-auto max-w-[1600px] px-6 py-10 md:px-8">
       <nav aria-label="Breadcrumb" className="text-base text-muted-foreground font-medium flex items-center gap-2 flex-wrap">
         <Link to="/" className="hover:text-foreground transition-colors">
           Trang chủ
@@ -575,11 +611,12 @@ function ListingContent({
             </div>
           ) : (
             <div
+              ref={productGridRef}
               className={`mt-8 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 ${showFilterDesktop ? "lg:grid-cols-3 xl:grid-cols-3" : "lg:grid-cols-4 xl:grid-cols-4"
                 }`}
             >
               {items.map((p) => (
-                <ProductCard key={p.id} product={p} />
+                <ProductCard key={p.id} product={p} imageRevealOnScroll />
               ))}
             </div>
           )}

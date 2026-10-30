@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { BarChart3, Calendar, CalendarClock, ChevronDown, Filter, Hash, Image as ImageIcon, FileText, LayoutGrid, Lightbulb, MoreHorizontal, Plus, RefreshCw, Search, ShoppingBag, ShoppingCart, Users, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AnimatedPanel } from "@/components/ui/AnimatedPanel";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { RevenueOrdersChart, Sparkline, Donut } from "../charts";
@@ -10,11 +12,11 @@ import { ChannelLogo, Delta, Dot, Pill, PageHeader, card, fmt, inputCls, usd } f
 import { useUpcomingPosts } from "../useUpcomingPosts";
 import { PostStatusPill, PostThumb } from "../PostShared";
 
-const KPI_STYLE: Record<string, { icon: typeof Users; bg: string; fg: string; line: string }> = {
-  revenue: { icon: ShoppingBag, bg: "bg-violet-100", fg: "text-violet-600", line: "#7c3aed" },
-  orders: { icon: ShoppingCart, bg: "bg-sky-100", fg: "text-sky-600", line: "#3b82f6" },
-  engagement: { icon: Users, bg: "bg-emerald-100", fg: "text-emerald-600", line: "#10b981" },
-  conversion: { icon: Filter, bg: "bg-orange-100", fg: "text-orange-500", line: "#f59e0b" },
+const KPI_STYLE: Record<string, { icon: typeof Users; fg: string; line: string }> = {
+  revenue: { icon: ShoppingBag, fg: "text-violet-600", line: "#7c3aed" },
+  orders: { icon: ShoppingCart, fg: "text-sky-600", line: "#3b82f6" },
+  engagement: { icon: Users, fg: "text-emerald-600", line: "#10b981" },
+  conversion: { icon: Filter, fg: "text-orange-600", line: "#f59e0b" },
 };
 
 const QUICK = [
@@ -52,7 +54,7 @@ export function DashboardPage({ ctx }: { ctx: SocialCtx }) {
         actions={<>
           <Button variant="outline" onClick={() => void refreshAll()} className="gap-2"><RefreshCw className="size-4" />Đồng bộ</Button>
           <label className="relative"><Calendar className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" /><ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <select value={range} onChange={(e) => setRange(e.target.value)} className="h-10 appearance-none rounded-md border border-slate-200 bg-white pl-9 pr-9 text-sm font-medium outline-none focus:border-[#6941c6]">{DATE_RANGES.map((r) => <option key={r}>{r}</option>)}</select></label>
+            <select value={range} onChange={(e) => setRange(e.target.value)} className="h-9 appearance-none rounded-xs border border-slate-200 bg-white pl-9 pr-9 text-sm font-medium outline-none focus:border-[#6941c6]">{DATE_RANGES.map((r) => <option key={r}>{r}</option>)}</select></label>
         </>} />
 
       {/* KPI */}
@@ -61,10 +63,10 @@ export function DashboardPage({ ctx }: { ctx: SocialCtx }) {
           const s = KPI_STYLE[k.key]; const Icon = s.icon;
           return (
             <div key={k.key} className={cn(card, "flex items-center gap-4 p-4")}>
-              <span className={cn("grid size-12 shrink-0 place-items-center rounded-xl", s.bg, s.fg)}><Icon className="size-6" /></span>
+              <span className={cn("shrink-0", s.fg)}><Icon className="size-7" strokeWidth={1.9} /></span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm text-slate-500">{k.label}</p>
-                <div className="flex items-end justify-between gap-2"><p className="mt-1 text-2xl font-semibold tabular-nums">{k.value}</p><Sparkline data={k.spark} color={s.line} className="h-9 w-24 shrink-0" /></div>
+                <div className="flex items-end justify-between gap-2"><p className="mt-1 text-2xl font-semibold tabular-nums"><AnimatedValue value={k.value} /></p><Sparkline data={k.spark} color={s.line} className="h-9 w-24 shrink-0" /></div>
                 <p className="mt-1 flex items-center gap-2 text-xs text-slate-400"><span className="rounded bg-emerald-50 px-1.5 py-0.5"><Delta value={k.delta} /></span>So với 30 ngày trước</p>
               </div>
             </div>
@@ -77,9 +79,9 @@ export function DashboardPage({ ctx }: { ctx: SocialCtx }) {
           {/* Bảng kênh */}
           <section className={card}>
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4">
-              <div className="flex gap-1 overflow-x-auto">
-                <button onClick={() => setTab("all")} className={cn("flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold", tab === "all" ? "border-[#6941c6] text-[#6941c6]" : "border-transparent text-slate-600 hover:text-slate-900")}><LayoutGrid className="size-4" />Tất cả ({connected.length})</button>
-                {connected.map((c) => <button key={c.id} onClick={() => setTab(c.id)} className={cn("flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium", tab === c.id ? "border-[#6941c6] text-[#6941c6]" : "border-transparent text-slate-600 hover:text-slate-900")}><ChannelLogo id={c.id} size="xs" />{CHANNEL_META[c.id].name.replace(" Shop", "")}</button>)}
+              <div role="tablist" aria-label="Lọc theo kênh" className="flex gap-1 overflow-x-auto">
+                <button role="tab" aria-selected={tab === "all"} onClick={() => setTab("all")} className={cn("flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-semibold", tab === "all" ? "border-[#6941c6] text-[#6941c6]" : "border-transparent text-slate-600 hover:text-slate-900")}><LayoutGrid className="size-4" />Tất cả ({connected.length})</button>
+                {connected.map((c) => <button key={c.id} role="tab" aria-selected={tab === c.id} onClick={() => setTab(c.id)} className={cn("flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium", tab === c.id ? "border-[#6941c6] text-[#6941c6]" : "border-transparent text-slate-600 hover:text-slate-900")}><ChannelLogo id={c.id} size="xs" />{CHANNEL_META[c.id].name.replace(" Shop", "")}</button>)}
               </div>
               {ctx.canChannelWrite && <Button size="sm" variant="outline" onClick={() => go("connect")} className="gap-1.5 border-violet-200 bg-violet-50 text-[#6941c6] hover:bg-violet-100"><Plus className="size-4" />Kết nối kênh</Button>}
             </div>
@@ -89,6 +91,7 @@ export function DashboardPage({ ctx }: { ctx: SocialCtx }) {
               <select value={kind} onChange={(e) => setKind(e.target.value)} className={cn(inputCls, "sm:w-44")}><option value="all">Tất cả loại kênh</option><option value="social">Mạng xã hội</option><option value="marketplace">Sàn TMĐT</option><option value="website">Website</option></select>
               <Button variant="outline" onClick={() => { setQ(""); setStatus("all"); setKind("all"); setTab("all"); }} className="gap-2"><Filter className="size-4" />Lọc</Button>
             </div>
+            <AnimatedPanel transitionKey={tab} className="min-w-0">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[820px] text-left text-sm">
                 <thead className="text-xs font-medium text-slate-500"><tr className="border-y border-slate-100">
@@ -99,6 +102,7 @@ export function DashboardPage({ ctx }: { ctx: SocialCtx }) {
                 </tbody>
               </table>
             </div>
+            </AnimatedPanel>
           </section>
 
           {/* Biểu đồ */}
@@ -129,7 +133,7 @@ export function DashboardPage({ ctx }: { ctx: SocialCtx }) {
             {ctx.canContentWrite && <Button onClick={() => go("ai-content")} className="mt-4 w-full gap-2 bg-[#6941c6] hover:bg-[#5b36b0]"><Plus className="size-4" />Tạo content với AI</Button>}
             {ctx.canContentWrite && <div className="mt-3 grid grid-cols-2 gap-2">
               {QUICK.map(({ label, icon: Icon, to }) => (
-                <button key={label} onClick={() => (to === "posts" ? go("posts") : go("ai-content", { preset: to }))} className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2.5 text-left text-sm text-slate-700 hover:border-violet-300 hover:bg-violet-50">
+                <button key={label} onClick={() => (to === "posts" ? go("posts") : go("ai-content", { preset: to }))} className="flex items-center gap-2 rounded-xs border border-slate-200 px-3.5 py-2 text-left text-sm text-slate-700 hover:border-violet-300 hover:bg-violet-50">
                   <Icon className="size-4 shrink-0 text-[#6941c6]" /><span className="truncate">{label}</span></button>))}
             </div>}
           </section>
@@ -185,8 +189,8 @@ function Row({ c, onOpen }: { c: ChannelAccount; onOpen: () => void }) {
       <td><Stat value={`${c.conversion.toFixed(1)}%`} delta={c.conversionDelta} /></td>
       <td><Stat value={usd(c.revenue)} delta={c.revenueDelta} /></td>
       <td className="pr-4"><div className="flex items-center justify-center gap-2">
-        <button onClick={onOpen} aria-label="Xem hiệu quả" className="grid size-9 place-items-center rounded-md border border-slate-200 text-[#6941c6] hover:bg-violet-50"><BarChart3 className="size-4" /></button>
-        <button onClick={onOpen} aria-label="Cấu hình kênh" className="grid size-8 place-items-center rounded-md text-slate-500 hover:bg-slate-100"><MoreHorizontal className="size-4" /></button></div></td>
+        <button onClick={onOpen} aria-label="Xem hiệu quả" className="grid size-9 place-items-center rounded-xs border border-slate-200 text-[#6941c6] hover:bg-violet-50"><BarChart3 className="size-4" /></button>
+        <button onClick={onOpen} aria-label="Cấu hình kênh" className="grid size-9 place-items-center rounded-xs text-slate-500 hover:bg-slate-100"><MoreHorizontal className="size-4" /></button></div></td>
     </tr>
   );
 }

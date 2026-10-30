@@ -120,6 +120,34 @@
       "when": 1790463600000,
       "tag": "0016_employee_avatars",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792800000000,
+      "tag": "0017_employee_notes",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792803600000,
+      "tag": "0018_social_inbox_keywords",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792807200000,
+      "tag": "0019_product_reviews",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793349621480,
+      "tag": "0020_role_descriptions",
+      "breakpoints": true
     }
   ]
 }

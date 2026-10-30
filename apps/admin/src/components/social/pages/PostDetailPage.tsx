@@ -23,7 +23,7 @@ const BRAND_HOVER = "#4526a3";
 const ACCENT = "#5f23c8";
 
 /** Khung card: nền trắng, viền 1px rất nhạt, bo 12px, bóng gần như không thấy. */
-const panel = "rounded-xl border border-[#eceef4] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]";
+const panel = "rounded-xs border border-[#eceef4] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]";
 /** Padding trong card: 18px hai bên, 16px trên, 18px dưới. */
 const panelPad = "px-[18px] pt-4 pb-[18px]";
 
@@ -263,7 +263,7 @@ function CardTitle({ icon: Icon, children, right }: { icon: IconType; children: 
 
 function EditButton({ onClick }: { onClick: () => void }) {
   return (
-    <Button variant="outline" size="sm" onClick={onClick} className="h-7 rounded-lg border-[#e3e5ec] bg-white px-3 text-xs font-medium text-[#0b0c24] shadow-none">
+    <Button variant="outline" size="sm" onClick={onClick} className="h-7 rounded-xs border-[#e3e5ec] bg-white px-3 text-xs font-medium text-[#0b0c24] shadow-none">
       Chỉnh sửa
     </Button>
   );
@@ -550,7 +550,7 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
           <button
             type="button"
             onClick={onBack}
-            className="grid size-[42px] shrink-0 place-items-center rounded-lg border border-[#e3e5ec] bg-white text-[#0b0c24] transition hover:bg-slate-50"
+            className="grid size-9 shrink-0 place-items-center rounded-xs border border-[#e3e5ec] bg-white text-[#0b0c24] transition hover:bg-slate-50"
             aria-label="Quay lại danh sách"
           >
             <ArrowLeft className="size-[18px]" strokeWidth={1.75} />
@@ -567,7 +567,7 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
             {badge.label}
           </span>
 
-          <Button variant="outline" onClick={() => setShowPreviewModal(true)} className="h-10 gap-[11px] rounded-lg border-[#e3e5ec] bg-white px-[22px] text-sm font-medium text-[#0b0c24] shadow-none">
+          <Button variant="outline" onClick={() => setShowPreviewModal(true)} className="h-9 gap-2 rounded-xs border-[#e3e5ec] bg-white px-4 text-sm font-medium text-[#0b0c24] shadow-none">
             <Eye className="size-[18px]" strokeWidth={1.75} />
             Xem preview
           </Button>
@@ -581,7 +581,7 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
                 toast.success(permalink ? "Đã sao chép liên kết bài viết công khai!" : "Đã sao chép liên kết chi tiết bài viết!");
               }
             }}
-            className="h-10 gap-2 rounded-lg border-[#e3e5ec] bg-white px-4 text-sm font-medium text-[#0b0c24] shadow-none hover:bg-slate-50"
+            className="h-9 gap-2 rounded-xs border-[#e3e5ec] bg-white px-3.5 text-sm font-medium text-[#0b0c24] shadow-none hover:bg-slate-50"
             title="Sao chép liên kết bài viết"
           >
             <Copy className="size-4 text-slate-600" strokeWidth={1.75} />
@@ -589,12 +589,12 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
           </Button>
 
           {state === "pending" ? (
-            <div className="relative inline-flex h-10 items-stretch rounded-lg" style={{ backgroundColor: BRAND }}>
+            <div className="relative inline-flex h-9 items-stretch rounded-xs" style={{ backgroundColor: BRAND }}>
               <button
                 type="button"
                 onClick={() => run("approve_publish")}
                 style={{ ["--hv" as string]: BRAND_HOVER }}
-                className="flex items-center gap-[11px] rounded-l-lg pl-[22px] pr-2.5 text-sm font-medium text-white hover:bg-[var(--hv)]"
+                className="flex items-center gap-2 rounded-l-xs pl-4 pr-2.5 text-sm font-medium text-white hover:bg-[var(--hv)]"
               >
                 <Send className="size-[18px]" strokeWidth={1.75} />
                 Duyệt & đăng
@@ -603,7 +603,7 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
                 type="button"
                 onClick={() => setPrimaryOpen((v) => !v)}
                 style={{ ["--hv" as string]: BRAND_HOVER }}
-                className="rounded-r-lg pl-2.5 pr-[22px] text-white hover:bg-[var(--hv)]"
+                className="rounded-r-xs pl-2.5 pr-4 text-white hover:bg-[var(--hv)]"
                 aria-label="Tùy chọn phê duyệt"
                 aria-expanded={primaryOpen}
               >
@@ -613,7 +613,7 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
               {primaryOpen && (
                 <>
                   <div className="fixed inset-0 z-20" onClick={() => setPrimaryOpen(false)} />
-                  <div className="absolute right-0 top-full z-30 mt-1.5 w-72 overflow-hidden rounded-xl border border-[#eceef4] bg-white py-1.5 shadow-[0_10px_30px_-6px_rgba(16,24,40,0.18)]">
+                  <div className="absolute right-0 top-full z-30 mt-1.5 w-72 overflow-hidden rounded-xs border border-[#eceef4] bg-white py-1.5 shadow-[0_10px_30px_-6px_rgba(16,24,40,0.18)]">
                     <button type="button" onClick={() => { setPrimaryOpen(false); run("approve"); }} className="flex h-9 w-full items-center gap-[11px] whitespace-nowrap px-4 text-[13px] text-[#23253f] hover:bg-slate-50">
                       <CheckCircle2 className="size-4 shrink-0 text-emerald-500" strokeWidth={1.75} />
                       Chỉ phê duyệt (chưa đăng)
@@ -630,7 +630,7 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
             <Button
               onClick={() => run(primary.id)}
               style={primary.cls ? undefined : { backgroundColor: BRAND }}
-              className={cn("h-10 gap-[11px] rounded-lg px-[22px] text-sm font-medium hover:opacity-90", primary.cls)}
+              className={cn("h-9 gap-2 rounded-xs px-4 text-sm font-medium hover:opacity-90", primary.cls)}
             >
               {primary.id === "retry" ? <RefreshCw className="size-[18px]" strokeWidth={1.75} /> : <PrimaryIcon className="size-[18px]" strokeWidth={1.75} />}
               {primary.label}
@@ -639,14 +639,14 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
 
           {/* Menu ba chấm theo trạng thái */}
           <div>
-            <Button variant="outline" onClick={toggleMenu} className="size-10 rounded-lg border-[#e3e5ec] bg-white p-0 text-[#0b0c24] shadow-none" aria-label="Thao tác khác" aria-expanded={!!menuPos}>
+            <Button variant="outline" onClick={toggleMenu} className="size-9 rounded-xs border-[#e3e5ec] bg-white p-0 text-[#0b0c24] shadow-none" aria-label="Thao tác khác" aria-expanded={!!menuPos}>
               <MoreVertical className="size-[18px]" strokeWidth={1.75} />
             </Button>
 
             {menuPos && createPortal(
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setMenuPos(null)} />
-                <div role="menu" style={{ top: menuPos.top, left: menuPos.left }} className="fixed z-50 w-44 overflow-hidden rounded-xl border border-[#eceef4] bg-white py-1.5 shadow-[0_10px_30px_-6px_rgba(16,24,40,0.18)]">
+                <div role="menu" style={{ top: menuPos.top, left: menuPos.left }} className="fixed z-50 w-44 overflow-hidden rounded-xs border border-[#eceef4] bg-white py-1.5 shadow-[0_10px_30px_-6px_rgba(16,24,40,0.18)]">
                   {menuIds.map((id, i) => {
                     const a = ACTIONS[id];
                     const Icon = a.icon;
@@ -799,7 +799,7 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
                   <select
                     value={historyFilter}
                     onChange={(e) => setHistoryFilter(e.target.value as typeof historyFilter)}
-                    className="h-8 min-w-[149px] appearance-none rounded-lg border border-[#e3e5ec] bg-white pl-3 pr-8 text-[13px] text-[#23253f] outline-none hover:bg-slate-50"
+                    className="h-9 min-w-[149px] appearance-none rounded-xs border border-[#e3e5ec] bg-white pl-3 pr-8 text-[13px] text-[#23253f] outline-none hover:bg-slate-50"
                   >
                     <option value="all">Tất cả hoạt động</option>
                     <option value="content">Nội dung</option>
@@ -959,7 +959,7 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
                       type="button"
                       onClick={handleSyncMetrics}
                       disabled={syncingMetrics}
-                      className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-[#e3e5ec] bg-white px-2.5 text-xs font-medium text-[#0b0c24] transition-colors hover:border-[#512ebb] hover:bg-violet-50 hover:text-[#512ebb] disabled:opacity-50"
+                      className="inline-flex h-7 items-center gap-1.5 rounded-xs border border-[#e3e5ec] bg-white px-2.5 text-xs font-medium text-[#0b0c24] transition-colors hover:border-[#512ebb] hover:bg-violet-50 hover:text-[#512ebb] disabled:opacity-50"
                       title="Lấy dữ liệu tương tác thực tế từ Meta Graph API"
                     >
                       <RefreshCw className={cn("size-3.5", syncingMetrics && "animate-spin text-[#512ebb]")} />
@@ -1028,7 +1028,7 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
                 <ChannelLogo id={post.channel} size="sm" />
                 <h3 className="text-sm font-bold text-slate-900">Xem preview trên {channelInfo?.name}</h3>
               </div>
-              <button type="button" onClick={() => setShowPreviewModal(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100" aria-label="Đóng">
+              <button type="button" onClick={() => setShowPreviewModal(false)} className="rounded-xs p-1 text-slate-400 hover:bg-slate-100" aria-label="Đóng">
                 <X className="size-4" />
               </button>
             </div>

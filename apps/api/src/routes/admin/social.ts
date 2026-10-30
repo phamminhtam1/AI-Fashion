@@ -7,6 +7,7 @@ import {
   socialPlatformConfigs,
   socialContentItems,
   socialInteractions,
+  socialReplyKeywords,
   socialMetricSnapshots,
   employees,
 } from "@elane/db";
@@ -447,7 +448,7 @@ adminSocialRoutes.get("/instagram/connect-url", async (c) => {
   const sig = createHmac("sha256", meta.appSecret).update(payload).digest("base64url");
   const params = new URLSearchParams({
     client_id: meta.appId, redirect_uri: meta.redirectUri, response_type: "code", state: `${payload}.${sig}`,
-    scope: "pages_show_list,pages_read_engagement,instagram_basic,instagram_content_publish,instagram_manage_comments",
+    scope: "pages_show_list,pages_read_engagement,pages_manage_metadata,pages_messaging,instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_messages",
   });
   return c.json({ url: `https://www.facebook.com/${meta.graphVersion}/dialog/oauth?${params}` });
 });
@@ -566,7 +567,7 @@ adminSocialRoutes.get("/instagram/callback", async (c) => {
   const existing = (await db.select().from(instagramConnections).where(eq(instagramConnections.instagramUserId, profile.id)).limit(1))[0];
   const values = {
     username: profile.username, pageId: targetPage?.id || "unknown", encryptedAccessToken: encryptApiKey(tokenToUse),
-    status: "active", scopes: ["instagram_basic", "instagram_content_publish", "instagram_manage_comments"], updatedAt: new Date(),
+    status: "active", scopes: ["instagram_basic", "instagram_content_publish", "instagram_manage_comments", "instagram_manage_messages", "pages_messaging"], updatedAt: new Date(),
   };
   if (existing) await db.update(instagramConnections).set(values).where(eq(instagramConnections.id, existing.id));
   else await db.insert(instagramConnections).values({ instagramUserId: profile.id, createdById: stateData.accountId, ...values });
@@ -928,6 +929,125 @@ adminSocialRoutes.post("/interactions/:id/retry-ai", async (c) => {
   return c.json({ ok: true });
 });
 
+/** Inbox: comments are kept in social_interactions so webhook, AI and staff actions
+ * all operate on the same audit trail. */
+adminSocialRoutes.get("/inbox/comments", async (c) => {
+  requirePerm(c.get("user")!, "channel.read");
+  const db = c.get("db");
+  const [rows, content, connections] = await Promise.all([
+    db.select().from(socialInteractions).where(eq(socialInteractions.kind, "comment")).orderBy(desc(socialInteractions.createdAt)).limit(250),
+    db.select().from(socialContentItems),
+    db.select().from(instagramConnections),
+  ]);
+  const contentById = new Map(content.map((item) => [item.id, item]));
+  const connectionById = new Map(connections.map((item) => [item.id, item]));
+  return c.json(rows.map((item) => ({
+    ...item,
+    channel: "instagram",
+    post: item.contentId ? contentById.get(item.contentId) ?? null : null,
+    connection: connectionById.get(item.connectionId) ?? null,
+  })));
+});
+
+const inboxReplySchema = z.object({ message: z.string().trim().min(1).max(2000) });
+
+adminSocialRoutes.post("/inbox/comments/:id/reply", async (c) => {
+  requirePerm(c.get("user")!, "content.write");
+  const parsed = inboxReplySchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) throw new ApiError(400, "invalid_input", "Nội dung phản hồi không hợp lệ");
+  const db = c.get("db");
+  const interaction = (await db.select().from(socialInteractions).where(eq(socialInteractions.id, c.req.param("id"))).limit(1))[0];
+  if (!interaction || interaction.kind !== "comment") throw new ApiError(404, "not_found", "Không tìm thấy bình luận");
+  const connection = (await db.select().from(instagramConnections).where(eq(instagramConnections.id, interaction.connectionId)).limit(1))[0];
+  if (!connection) throw new ApiError(409, "missing_connection", "Kết nối Instagram không còn tồn tại");
+  const meta = await loadMetaConfig(db, c.req.url);
+  await graph(`/${interaction.externalInteractionId}/replies?message=${encodeURIComponent(parsed.data.message)}`, decryptApiKey(connection.encryptedAccessToken), { method: "POST" }, meta.graphVersion);
+  const [updated] = await db.update(socialInteractions).set({ status: "replied", aiReply: parsed.data.message, repliedAt: new Date(), escalationReason: null, updatedAt: new Date() }).where(eq(socialInteractions.id, interaction.id)).returning();
+  return c.json(updated);
+});
+
+adminSocialRoutes.post("/inbox/comments/:id/:action", async (c) => {
+  requirePerm(c.get("user")!, "content.write");
+  const action = c.req.param("action");
+  if (!(["resolve", "hide", "delete"] as string[]).includes(action)) throw new ApiError(404, "not_found", "Thao tác không hợp lệ");
+  const db = c.get("db");
+  const interaction = (await db.select().from(socialInteractions).where(eq(socialInteractions.id, c.req.param("id"))).limit(1))[0];
+  if (!interaction || interaction.kind !== "comment") throw new ApiError(404, "not_found", "Không tìm thấy bình luận");
+  const connection = (await db.select().from(instagramConnections).where(eq(instagramConnections.id, interaction.connectionId)).limit(1))[0];
+  if (!connection) throw new ApiError(409, "missing_connection", "Kết nối Instagram không còn tồn tại");
+  if (action !== "resolve") {
+    const meta = await loadMetaConfig(db, c.req.url);
+    if (action === "hide") await graph(`/${interaction.externalInteractionId}?hide=true`, decryptApiKey(connection.encryptedAccessToken), { method: "POST" }, meta.graphVersion);
+    else await graph(`/${interaction.externalInteractionId}`, decryptApiKey(connection.encryptedAccessToken), { method: "DELETE" }, meta.graphVersion);
+  }
+  const status = action === "resolve" ? "ignored" : action === "hide" ? "hidden" : "deleted";
+  const [updated] = await db.update(socialInteractions).set({ status, updatedAt: new Date() }).where(eq(socialInteractions.id, interaction.id)).returning();
+  return c.json(updated);
+});
+
+adminSocialRoutes.get("/inbox/conversations", async (c) => {
+  requirePerm(c.get("user")!, "channel.read");
+  const rows = await c.get("db").select().from(socialInteractions).where(eq(socialInteractions.kind, "dm")).orderBy(desc(socialInteractions.createdAt)).limit(500);
+  const grouped = new Map<string, typeof rows>();
+  for (const item of rows) {
+    const key = String((item.rawPayload as any)?.conversationId || item.authorId || item.externalInteractionId);
+    grouped.set(key, [...(grouped.get(key) || []), item]);
+  }
+  return c.json([...grouped.entries()].map(([id, messages]) => {
+    const latest = messages[0];
+    return {
+      id, connectionId: latest.connectionId, name: latest.authorUsername || "Khách hàng Instagram", handle: latest.authorUsername || latest.authorId || "instagram_user",
+      channel: "instagram", unread: messages.filter((m) => m.status === "new").length,
+      messages: messages.slice().reverse().map((m) => ({ id: m.id, text: m.message, direction: (m.rawPayload as any)?.direction === "outbound" ? "outbound" : "inbound", createdAt: m.createdAt })),
+      updatedAt: latest.createdAt,
+    };
+  }));
+});
+
+adminSocialRoutes.get("/inbox/keywords", async (c) => {
+  requirePerm(c.get("user")!, "channel.read");
+  return c.json(await c.get("db").select().from(socialReplyKeywords).orderBy(desc(socialReplyKeywords.createdAt)));
+});
+
+adminSocialRoutes.post("/inbox/keywords", async (c) => {
+  requirePerm(c.get("user")!, "channel.write");
+  const parsed = z.object({ keyword: z.string().trim().min(1).max(100), connectionId: z.string().uuid().nullable().optional() }).safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) throw new ApiError(400, "invalid_input", "Từ khóa không hợp lệ");
+  const [created] = await c.get("db").insert(socialReplyKeywords).values({ ...parsed.data, createdById: c.get("user")!.accountId }).returning();
+  return c.json(created, 201);
+});
+
+adminSocialRoutes.delete("/inbox/keywords/:id", async (c) => {
+  requirePerm(c.get("user")!, "channel.write");
+  await c.get("db").delete(socialReplyKeywords).where(eq(socialReplyKeywords.id, c.req.param("id")));
+  return c.json({ ok: true });
+});
+
+adminSocialRoutes.patch("/connections/:id/auto-reply", async (c) => {
+  requirePerm(c.get("user")!, "channel.write");
+  const parsed = z.object({ enabled: z.boolean() }).safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) throw new ApiError(400, "invalid_input", "Trạng thái tự động trả lời không hợp lệ");
+  const [updated] = await c.get("db").update(instagramConnections).set({ autoReplyEnabled: parsed.data.enabled, updatedAt: new Date() }).where(eq(instagramConnections.id, c.req.param("id"))).returning();
+  if (!updated) throw new ApiError(404, "not_found", "Không tìm thấy kết nối");
+  return c.json(updated);
+});
+
+adminSocialRoutes.post("/inbox/conversations/:id/messages", async (c) => {
+  requirePerm(c.get("user")!, "content.write");
+  const parsed = inboxReplySchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) throw new ApiError(400, "invalid_input", "Nội dung tin nhắn không hợp lệ");
+  const db = c.get("db");
+  const existing = (await db.select().from(socialInteractions).where(eq(socialInteractions.kind, "dm")).orderBy(desc(socialInteractions.createdAt)).limit(500)).find((item) => String((item.rawPayload as any)?.conversationId || item.authorId || item.externalInteractionId) === c.req.param("id"));
+  if (!existing) throw new ApiError(404, "not_found", "Không tìm thấy cuộc trò chuyện");
+  const connection = (await db.select().from(instagramConnections).where(eq(instagramConnections.id, existing.connectionId)).limit(1))[0];
+  if (!connection || !existing.authorId) throw new ApiError(409, "missing_connection", "Không thể gửi tin nhắn do thiếu kết nối hoặc người nhận");
+  const meta = await loadMetaConfig(db, c.req.url);
+  const body = new URLSearchParams({ recipient: JSON.stringify({ id: existing.authorId }), message: JSON.stringify({ text: parsed.data.message }) });
+  const result = await graph<{ message_id?: string }>(`/${connection.instagramUserId}/messages?${body}`, decryptApiKey(connection.encryptedAccessToken), { method: "POST" }, meta.graphVersion);
+  const [created] = await db.insert(socialInteractions).values({ connectionId: connection.id, externalInteractionId: result.message_id || `out-${randomUUID()}`, kind: "dm", authorId: existing.authorId, authorUsername: existing.authorUsername, message: parsed.data.message, status: "replied", rawPayload: { conversationId: c.req.param("id"), direction: "outbound" } }).returning();
+  return c.json(created, 201);
+});
+
 adminSocialRoutes.post("/metrics/sync", async (c) => {
   requirePerm(c.get("user")!, "channel.read");
   const db = c.get("db");
@@ -1093,6 +1213,29 @@ instagramWebhookRoutes.post("/", async (c) => {
         message, rawPayload: value,
       }).returning();
       if (created) await autoReplyToInteraction(c.get("db"), created.id);
+    }
+    // Instagram Messaging webhooks use entry.messaging instead of entry.changes.
+    // Persist them in the same interaction stream, with a direction marker, so the
+    // inbox remains consistent after refresh and has an audit trail.
+    for (const event of entry.messaging || []) {
+      const message = String(event.message?.text || "");
+      const externalId = String(event.message?.mid || event.message?.id || "");
+      if (!message || !externalId) continue;
+      const outgoing = String(event.sender?.id || "") === connection.instagramUserId || Boolean(event.message?.is_echo);
+      const participantId = String((outgoing ? event.recipient?.id : event.sender?.id) || "");
+      if (!participantId) continue;
+      const existing = (await c.get("db").select().from(socialInteractions).where(and(eq(socialInteractions.connectionId, connection.id), eq(socialInteractions.externalInteractionId, externalId))).limit(1))[0];
+      if (existing) continue;
+      await c.get("db").insert(socialInteractions).values({
+        connectionId: connection.id,
+        externalInteractionId: externalId,
+        kind: "dm",
+        authorId: participantId,
+        authorUsername: event.sender?.username || event.sender?.name || null,
+        message,
+        status: outgoing ? "replied" : "new",
+        rawPayload: { ...event, conversationId: `${connection.id}:${participantId}`, direction: outgoing ? "outbound" : "inbound" },
+      });
     }
   }
   return c.json({ received: true });

@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { useConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -83,17 +84,12 @@ function MetricCard({
   const up = (trend ?? 0) >= 0;
   return (
     <div className="flex items-start gap-3 rounded-xs border border-slate-200/90 bg-white p-5 shadow-xs">
-      <span
-        className={cn(
-          "flex size-8 shrink-0 items-center justify-center rounded-xs border border-slate-200 bg-slate-50 text-slate-700",
-          iconClass,
-        )}
-      >
-        <Icon className="size-4" />
+      <span className={cn("shrink-0 text-[#6941c6]", iconClass)}>
+        <Icon className="size-6" strokeWidth={1.9} />
       </span>
       <div className="min-w-0">
         <p className="text-sm font-semibold uppercase tracking-tight text-slate-700">{label}</p>
-        <p className="mt-1 admin-metric font-semibold">{value}</p>
+        <p className="mt-1 admin-metric font-semibold"><AnimatedValue value={value} /></p>
         {trend !== undefined && (
           <p
             className={cn(
@@ -314,7 +310,7 @@ function LookbookList({ permissions = [] }: { permissions?: string[] }) {
           icon={CheckCircle2}
           label="Đã xuất bản"
           value={stats.published}
-          iconClass="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+          iconClass="text-emerald-600 dark:text-emerald-400"
         />
         <MetricCard icon={FileText} label="Bản nháp" value={stats.draft} />
         <MetricCard

@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type CSSProperties } from "react";
 
 /** Đường xu hướng nhỏ trong thẻ KPI. */
 export function Sparkline({ data, color, className }: { data: number[]; color: string; className?: string }) {
@@ -10,8 +10,8 @@ export function Sparkline({ data, color, className }: { data: number[]; color: s
   return (
     <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className={className} aria-hidden>
       <defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={color} stopOpacity=".22" /><stop offset="1" stopColor={color} stopOpacity="0" /></linearGradient></defs>
-      <path d={`${line} L${w},${h} L0,${h} Z`} fill={`url(#${id})`} />
-      <path d={line} fill="none" stroke={color} strokeWidth="1.6" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+      <path className="admin-chart-area" d={`${line} L${w},${h} L0,${h} Z`} fill={`url(#${id})`} />
+      <path className="admin-chart-line" pathLength="1" d={line} fill="none" stroke={color} strokeWidth="1.6" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -32,11 +32,11 @@ export function RevenueOrdersChart({ items }: { items: { label: string; revenue:
       <defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#c4b5fd" /><stop offset="1" stopColor="#ddd6fe" /></linearGradient></defs>
       {ticks.map((t) => <g key={t}><line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke="#e2e8f0" strokeDasharray="3 3" /><text x={L - 8} y={y(t) + 4} textAnchor="end" fontSize="11" fill="#64748b">{t.toLocaleString("en-US")}</text></g>)}
       {items.map((it, i) => <g key={it.label}>
-        <rect x={L + step * i + (step - bw) / 2} y={y(it.revenue)} width={bw} height={T + ih - y(it.revenue)} rx="3" fill={`url(#${id})`} />
+        <rect className="admin-chart-bar" style={{ animationDelay: `${i * 42}ms` }} x={L + step * i + (step - bw) / 2} y={y(it.revenue)} width={bw} height={T + ih - y(it.revenue)} rx="3" fill={`url(#${id})`} />
         <text x={L + step * (i + 0.5)} y={H - 8} textAnchor="middle" fontSize="12" fill="#475569">{it.label}</text>
       </g>)}
-      <path d={pts.map(([px, py], i) => `${i ? "L" : "M"}${px},${py}`).join(" ")} fill="none" stroke="#6941c6" strokeWidth="2" />
-      {pts.map(([px, py], i) => <circle key={i} cx={px} cy={py} r="4" fill="#fff" stroke="#6941c6" strokeWidth="2" />)}
+      <path className="admin-chart-line" pathLength="1" d={pts.map(([px, py], i) => `${i ? "L" : "M"}${px},${py}`).join(" ")} fill="none" stroke="#6941c6" strokeWidth="2" />
+      {pts.map(([px, py], i) => <circle key={i} className="admin-chart-point" style={{ animationDelay: `${340 + i * 28}ms` }} cx={px} cy={py} r="4" fill="#fff" stroke="#6941c6" strokeWidth="2" />)}
     </svg>
   );
 }
@@ -49,7 +49,7 @@ export function Donut({ items, value, label }: { items: { label: string; value: 
     <svg viewBox="0 0 200 200" className="size-44 shrink-0" role="img" aria-label="Tỷ lệ chuyển đổi theo kênh">
       <g transform="rotate(-90 100 100)">
         {items.map((it) => {
-          const len = (it.value / total) * C; const el = <circle key={it.label} cx="100" cy="100" r={r} fill="none" stroke={it.color} strokeWidth="22" strokeDasharray={`${Math.max(0, len - 2)} ${C}`} strokeDashoffset={-acc} />;
+          const len = (it.value / total) * C; const el = <circle key={it.label} className="admin-chart-donut" style={{ "--chart-dasharray": `${Math.max(0, len - 2)} ${C}`, "--chart-circumference": `${C}`, animationDelay: `${acc ? 60 : 0}ms` } as CSSProperties} cx="100" cy="100" r={r} fill="none" stroke={it.color} strokeWidth="22" strokeDasharray={`${Math.max(0, len - 2)} ${C}`} strokeDashoffset={-acc} />;
           acc += len; return el;
         })}
       </g>

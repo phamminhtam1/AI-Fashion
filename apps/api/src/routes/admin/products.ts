@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, desc, eq, inArray, sql, or, ilike, gte, lte, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, sql, or, ilike, gte, lte } from "drizzle-orm";
 import { z } from "zod";
 import {
   products,
@@ -18,6 +18,7 @@ import {
   seoRedirects,
   auditLogs,
   inventoryBalances,
+  warehouses,
   inventoryDocumentLines,
   stockMovements,
 } from "@elane/db";
@@ -162,7 +163,7 @@ adminProductRoutes.get("/", async (c) => {
   const occasionSlug = c.req.query("occasion_slug") || undefined;
   const priceMin = c.req.query("price_min") ? Number(c.req.query("price_min")) : undefined;
   const priceMax = c.req.query("price_max") ? Number(c.req.query("price_max")) : undefined;
-  const stock = c.req.query("stock") as "in" | "out" | "none" | undefined;
+  const stock = c.req.query("stock");
   const sortBy = c.req.query("sort_by") || undefined;
 
   const conds = [];
@@ -223,10 +224,11 @@ adminProductRoutes.get("/", async (c) => {
     .select({
       productId: productVariants.productId,
       stock: sql<number>`coalesce(sum(${inventoryBalances.onHand}), 0)::int`.as("stock"),
-      balCount: sql<number>`count(${inventoryBalances.variantId})::int`.as("bal_count"),
     })
     .from(productVariants)
     .leftJoin(inventoryBalances, eq(inventoryBalances.variantId, productVariants.id))
+    .leftJoin(warehouses, eq(warehouses.id, inventoryBalances.warehouseId))
+    .where(eq(warehouses.code, "MAIN"))
     .groupBy(productVariants.productId)
     .as("stock_sq");
 
@@ -237,11 +239,11 @@ adminProductRoutes.get("/", async (c) => {
     conds.push(lte(priceSq.minPrice, priceMax));
   }
   if (stock === "in") {
-    conds.push(sql`${stockSq.stock} > 0`);
+    conds.push(sql`coalesce(${stockSq.stock}, 0) > 20`);
+  } else if (stock === "low") {
+    conds.push(sql`coalesce(${stockSq.stock}, 0) between 1 and 20`);
   } else if (stock === "out") {
-    conds.push(sql`${stockSq.balCount} > 0 and ${stockSq.stock} = 0`);
-  } else if (stock === "none") {
-    conds.push(or(isNull(stockSq.balCount), sql`${stockSq.balCount} = 0`)!);
+    conds.push(sql`coalesce(${stockSq.stock}, 0) = 0`);
   }
 
   const where = conds.length ? and(...conds) : undefined;

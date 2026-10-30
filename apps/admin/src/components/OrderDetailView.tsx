@@ -146,7 +146,7 @@ export type FullOrderDetail = {
 // ─── Design tokens ───────────────────────────────────────────────────────────
 
 const CARD =
-  "rounded-xs border border-slate-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]";
+  "rounded-xs border border-slate-200 bg-white";
 const BRAND_LINK = "text-[#6d3df0] hover:underline cursor-pointer";
 const BRAND_BTN = "bg-[#6d3df0] hover:bg-[#5a2fd6] text-white";
 
@@ -412,10 +412,6 @@ export function buildOrderTimeline(params: {
 
   return events;
 }
-
-// Ô trong thanh trạng thái: vạch chia ngắn, nằm giữa, hiệu ứng hover mượt mà
-const STATUS_CELL =
-  "group relative flex min-w-0 items-center gap-4 px-6 py-5 transition-all duration-300 hover:bg-slate-50/90 md:after:absolute md:after:right-0 md:after:top-1/2 md:after:h-8 md:after:w-px md:after:-translate-y-1/2 md:after:bg-slate-200";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1188,7 +1184,7 @@ export function OrderDetailView({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[480px] items-center justify-center rounded-xs border border-slate-200 bg-white p-12 shadow-sm">
+      <div className="orders-detail-view flex min-h-[480px] items-center justify-center rounded-xs border border-slate-200 bg-white p-12">
         <div className="flex flex-col items-center gap-2 text-sm text-slate-500">
           <Loader2 className="size-6 animate-spin text-[#6d3df0]" />
           <p>Đang tải chi tiết đơn hàng #{orderNumber || orderId}...</p>
@@ -1200,9 +1196,24 @@ export function OrderDetailView({
   const paymentInfo = formatPaymentStatus(order.paymentStatus);
   const fulfillmentInfo = formatFulfillmentStatus(order.fulfillmentStatus);
   const packed = Math.min(order.packedCount, totalQty);
+  const overallProgress = isCancelled
+    ? { Icon: AlertCircle, title: "Đơn hàng đã hủy", detail: "Đơn hàng đã dừng xử lý.", tone: "rose" }
+    : isDelivered
+      ? { Icon: CheckCircle2, title: "Đã giao hàng", detail: `Đơn hàng hoàn tất${order.fulfilledAt ? ` · ${order.fulfilledAt}` : ""}.`, tone: "emerald" }
+      : isShipping
+        ? { Icon: Truck, title: "Đang giao hàng", detail: `${order.shippingMethod}${order.shippingEstimate ? ` · Dự kiến ${order.shippingEstimate}` : ""}.`, tone: "blue" }
+        : order.paymentStatus === "refunded"
+          ? { Icon: RefreshCcw, title: "Đã hoàn tiền", detail: "Khoản thanh toán đã được hoàn lại cho khách.", tone: "purple" }
+          : isExported
+            ? { Icon: Package, title: "Đã xuất kho", detail: order.inventoryDocCode ? `Phiếu xuất kho ${order.inventoryDocCode}.` : "Đơn hàng đang được bàn giao cho đơn vị vận chuyển.", tone: "blue" }
+            : isReadyToFulfill
+              ? { Icon: Package, title: "Sẵn sàng xuất kho", detail: "Đơn hàng đã đủ điều kiện để xử lý.", tone: "amber" }
+              : order.paymentStatus === "failed"
+                ? { Icon: AlertCircle, title: "Thanh toán thất bại", detail: `Vui lòng kiểm tra phương thức ${order.paymentMethod}.`, tone: "rose" }
+                : { Icon: CreditCard, title: "Chờ thanh toán", detail: `Thanh toán qua ${order.paymentMethod}.`, tone: "amber" };
 
   return (
-    <div className="space-y-4 pb-8 font-sans text-sm text-slate-900">
+    <div className="orders-detail-view space-y-5 pb-8 font-sans text-sm text-slate-900">
       {/* ── 1. Header ── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
@@ -1251,7 +1262,7 @@ export function OrderDetailView({
             <Button
               onClick={handleMarkPaid}
               disabled={isMarkingPaid}
-              className="h-9 gap-1.5 rounded-xs bg-emerald-600 px-4 text-sm font-medium text-white shadow-xs hover:bg-emerald-700 cursor-pointer"
+              className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-none hover:bg-[#53389e] cursor-pointer"
             >
               {isMarkingPaid ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -1268,7 +1279,7 @@ export function OrderDetailView({
               <DropdownMenuTrigger asChild>
                 <Button
                   disabled={isFulfilling}
-                  className="h-9 gap-1.5 rounded-xs bg-slate-900 px-4 text-sm font-medium text-white shadow-xs hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-none hover:bg-[#53389e] transition-colors cursor-pointer"
                 >
                   {isFulfilling ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -1318,7 +1329,7 @@ export function OrderDetailView({
                   orderNumber: order.orderNumber,
                 })
               }
-              className="h-9 gap-1.5 rounded-xs border-amber-300 bg-amber-50/70 px-3.5 text-sm font-medium text-amber-800 shadow-2xs hover:bg-amber-100 cursor-pointer"
+              className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 shadow-none hover:bg-slate-50 cursor-pointer"
               title="Xem phiếu xuất kho chi tiết"
             >
               <FileText className="size-4 text-amber-600" />
@@ -1334,7 +1345,7 @@ export function OrderDetailView({
               className={cn(
                 "h-9 gap-1.5 rounded-xs px-4 text-sm font-medium shadow-xs transition-colors cursor-pointer",
                 isDelivered
-                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                  ? "bg-[#6941c6] text-white hover:bg-[#53389e]"
                   : BRAND_BTN,
               )}
             >
@@ -1351,132 +1362,74 @@ export function OrderDetailView({
         </div>
       </div>
 
-      {/* ── 2. Status overview ── */}
-      <div className={cn(CARD, "grid grid-cols-1 md:grid-cols-3 overflow-hidden transition-all duration-300 hover:shadow-md")}>
-        {/* Thanh toán */}
-        <div className={STATUS_CELL}>
-          <div
-            className={cn(
-              "relative flex size-12 shrink-0 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-115 group-hover:shadow-md group-hover:-translate-y-0.5",
-              order.paymentStatus === "paid"
-                ? "bg-emerald-100/90 text-emerald-600 shadow-[0_0_16px_rgba(16,185,129,0.28)] ring-2 ring-emerald-300/80"
+      {/* ── 2. Order progress ── */}
+      <section className={cn(CARD, "orders-modern-progress grid grid-cols-1 overflow-hidden lg:grid-cols-[minmax(15rem,0.82fr)_minmax(0,1.55fr)]")} aria-label="Tiến trình đơn hàng">
+        <div className="orders-progress-summary flex flex-col justify-center border-b border-slate-200 bg-[#f8f7fc] px-5 py-5 lg:border-b-0 lg:border-r lg:px-6">
+          <span className={cn("mb-3 flex size-11 items-center justify-center rounded-full text-white", overallProgress.tone === "emerald" ? "bg-emerald-600" : overallProgress.tone === "rose" ? "bg-rose-600" : overallProgress.tone === "amber" ? "bg-amber-600" : overallProgress.tone === "blue" ? "bg-blue-600" : overallProgress.tone === "purple" ? "bg-purple-600" : "bg-[#6941c6]")}>
+            <overallProgress.Icon className="size-5" strokeWidth={2} aria-hidden="true" />
+          </span>
+          <p className="text-xs font-medium text-slate-500">Trạng thái đơn hàng</p>
+          <h2 className="mt-1 text-lg font-semibold leading-6 text-slate-950">{overallProgress.title}</h2>
+          <p className="mt-1.5 text-sm leading-5 text-slate-600">{overallProgress.detail}</p>
+        </div>
+
+        <ol className="orders-progress-list m-0 list-none px-5 py-2 lg:px-6" aria-label="Các bước xử lý">
+          {[
+            {
+              label: "Thanh toán",
+              Icon: CreditCard,
+              status: paymentInfo.label,
+              statusClass: paymentInfo.badgeClass,
+              detail: order.paymentStatus === "paid"
+                ? `Đã thanh toán lúc ${order.paidAt || order.placedAt}`
                 : order.paymentStatus === "refunded"
-                  ? "bg-purple-100/90 text-purple-600 ring-1 ring-purple-200/70"
-                  : isCancelled
-                    ? "bg-rose-100/90 text-rose-600 ring-1 ring-rose-200/70"
-                    : "bg-amber-100/90 text-amber-600 ring-2 ring-amber-400 shadow-[0_0_14px_rgba(245,158,11,0.35)] animate-pulse",
-            )}
-          >
-            {order.paymentStatus === "paid" ? (
-              <CheckCircle2 className="size-6 transition-all duration-300 group-hover:scale-120 group-hover:rotate-6 text-emerald-600" strokeWidth={2.4} />
-            ) : order.paymentStatus === "refunded" ? (
-              <RefreshCcw className="size-6 transition-transform duration-500 group-hover:rotate-180 text-purple-600" strokeWidth={2.2} />
-            ) : isCancelled ? (
-              <X className="size-6 transition-transform duration-300 group-hover:scale-120 text-rose-600" strokeWidth={2.4} />
-            ) : (
-              <CreditCard className="size-6 transition-all duration-300 group-hover:scale-115 group-hover:-rotate-6 text-amber-600" strokeWidth={2.2} />
-            )}
-          </div>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="text-sm font-semibold uppercase tracking-wider text-slate-900">Thanh toán</span>
-              <span
-                className={cn("rounded-md px-2.5 py-0.5 text-sm font-semibold shadow-2xs transition-transform duration-200 group-hover:scale-105", paymentInfo.badgeClass)}
-              >
-                {paymentInfo.label}
-              </span>
-            </div>
-            <p className="mt-1.5 text-sm font-semibold text-slate-700">
-              {order.paymentStatus === "paid"
-                ? `Thanh toán lúc ${order.paidAt || order.placedAt}`
-                : order.paymentStatus === "refunded"
-                  ? "Đã hoàn lại tiền cho khách"
+                  ? "Đã hoàn tiền cho khách"
                   : isCancelled
                     ? "Đơn hàng đã hủy"
-                    : `Chờ thanh toán qua ${order.paymentMethod}`}
-            </p>
-          </div>
-        </div>
-
-        {/* Xử lý & Xuất kho */}
-        <div className={cn(STATUS_CELL, "border-t border-slate-200 md:border-t-0")}>
-          <div
-            className={cn(
-              "relative flex size-12 shrink-0 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-115 group-hover:shadow-md group-hover:-translate-y-0.5",
-              isExported
-                ? "bg-emerald-100/90 text-emerald-600 shadow-[0_0_16px_rgba(16,185,129,0.28)] ring-2 ring-emerald-300/80"
-                : isReadyToFulfill
-                  ? "bg-amber-100/90 text-amber-600 ring-2 ring-amber-400 shadow-[0_0_14px_rgba(245,158,11,0.35)] animate-pulse"
-                  : isCancelled
-                    ? "bg-rose-100/90 text-rose-500 ring-1 ring-rose-200/70"
-                    : "bg-slate-100 text-slate-400",
-            )}
-          >
-            <Package className="size-6 transition-all duration-300 group-hover:scale-120 group-hover:-rotate-12" strokeWidth={2.4} />
-          </div>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="text-sm font-semibold uppercase tracking-wider text-slate-900">
-                Xử lý & Xuất kho
-              </span>
-              <span
-                className={cn(
-                  "rounded-md px-2.5 py-0.5 text-sm font-semibold shadow-2xs transition-transform duration-200 group-hover:scale-105",
-                  fulfillmentInfo.badgeClass,
-                )}
-              >
-                {fulfillmentInfo.label}
-              </span>
-            </div>
-            <p className="mt-1.5 text-sm font-semibold text-slate-700">
-              {order.fulfillmentStatus === "delivered"
-                ? "Tất cả sản phẩm đã xuất kho & giao hàng thành công"
+                    : `Chờ thanh toán qua ${order.paymentMethod}`,
+            },
+            {
+              label: "Chuẩn bị hàng",
+              Icon: Package,
+              status: fulfillmentInfo.label,
+              statusClass: fulfillmentInfo.badgeClass,
+              detail: order.fulfillmentStatus === "delivered"
+                ? "Hàng đã được xuất kho"
                 : isExported
-                  ? order.inventoryDocCode
-                    ? `Đã xuất kho (Phiếu ${order.inventoryDocCode}) - Đang giao hàng`
-                    : "Đã xuất kho toàn bộ sản phẩm - Đang giao hàng"
+                  ? order.inventoryDocCode ? `Đã xuất kho · Phiếu ${order.inventoryDocCode}` : "Đã xuất kho toàn bộ sản phẩm"
                   : isReadyToFulfill
-                    ? "Đã sẵn sàng xuất kho"
+                    ? "Đơn hàng sẵn sàng xuất kho"
                     : isCancelled
                       ? "Đơn hàng đã hủy"
-                      : "Chờ thanh toán để xuất kho"}
-            </p>
-          </div>
-        </div>
-
-        {/* Vận chuyển */}
-        <div className="group relative flex min-w-0 items-center gap-4 border-t border-slate-200 px-6 py-5 transition-all duration-300 hover:bg-slate-50/90 md:border-t-0">
-          <div
-            className={cn(
-              "relative flex size-12 shrink-0 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-115 group-hover:shadow-md group-hover:-translate-y-0.5",
-              isDelivered
-                ? "bg-emerald-100/90 text-emerald-600 shadow-[0_0_16px_rgba(16,185,129,0.28)] ring-2 ring-emerald-300/80"
-                : isShipping
-                  ? "bg-blue-100/90 text-blue-600 shadow-[0_0_16px_rgba(59,130,246,0.3)] ring-2 ring-blue-400 animate-pulse"
-                  : isCancelled
-                    ? "bg-rose-100/90 text-rose-500 ring-1 ring-rose-200/70"
-                    : "bg-blue-50 text-blue-500 ring-1 ring-blue-100/80",
-            )}
-          >
-            <Truck className="size-6 transition-all duration-300 group-hover:scale-115 group-hover:translate-x-2" strokeWidth={2.4} />
-          </div>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="text-sm font-semibold uppercase tracking-wider text-slate-900">Vận chuyển</span>
-              <span className="rounded-md bg-blue-50 px-2.5 py-0.5 text-sm font-semibold text-blue-700 border border-blue-200/60 shadow-2xs transition-transform duration-200 group-hover:scale-105">
-                {order.shippingMethod}
+                      : "Chờ thanh toán để xuất kho",
+            },
+            {
+              label: "Vận chuyển",
+              Icon: Truck,
+              status: isCancelled ? "Đơn hàng đã hủy" : isDelivered ? "Đã giao hàng" : isShipping ? "Đang giao hàng" : "Chưa bàn giao",
+              statusClass: isCancelled
+                ? "bg-rose-50 text-rose-700"
+                : isDelivered
+                  ? "bg-emerald-50 text-emerald-700"
+                  : isShipping
+                    ? "bg-blue-50 text-blue-700"
+                    : "bg-slate-100 text-slate-600",
+              detail: `${order.shippingMethod}${isDelivered ? " · Giao thành công" : isShipping ? " · Đang trên đường đến khách" : ` · Dự kiến ${order.shippingEstimate}`}`,
+            },
+          ].map(({ label, Icon, status, statusClass, detail }, index) => (
+            <li key={label} className="orders-progress-row relative grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-x-3 py-3" style={{ animationDelay: `${index * 90}ms` }}>
+              <span className="orders-progress-icon flex size-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600" aria-hidden="true">
+                <Icon className="size-[18px]" strokeWidth={1.8} />
               </span>
-            </div>
-            <p className="mt-1.5 text-sm font-semibold text-slate-700">
-              {isDelivered
-                ? "Đã giao hàng thành công"
-                : isShipping
-                  ? "Đang trên đường phát tới khách hàng"
-                  : `Dự kiến giao: ${order.shippingEstimate}`}
-            </p>
-          </div>
-        </div>
-      </div>
+              <div className="min-w-0">
+                <h3 className="m-0 text-sm font-semibold leading-5 text-slate-900">{label}</h3>
+                <p className="m-0 mt-0.5 text-sm leading-5 text-slate-600">{detail}</p>
+              </div>
+              <span className={cn("orders-progress-badge inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold", statusClass)}>{status}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       {/* ── 3. Main two-column grid ── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -1628,7 +1581,7 @@ export function OrderDetailView({
           </div>
 
           {/* Timeline — Lịch sử đơn hàng */}
-          <div className={cn(CARD, "overflow-hidden")}>
+          <div className={cn(CARD, "orders-timeline overflow-hidden")}>
             <div className="flex items-center justify-between px-5 pb-1 pt-4">
               <div className="flex items-center gap-2.5">
                 <h2 className="text-slate-900 admin-section-title">Lịch sử đơn hàng</h2>
@@ -1771,7 +1724,7 @@ export function OrderDetailView({
               <Button
                 type="button"
                 onClick={handleAddNote}
-                className="h-10 rounded-lg bg-violet-100 px-4 text-sm font-medium text-[#6d3df0] shadow-none transition-colors hover:bg-violet-200"
+                className="h-10 rounded-xs border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-none transition-colors hover:bg-slate-50"
               >
                 Thêm ghi chú
               </Button>

@@ -1,14 +1,16 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type MouseEvent } from "react";
-import { Heart, Minus, Plus, RefreshCw, Sparkles, Star, Truck } from "lucide-react";
+import { ArrowRight, Heart, Minus, Plus, RefreshCw, Sparkles, Star, Truck } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { formatVND, getCategory, getProduct, products, type Product } from "@/lib/products";
+import { fetchProductsByIds, formatVND, getCategory, getProduct, products, type Product } from "@/lib/products";
 import { useStore } from "@/lib/store";
 import { ProductCard } from "@/components/site/ProductCard";
 import { colorwayHasStock, findVariant, isSizeInStock } from "@/lib/variant-stock";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { VirtualTryOnDialog } from "@/components/tryon/VirtualTryOnDialog";
+import { fetchProductReviews, type PublicProductReview } from "@/lib/api";
+import hero from "@/assets/hero.jpg";
 
 export const Route = createFileRoute("/san-pham/$slug")({
   loader: async ({ params }) => {
@@ -81,7 +83,7 @@ function ProductPage() {
 
   if (!p) {
     return (
-      <div className="mx-auto max-w-[1440px] px-6 py-24 text-center">
+      <div className="mx-auto max-w-[1600px] px-6 py-24 text-center">
         <h1 className="text-2xl font-serif">Không tìm thấy sản phẩm</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Sản phẩm này có thể đã ngừng kinh doanh hoặc đường dẫn không đúng.
@@ -96,12 +98,12 @@ function ProductPage() {
     );
   }
 
-  return <ProductDetail product={p} slug={slug} />;
+  return <ProductDetail key={p.id} product={p} slug={slug} />;
 }
 
 function ProductDetail({ product: p, slug }: { product: Product; slug: string }) {
   const cat = getCategory(p.category);
-  const { addToCart, toggleWishlist, wishlist, cart, setCartOpen, prepareBuyNow } = useStore();
+  const { addToCart, toggleWishlist, wishlist, cart, setCartOpen, prepareBuyNow, storeSettings } = useStore();
   const navigate = useNavigate();
 
   const initialCw = p.colorways[0];
@@ -122,9 +124,63 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
   });
   const [qty, setQty] = useState(1);
   const [tryOnOpen, setTryOnOpen] = useState(false);
+  const [reviewData, setReviewData] = useState<{ summary: { count: number; average: number }; items: PublicProductReview[] } | null>(null);
+  const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
 
   const currentVariant = size ? findVariant(p.variants, colorwayId, size) : null;
   const currentStock = currentVariant ? currentVariant.available : null;
+
+  useEffect(() => {
+    let active = true;
+    fetchProductReviews(p.id).then((data) => { if (active) setReviewData(data); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [p.id]);
+
+  useEffect(() => {
+    const storageKey = "elane_recently_viewed_products";
+    let previousIds: string[] = [];
+
+    try {
+      const saved: unknown = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+      if (Array.isArray(saved)) {
+        previousIds = saved.filter((id): id is string => typeof id === "string");
+      }
+    } catch {
+      previousIds = [];
+    }
+
+    const historyIds = [p.id, ...previousIds.filter((id) => id !== p.id)].slice(0, 12);
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(historyIds));
+    } catch {
+      // Keep the product page usable when browser storage is unavailable.
+    }
+
+    const visibleIds = historyIds.slice(1, 5);
+    if (!visibleIds.length) {
+      setRecentlyViewed([]);
+      return;
+    }
+
+    let cancelled = false;
+    void fetchProductsByIds(visibleIds)
+      .then((items) => {
+        if (cancelled) return;
+        const productsById = new Map(items.map((item) => [item.id, item]));
+        setRecentlyViewed(
+          visibleIds
+            .map((id) => productsById.get(id))
+            .filter((item): item is Product => Boolean(item)),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setRecentlyViewed([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [p.id]);
 
   // Auto-clamp qty if chosen size has lower stock than current qty
   useEffect(() => {
@@ -287,7 +343,7 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
   );
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-6 md:px-8 md:py-10">
+    <div className="mx-auto max-w-[1600px] px-4 py-6 md:px-8 md:py-10">
       <nav aria-label="Breadcrumb" className="text-base text-muted-foreground font-medium flex items-center gap-2 flex-wrap">
         <Link to="/" className="hover:text-foreground transition-colors">Trang chủ</Link>
         <span className="opacity-40">/</span>
@@ -300,19 +356,19 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
         <span className="text-foreground">{p.name}</span>
       </nav>
 
-      <div className="mt-6 grid gap-10 lg:grid-cols-[1.3fr_1fr] lg:gap-16">
-        <div className="grid gap-3 md:grid-cols-[80px_1fr]">
-          {/* Mobile: horizontal strip */}
+      <div className="mt-6 grid gap-8 xl:grid-cols-[1.3fr_1fr] xl:gap-12">
+        <div className="mx-auto grid w-full max-w-[760px] gap-3 xl:mx-0 xl:max-w-none xl:grid-cols-[80px_1fr]">
+          {/* Phones and tablets: horizontal strip */}
           <div
             key={`thumbs-m-${galleryKey}`}
-            className="order-2 flex gap-2 overflow-x-auto md:hidden motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-200"
+            className="order-2 flex gap-2 overflow-x-auto xl:hidden motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-200"
           >
             {gallery.map((src, i) => renderThumb(src, i, `m-${src}-${i}`))}
           </div>
 
-          {/* Desktop: vertical filmstrip, max 4 visible; loops when >4 */}
+          {/* Wide desktop: vertical filmstrip, max 4 visible; loops when >4 */}
           <div
-            className="order-1 hidden overflow-hidden md:block"
+            className="order-1 hidden overflow-hidden xl:block"
             style={{ height: THUMB_VIEWPORT_PX }}
           >
             <div
@@ -334,7 +390,7 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
           </div>
 
           <div
-            className="relative order-1 aspect-[3/4] overflow-hidden bg-secondary md:order-2"
+            className="relative order-1 aspect-[3/4] overflow-hidden bg-secondary xl:order-2"
             onMouseEnter={() => setZooming(true)}
             onMouseLeave={() => {
               setZooming(false);
@@ -386,12 +442,12 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
           </div>
         </div>
 
-        <div className="lg:sticky lg:top-40 lg:self-start">
+        <div className="mx-auto w-full max-w-[760px] xl:sticky xl:top-40 xl:mx-0 xl:max-w-none xl:self-start">
           {p.isNew && <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">Hàng mới</p>}
-          <h1 className="mt-2 text-3xl md:text-4xl">{p.name}</h1>
+          <h1 className="mt-2 text-2xl md:text-3xl">{p.name}</h1>
           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="flex">{Array.from({ length: 5 }).map((_, i) => <Star key={i} className={`h-3.5 w-3.5 ${i < Math.round(p.rating) ? "fill-foreground text-foreground" : ""}`} />)}</div>
-            {p.rating.toFixed(1)} · {p.reviews} đánh giá
+            <div className="flex">{Array.from({ length: 5 }).map((_, i) => <Star key={i} className={`h-3.5 w-3.5 ${i < Math.round(reviewData?.summary.average ?? p.rating) ? "fill-foreground text-foreground" : ""}`} />)}</div>
+            {(reviewData?.summary.average ?? p.rating).toFixed(1)} · {reviewData?.summary.count ?? p.reviews} đánh giá
           </div>
           <div className="mt-5 flex items-baseline gap-3 text-xl">
             {p.salePrice ? (
@@ -594,15 +650,36 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
           </div>
 
           <div className="mt-6 space-y-2 text-sm text-muted-foreground">
-            <p className="flex items-center gap-2"><Truck className="h-4 w-4" strokeWidth={1.5} /> Miễn phí vận chuyển cho đơn từ 1.000.000₫</p>
-            <p className="flex items-center gap-2"><RefreshCw className="h-4 w-4" strokeWidth={1.5} /> Đổi trả miễn phí trong 30 ngày</p>
+            <p className="flex items-center gap-2"><Truck className="h-4 w-4" strokeWidth={1.5} /> Miễn phí vận chuyển cho đơn từ {formatVND(storeSettings.shipping.freeShippingFromVnd)}</p>
+            <p className="flex items-center gap-2"><RefreshCw className="h-4 w-4" strokeWidth={1.5} /> Đổi trả miễn phí trong {storeSettings.returns.returnWindowDays} ngày</p>
           </div>
 
           <Accordion type="single" collapsible defaultValue="desc" className="mt-8 border-t border-border">
             <AccordionItem value="desc"><AccordionTrigger className="text-xs uppercase tracking-widest">Mô tả</AccordionTrigger><AccordionContent className="leading-relaxed text-muted-foreground">{p.description}</AccordionContent></AccordionItem>
             <AccordionItem value="mat"><AccordionTrigger className="text-xs uppercase tracking-widest">Chất liệu & bảo quản</AccordionTrigger><AccordionContent className="text-muted-foreground">Chất liệu: {p.material}. Giặt tay hoặc giặt khô, không dùng chất tẩy, ủi ở nhiệt độ thấp.</AccordionContent></AccordionItem>
-            <AccordionItem value="ship"><AccordionTrigger className="text-xs uppercase tracking-widest">Vận chuyển & đổi trả</AccordionTrigger><AccordionContent className="text-muted-foreground">Giao hàng 2–4 ngày toàn quốc. Đổi trả miễn phí trong 30 ngày với sản phẩm còn nguyên tem mác.</AccordionContent></AccordionItem>
+            <AccordionItem value="ship"><AccordionTrigger className="text-xs uppercase tracking-widest">Vận chuyển & đổi trả</AccordionTrigger><AccordionContent className="text-muted-foreground">Giao nội thành {storeSettings.shipping.cityDeliveryDays.toLowerCase()}, các tỉnh thành khác {storeSettings.shipping.otherDeliveryDays.toLowerCase()}. Đổi trả trong {storeSettings.returns.returnWindowDays} ngày: {storeSettings.returns.conditions}</AccordionContent></AccordionItem>
           </Accordion>
+
+          <section className="mt-10 pt-6" aria-labelledby="reviews-heading">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground">Đánh giá từ khách hàng</p>
+                <h2 id="reviews-heading" className="mt-2 text-2xl">Trải nghiệm thực tế</h2>
+              </div>
+              {reviewData && <div className="text-right"><p className="text-2xl font-medium">{reviewData.summary.average.toFixed(1)} <span className="text-amber-400">★</span></p><p className="text-xs text-muted-foreground">{reviewData.summary.count} đánh giá đã xác thực</p></div>}
+            </div>
+            {reviewData?.items.length ? (
+              <div className="mt-5 space-y-4">
+                {reviewData.items.map((review) => (
+                  <article key={review.id} className="border-b border-border/60 pb-4">
+                    <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-sm"><span className="font-medium">{review.customer_name}</span><span className="text-emerald-700 dark:text-emerald-400 text-xs">✓ Đã mua hàng</span></div><span className="text-amber-400 text-sm">{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</span></div>
+                    {review.title && <h3 className="mt-2 text-sm font-medium">{review.title}</h3>}
+                    {review.comment && <p className="mt-1 text-sm leading-6 text-muted-foreground">{review.comment}</p>}
+                  </article>
+                ))}
+              </div>
+            ) : <p className="mt-5 text-sm text-muted-foreground">Chưa có đánh giá. Hãy là người đầu tiên chia sẻ trải nghiệm sau khi mua hàng.</p>}
+          </section>
         </div>
       </div>
 
@@ -617,9 +694,55 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
 
       <section className="mt-24">
         <h2 className="mb-8 text-3xl">Có thể bạn cũng thích</h2>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 lg:grid-cols-4 lg:gap-y-10">
           {related.map((x) => <ProductCard key={x.id} product={x} />)}
         </div>
+      </section>
+
+      {recentlyViewed.length > 0 && (
+        <section className="mt-24">
+          <h2 className="mb-8 text-3xl">Sản phẩm bạn đã xem</h2>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 lg:grid-cols-4 lg:gap-y-10">
+            {recentlyViewed.map((item) => <ProductCard key={item.id} product={item} />)}
+          </div>
+        </section>
+      )}
+
+      <section className="mt-20 sm:mt-24" aria-label="Bộ sưu tập ÉLANE">
+        <Link
+          to="/bo-suu-tap"
+          className="group relative isolate flex min-h-[380px] overflow-hidden rounded-tl-[3rem] rounded-br-[3rem] bg-[#e8dfd3] sm:min-h-[440px] lg:aspect-[2.4/1] lg:min-h-0"
+        >
+          <img
+            src={hero}
+            alt=""
+            className="absolute inset-0 z-0 h-full w-full object-cover object-[72%_20%] transition-transform duration-1000 ease-out group-hover:scale-[1.025]"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 z-[1] bg-gradient-to-r from-[#eee7dd]/95 via-[#eee7dd]/75 to-transparent sm:via-[#eee7dd]/50 lg:via-[#eee7dd]/20"
+          />
+          <div className="relative z-10 flex w-full items-center px-7 py-12 sm:px-12 md:px-16 lg:w-[58%]">
+            <div className="max-w-xl">
+              <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-[#67594b] sm:text-xs">
+                Bộ sưu tập Thu Đông 2026
+              </p>
+              <h2 className="mt-5 max-w-lg text-3xl font-light leading-[1.12] tracking-[-0.04em] text-[#211d19] sm:text-4xl md:text-5xl lg:text-6xl">
+                Thanh lịch trong từng khoảnh khắc.
+              </h2>
+              <p className="mt-5 max-w-md text-sm leading-6 text-[#4c433b] sm:text-base sm:leading-7">
+                Khám phá những thiết kế tinh tế, được tạo nên để đồng hành cùng phong cách riêng của bạn.
+              </p>
+              <span className="mt-8 inline-flex items-center gap-3 border-b border-[#211d19]/60 pb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[#211d19] transition-all duration-300 group-hover:gap-5">
+                Khám phá bộ sưu tập
+                <ArrowRight aria-hidden="true" className="size-4" strokeWidth={1.5} />
+              </span>
+            </div>
+          </div>
+          <span className="absolute bottom-6 right-7 z-10 hidden text-[9px] uppercase tracking-[0.25em] text-white/90 drop-shadow sm:block md:bottom-8 md:right-10">
+            ÉLANE · Modern Femininity
+          </span>
+        </Link>
       </section>
     </div>
   );
