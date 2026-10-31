@@ -24,6 +24,7 @@ export type AdminProduct = {
   id: string;
   slug: string;
   name: string;
+  primary_category_id?: string;
   description: string;
   material: string | null;
   status: string;
@@ -1473,6 +1474,8 @@ export type AdminLookbookItem = {
   updated_at: string;
   product_name?: string | null;
   product_slug?: string | null;
+  product_status?: string | null;
+  product_image_url?: string | null;
   product_price?: number | null;
 };
 

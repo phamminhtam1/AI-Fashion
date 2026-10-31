@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { btnCls, inputCls, seo } from "@/components/site/PageHeader";
+import { AuthLayout, authInputClass } from "@/components/site/AuthLayout";
+import { seo } from "@/components/site/PageHeader";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dang-ky")({
@@ -11,12 +13,15 @@ export const Route = createFileRoute("/dang-ky")({
 function Register() {
   const { register } = useStore();
   const nav = useNavigate();
+
   return (
-    <div className="mx-auto max-w-md px-6 py-20">
-      <h1 className="text-center text-4xl">Tạo tài khoản</h1>
-      <p className="mt-3 text-center text-sm text-muted-foreground">Nhận ưu đãi 10% cho đơn đầu tiên và quyền lợi thành viên.</p>
+    <AuthLayout
+      mode="register"
+      title="Tạo tài khoản"
+      description="Gia nhập ÉLANE để nhận ưu đãi 10% cho đơn hàng đầu tiên và theo dõi đơn mua dễ dàng."
+    >
       <form
-        className="mt-10 space-y-3"
+        className="mt-7 space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
           const f = new FormData(e.currentTarget);
@@ -36,16 +41,35 @@ function Register() {
           })();
         }}
       >
-        <input name="name" required placeholder="Họ và tên" aria-label="Họ và tên" className={inputCls} />
-        <input name="email" required type="email" placeholder="Email" aria-label="Email" className={inputCls} />
-        <input name="phone" type="tel" placeholder="Số điện thoại" aria-label="Số điện thoại" className={inputCls} />
-        <input name="password" required type="password" minLength={6} placeholder="Mật khẩu (tối thiểu 6 ký tự)" aria-label="Mật khẩu" className={inputCls} />
-        <label className="flex items-start gap-2 py-2 text-xs text-muted-foreground">
-          <input required type="checkbox" className="mt-0.5 accent-foreground" /> Tôi đồng ý với điều khoản sử dụng và chính sách bảo mật của ÉLANE.
+        <div>
+          <label htmlFor="register-name" className="text-[15px] font-medium text-[#26231f]">Họ và tên</label>
+          <input id="register-name" name="name" required autoComplete="name" placeholder="Tên của bạn" className={authInputClass} />
+        </div>
+        <div>
+          <label htmlFor="register-email" className="text-[15px] font-medium text-[#26231f]">Email</label>
+          <input id="register-email" name="email" required type="email" autoComplete="email" placeholder="email@vidu.com" className={authInputClass} />
+        </div>
+        <div>
+          <label htmlFor="register-phone" className="text-[15px] font-medium text-[#26231f]">Số điện thoại <span className="font-normal text-[#8a867f]">(không bắt buộc)</span></label>
+          <input id="register-phone" name="phone" type="tel" autoComplete="tel" placeholder="090 000 0000" className={authInputClass} />
+        </div>
+        <div>
+          <label htmlFor="register-password" className="text-[15px] font-medium text-[#26231f]">Mật khẩu</label>
+          <input id="register-password" name="password" required type="password" minLength={6} autoComplete="new-password" placeholder="Tối thiểu 6 ký tự" className={authInputClass} />
+        </div>
+        <label className="flex items-start gap-3 py-1 text-sm leading-relaxed text-[#6e6a64]">
+          <input required type="checkbox" className="mt-0.5 size-4 shrink-0 accent-[#111111]" />
+          <span>Tôi đồng ý với điều khoản sử dụng và chính sách bảo mật của ÉLANE.</span>
         </label>
-        <button type="submit" className={`${btnCls} w-full`}>Đăng ký</button>
+        <button type="submit" className="group flex min-h-14 w-full items-center justify-center gap-3 bg-[#111111] px-6 text-sm font-medium tracking-[0.08em] text-white transition-colors hover:bg-[#34312d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] focus-visible:ring-offset-2">
+          Tạo tài khoản
+          <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
+        </button>
       </form>
-      <p className="mt-8 text-center text-sm text-muted-foreground">Đã có tài khoản? <Link to="/dang-nhap" className="text-foreground underline">Đăng nhập</Link></p>
-    </div>
+      <p className="mt-6 border-t border-[#e5e1da] pt-5 text-[15px] text-[#6e6a64]">
+        Đã có tài khoản?{" "}
+        <Link to="/dang-nhap" className="font-medium text-[#171717] underline decoration-[#b69b72] underline-offset-4 transition-colors hover:text-[#8b6d43]">Đăng nhập</Link>
+      </p>
+    </AuthLayout>
   );
 }

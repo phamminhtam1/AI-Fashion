@@ -1136,7 +1136,11 @@ export function ProductsManager({
       slug: p.slug,
       description: p.description ?? "",
       material: p.material ?? "",
-      primary_category_id: p.category?.slug ?? filterCategories[0]?.id ?? "",
+      primary_category_id:
+        p.primary_category_id ??
+        filterCategories.find((category) => category.slug === p.category?.slug)?.id ??
+        filterCategories[0]?.id ??
+        "",
       occasion_id: "",
       size_chart_id: "",
       status: (p.status as FormState["status"]) || "published",
@@ -1430,19 +1434,17 @@ export function ProductsManager({
     try {
       const price = form.price_vnd ? Number(form.price_vnd) : 0;
       if (editing) {
-        await adminApi
-          .updateProduct(editing.id, {
-            name: form.name.trim(),
-            slug: form.slug.trim() || undefined,
-            description: form.description,
-            material: form.material.trim() || null,
-            primary_category_id: form.primary_category_id,
-            status: targetStatus,
-            price_vnd: price,
-            compare_at_price_vnd: form.compare_at_price_vnd ? Number(form.compare_at_price_vnd) : null,
-            cost_vnd: form.cost_vnd ? Number(form.cost_vnd) : null,
-          })
-          .catch(() => { });
+        await adminApi.updateProduct(editing.id, {
+          name: form.name.trim(),
+          slug: form.slug.trim() || undefined,
+          description: form.description,
+          material: form.material.trim() || null,
+          primary_category_id: form.primary_category_id,
+          status: targetStatus,
+          price_vnd: price,
+          compare_at_price_vnd: form.compare_at_price_vnd ? Number(form.compare_at_price_vnd) : null,
+          cost_vnd: form.cost_vnd ? Number(form.cost_vnd) : null,
+        });
 
         // Update local items state
         setItems((prev) =>

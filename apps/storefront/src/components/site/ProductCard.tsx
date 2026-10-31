@@ -112,7 +112,9 @@ export function ProductCard({
                   key={s}
                   type="button"
                   disabled={!inStock}
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
                     if (v && inStock) addToCart(p, v.id);
                   }}
                   className="min-w-9 cursor-pointer px-2 py-1 text-xs hover:bg-primary hover:text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"

@@ -185,15 +185,15 @@ export function mediaUrl(path: string) {
   return `${PUBLIC_API_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-export async function fetchProducts(params: Record<string, string | undefined> = {}) {
+export async function fetchProducts(params: Record<string, string | undefined> = {}, init?: RequestInit) {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v) q.set(k, v);
   const qs = q.toString();
-  return get<{ items: ApiProduct[]; total: number }>(`/products${qs ? `?${qs}` : ""}`);
+  return get<{ items: ApiProduct[]; total: number }>(`/products${qs ? `?${qs}` : ""}`, init);
 }
 
-export async function fetchProduct(slug: string) {
-  return get<ApiProduct>(`/products/${slug}`);
+export async function fetchProduct(slug: string, init?: RequestInit) {
+  return get<ApiProduct>(`/products/${slug}`, init);
 }
 
 export type PublicProductReview = StoreReview & { customer_name: string; verified: boolean };
@@ -281,11 +281,11 @@ export type StoreLookbook = {
 };
 
 export async function fetchLookbooks() {
-  return get<{ items: StoreLookbook[] }>("/lookbooks").catch(() => ({ items: [] }));
+  return get<{ items: StoreLookbook[] }>("/lookbooks", { cache: "no-store" }).catch(() => ({ items: [] }));
 }
 
 export async function fetchLookbookBySlug(slug: string) {
-  return get<StoreLookbook>(`/lookbooks/${slug}`).catch(() => null);
+  return get<StoreLookbook>(`/lookbooks/${slug}`, { cache: "no-store" }).catch(() => null);
 }
 
 export type ApiSizeChart = {

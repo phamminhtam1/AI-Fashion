@@ -20,6 +20,7 @@ export interface ProductComboboxProps {
     id: string;
     name: string;
     slug?: string | null;
+    status?: string | null;
     images?: string[];
     category?: { name: string } | null;
   } | null;
@@ -69,7 +70,7 @@ export function ProductCombobox({
         slug: initialProduct.slug || "",
         description: "",
         material: null,
-        status: "published",
+        status: initialProduct.status || "published",
         category: initialProduct.category ? { slug: "", name: initialProduct.category.name } : null,
         occasion: null,
         size_chart: null,
@@ -232,6 +233,11 @@ export function ProductCombobox({
                   {selectedProduct.category.name}
                 </Badge>
               )}
+              {selectedProduct.status !== "published" && (
+                <Badge variant="secondary" className="shrink-0 px-1.5 py-0 text-[10px] font-medium text-amber-800">
+                  {selectedProduct.status === "archived" ? "Đã lưu trữ" : "Bản nháp"}
+                </Badge>
+              )}
             </div>
           ) : (
             <span className="text-muted-foreground flex items-center gap-1.5 truncate flex-1 min-w-0">
@@ -377,6 +383,11 @@ export function ProductCombobox({
                       )}
                       {p.category?.name && sku && <span>•</span>}
                       {sku && <span className="tabular-nums text-xs">{sku}</span>}
+                      {p.status !== "published" && (
+                        <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px] font-medium text-amber-800">
+                          {p.status === "archived" ? "Đã lưu trữ" : "Bản nháp"}
+                        </Badge>
+                      )}
                     </div>
                   </div>
 

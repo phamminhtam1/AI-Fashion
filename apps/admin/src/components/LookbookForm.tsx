@@ -81,6 +81,7 @@ type ProductLite = {
   slug?: string | null;
   sku?: string | null;
   image_url?: string | null;
+  attachedToImage?: boolean;
 };
 
 type PendingFrame = { key: string; file: File; preview: string };
@@ -231,7 +232,7 @@ export function LookbookForm({ mode, lookbookKey }: { mode: Mode; lookbookKey?: 
 
   const [frameDialogOpen, setFrameDialogOpen] = useState(false);
   const [editingFrame, setEditingFrame] = useState<AdminLookbookItem | null>(null);
-  const [frameForm, setFrameForm] = useState({ title: "", caption: "", product_id: "", link_url: "", status: "published" });
+  const [frameForm, setFrameForm] = useState({ title: "", caption: "", product_id: "", product_status: "", link_url: "", status: "published" });
   const [savingFrame, setSavingFrame] = useState(false);
 
   const hydrate = (lb: LookbookExt) => {
@@ -262,17 +263,7 @@ export function LookbookForm({ mode, lookbookKey }: { mode: Mode; lookbookKey?: 
     setCoverPreview(lb.cover_image_url || "");
     setItems(lb.items || []);
 
-    if (lb.attached_products && lb.attached_products.length > 0) {
-      setProducts(lb.attached_products);
-    } else {
-      const map = new Map<string, ProductLite>();
-      (lb.items || []).forEach((it) => {
-        if (it.product_id && !map.has(it.product_id)) {
-          map.set(it.product_id, { id: it.product_id, name: it.product_name || "Sản phẩm", slug: it.product_slug });
-        }
-      });
-      setProducts(Array.from(map.values()));
-    }
+    setProducts(lb.attached_products || []);
   };
 
   const reload = async () => {
@@ -409,6 +400,7 @@ export function LookbookForm({ mode, lookbookKey }: { mode: Mode; lookbookKey?: 
       title: frame.title || "",
       caption: frame.caption || "",
       product_id: frame.product_id || "",
+      product_status: frame.product_status || "",
       link_url: frame.link_url || "",
       status: frame.status || "published",
     });
@@ -439,11 +431,11 @@ export function LookbookForm({ mode, lookbookKey }: { mode: Mode; lookbookKey?: 
 
   const addProduct = (id: string, product?: unknown) => {
     if (!id) return;
-    const p = product as ProductLite | undefined;
+    const p = product as (ProductLite & { images?: string[] }) | undefined;
     setProducts((prev) =>
       prev.some((x) => x.id === id)
         ? prev
-        : [...prev, { id, name: p?.name ?? "Sản phẩm", slug: p?.slug, sku: p?.sku, image_url: p?.image_url }],
+        : [...prev, { id, name: p?.name ?? "Sản phẩm", slug: p?.slug, sku: p?.sku, image_url: p?.image_url || p?.images?.[0] }],
     );
   };
 
@@ -547,6 +539,24 @@ export function LookbookForm({ mode, lookbookKey }: { mode: Mode; lookbookKey?: 
     const list = seasonYears();
     return list.includes(form.year) ? list : [...list, form.year].sort();
   }, [form.year]);
+
+  const displayProducts = useMemo(() => {
+    const merged = new Map<string, ProductLite>();
+    products.forEach((product) => merged.set(product.id, { ...product, attachedToImage: false }));
+    items.forEach((item) => {
+      if (!item.product_id) return;
+      const existing = merged.get(item.product_id);
+      merged.set(item.product_id, {
+        id: item.product_id,
+        ...existing,
+        name: existing?.name || item.product_name || "Sản phẩm",
+        slug: existing?.slug || item.product_slug,
+        image_url: existing?.image_url || item.product_image_url,
+        attachedToImage: true,
+      });
+    });
+    return Array.from(merged.values());
+  }, [items, products]);
 
   if (loading) {
     return (
@@ -832,29 +842,41 @@ export function LookbookForm({ mode, lookbookKey }: { mode: Mode; lookbookKey?: 
             </div>
           </SectionCard>
 
-          <SectionCard icon={ShoppingCart} title={`Sản phẩm gắn kèm (${products.length})`} plain={isEdit}>
+          <SectionCard icon={ShoppingCart} title={`Sản phẩm gắn kèm (${displayProducts.length})`} plain={isEdit}>
             <div className="max-w-md">
               <ProductCombobox selectedId="" onSelect={addProduct} />
             </div>
-            {products.length > 0 ? (
+            {items.some((item) => item.product_id) && (
+              <p className="mt-2 text-xs text-muted-foreground">Danh sách đã gộp sản phẩm gắn chung và sản phẩm được gắn ở từng ảnh.</p>
+            )}
+            {displayProducts.length > 0 ? (
               <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                {products.map((p) => (
+                {displayProducts.map((p) => (
                   <div key={p.id} className="flex items-center gap-2 rounded-xs border border-border p-2">
                     <div className="size-9 shrink-0 overflow-hidden rounded-xs bg-secondary">
-                      {p.image_url && <img src={p.image_url} alt="" className="h-full w-full object-cover" />}
+                      {p.image_url ? (
+                        <img src={p.image_url} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <ImageIcon className="m-auto size-4 text-muted-foreground" />
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-medium">{p.name}</p>
                       <p className="truncate text-[11px] text-muted-foreground">#{p.sku || p.id.slice(0, 6)}</p>
+                      <p className="truncate text-[10px] text-muted-foreground">
+                        {p.attachedToImage ? (products.some((product) => product.id === p.id) ? "Gắn chung · Có trong ảnh" : "Gắn trong ảnh") : "Gắn chung"}
+                      </p>
                     </div>
-                    <button
-                      type="button"
-                      title="Bỏ sản phẩm"
-                      onClick={() => setProducts((prev) => prev.filter((x) => x.id !== p.id))}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="size-3.5" />
-                    </button>
+                    {products.some((product) => product.id === p.id) && (
+                      <button
+                        type="button"
+                        title="Bỏ liên kết gắn chung"
+                        onClick={() => setProducts((prev) => prev.filter((x) => x.id !== p.id))}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1040,10 +1062,10 @@ export function LookbookForm({ mode, lookbookKey }: { mode: Mode; lookbookKey?: 
                   setFrameForm((prev) => ({
                     ...prev,
                     product_id: id,
+                    product_status: id ? (product?.status || "") : "",
                     title: prev.title || p?.name || prev.title,
-                    link_url: prev.link_url || (p?.slug ? `/san-pham/${p.slug}` : prev.link_url),
+                    link_url: id && p?.slug ? `/san-pham/${p.slug}` : id ? prev.link_url : "",
                   }));
-                  addProduct(id, product);
                 }}
                 initialProduct={
                   editingFrame?.product_id
@@ -1051,11 +1073,17 @@ export function LookbookForm({ mode, lookbookKey }: { mode: Mode; lookbookKey?: 
                         id: editingFrame.product_id,
                         name: editingFrame.product_name || "Sản phẩm đã chọn",
                         slug: editingFrame.product_slug,
+                        status: editingFrame.product_status || undefined,
                       }
                     : undefined
                 }
               />
             </Field>
+            {frameForm.product_id && frameForm.product_status && frameForm.product_status !== "published" && (
+              <div className="-mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+                Sản phẩm đang ở trạng thái {frameForm.product_status === "archived" ? "đã lưu trữ" : "bản nháp"}, nên storefront không thể hiển thị chi tiết sản phẩm. Hãy xuất bản sản phẩm trong mục Sản phẩm để hiện ở Lookbook.
+              </div>
+            )}
             <Field label="Liên kết">
               <Input value={frameForm.link_url} onChange={(e) => setFrameForm({ ...frameForm, link_url: e.target.value })} placeholder="/san-pham/..." className="text-sm" />
             </Field>

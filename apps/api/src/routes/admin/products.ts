@@ -34,6 +34,13 @@ import { mapProduct } from "../public/catalog.js";
 const canReadCost = (u: { permissions: string[] }) =>
   u.permissions.includes("cost.read") || u.permissions.includes("product.read") || u.permissions.includes("*");
 
+async function mapAdminProduct(db: Db, product: typeof products.$inferSelect, includeCost = false) {
+  return {
+    ...(await mapProduct(db, product, includeCost)),
+    primary_category_id: product.primaryCategoryId,
+  };
+}
+
 async function assertLeafCategory(db: Db, categoryId: string) {
   const all = await db.select().from(categories);
   const meta = enrichTree(all.map((r) => ({ id: r.id, parentId: r.parentId })));
@@ -280,7 +287,7 @@ adminProductRoutes.get("/", async (c) => {
 
   const includeCost = canReadCost(user);
   const items = [];
-  for (const r of rows) items.push(await mapProduct(db, r.product, includeCost));
+  for (const r of rows) items.push(await mapAdminProduct(db, r.product, includeCost));
 
   const statusRows = await db
     .select({ status: products.status, n: sql<number>`count(*)::int` })
@@ -346,7 +353,7 @@ adminProductRoutes.get("/:id", async (c) => {
     .where(isUuid ? eq(products.id, param) : eq(products.slug, param))
     .limit(1);
   if (!rows[0]) throw new ApiError(404, "not_found", "Không tìm thấy");
-  return c.json(await mapProduct(db, rows[0], canReadCost(user)));
+  return c.json(await mapAdminProduct(db, rows[0], canReadCost(user)));
 });
 
 adminProductRoutes.post("/:id/colorways", async (c) => {
@@ -388,7 +395,7 @@ adminProductRoutes.post("/:id/colorways", async (c) => {
     requestId: requestId(c),
   });
 
-  return c.json(await mapProduct(db, rows[0], canReadCost(user)), 201);
+  return c.json(await mapAdminProduct(db, rows[0], canReadCost(user)), 201);
 });
 
 adminProductRoutes.delete("/:id/colorways/:colorwayId", async (c) => {
@@ -455,7 +462,7 @@ adminProductRoutes.delete("/:id/colorways/:colorwayId", async (c) => {
     requestId: requestId(c),
   });
 
-  return c.json(await mapProduct(db, rows[0], canReadCost(user)));
+  return c.json(await mapAdminProduct(db, rows[0], canReadCost(user)));
 });
 
 adminProductRoutes.post("/", async (c) => {
@@ -561,7 +568,7 @@ adminProductRoutes.post("/", async (c) => {
     afterRedacted: { name: row!.name, slug: row!.slug, status: row!.status },
     requestId: requestId(c),
   });
-  return c.json(await mapProduct(db, row!, canReadCost(user)), 201);
+  return c.json(await mapAdminProduct(db, row!, canReadCost(user)), 201);
 });
 
 adminProductRoutes.patch("/:id", async (c) => {
@@ -747,7 +754,7 @@ adminProductRoutes.patch("/:id", async (c) => {
     afterRedacted: { slug: row!.slug, name: row!.name, status: row!.status },
     requestId: requestId(c),
   });
-  return c.json(await mapProduct(db, row!, canReadCost(user)));
+  return c.json(await mapAdminProduct(db, row!, canReadCost(user)));
 });
 
 adminProductRoutes.post("/:id/publish", async (c) => {
@@ -768,7 +775,7 @@ adminProductRoutes.post("/:id/publish", async (c) => {
     resourceId: row!.id,
     requestId: requestId(c),
   });
-  return c.json(await mapProduct(db, row!, canReadCost(user)));
+  return c.json(await mapAdminProduct(db, row!, canReadCost(user)));
 });
 
 adminProductRoutes.delete("/:id", async (c) => {

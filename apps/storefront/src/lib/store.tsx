@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { toast } from "sonner";
-import { products, type Product } from "./products";
+import { products, registerProducts, type Product } from "./products";
 import { fetchStorefrontSettings, storeApi, ApiError, type StoreOrderItem, type StoreOrderSummary, type StorefrontSettings } from "./api";
 
 /** Free-shipping threshold (VND) — matches announcement bar. */
@@ -39,6 +39,9 @@ export type CartItem = {
   colorName?: string;
   image?: string;
   maxStock?: number;
+  productName?: string;
+  productSlug?: string;
+  unitPrice?: number;
 };
 
 export function getCartItemImage(it: CartItem, p?: Product): string {
@@ -274,23 +277,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [wishlist, ready]);
 
   useEffect(() => {
-    if (ready && products.length > 0 && cart.length > 0) {
-      const validCart = cart.filter((it) => products.some((p) => p.id === it.productId));
-      if (validCart.length !== cart.length) {
-        setCart(validCart);
-      }
-    }
-  }, [ready, cart]);
-
-  useEffect(() => {
     if (!sessionReady || !user) return;
     void refreshOrders().catch(() => setOrders([]));
   }, [sessionReady, user?.id]);
-
-  const price = (id: string) => {
-    const p = products.find((x) => x.id === id);
-    return p ? p.salePrice ?? p.price : 0;
-  };
 
   const value: Store = {
     storeSettings,
@@ -389,6 +378,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const cwIndex = p.colorways.findIndex((c) => c.id === v.colorwayId);
       const colorName = cwIndex >= 0 ? p.colors[cwIndex]?.name : undefined;
       const image = cw?.thumbnail || cw?.images?.[0] || p.images[0];
+      registerProducts([p]);
       const item: CartItem = {
         productId: p.id,
         variantId,
@@ -399,6 +389,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         colorName,
         image,
         maxStock: v.available,
+        productName: p.name,
+        productSlug: p.slug,
+        unitPrice: p.salePrice ?? p.price,
       };
       setBuyNowItem(item);
       try {
@@ -443,9 +436,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const cwIndex = p.colorways.findIndex((c) => c.id === v.colorwayId);
       const colorName = cwIndex >= 0 ? p.colors[cwIndex]?.name : undefined;
       const image = cw?.thumbnail || cw?.images?.[0] || p.images[0];
+      // Quick add may receive a product outside the first page of the catalog cache.
+      registerProducts([p]);
+      const unitPrice = p.salePrice ?? p.price;
       setCart((c) => {
         const i = c.findIndex((x) => x.variantId === variantId);
-        if (i >= 0) return c.map((x, j) => (j === i ? { ...x, qty: x.qty + qty, maxStock: v.available } : x));
+        if (i >= 0) {
+          return c.map((x, j) =>
+            j === i
+              ? {
+                  ...x,
+                  qty: x.qty + qty,
+                  maxStock: v.available,
+                  productName: p.name,
+                  productSlug: p.slug,
+                  unitPrice,
+                  image,
+                  colorName,
+                }
+              : x,
+          );
+        }
         return [
           ...c,
           {
@@ -458,6 +469,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             colorName,
             image,
             maxStock: v.available,
+            productName: p.name,
+            productSlug: p.slug,
+            unitPrice,
           },
         ];
       });
@@ -509,7 +523,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       })();
     },
     cartCount: cart.reduce((s, x) => s + x.qty, 0),
-    subtotal: cart.reduce((s, x) => s + price(x.productId) * x.qty, 0),
+    subtotal: cart.reduce((s, x) => {
+      const cached = products.find((p) => p.id === x.productId);
+      const unitPrice = cached ? (cached.salePrice ?? cached.price) : (x.unitPrice ?? 0);
+      return s + unitPrice * x.qty;
+    }, 0),
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

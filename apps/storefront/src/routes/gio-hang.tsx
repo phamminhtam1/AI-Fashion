@@ -43,12 +43,13 @@ function CartPage() {
           {cart.map((it, i) => {
             const p = products.find((x) => x.id === it.productId);
             const itemImg = getCartItemImage(it, p);
-            const itemName = p?.name ?? "Sản phẩm";
-            const itemPrice = p ? (p.salePrice ?? p.price) * it.qty : 0;
+            const itemName = p?.name ?? it.productName ?? "Sản phẩm";
+            const itemPrice = (p ? (p.salePrice ?? p.price) : (it.unitPrice ?? 0)) * it.qty;
+            const productSlug = p?.slug ?? it.productSlug;
             return (
               <li key={i} className="flex gap-5 py-6">
-                {p ? (
-                  <Link to="/san-pham/$slug" params={{ slug: p.slug }}>
+                {productSlug ? (
+                  <Link to="/san-pham/$slug" params={{ slug: productSlug }}>
                     <img src={itemImg} alt={itemName} className="h-36 w-27 object-cover" />
                   </Link>
                 ) : (
@@ -57,7 +58,13 @@ function CartPage() {
                 <div className="flex flex-1 flex-col">
                   <div className="flex justify-between gap-4">
                     <div>
-                      <p className="font-medium line-clamp-2">{itemName}</p>
+                      {productSlug ? (
+                        <Link to="/san-pham/$slug" params={{ slug: productSlug }} className="line-clamp-2 font-medium transition-opacity hover:opacity-65">
+                          {itemName}
+                        </Link>
+                      ) : (
+                        <p className="font-medium line-clamp-2">{itemName}</p>
+                      )}
                       <p className="mt-1 text-sm text-muted-foreground">{it.colorName ? `${it.colorName} · ` : ""}{it.sku} · Size {it.size}</p>
                     </div>
                     <button onClick={() => removeItem(i)} aria-label="Xóa"><X className="h-4 w-4" /></button>

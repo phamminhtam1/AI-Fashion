@@ -1,9 +1,19 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Heart, Menu, Search, ShoppingBag, User, X, Minus, Plus, ChevronDown } from "lucide-react";
+import { ArrowUpRight, Heart, Menu, Search, ShoppingBag, User, X, Minus, Plus, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { categories, formatVND, ensureCategories, getNavItems, products, type NavItem } from "@/lib/products";
+import { fetchProducts } from "@/lib/api";
+import {
+  categories,
+  ensureCategories,
+  formatVND,
+  getNavItems,
+  mapApiProduct,
+  products,
+  type NavItem,
+  type Product,
+} from "@/lib/products";
 import { useStore, getCartItemImage } from "@/lib/store";
 import { toast } from "sonner";
 import heroImg from "@/assets/hero.jpg";
@@ -27,6 +37,7 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
   const [mobile, setMobile] = useState(false);
   const [search, setSearch] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
+  const [mobileOpenCategory, setMobileOpenCategory] = useState<string | null>(null);
   const [navItems, setNavItems] = useState<NavItem[]>(navItemsProp);
   const headerRef = useRef<HTMLElement>(null);
 
@@ -138,12 +149,12 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
               <Search className="h-5 w-5" strokeWidth={1.5} />
             </button>
             <div className="hidden gap-6 lg:flex items-center">
-              <Link to="/bo-suu-tap" className="text-xs uppercase tracking-widest hover:opacity-60">Bộ sưu tập</Link>
+              <Link to="/bo-suu-tap" className="text-xs font-medium uppercase tracking-widest hover:opacity-60">Bộ sưu tập</Link>
               <div className="relative group/lb py-2">
                 <Link
                   to="/lookbook"
                   search={{ collection: undefined }}
-                  className="text-xs uppercase tracking-widest hover:opacity-60 flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-medium uppercase tracking-widest hover:opacity-60 flex items-center gap-1 cursor-pointer"
                 >
                   <span>Lookbook</span>
                   <ChevronDown className="size-3 opacity-60 transition-transform group-hover/lb:rotate-180" />
@@ -192,7 +203,7 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
                   </div>
                 </div>
               </div>
-              <Link to="/blog" className="text-xs uppercase tracking-widest hover:opacity-60">Tạp chí</Link>
+              <Link to="/blog" className="text-xs font-medium uppercase tracking-widest hover:opacity-60">Tạp chí</Link>
             </div>
           </div>
           <Link to="/" className="justify-self-center flex items-center justify-center py-1 group/logo">
@@ -238,11 +249,14 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
                 key={n.slug}
                 className="relative"
                 onMouseEnter={() => setOpen(hasKids ? n.slug : null)}
+                onFocus={() => setOpen(hasKids ? n.slug : null)}
               >
                 <Link
                   to="/danh-muc/$slug"
                   params={{ slug: n.slug }}
-                  className={`text-[12px] uppercase tracking-[0.15em] underline-offset-8 hover:underline ${n.slug === "sale" ? "text-sale" : ""} ${open === n.slug ? "underline" : ""}`}
+                  aria-haspopup={hasKids ? "true" : undefined}
+                  aria-expanded={hasKids ? open === n.slug : undefined}
+                  className={`text-[12px] font-medium uppercase tracking-[0.15em] underline-offset-8 hover:underline ${n.slug === "sale" ? "text-sale" : ""} ${open === n.slug ? "underline" : ""}`}
                   activeProps={{ className: "underline" }}
                 >
                   {n.label}
@@ -252,92 +266,126 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
           })}
         </nav>
         {openNav ? (
-          <div
-            className="absolute inset-x-0 top-full z-[60] border-b border-border bg-background py-10 shadow-md"
-            role="menu"
+          <nav
+            className="absolute inset-x-0 top-full z-[60] border-b border-border/70 bg-background shadow-xl motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-200"
             aria-label={`Danh mục con ${openNav.label}`}
           >
-            <div className="mx-auto flex max-w-[1200px] flex-wrap justify-center gap-x-12 gap-y-8 px-8">
-              {megaCols.map((col, i) => (
-                <ul key={i} className="w-40 shrink-0 space-y-3 text-sm">
-                  {col.map((l) => (
-                    <li key={l.slug}>
-                      <Link
-                        to="/danh-muc/$slug"
-                        params={{ slug: l.slug }}
-                        className="text-muted-foreground hover:text-foreground"
-                        onClick={() => setOpen(null)}
-                      >
-                        {l.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ))}
-              <ul className="w-40 shrink-0 space-y-3 text-sm">
-                <li className="text-[11px] uppercase tracking-widest">Nổi bật</li>
-                <li>
-                  <Link to="/danh-muc/$slug" params={{ slug: "hang-moi" }} className="text-muted-foreground hover:text-foreground" onClick={() => setOpen(null)}>
-                    New Collection
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/danh-muc/$slug" params={{ slug: "ban-chay" }} className="text-muted-foreground hover:text-foreground" onClick={() => setOpen(null)}>
-                    Best Seller
-                  </Link>
-                </li>
-                <li>
+            <div className="mx-auto grid max-w-[1180px] grid-cols-1 items-start gap-8 px-5 py-7 sm:px-8 lg:grid-cols-[minmax(0,1fr)_170px_210px] lg:gap-10 lg:px-10 lg:py-8">
+              <section className="min-w-0">
+                <div className="mb-3 flex items-end justify-between gap-4 border-b border-border/70 pb-3">
+                  <div>
+                    <h2 className="font-serif text-xl leading-tight text-foreground">{openNav.label}</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">Khám phá các thiết kế mới nhất</p>
+                  </div>
                   <Link
                     to="/danh-muc/$slug"
                     params={{ slug: openNav.slug }}
-                    className="text-muted-foreground hover:text-foreground"
+                    className="group inline-flex shrink-0 items-center gap-1 text-xs font-medium text-foreground transition-colors hover:text-primary"
                     onClick={() => setOpen(null)}
                   >
-                    Xem tất cả {openNav.label}
+                    Xem tất cả <ArrowUpRight className="size-3.5 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                   </Link>
-                </li>
-              </ul>
+                </div>
+                <div className={`grid gap-x-5 ${megaCols.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+                  {megaCols.map((col, i) => (
+                    <ul key={i} className="space-y-0.5">
+                      {col.map((l) => (
+                        <li key={l.slug}>
+                          <Link
+                            to="/danh-muc/$slug"
+                            params={{ slug: l.slug }}
+                            className="group flex min-h-10 items-center justify-between gap-3 rounded-sm px-2 text-sm text-muted-foreground transition-colors duration-200 hover:bg-secondary/70 hover:text-foreground focus-visible:bg-secondary/70 focus-visible:text-foreground"
+                            onClick={() => setOpen(null)}
+                          >
+                            <span className="truncate">{l.label}</span>
+                            <ArrowUpRight className="size-3.5 shrink-0 opacity-0 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:opacity-60 group-focus-visible:opacity-60" />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  ))}
+                </div>
+              </section>
+              <section className="hidden min-w-0 lg:block">
+                <h3 className="mb-3 border-b border-border/70 pb-3 text-sm font-semibold text-foreground">Khám phá thêm</h3>
+                <ul className="space-y-1">
+                  <li>
+                    <Link to="/danh-muc/$slug" params={{ slug: "hang-moi" }} className="block rounded-sm px-2 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground" onClick={() => setOpen(null)}>
+                      New Collection
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/danh-muc/$slug" params={{ slug: "ban-chay" }} className="block rounded-sm px-2 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground" onClick={() => setOpen(null)}>
+                      Best Seller
+                    </Link>
+                  </li>
+                </ul>
+              </section>
               <Link
                 to="/danh-muc/$slug"
                 params={{ slug: "hang-moi" }}
-                className="group relative block aspect-[4/5] w-44 shrink-0 overflow-hidden"
+                className="group relative hidden aspect-[4/3] w-full overflow-hidden bg-secondary lg:block lg:aspect-[3/4]"
                 onClick={() => setOpen(null)}
               >
-                <img src={heroImg} alt="Bộ sưu tập Thu Đông" className="h-full w-full object-cover object-right transition-transform duration-700 group-hover:scale-105" />
-                <span className="absolute bottom-4 left-4 bg-background px-3 py-2 text-[11px] uppercase tracking-widest">Thu Đông 2026</span>
+                <img src={heroImg} alt="Bộ sưu tập Thu Đông 2026" className="h-full w-full object-cover object-right transition-transform duration-700 group-hover:scale-105" />
+                <span className="absolute inset-x-3 bottom-3 bg-background px-3 py-3 text-center text-sm font-medium text-foreground">Thu Đông 2026</span>
               </Link>
             </div>
-          </div>
+          </nav>
         ) : null}
       </div>
 
-      <Sheet open={mobile} onOpenChange={setMobile}>
+      <Sheet open={mobile} onOpenChange={(nextOpen) => {
+        setMobile(nextOpen);
+        if (!nextOpen) setMobileOpenCategory(null);
+      }}>
         <SheetContent side="left" className="w-[85vw] max-w-sm overflow-y-auto">
           <SheetHeader><SheetTitle className="font-serif tracking-[0.3em]">ÉLANE</SheetTitle></SheetHeader>
           <nav className="mt-6 flex flex-col">
             {navItems.map((n) => (
-              <div key={n.slug} className="border-b border-border">
-                <Link
-                  to="/danh-muc/$slug"
-                  params={{ slug: n.slug }}
-                  onClick={() => setMobile(false)}
-                  className={`block py-4 text-sm uppercase tracking-widest ${n.slug === "sale" ? "text-sale" : ""}`}
-                >
-                  {n.label}
-                </Link>
+              <div key={n.slug} className="border-b border-border/70">
+                <div className="flex items-center gap-3">
+                  <Link
+                    to="/danh-muc/$slug"
+                    params={{ slug: n.slug }}
+                    onClick={() => setMobile(false)}
+                    className={`flex-1 py-4 text-sm font-medium uppercase tracking-widest ${n.slug === "sale" ? "text-sale" : "text-foreground"}`}
+                  >
+                    {n.label}
+                  </Link>
+                  {n.children?.length ? (
+                    <button
+                      type="button"
+                      aria-label={`${mobileOpenCategory === n.slug ? "Thu gọn" : "Mở rộng"} ${n.label}`}
+                      aria-expanded={mobileOpenCategory === n.slug}
+                      aria-controls={`mobile-category-${n.slug}`}
+                      className="grid size-10 shrink-0 place-items-center text-muted-foreground transition-colors hover:text-foreground"
+                      onClick={() => setMobileOpenCategory((current) => current === n.slug ? null : n.slug)}
+                    >
+                      <ChevronDown className={`size-4 transition-transform duration-300 ease-in-out ${mobileOpenCategory === n.slug ? "rotate-180" : ""}`} />
+                    </button>
+                  ) : null}
+                </div>
                 {n.children?.length ? (
-                  <div className="flex flex-col gap-2 pb-3 pl-3">
-                    {n.children.map((ch) => (
-                      <Link
-                        key={ch.slug}
-                        to="/danh-muc/$slug"
-                        params={{ slug: ch.slug }}
-                        onClick={() => setMobile(false)}
-                        className="text-sm text-muted-foreground"
-                      >
-                        {ch.label}
-                      </Link>
-                    ))}
+                  <div
+                    id={`mobile-category-${n.slug}`}
+                    className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${mobileOpenCategory === n.slug ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                  >
+                    <div className="min-h-0 overflow-hidden">
+                      <div className="mb-3 ml-1 flex flex-col border-l border-border pl-4">
+                        {n.children.map((ch) => (
+                          <Link
+                            key={ch.slug}
+                            to="/danh-muc/$slug"
+                            params={{ slug: ch.slug }}
+                            onClick={() => setMobile(false)}
+                            className="py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                          >
+                            {ch.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -415,6 +463,9 @@ function Badge({ n }: { n: number }) {
 function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [q, setQ] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [results, setResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchFailed, setSearchFailed] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -438,11 +489,39 @@ function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }
     };
   }, [open, onClose]);
 
-  if (!open || !mounted) return null;
+  useEffect(() => {
+    const query = q.trim();
+    setResults([]);
+    setSearchFailed(false);
+    if (!open || !query) {
+      setIsSearching(false);
+      return;
+    }
 
-  const results = q.trim()
-    ? products.filter((p) => p.name.toLowerCase().includes(q.toLowerCase())).slice(0, 6)
-    : [];
+    let cancelled = false;
+    setIsSearching(true);
+    const timeout = window.setTimeout(async () => {
+      try {
+        const response = await fetchProducts({ q: query, limit: "6", page: "1" });
+        if (!cancelled) setResults((response.items ?? []).map(mapApiProduct));
+      } catch (error) {
+        console.error("Product search failed:", error);
+        if (!cancelled) {
+          setResults([]);
+          setSearchFailed(true);
+        }
+      } finally {
+        if (!cancelled) setIsSearching(false);
+      }
+    }, 220);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
+  }, [open, q]);
+
+  if (!open || !mounted) return null;
 
   return createPortal(
     <div
@@ -514,10 +593,18 @@ function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }
         )}
         {q && (
           <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3">
-            {results.length === 0 && (
+            {isSearching && (
+              <p className="col-span-full text-muted-foreground">Đang tìm sản phẩm...</p>
+            )}
+            {!isSearching && searchFailed && (
+              <p className="col-span-full text-muted-foreground">
+                Không thể tải kết quả tìm kiếm. Vui lòng thử lại.
+              </p>
+            )}
+            {!isSearching && !searchFailed && results.length === 0 && (
               <p className="col-span-full text-muted-foreground">Không tìm thấy sản phẩm cho "{q}".</p>
             )}
-            {results.map((p) => (
+            {!isSearching && results.map((p) => (
               <Link
                 key={p.id}
                 to="/san-pham/$slug"
@@ -568,17 +655,30 @@ function MiniCart() {
               {cart.map((it, i) => {
                 const p = products.find((x) => x.id === it.productId);
                 const itemImg = getCartItemImage(it, p);
-                const itemName = p?.name ?? "Sản phẩm";
-                const itemPrice = p ? (p.salePrice ?? p.price) * it.qty : 0;
+                const itemName = p?.name ?? it.productName ?? "Sản phẩm";
+                const itemPrice = (p ? (p.salePrice ?? p.price) : (it.unitPrice ?? 0)) * it.qty;
+                const productSlug = p?.slug ?? it.productSlug;
                 return (
                   <li key={i} className="flex gap-4">
                     {itemImg ? (
-                      <img src={itemImg} alt={itemName} className="h-28 w-21 object-cover" />
+                      productSlug ? (
+                        <Link to="/san-pham/$slug" params={{ slug: productSlug }} onClick={() => setCartOpen(false)} className="shrink-0">
+                          <img src={itemImg} alt={itemName} className="h-28 w-21 object-cover" />
+                        </Link>
+                      ) : (
+                        <img src={itemImg} alt={itemName} className="h-28 w-21 object-cover" />
+                      )
                     ) : (
                       <div className="h-28 w-21 bg-secondary" />
                     )}
                     <div className="flex flex-1 flex-col text-sm">
-                      <p className="line-clamp-2 font-medium leading-snug" title={itemName}>{itemName}</p>
+                      {productSlug ? (
+                        <Link to="/san-pham/$slug" params={{ slug: productSlug }} onClick={() => setCartOpen(false)} className="line-clamp-2 font-medium leading-snug transition-opacity hover:opacity-65" title={itemName}>
+                          {itemName}
+                        </Link>
+                      ) : (
+                        <p className="line-clamp-2 font-medium leading-snug" title={itemName}>{itemName}</p>
+                      )}
                       <p className="text-xs text-muted-foreground">{it.colorName ? `${it.colorName} · ` : ""}{it.sku} · Size {it.size}</p>
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex items-center border border-border">

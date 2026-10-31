@@ -1,9 +1,8 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
 import {
   Sparkles,
-  ShoppingBag,
   ArrowRight,
   ChevronLeft,
   ChevronRight,
@@ -17,16 +16,9 @@ import {
   registerProducts,
   mapApiProduct,
   formatVND,
-  getCategory,
   type Product,
 } from "@/lib/products";
-import {
-  fetchLookbooks,
-  fetchProducts,
-  fetchProduct,
-  type StoreLookbook,
-  type StoreLookbookItem,
-} from "@/lib/api";
+import { fetchLookbooks, fetchProducts, fetchProduct, type StoreLookbookItem } from "@/lib/api";
 import { VirtualTryOnDialog } from "@/components/tryon/VirtualTryOnDialog";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
@@ -36,10 +28,10 @@ const lookbookSearchSchema = z.object({
 
 function getMatchedProduct(
   item: { product_id?: string | null; product_slug?: string | null; link_url?: string | null },
-  map: Map<string, Product>
+  map: Map<string, Product>,
 ): Product | undefined {
-  if (item.product_id && map.has(item.product_id)) return map.get(item.product_id);
-  if (item.product_slug && map.has(item.product_slug)) return map.get(item.product_slug);
+  if (item.product_id) return map.get(item.product_id);
+  if (item.product_slug) return map.get(item.product_slug);
   if (item.link_url) {
     const match = item.link_url.match(/\/san-pham\/([a-zA-Z0-9_-]+)/);
     if (match && match[1] && map.has(match[1])) return map.get(match[1]);
@@ -85,13 +77,15 @@ function getCommercialCollectionSlug(lookbookSlug?: string | null): string | nul
   return null;
 }
 
+function normalizeLookbookSeason(season?: string | null): string | null {
+  if (!season) return null;
+  return season.trim().replace(/\b(\d{4})(?:\s+\1)+\b/g, "$1");
+}
+
 export const Route = createFileRoute("/lookbook")({
   validateSearch: lookbookSearchSchema,
   loader: async () => {
-    const [_, lookbooksRes] = await Promise.all([
-      ensureCategories(),
-      fetchLookbooks(),
-    ]);
+    const [_, lookbooksRes] = await Promise.all([ensureCategories(), fetchLookbooks()]);
 
     // Extract all product IDs and slugs referenced by lookbook items
     const productSlugs = new Set<string>();
@@ -112,14 +106,20 @@ export const Route = createFileRoute("/lookbook")({
       try {
         const idList = Array.from(productIds);
         const slugList = Array.from(productSlugs);
-        const res = await fetchProducts({
-          ids: idList.length > 0 ? idList.join(",") : undefined,
-          slugs: slugList.length > 0 ? slugList.join(",") : undefined,
-          limit: "100",
-        });
+        const res = await fetchProducts(
+          {
+            ids: idList.length > 0 ? idList.join(",") : undefined,
+            slugs: slugList.length > 0 ? slugList.join(",") : undefined,
+            limit: "100",
+          },
+          { cache: "no-store" },
+        );
         attachedProducts = (res.items ?? []).map(mapApiProduct);
       } catch (err) {
-        console.warn("Batch fetch lookbook products failed, falling back to individual fetches:", err);
+        console.warn(
+          "Batch fetch lookbook products failed, falling back to individual fetches:",
+          err,
+        );
       }
 
       // Check for any missing products and fetch individually if needed
@@ -136,10 +136,10 @@ export const Route = createFileRoute("/lookbook")({
       if (missingIdentifiers.length > 0) {
         const fallbackRes = await Promise.all(
           missingIdentifiers.map((ident) =>
-            fetchProduct(ident)
+            fetchProduct(ident, { cache: "no-store" })
               .then(mapApiProduct)
-              .catch(() => null)
-          )
+              .catch(() => null),
+          ),
         );
         for (const p of fallbackRes) {
           if (p && !fetchedIds.has(p.id)) {
@@ -170,8 +170,8 @@ export const Route = createFileRoute("/lookbook")({
   },
   head: () =>
     seo(
-      "Lookbook Thời Trang ÉLANE — Bộ Sưu Tập Thu Đông 2026",
-      "Khám phá các khung hình thời trang cao cấp từ Lookbook ÉLANE với hiệu ứng Masonry Runway chuyển động sống động. Cảm hứng phối đồ thanh lịch, mua sắm outfit và trải nghiệm Thử đồ ảo AI.",
+      "Lookbook — Những câu chuyện phong cách từ ÉLANE",
+      "Khám phá các bộ ảnh thời trang ÉLANE, xem từng look và tìm sản phẩm xuất hiện trong khung hình.",
     ),
   component: LookbookPage,
 });
@@ -183,1426 +183,550 @@ type LookbookCardItem = StoreLookbookItem & {
 };
 
 function LookbookPage() {
-  const { lookbooks: initialLookbooks, products } = Route.useLoaderData();
+  const { lookbooks, products } = Route.useLoaderData();
   const { collection } = Route.useSearch();
-
-  // Matched active lookbook based on search param or null ("all")
-  const activeLookbook = useMemo(() => {
-    if (!collection || collection === "all") return null;
-    return initialLookbooks.find((lb) => matchLookbookSlug(lb.slug, collection)) || null;
-  }, [collection, initialLookbooks]);
-
-  const selectedSlug = activeLookbook ? activeLookbook.slug : "all";
-
-  // Lightbox Modal state
-  const [activeItem, setActiveItem] = useState<{
-    item: StoreLookbookItem;
-    lookbookTitle: string;
-    lookbookSlug?: string;
-    season: string | null;
-  } | null>(null);
-
-  // Virtual Try-on dialog state
+  const [lookIndex, setLookIndex] = useState(0);
+  const [lightboxItem, setLightboxItem] = useState<StoreLookbookItem | null>(null);
   const [tryOnProduct, setTryOnProduct] = useState<Product | null>(null);
   const [tryOnOpen, setTryOnOpen] = useState(false);
 
-  // Active look index for interactive collection editorial viewer
-  const [activeLookIndex, setActiveLookIndex] = useState(0);
+  const activeLookbook = useMemo(() => {
+    if (!collection || collection === "all") return null;
+    return lookbooks.find((entry) => matchLookbookSlug(entry.slug, collection)) ?? null;
+  }, [collection, lookbooks]);
+  const isOverview = !activeLookbook;
 
-  // Reset active look index when collection changes
-  useEffect(() => {
-    setActiveLookIndex(0);
-  }, [selectedSlug]);
-
-  // Map products by id and by slug for fast matching
   const productMap = useMemo(() => {
     const map = new Map<string, Product>();
-    for (const p of products) {
-      map.set(p.id, p);
-      map.set(p.slug, p);
+    for (const product of products) {
+      map.set(product.id, product);
+      map.set(product.slug, product);
     }
     return map;
   }, [products]);
 
-  const displayItems = useMemo(() => {
-    if (activeLookbook) {
-      return activeLookbook.items.map((it) => ({
-        ...it,
-        lookbookTitle: activeLookbook.title,
-        lookbookSlug: activeLookbook.slug,
-        season: activeLookbook.season,
-      }));
-    }
-    // "all" collection: flatten all items
-    const list: LookbookCardItem[] = [];
-    for (const lb of initialLookbooks) {
-      for (const it of lb.items) {
-        list.push({
-          ...it,
-          lookbookTitle: lb.title,
-          lookbookSlug: lb.slug,
-          season: lb.season,
-        });
-      }
-    }
-    return list;
-  }, [activeLookbook, initialLookbooks]);
-
-  // Matched products in active lookbook for wardrobe selection
-  const collectionProducts = useMemo(() => {
+  const lookItems = useMemo<LookbookCardItem[]>(() => {
     if (!activeLookbook) return [];
-    const prods: Product[] = [];
-    const seenIds = new Set<string>();
-    for (const it of activeLookbook.items) {
-      const p = getMatchedProduct(it, productMap);
-      if (p && !seenIds.has(p.id)) {
-        seenIds.add(p.id);
-        prods.push(p);
-      }
+    return activeLookbook.items.map((item) => ({
+      ...item,
+      lookbookTitle: activeLookbook.title,
+      lookbookSlug: activeLookbook.slug,
+      season: activeLookbook.season,
+    }));
+  }, [activeLookbook]);
+
+  useEffect(() => setLookIndex(0), [activeLookbook?.id]);
+
+  const safeLookIndex = Math.min(lookIndex, Math.max(lookItems.length - 1, 0));
+  const currentItem = lookItems[safeLookIndex];
+  const currentProduct = currentItem ? getMatchedProduct(currentItem, productMap) : undefined;
+  const productsInCollection = useMemo(() => {
+    const uniqueProducts = new Map<string, Product>();
+    for (const item of lookItems) {
+      const product = getMatchedProduct(item, productMap);
+      if (product) uniqueProducts.set(product.id, product);
     }
-    return prods;
-  }, [activeLookbook, productMap]);
+    return [...uniqueProducts.values()];
+  }, [lookItems, productMap]);
 
-  // Previous & next lookbook for collection navigation
-  const activeLookbookIndex = useMemo(() => {
-    if (!activeLookbook) return -1;
-    return initialLookbooks.findIndex((lb) => lb.slug === selectedSlug);
-  }, [activeLookbook, initialLookbooks, selectedSlug]);
-
-  const prevLookbook = useMemo(() => {
-    if (activeLookbookIndex === -1) return null;
-    return activeLookbookIndex > 0
-      ? initialLookbooks[activeLookbookIndex - 1]
-      : initialLookbooks[initialLookbooks.length - 1];
-  }, [activeLookbookIndex, initialLookbooks]);
-
-  const nextLookbook = useMemo(() => {
-    if (activeLookbookIndex === -1) return null;
-    return activeLookbookIndex < initialLookbooks.length - 1
-      ? initialLookbooks[activeLookbookIndex + 1]
-      : initialLookbooks[0];
-  }, [activeLookbookIndex, initialLookbooks]);
-
-  // Distribute items into 4 distinct vertical columns for runway animation
-  const runwayColumns = useMemo(() => {
-    if (displayItems.length === 0) return [[], [], [], []];
-
-    const cols: LookbookCardItem[][] = [[], [], [], []];
-    displayItems.forEach((item, idx) => {
-      cols[idx % 4].push(item);
+  const moveLook = (direction: -1 | 1) => {
+    setLookIndex((index) => {
+      if (lookItems.length < 2) return 0;
+      return (index + direction + lookItems.length) % lookItems.length;
     });
+  };
 
-    // Ensure each column has sufficient height to scroll infinitely
-    return cols.map((col) => {
-      if (col.length === 0) return [];
-      let expanded = [...col];
-      while (expanded.length < 4) {
-        expanded = [...expanded, ...col];
-      }
-      // Duplicate once for seamless -50% translation loop
-      return [...expanded, ...expanded];
-    });
-  }, [displayItems]);
-
-  // Current item index in the active list for lightbox navigation
-  const activeIndex = useMemo(() => {
-    if (!activeItem) return -1;
-    return displayItems.findIndex((d) => d.id === activeItem.item.id);
-  }, [activeItem, displayItems]);
-
-  const handlePrev = useCallback(() => {
-    if (activeIndex > 0) {
-      const prev = displayItems[activeIndex - 1];
-      setActiveItem({
-        item: prev,
-        lookbookTitle: prev.lookbookTitle,
-        lookbookSlug: prev.lookbookSlug,
-        season: prev.season,
-      });
-    } else if (displayItems.length > 0) {
-      const last = displayItems[displayItems.length - 1];
-      setActiveItem({
-        item: last,
-        lookbookTitle: last.lookbookTitle,
-        lookbookSlug: last.lookbookSlug,
-        season: last.season,
-      });
-    }
-  }, [activeIndex, displayItems]);
-
-  const handleNext = useCallback(() => {
-    if (activeIndex >= 0 && activeIndex < displayItems.length - 1) {
-      const next = displayItems[activeIndex + 1];
-      setActiveItem({
-        item: next,
-        lookbookTitle: next.lookbookTitle,
-        lookbookSlug: next.lookbookSlug,
-        season: next.season,
-      });
-    } else if (displayItems.length > 0) {
-      const first = displayItems[0];
-      setActiveItem({
-        item: first,
-        lookbookTitle: first.lookbookTitle,
-        lookbookSlug: first.lookbookSlug,
-        season: first.season,
-      });
-    }
-  }, [activeIndex, displayItems]);
-
-  // Keyboard navigation for lightbox
-  useEffect(() => {
-    if (!activeItem) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") handlePrev();
-      if (e.key === "ArrowRight") handleNext();
-      if (e.key === "Escape") setActiveItem(null);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeItem, handlePrev, handleNext]);
-
-  // Get matched product for active item
-  const matchedProduct = useMemo(() => {
-    if (!activeItem) return null;
-    return getMatchedProduct(activeItem.item, productMap) ?? null;
-  }, [activeItem, productMap]);
-
-  const handleOpenTryOn = (prod: Product) => {
-    setTryOnProduct(prod);
+  const openTryOn = (product: Product) => {
+    setTryOnProduct(product);
     setTryOnOpen(true);
   };
 
-  // Reusable card renderer
-  const renderLookbookCard = (item: LookbookCardItem, idx: number, isRunway = false) => {
-    const matchedProd = getMatchedProduct(item, productMap);
-
-    return (
-      <figure
-        key={`${item.id}-${idx}`}
-        className="group relative mb-5 break-inside-avoid overflow-hidden rounded-xl border border-border/70 bg-card transition-all duration-300 hover:shadow-2xl hover:border-primary/50 cursor-pointer select-none"
-        onClick={() =>
-          setActiveItem({
-            item,
-            lookbookTitle: item.lookbookTitle,
-            lookbookSlug: item.lookbookSlug,
-            season: item.season,
-          })
-        }
-      >
-        {/* Photo Container */}
-        <div className="relative overflow-hidden bg-secondary">
-          <img
-            src={item.image_url}
-            alt={item.title || "ÉLANE Lookbook"}
-            loading="lazy"
-            className={`w-full object-cover transition-transform duration-700 group-hover:scale-105 ${idx % 3 === 0
-              ? "aspect-[3/4]"
-              : idx % 3 === 1
-                ? "aspect-[4/5]"
-                : "aspect-[3/4]"
-              }`}
-          />
-
-          {/* Gradient Overlay & Hover Actions */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex flex-col justify-between p-3.5">
-            {/* Top Badges */}
-            <div className="flex items-center justify-between gap-1.5">
-              <span className="rounded-full bg-black/60 px-2.5 py-0.5 text-[10px] font-medium tracking-wider text-white backdrop-blur-md">
-                {item.season || "EDITORIAL"}
-              </span>
-              <div className="flex items-center gap-1.5">
-                {isRunway && item.lookbookSlug && (
-                  <Link
-                    to="/lookbook"
-                    search={{ collection: item.lookbookSlug }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="cursor-pointer rounded-full bg-black/60 hover:bg-black/90 border border-white/20 hover:border-white/50 px-2.5 py-0.5 text-[10px] font-medium tracking-wider text-white backdrop-blur-md transition-all inline-flex items-center gap-1 hover:scale-105"
-                    title={`Chuyển đến BST ${item.lookbookTitle}`}
-                  >
-                    <span>BST {item.lookbookTitle}</span>
-                    <ArrowRight className="size-2.5" />
-                  </Link>
-                )}
-                <div className="size-7 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-transform hover:scale-110">
-                  <ZoomIn className="size-3.5" />
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Info on Hover */}
-            <div className="space-y-1.5">
-              {matchedProd && (
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-0.5 text-[10px] font-semibold text-black backdrop-blur-sm shadow">
-                  <ShoppingBag className="size-2.5" />
-                  <span>Shop The Look</span>
-                </div>
-              )}
-              <p className="text-[11px] text-white font-medium line-clamp-2 leading-snug" title={item.title || item.lookbookTitle}>
-                {item.title || item.lookbookTitle}
-              </p>
-              {item.caption && (
-                <p className="text-[10px] text-white/80 font-light line-clamp-2 leading-snug">
-                  {item.caption}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Caption Footer */}
-        <figcaption className="p-3">
-          <div className="flex items-baseline justify-between gap-1.5">
-            <h3 className="font-serif text-xs md:text-sm text-foreground font-medium line-clamp-2 min-h-[2.5em] leading-snug" title={item.title || item.lookbookTitle}>
-              {item.title || item.lookbookTitle}
-            </h3>
-            {matchedProd && (
-              <span className="text-[9px] font-semibold uppercase tracking-wider text-primary shrink-0 bg-primary/10 px-1.5 py-0.5 rounded">
-                Shoppable
-              </span>
-            )}
-          </div>
-          {isRunway && item.lookbookSlug && (
-            <div className="mt-1.5 pt-1.5 border-t border-border/40 flex items-center justify-between">
-              <Link
-                to="/lookbook"
-                search={{ collection: item.lookbookSlug }}
-                onClick={(e) => e.stopPropagation()}
-                className="text-[11px] text-muted-foreground hover:text-primary font-medium transition inline-flex items-center gap-1 group/b"
-              >
-                <span>BST {item.lookbookTitle}</span>
-                <ArrowRight className="size-2.5 transition-transform group-hover/b:translate-x-0.5" />
-              </Link>
-            </div>
-          )}
-          {item.caption && !isRunway && (
-            <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
-              {item.caption}
-            </p>
-          )}
-        </figcaption>
-      </figure>
-    );
-  };
+  const featuredLookbook = lookbooks.find((entry) => entry.items.length > 0) ?? lookbooks[0];
+  const featuredImage = featuredLookbook?.cover_image_url || featuredLookbook?.items[0]?.image_url;
 
   return (
     <>
-      {/* Standard Breadcrumb matching other pages */}
-      <div className="mx-auto max-w-[1600px] px-6 pt-6 pb-2 md:px-8 md:pt-8">
-        <nav aria-label="Breadcrumb" className="text-base text-muted-foreground flex items-center gap-2 flex-wrap font-medium">
-          <Link to="/" className="hover:text-foreground transition-colors">
+      <main className="lookbook-page mx-auto w-full max-w-[1600px] px-4 pb-20 pt-6 md:px-8 md:pt-10">
+        <nav
+          aria-label="Breadcrumb"
+          className="mb-8 flex flex-wrap items-center gap-2 text-base font-medium text-muted-foreground md:mb-10"
+        >
+          <Link to="/" className="transition-colors hover:text-foreground">
             Trang chủ
           </Link>
-          <span className="opacity-40">/</span>
+          <span aria-hidden="true" className="opacity-40">
+            /
+          </span>
           {activeLookbook ? (
             <>
               <Link
                 to="/lookbook"
                 search={{ collection: undefined }}
-                className="hover:text-foreground transition-colors"
+                className="transition-colors hover:text-foreground"
               >
                 Lookbook
               </Link>
-              <span className="opacity-40">/</span>
-              <span className="text-foreground font-medium">{activeLookbook.title}</span>
+              <span aria-hidden="true" className="opacity-40">
+                /
+              </span>
+              <span aria-current="page" className="text-foreground">
+                {activeLookbook.title}
+              </span>
             </>
           ) : (
-            <span className="text-foreground font-medium">Lookbook</span>
+            <span aria-current="page" className="text-foreground">
+              Lookbook
+            </span>
           )}
         </nav>
-      </div>
 
-      {/* Hero Editorial Masthead */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-secondary/25 via-background to-background pt-8 pb-6 md:pt-12 md:pb-10 text-center">
-        {/* Decorative Background Watermark */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none opacity-[0.03] text-foreground font-serif text-[130px] sm:text-[190px] md:text-[250px] font-bold tracking-widest leading-none"
-        >
-          {activeLookbook ? activeLookbook.season || "ÉLANE" : "ÉLANE"}
-        </div>
-
-        <div className="relative mx-auto max-w-4xl px-6 space-y-4">
-          {/* Grand Main Title */}
-          <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-normal tracking-tight text-foreground">
-            {activeLookbook ? activeLookbook.title : "ÉLANE Lookbook"}
-          </h1>
-
-          {/* Poetic Subtitle / Quote */}
-          {(activeLookbook?.subtitle || !activeLookbook) && (
-            <p className="font-serif italic text-base sm:text-lg md:text-xl text-foreground/80 font-light max-w-2xl mx-auto">
-              "{activeLookbook?.subtitle || "Đối thoại thị giác giữa tinh thần thanh lịch Paris và phom dáng đương đại"}"
-            </p>
-          )}
-
-          {/* Commercial Collection link if matched */}
-          {activeLookbook && getCommercialCollectionSlug(activeLookbook.slug) && (
-            <div className="pt-1">
-              <Link
-                to="/bo-suu-tap/$slug"
-                params={{ slug: getCommercialCollectionSlug(activeLookbook.slug)! }}
-                className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-card/80 px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/50 transition shadow-xs backdrop-blur-md"
-              >
-                <ShoppingBag className="size-3 text-primary" />
-                <span>Xem các sản phẩm thương mại của BST {activeLookbook.title} tại Cửa hàng</span>
-                <ArrowRight className="size-3" />
-              </Link>
-            </div>
-          )}
-
-          {/* Refined Description */}
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl mx-auto pt-1 font-light">
-            {activeLookbook?.description ||
-              "Khám phá thế giới thời trang quý cô thanh lịch qua dòng thác ảnh chuyển động vô tận. Cảm hứng phối đồ, câu chuyện phong cách và trải nghiệm Thử đồ ảo AI trực tiếp trên từng bộ trang phục."}
-          </p>
-        </div>
-      </section>
-
-      {/* Sticky Editorial Collection Switcher Tabs */}
-      <div className="sticky top-0 z-30 backdrop-blur-md py-3 shadow-xs">
-        <div className="mx-auto max-w-[1600px] px-4 md:px-8">
-          <div className="flex items-center justify-start md:justify-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-            <Link
-              to="/lookbook"
-              search={{ collection: undefined }}
-              className={`cursor-pointer group relative shrink-0 overflow-hidden rounded-full px-4 py-2 sm:px-5 sm:py-2.5 text-xs uppercase transition-all duration-300 flex items-center gap-2.5 ${selectedSlug === "all"
-                ? "bg-foreground text-background font-semibold shadow-md ring-1 ring-foreground"
-                : "bg-background/60 text-muted-foreground hover:text-foreground hover:bg-secondary/70 border border-border/70 hover:border-foreground/40"
-                }`}
-            >
-              <span
-                className={`relative z-10 font-medium transition-all duration-300 ${selectedSlug === "all"
-                  ? "tracking-[0.20em]"
-                  : "tracking-[0.16em] group-hover:tracking-[0.20em]"
-                  }`}
-              >
-                Tất cả bộ ảnh
-              </span>
-
-              <span
-                className={`relative z-10 rounded-full px-2 py-0.5 text-[10px] font-sans font-medium transition-all duration-300 ${selectedSlug === "all"
-                  ? "bg-background/20 text-background"
-                  : "bg-secondary text-muted-foreground group-hover:text-foreground group-hover:scale-105"
-                  }`}
-              >
-                {initialLookbooks.reduce((acc, lb) => acc + lb.items.length, 0)}
-              </span>
-
-              <span className="absolute bottom-1.5 left-1/2 h-px w-0 -translate-x-1/2 bg-current transition-all duration-300 group-hover:w-1/2" />
-
-              {selectedSlug === "all" && (
-                <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2.4s_infinite]" />
-              )}
-            </Link>
-
-            {initialLookbooks.map((lb) => {
-              const isSelected = selectedSlug === lb.slug;
-
-              return (
-                <Link
-                  key={lb.id}
-                  to="/lookbook"
-                  search={{ collection: lb.slug }}
-                  className={`cursor-pointer group relative shrink-0 overflow-hidden rounded-full px-4 py-2 sm:px-5 sm:py-2.5 text-xs uppercase transition-all duration-300 flex items-center gap-2.5 ${isSelected
-                    ? "bg-foreground text-background font-semibold shadow-md ring-1 ring-foreground"
-                    : "bg-background/60 text-muted-foreground hover:text-foreground hover:bg-secondary/70 border border-border/70 hover:border-foreground/40"
-                    }`}
-                >
-                  <span
-                    className={`relative z-10 font-medium transition-all duration-300 ${isSelected
-                      ? "tracking-[0.20em]"
-                      : "tracking-[0.16em] group-hover:tracking-[0.20em]"
-                      }`}
-                  >
-                    {lb.title}
-                  </span>
-
-                  {lb.season && (
-                    <span
-                      className={`relative z-10 rounded-full px-2 py-0.5 text-[9px] font-sans font-medium tracking-wider transition-all duration-300 ${isSelected
-                        ? "bg-background/20 text-background"
-                        : "bg-secondary/90 text-muted-foreground group-hover:text-foreground group-hover:scale-105"
-                        }`}
-                    >
-                      {lb.season}
-                    </span>
-                  )}
-
-                  <span className="absolute bottom-1.5 left-1/2 h-px w-0 -translate-x-1/2 bg-current transition-all duration-300 group-hover:w-1/2" />
-
-                  {isSelected && (
-                    <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2.4s_infinite]" />
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-[1600px] px-6 py-4 md:px-8">
-        {/* EMPTY STATE */}
-        {displayItems.length === 0 ? (
-          <div className="py-24 text-center">
-            <p className="text-sm text-muted-foreground font-light">
-              Chưa có hình ảnh nào trong bộ sưu tập này.
-            </p>
-          </div>
-        ) : selectedSlug === "all" ? (
-          /* MODE 1: DYNAMIC INFINITE AUTO-SCROLL MASONRY RUNWAY */
-          <div className="relative mt-8">
-            <div
-              className={`h-[740px] md:h-[880px] overflow-hidden mask-gradient-y ${activeItem || tryOnOpen ? "animation-paused" : ""
-                }`}
-            >
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 h-full">
-                {/* Column 0: Scroll Up Slow */}
-                <div className="runway-column relative">
-                  <div className="animate-masonry-up-slow">
-                    {runwayColumns[0].map((item, idx) =>
-                      renderLookbookCard(item, idx, true),
-                    )}
-                  </div>
-                </div>
-
-                {/* Column 1: Scroll Down Slow */}
-                <div className="runway-column relative">
-                  <div className="animate-masonry-down-slow">
-                    {runwayColumns[1].map((item, idx) =>
-                      renderLookbookCard(item, idx, true),
-                    )}
-                  </div>
-                </div>
-
-                {/* Column 2: Scroll Up Fast (hidden on mobile, visible on md+) */}
-                <div className="runway-column relative hidden md:block">
-                  <div className="animate-masonry-up-fast">
-                    {runwayColumns[2].map((item, idx) =>
-                      renderLookbookCard(item, idx, true),
-                    )}
-                  </div>
-                </div>
-
-                {/* Column 3: Scroll Down Fast (hidden on mobile/tablet, visible on xl+) */}
-                <div className="runway-column relative hidden xl:block">
-                  <div className="animate-masonry-down-fast">
-                    {runwayColumns[3].map((item, idx) =>
-                      renderLookbookCard(item, idx, true),
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* MODE 2: HAUTE COUTURE COLLECTION EDITORIAL EXPERIENCE */
-          <div className="mt-8 space-y-20">
-            {/* 1. HERO RUNWAY SHOWCASE: INTERACTIVE EDITORIAL STAGE */}
-            {displayItems.length > 0 && (() => {
-              const safeHeroIndex = Math.min(activeLookIndex, Math.max(0, displayItems.length - 1));
-              const currentHeroItem = displayItems[safeHeroIndex] || displayItems[0];
-              const currentHeroIndex = safeHeroIndex;
-              const matchedProd = getMatchedProduct(currentHeroItem, productMap);
-
-              return (
-                <div
-                  id="lookbook-hero-stage"
-                  className="relative rounded-3xl bg-secondary/30 border border-border/70 p-4 sm:p-6 lg:p-8 overflow-hidden shadow-xs backdrop-blur-xs scroll-mt-24"
-                >
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
-                    {/* Left: Large Portrait Editorial Image */}
-                    <div className="lg:col-span-7 relative group overflow-hidden rounded-2xl bg-neutral-950 aspect-[3/4] min-h-[480px] md:min-h-[620px]">
-                      <img
-                        key={currentHeroItem.id}
-                        src={currentHeroItem.image_url}
-                        alt={currentHeroItem.title || `Look 0${currentHeroIndex + 1}`}
-                        className="w-full h-full object-cover object-center transition-all duration-700 ease-out group-hover:scale-105"
-                      />
-
-                      {/* Top Bar Badges */}
-                      <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
-                        <span className="rounded-full bg-black/65 px-3.5 py-1 text-[11px] font-sans font-medium tracking-[0.2em] uppercase text-white backdrop-blur-md border border-white/10">
-                          LOOK 0{currentHeroIndex + 1} / 0{displayItems.length} · {currentHeroItem.season || activeLookbook?.season || "2026 ARCHIVE"}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setActiveItem({
-                              item: currentHeroItem,
-                              lookbookTitle: currentHeroItem.lookbookTitle,
-                              lookbookSlug: currentHeroItem.lookbookSlug,
-                              season: currentHeroItem.season,
-                            })
-                          }
-                          className="pointer-events-auto size-9 rounded-full bg-black/40 text-white backdrop-blur-md flex items-center justify-center transition-all hover:bg-black/80 hover:scale-105 border border-white/10"
-                          title="Phóng to toàn màn hình"
-                        >
-                          <ZoomIn className="size-4" />
-                        </button>
-                      </div>
-
-                      {/* Interactive Arrow Navigators over photo */}
-                      {displayItems.length > 1 && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveLookIndex((prev) => (prev > 0 ? prev - 1 : displayItems.length - 1));
-                            }}
-                            className="cursor-pointer absolute left-3.5 top-1/2 -translate-y-1/2 size-10 rounded-full bg-black/50 text-white backdrop-blur-md border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/80 hover:scale-110 shadow-lg"
-                            aria-label="Xem look trước"
-                          >
-                            <ChevronLeft className="size-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveLookIndex((prev) => (prev < displayItems.length - 1 ? prev + 1 : 0));
-                            }}
-                            className="cursor-pointer absolute right-3.5 top-1/2 -translate-y-1/2 size-10 rounded-full bg-black/50 text-white backdrop-blur-md border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/80 hover:scale-110 shadow-lg"
-                            aria-label="Xem look tiếp theo"
-                          >
-                            <ChevronRight className="size-5" />
-                          </button>
-                        </>
-                      )}
-
-                      {/* Bottom Floating Action Bar on photo */}
-                      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3">
-                        <div className="inline-flex items-center gap-2 rounded-full bg-black/70 px-3.5 py-1.5 text-xs text-white backdrop-blur-md border border-white/10 font-sans tracking-wide">
-                          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-                          <span>{currentHeroItem.title || `Look 0${currentHeroIndex + 1}`}</span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setActiveItem({
-                                item: currentHeroItem,
-                                lookbookTitle: currentHeroItem.lookbookTitle,
-                                lookbookSlug: currentHeroItem.lookbookSlug,
-                                season: currentHeroItem.season,
-                              })
-                            }
-                            className="cursor-pointer inline-flex items-center gap-1.5 rounded-full bg-white/90 text-black px-3.5 py-1.5 text-xs font-medium hover:bg-white shadow transition"
-                          >
-                            <ZoomIn className="size-3.5" />
-                            <span className="hidden sm:inline">Phóng to</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right: Editorial Narrative, Outfit Module, Styling & Look Filmstrip */}
-                    <div className="lg:col-span-5 flex flex-col justify-between gap-5 py-1">
-                      {/* Top Editorial Story */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-xs font-sans font-medium uppercase tracking-[0.22em] text-primary">
-                          <span>LOOK 0{currentHeroIndex + 1} / 0{displayItems.length}</span>
-                          <span className="h-1 w-1 rounded-full bg-primary/40" />
-                          <span>{activeLookbook?.title}</span>
-                          <span className="h-1 w-1 rounded-full bg-primary/40" />
-                          <span>{activeLookbook?.season || "2026"}</span>
-                        </div>
-
-                        <h3 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-foreground font-normal tracking-tight leading-tight">
-                          {currentHeroItem.title || `Look 0${currentHeroIndex + 1}`}
-                        </h3>
-
-                        <p className="text-sm md:text-[15px] text-muted-foreground font-light leading-relaxed">
-                          {currentHeroItem.caption ||
-                            `Khung hình tiêu điểm trong bộ sưu tập ${activeLookbook?.title}, tôn vinh nét đẹp đương đại cùng tinh thần tối giản sang trọng.`}
-                        </p>
-                      </div>
-
-                      {/* Shoppable Outfit Module */}
-                      <div className="space-y-3">
-                        {matchedProd ? (() => {
-                          const hasStock = Boolean(
-                            matchedProd.variants &&
-                            matchedProd.variants.length > 0 &&
-                            matchedProd.variants.some((v) => (v.available ?? 0) > 0)
-                          );
-
-                          return (
-                            <div className="rounded-2xl border border-border/80 bg-background/95 p-4 sm:p-4.5 space-y-3.5 shadow-xs">
-                              <div className="flex gap-4 items-start">
-                                {/* Prominent Portrait Image */}
-                                <Link
-                                  to="/san-pham/$slug"
-                                  params={{ slug: matchedProd.slug }}
-                                  className="relative w-28 sm:w-32 md:w-36 aspect-[3/4] rounded-xl overflow-hidden bg-secondary shrink-0 border border-border/60 block group/prod"
-                                >
-                                  <img
-                                    src={matchedProd.images[0] || currentHeroItem.image_url}
-                                    alt={matchedProd.name}
-                                    className="size-full object-cover object-top transition-transform duration-500 group-hover/prod:scale-105"
-                                  />
-                                  {matchedProd.salePrice && matchedProd.price > matchedProd.salePrice && (
-                                    <span className="absolute top-2 left-2 rounded-md bg-[#8B1E2D] text-white text-[10px] font-sans font-semibold tracking-wider px-1.5 py-0.5 shadow-xs uppercase">
-                                      -{Math.round(((matchedProd.price - matchedProd.salePrice) / matchedProd.price) * 100)}%
-                                    </span>
-                                  )}
-                                  <div className="absolute inset-x-0 bottom-0 py-1 bg-black/60 backdrop-blur-xs text-white text-[10px] font-sans font-medium text-center opacity-0 group-hover/prod:opacity-100 transition-opacity uppercase tracking-wider">
-                                    Xem sản phẩm
-                                  </div>
-                                </Link>
-
-                                {/* Product Info Beside Image */}
-                                <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-0.5">
-                                  <div>
-                                    {/* Name + price */}
-                                    <div className="flex items-start justify-between gap-5">
-                                      <div className="min-w-0 flex-1">
-                                        <Link
-                                          to="/san-pham/$slug"
-                                          params={{ slug: matchedProd.slug }}
-                                          className="block"
-                                        >
-                                          <h3 className="font-serif text-[18px] sm:text-[19px] font-medium leading-[1.28] tracking-[-0.01em] text-foreground line-clamp-2 hover:opacity-70 transition-opacity duration-200">
-                                            {matchedProd.name}
-                                          </h3>
-                                        </Link>
-
-                                        <p className="mt-1.5 text-[11.5px] font-sans font-medium tracking-[0.06em] text-muted-foreground/80">
-                                          Mã sản phẩm: {matchedProd.sku || matchedProd.id.slice(0, 8).toUpperCase()}
-                                        </p>
-                                      </div>
-
-                                      <div className="shrink-0 text-right">
-                                        {matchedProd.salePrice ? (
-                                          <>
-                                            <div className="text-[16px] font-semibold text-foreground">
-                                              {formatVND(matchedProd.salePrice)}
-                                            </div>
-
-                                            <div className="mt-0.5 text-[11.5px] font-medium text-muted-foreground/55 line-through">
-                                              {formatVND(matchedProd.price)}
-                                            </div>
-                                          </>
-                                        ) : (
-                                          <div className="text-[16px] font-semibold text-foreground">
-                                            {formatVND(matchedProd.price)}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {/* Material */}
-                                    {matchedProd.material && (
-                                      <p className="mt-4 text-[13px] leading-5 text-muted-foreground/90 line-clamp-2">
-                                        {matchedProd.material}
-                                      </p>
-                                    )}
-                                  </div>
-
-                                  {/* Bottom */}
-                                  <div className="mt-4 border-t border-border/40 pt-3">
-                                    <div className="flex items-center justify-between gap-4">
-                                      {/* Stock */}
-                                      <div className="flex items-center gap-2">
-                                        <span
-                                          className={`size-2 rounded-full ${hasStock ? "bg-emerald-500" : "bg-neutral-400"
-                                            }`}
-                                        />
-
-                                        <span
-                                          className={`text-[11px] font-semibold tracking-[0.08em] ${hasStock
-                                            ? "text-emerald-700 dark:text-emerald-400"
-                                            : "text-muted-foreground"
-                                            }`}
-                                        >
-                                          {hasStock ? "Sẵn hàng" : "Hết hàng"}
-                                        </span>
-                                      </div>
-
-                                      {/* Sizes */}
-                                      {matchedProd.sizes && matchedProd.sizes.length > 0 && (
-                                        <div className="flex items-center gap-2.5">
-                                          {matchedProd.sizes.slice(0, 5).map((s) => {
-                                            const sizeInStock = matchedProd.variants?.some(
-                                              (v) => v.size === s && (v.available ?? 0) > 0
-                                            );
-
-                                            return (
-                                              <span
-                                                key={s}
-                                                className={`text-[11.5px] font-medium transition-opacity ${sizeInStock
-                                                  ? "text-foreground"
-                                                  : "text-muted-foreground/40 line-through"
-                                                  }`}
-                                              >
-                                                {s}
-                                              </span>
-                                            );
-                                          })}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Action Buttons */}
-                              <div className="grid grid-cols-2 gap-2 pt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenTryOn(matchedProd)}
-                                  className="group/tryon relative overflow-hidden cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-black via-neutral-800 to-neutral-500 px-4 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-white shadow-sm hover:shadow-lg hover:shadow-black/25 transition-all duration-300 active:scale-[0.98]"
-                                >
-                                  <span
-                                    aria-hidden="true"
-                                    className="absolute inset-0 bg-gradient-to-r from-black via-neutral-700 to-neutral-200 opacity-0 transition-opacity duration-300 ease-out group-hover/tryon:opacity-100 pointer-events-none"
-                                  />
-                                  <Sparkles className="relative z-10 size-3.5 text-neutral-200 transition-transform duration-300 group-hover/tryon:scale-110 group-hover/tryon:rotate-12 group-hover/tryon:text-white" />
-                                  <span className="relative z-10">Thử đồ AI</span>
-                                </button>
-                                <Link
-                                  to="/san-pham/$slug"
-                                  params={{ slug: matchedProd.slug }}
-                                  className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl border border-border/80 bg-background hover:bg-secondary/60 px-4 py-2.5 text-xs font-medium uppercase tracking-[0.14em] text-foreground transition duration-200"
-                                >
-                                  <span>Xem sản phẩm</span>
-                                  <ArrowRight className="size-3.5" />
-                                </Link>
-                              </div>
-                            </div>
-                          );
-                        })() : currentHeroItem.link_url ? (
-                          <div className="rounded-2xl border border-border bg-background/80 p-4">
-                            <Link
-                              to={currentHeroItem.link_url}
-                              className="cursor-pointer inline-flex items-center gap-2 text-xs text-primary font-medium hover:underline"
-                            >
-                              <span>Xem chi tiết dòng sản phẩm tương ứng</span>
-                              <ExternalLink className="size-3.5" />
-                            </Link>
-                          </div>
-                        ) : (
-                          <div className="rounded-2xl border border-dashed border-border/80 bg-background/50 p-4 text-xs text-muted-foreground font-light">
-                            Trang phục độc quyền biểu diễn sàn diễn thời trang ÉLANE.
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Product & Design Description: Haute Couture Editorial Note */}
-                      <div className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.04] via-secondary/25 to-background p-4 sm:p-5 space-y-3 shadow-xs">
-                        {/* Decorative watermark quote mark in background */}
-                        <span
-                          aria-hidden="true"
-                          className="pointer-events-none absolute -top-4 right-4 font-serif text-6xl font-normal italic text-primary/10 select-none"
-                        >
-                          “
-                        </span>
-
-                        {/* Editorial Header */}
-                        <div className="flex items-center justify-between relative z-10">
-                          <div className="flex items-center gap-2">
-                            <span className="h-px w-5 bg-primary/40" />
-                            <span className="text-[13px] font-sans font-semibold uppercase tracking-[0.28em] text-primary">
-                              ÉLANE EDITORIAL NOTE
-                            </span>
-                          </div>
-                          <span className="text-[10px] font-sans uppercase tracking-[0.25em] text-muted-foreground/80">
-                            LOOK {String(currentHeroIndex + 1).padStart(2, "0")}
-                          </span>
-                        </div>
-
-                        {/* Stylized Fashion Editorial Quote */}
-                        <div className="relative z-10 pl-3.5 border-l-2 border-primary/30">
-                          <p className="font-serif text-[15.5px] sm:text-[17px] font-normal italic leading-[1.8] text-foreground/90 tracking-normal">
-                            “{matchedProd?.description ||
-                              activeLookbook?.description ||
-                              currentHeroItem.caption ||
-                              `Khung hình nằm trong bộ sưu tập ${activeLookbook?.title}, kết hợp tinh thần tối giản hiện đại cùng đường may đo chuẩn xác mang lại phong thái sang trọng tự nhiên.`}”
-                          </p>
-                        </div>
-
-                        {/* Signature Footer */}
-                        <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[10px] text-muted-foreground font-sans relative z-10">
-                          <span className="font-serif italic text-xl text-muted-foreground">
-                            Atelier ÉLANE, Paris & Sài Gòn —
-                          </span>
-                          <span className="uppercase tracking-[0.2em] font-medium text-primary/80">
-                            {activeLookbook?.season || "HAUTE COUTURE 2026"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Interactive Look Filmstrip */}
-                      {displayItems.length > 1 && (
-                        <div className="space-y-3 pt-3 border-t border-border/60">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-sans uppercase tracking-[0.2em] text-muted-foreground font-medium">
-                              Khám phá toàn bộ {displayItems.length} Looks
-                            </span>
-                            <span className="text-xs font-sans text-primary font-semibold tracking-wider">
-                              {currentHeroIndex + 1} of {displayItems.length}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-4 gap-2.5">
-                            {displayItems.map((item, idx) => {
-                              const isSelected = idx === currentHeroIndex;
-                              return (
-                                <button
-                                  key={`filmstrip-${item.id}-${idx}`}
-                                  type="button"
-                                  onClick={() => setActiveLookIndex(idx)}
-                                  className={`cursor-pointer group relative overflow-hidden rounded-xl aspect-[3/4] transition-all duration-300 text-left ${isSelected
-                                    ? "shadow-md scale-[1.03]"
-                                    : "opacity-60 hover:opacity-100"
-                                    }`}
-                                >
-                                  <img
-                                    src={item.image_url}
-                                    alt={item.title || `Look 0${idx + 1}`}
-                                    className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                                  <div className="absolute bottom-1.5 left-1.5 right-1.5">
-                                    <span className="font-sans text-[10px] font-bold text-white tracking-widest block">
-                                      0{idx + 1}
-                                    </span>
-                                    <p className="text-[10px] text-white/90 font-sans font-medium truncate leading-tight hidden sm:block">
-                                      {item.title}
-                                    </p>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* 2. THE RUNWAY GALLERY: MAGAZINE EDITORIAL SPREAD */}
-            <div className="space-y-8 pt-4">
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-border/60">
-                <div>
-                  <span className="text-[10.5px] font-sans uppercase tracking-[0.25em] text-primary font-medium">
-                    RUNWAY ARCHIVE · THE GALLERY
-                  </span>
-                  <h3 className="font-serif text-2xl sm:text-3xl text-foreground mt-1 tracking-tight">
-                    Khung hình sàn diễn {activeLookbook?.title}
-                  </h3>
-                </div>
-                <p className="text-xs text-muted-foreground font-light max-w-md">
-                  Tuyển tập {displayItems.length} khung hình thời trang cao cấp. Nhấp vào ảnh để xem chi tiết độ nét cao hoặc trải nghiệm Thử đồ ảo AI.
+        {isOverview ? (
+          <>
+            <section className="lookbook-overview-hero grid items-start gap-8 pb-10 md:grid-cols-[0.8fr_1.2fr] md:gap-14 md:pb-14">
+              <div className="order-2 max-w-xl md:order-1">
+                <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
+                  ÉLANE · Visual stories
                 </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
-                {displayItems.map((item, idx) => {
-                  const lookNumber = idx + 1;
-                  const matchedProd = getMatchedProduct(item, productMap);
-                  const isCurrentHero = idx === Math.min(activeLookIndex, Math.max(0, displayItems.length - 1));
-
-                  return (
-                    <article
-                      key={`gallery-${item.id}-${idx}`}
-                      className="group relative flex flex-col justify-between"
-                    >
-                      {/* Photo */}
-                      <div
-                        className="relative overflow-hidden aspect-[3/4] bg-neutral-900 cursor-pointer rounded-2xl"
-                        onClick={() =>
-                          setActiveItem({
-                            item,
-                            lookbookTitle: item.lookbookTitle,
-                            lookbookSlug: item.lookbookSlug,
-                            season: item.season,
-                          })
-                        }
+                <h1 className="max-w-lg font-serif text-4xl leading-[1.08] text-foreground sm:text-5xl lg:text-6xl">
+                  Phong cách, qua từng khung hình.
+                </h1>
+                <p className="mt-5 max-w-md text-sm leading-7 text-muted-foreground">
+                  Khám phá những câu chuyện thời trang của ÉLANE. Chọn một bộ ảnh để xem từng look
+                  và tìm thiết kế xuất hiện trong khung hình.
+                </p>
+                {lookbooks.length > 0 && (
+                  <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3">
+                    {lookbooks.map((entry, index) => (
+                      <Link
+                        key={entry.id}
+                        to="/lookbook"
+                        search={{ collection: entry.slug }}
+                        className="group inline-flex items-center gap-2 text-sm text-foreground transition-colors hover:text-muted-foreground"
                       >
-                        <img
-                          src={item.image_url}
-                          alt={item.title || `Look 0${lookNumber}`}
-                          loading="lazy"
-                          className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
-                        />
-
-                        {/* Top Badges */}
-                        <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between pointer-events-none">
-                          <span
-                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-sans font-medium tracking-[0.16em] backdrop-blur-md ${isCurrentHero
-                              ? "bg-primary text-primary-foreground font-semibold"
-                              : "bg-black/60 text-white"
-                              }`}
-                          >
-                            LOOK 0{lookNumber} {isCurrentHero && "• ĐANG XEM"}
-                          </span>
-                          <div className="size-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-transform group-hover:scale-110">
-                            <ZoomIn className="size-4" />
-                          </div>
-                        </div>
-
-                        {/* Hover Action Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex flex-col justify-end p-4 sm:p-5">
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveLookIndex(idx);
-                                document
-                                  .getElementById("lookbook-hero-stage")
-                                  ?.scrollIntoView({ behavior: "smooth" });
-                              }}
-                              className="cursor-pointer flex-1 rounded-xl bg-white/95 px-3 py-2 text-xs font-semibold text-black hover:bg-white transition shadow text-center"
-                            >
-                              Xem trên sân khấu
-                            </button>
-                            {matchedProd && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenTryOn(matchedProd);
-                                }}
-                                className="group/rwy relative overflow-hidden cursor-pointer inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-black via-neutral-800 to-neutral-500 px-3 py-2 text-xs font-medium text-white shadow-sm hover:shadow-lg hover:shadow-black/25 transition-all duration-300"
-                                title="Thử đồ ảo AI"
-                              >
-                                <span
-                                  aria-hidden="true"
-                                  className="absolute inset-0 bg-gradient-to-r from-black via-neutral-700 to-neutral-200 opacity-0 transition-opacity duration-300 ease-out group-hover/rwy:opacity-100 pointer-events-none"
-                                />
-                                <Sparkles className="relative z-10 size-3 text-neutral-200 transition-transform duration-300 group-hover/rwy:scale-110 group-hover/rwy:rotate-12 group-hover/rwy:text-white" />
-                                <span className="relative z-10">Thử AI</span>
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Caption & Look Info */}
-                      <div className="pt-3.5 space-y-1.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <h4 className="font-serif text-lg sm:text-[19px] text-foreground font-normal tracking-tight">
-                            <span className="italic text-primary/70 font-light mr-1.5">0{lookNumber} —</span>
-                            {item.title || `Look 0${lookNumber}`}
-                          </h4>
-                          {matchedProd && (
-                            <span className="text-[9px] font-sans uppercase tracking-[0.2em] text-[#8B1E2D] font-medium bg-[#8B1E2D]/10 px-2.5 py-0.5 rounded-full shrink-0">
-                              Shoppable
-                            </span>
-                          )}
-                        </div>
-
-                        {item.caption && (
-                          <p className="text-xs sm:text-[13px] text-muted-foreground font-light leading-relaxed">
-                            {item.caption}
-                          </p>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 3. WARDROBE SELECTION: CURATED RUNWAY CAPSULE */}
-            {collectionProducts.length > 0 && (
-              <div className="space-y-8 pt-8 border-t border-border/60">
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-border/60">
-                  <div>
-                    <span className="text-[10.5px] font-sans uppercase tracking-[0.25em] text-primary font-medium">
-                      THE RUNWAY CAPSULE
-                    </span>
-                    <h3 className="font-serif text-2xl sm:text-3xl text-foreground mt-1 tracking-tight">
-                      Trang phục trong bộ sưu tập này
-                    </h3>
+                        <span className="text-[10px] text-muted-foreground">{index + 1}</span>
+                        <span className="pb-1 underline decoration-transparent underline-offset-4 group-hover:decoration-current">
+                          {entry.title}
+                        </span>
+                      </Link>
+                    ))}
                   </div>
-                  <p className="text-xs text-muted-foreground font-light max-w-md">
-                    Khám phá các thiết kế xuất hiện trong các khung hình thời trang của bộ sưu tập {activeLookbook?.title}. Mua sắm và trải nghiệm Thử đồ ảo AI tức thì.
+                )}
+              </div>
+
+              {featuredLookbook && featuredImage ? (
+                <Link
+                  to="/lookbook"
+                  search={{ collection: featuredLookbook.slug }}
+                  className="lookbook-featured-image group relative order-1 block overflow-hidden bg-secondary md:order-2"
+                >
+                  <img
+                    src={featuredImage}
+                    alt={featuredLookbook.title}
+                    className="aspect-square w-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.025] xl:aspect-[1.08/1]"
+                  />
+                  <span className="absolute bottom-4 left-4 bg-background px-4 py-3 text-xs font-medium tracking-wide text-foreground sm:bottom-6 sm:left-6 sm:px-5">
+                    {normalizeLookbookSeason(featuredLookbook.season) || "ÉLANE LOOKBOOK"}
+                    <span className="mx-2 text-muted-foreground">/</span>
+                    {featuredLookbook.title}
+                    <ArrowRight className="ml-3 inline size-3.5 transition-transform group-hover:translate-x-1" />
+                  </span>
+                </Link>
+              ) : (
+                <div className="flex aspect-[1.45/1] items-center justify-center bg-secondary text-sm text-muted-foreground">
+                  Lookbook đang được cập nhật.
+                </div>
+              )}
+            </section>
+
+            <section className="pt-10 sm:pt-14">
+              <div className="mb-6 flex items-end justify-between gap-4">
+                <div>
+                  <p className="mb-2 text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                    Stories by ÉLANE
                   </p>
+                  <h2 className="font-serif text-2xl text-foreground sm:text-3xl">Các bộ ảnh</h2>
                 </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6">
-                  {collectionProducts.map((prod) => (
-                    <div
-                      key={prod.id}
-                      className="group relative flex flex-col justify-between"
-                    >
-                      {/* Product Image */}
-                      <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-secondary cursor-pointer">
-                        <Link
-                          to="/san-pham/$slug"
-                          params={{ slug: prod.slug }}
-                          className="block size-full"
-                        >
-                          <img
-                            src={prod.images[0]}
-                            alt={prod.name}
-                            loading="lazy"
-                            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                          />
-                        </Link>
-
-                        {prod.salePrice && (
-                          <span className="absolute top-3 left-3 rounded-full bg-[#8B1E2D] px-2 py-0.5 text-[9px] font-semibold text-white uppercase tracking-wider shadow-sm">
-                            Sale
-                          </span>
-                        )}
-
-                        {/* Quick action bar on image hover */}
-                        <div className="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenTryOn(prod);
-                            }}
-                            className="group/cap relative overflow-hidden cursor-pointer flex-1 rounded-xl bg-gradient-to-r from-black via-neutral-800 to-neutral-500 py-2 text-[11px] font-medium text-white shadow-md hover:shadow-lg hover:shadow-black/25 transition-all duration-300 flex items-center justify-center gap-1.5"
-                          >
-                            <span
-                              aria-hidden="true"
-                              className="absolute inset-0 bg-gradient-to-r from-black via-neutral-700 to-neutral-200 opacity-0 transition-opacity duration-300 ease-out group-hover/cap:opacity-100 pointer-events-none"
-                            />
-                            <Sparkles className="relative z-10 size-3 text-neutral-200 transition-transform duration-300 group-hover/cap:scale-110 group-hover/cap:rotate-12 group-hover/cap:text-white" />
-                            <span className="relative z-10">Thử AI</span>
-                          </button>
-                          <Link
-                            to="/san-pham/$slug"
-                            params={{ slug: prod.slug }}
-                            className="cursor-pointer size-8 rounded-xl bg-white/95 text-black hover:bg-white flex items-center justify-center shadow-md transition"
-                            title="Chi tiết sản phẩm"
-                          >
-                            <ArrowRight className="size-3.5" />
-                          </Link>
-                        </div>
-                      </div>
-
-                      {/* Product Meta */}
-                      <div className="pt-3 space-y-1.5">
-                        <p className="text-[10px] font-sans font-medium text-muted-foreground uppercase tracking-[0.16em]">
-                          {getCategory(prod.category)?.name || prod.category || "ÉLANE"}
-                        </p>
-                        <Link
-                          to="/san-pham/$slug"
-                          params={{ slug: prod.slug }}
-                          className="mt-1 line-clamp-2 h-[2.6em] font-serif text-[17px] sm:text-[18px] font-medium leading-[1.3] tracking-[-0.015em] text-foreground transition-opacity hover:opacity-70"
-                          title={prod.name}
-                        >
-                          {prod.name}
-                        </Link>
-                        <div className="flex items-baseline gap-2 pt-0.5">
-                          <span className="text-xs sm:text-sm font-semibold text-foreground">
-                            {formatVND(prod.price)}
-                          </span>
-                          {prod.salePrice && (
-                            <span className="text-[11px] text-muted-foreground line-through">
-                              {formatVND(prod.salePrice)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 4. NEXT / PREVIOUS COLLECTION NAVIGATOR */}
-            <div className="pt-12 border-t border-border/60">
-              <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-4">
-                {prevLookbook ? (
-                  <Link
-                    to="/lookbook"
-                    search={{ collection: prevLookbook.slug }}
-                    className="cursor-pointer group flex items-center gap-3 p-3 rounded-2xl border border-border/60 bg-secondary/30 hover:bg-secondary/60 transition"
-                  >
-                    <div className="size-12 rounded-xl overflow-hidden bg-neutral-900 shrink-0">
-                      <img
-                        src={prevLookbook.cover_image || prevLookbook.items[0]?.image_url}
-                        alt={prevLookbook.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-[9.5px] font-sans uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-1 font-medium">
-                        <ChevronLeft className="size-3 group-hover:-translate-x-0.5 transition-transform" />
-                        <span>BST Trước</span>
-                      </span>
-                      <p className="text-xs font-serif text-foreground truncate mt-0.5">
-                        {prevLookbook.title}
-                      </p>
-                    </div>
-                  </Link>
-                ) : <div />}
-
-                <div className="text-center">
-                  <Link
-                    to="/lookbook"
-                    search={{ collection: undefined }}
-                    className="cursor-pointer inline-flex items-center justify-center rounded-full border border-border/80 px-6 py-2.5 text-xs uppercase tracking-widest text-foreground hover:bg-foreground hover:text-background transition-all shadow-xs"
-                  >
-                    Tất cả Runway (Thác ảnh)
-                  </Link>
-                </div>
-
-                {nextLookbook ? (
-                  <Link
-                    to="/lookbook"
-                    search={{ collection: nextLookbook.slug }}
-                    className="cursor-pointer group flex items-center justify-end gap-3 p-3 rounded-2xl border border-border/60 bg-secondary/30 hover:bg-secondary/60 transition text-right"
-                  >
-                    <div className="min-w-0">
-                      <span className="text-[9.5px] font-sans uppercase tracking-[0.2em] text-muted-foreground flex items-center justify-end gap-1 font-medium">
-                        <span>BST Tiếp theo</span>
-                        <ChevronRight className="size-3 group-hover:translate-x-0.5 transition-transform" />
-                      </span>
-                      <p className="text-xs font-serif text-foreground truncate mt-0.5">
-                        {nextLookbook.title}
-                      </p>
-                    </div>
-                    <div className="size-12 rounded-xl overflow-hidden bg-neutral-900 shrink-0">
-                      <img
-                        src={nextLookbook.cover_image || nextLookbook.items[0]?.image_url}
-                        alt={nextLookbook.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
-                    </div>
-                  </Link>
-                ) : <div />}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Bottom CTA */}
-        <div className="mt-16 pb-20 text-center border-t border-border/60 pt-12">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground mb-3">
-            Trải nghiệm thời trang ÉLANE
-          </p>
-          <h3 className="font-serif text-2xl md:text-3xl mb-6">
-            Khám phá trọn vẹn bộ sưu tập Thu Đông
-          </h3>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link
-              to="/danh-muc/$slug"
-              params={{ slug: "hang-moi" }}
-              className="cursor-pointer bg-primary px-8 py-3.5 text-xs uppercase tracking-widest text-primary-foreground transition hover:opacity-90 shadow-sm"
-            >
-              Mua sắm hàng mới về
-            </Link>
-            <Link
-              to="/danh-muc/$slug"
-              params={{ slug: "dam" }}
-              className="cursor-pointer border border-border bg-background px-8 py-3.5 text-xs uppercase tracking-widest text-foreground transition hover:bg-muted"
-            >
-              Xem Váy & Đầm
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Interactive Lookbook Lightbox Modal */}
-      <Dialog
-        open={!!activeItem}
-        onOpenChange={(open) => {
-          if (!open) setActiveItem(null);
-        }}
-      >
-        <DialogContent className="max-w-5xl p-0 overflow-hidden bg-background border-border sm:rounded-2xl gap-0 shadow-2xl">
-          <DialogTitle className="sr-only">
-            {activeItem?.item.title || "Chi tiết Lookbook ÉLANE"}
-          </DialogTitle>
-
-          {activeItem && (
-            <div className="relative grid grid-cols-1 md:grid-cols-12 max-h-[90vh] overflow-y-auto md:overflow-hidden">
-              {/* Left/Center: High-res Photo Display with Next/Prev Controls */}
-              <div className="relative md:col-span-7 bg-neutral-950 flex items-center justify-center min-h-[420px] md:min-h-[620px] select-none">
-                <img
-                  src={activeItem.item.image_url}
-                  alt={activeItem.item.title || "ÉLANE Lookbook"}
-                  className="max-h-[85vh] w-full object-contain"
-                />
-
-                {/* Left/Right Floating Arrows */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePrev();
-                  }}
-                  className="cursor-pointer absolute left-3 top-1/2 -translate-y-1/2 size-10 rounded-full bg-black/60 text-white backdrop-blur-md flex items-center justify-center transition-all hover:bg-black/90 hover:scale-110"
-                  aria-label="Previous frame"
-                >
-                  <ChevronLeft className="size-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleNext();
-                  }}
-                  className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 size-10 rounded-full bg-black/60 text-white backdrop-blur-md flex items-center justify-center transition-all hover:bg-black/90 hover:scale-110"
-                  aria-label="Next frame"
-                >
-                  <ChevronRight className="size-5" />
-                </button>
-
-                {/* Counter indicator */}
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[11px] font-medium text-white/90 backdrop-blur-md">
-                  {activeIndex + 1} / {displayItems.length}
-                </div>
+                <span className="pb-1 text-xs text-muted-foreground">
+                  {lookbooks.length} bộ sưu tập
+                </span>
               </div>
 
-              {/* Right Side: Editorial Information & Shop the Look Card */}
-              <div className="md:col-span-5 p-6 md:p-8 flex flex-col justify-between overflow-y-auto bg-card">
-                <div className="space-y-6">
-                  {/* Top Metadata */}
-                  <div className="flex items-center justify-between border-b border-border pb-4">
-                    <div className="space-y-1">
-                      <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-primary">
-                        {activeItem.season || "ÉLANE LOOKBOOK"}
-                      </span>
-                      <div>
-                        {activeItem.lookbookSlug ? (
-                          <Link
-                            to="/lookbook"
-                            search={{ collection: activeItem.lookbookSlug }}
-                            onClick={() => setActiveItem(null)}
-                            className="text-xs text-muted-foreground hover:text-foreground font-medium underline underline-offset-4 transition inline-flex items-center gap-1"
-                          >
-                            <span>Bộ sưu tập: {activeItem.lookbookTitle}</span>
-                            <ArrowRight className="size-3" />
-                          </Link>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">{activeItem.lookbookTitle}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Title & Caption */}
-                  <div>
-                    <h3 className="font-serif text-2xl font-normal text-foreground">
-                      {activeItem.item.title || "Khung hình thời trang"}
-                    </h3>
-                    {activeItem.item.caption && (
-                      <p className="mt-2 text-xs md:text-sm text-muted-foreground leading-relaxed">
-                        {activeItem.item.caption}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Shoppable Product Card */}
-                  {matchedProduct ? (() => {
-                    const modalHasStock = Boolean(
-                      matchedProduct.variants &&
-                      matchedProduct.variants.length > 0 &&
-                      matchedProduct.variants.some((v) => (v.available ?? 0) > 0)
-                    );
-
+              {lookbooks.length ? (
+                <div className="grid gap-x-5 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+                  {lookbooks.map((entry, index) => {
+                    const image = entry.cover_image_url || entry.items[0]?.image_url;
                     return (
-                      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-4">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-                            <ShoppingBag className="size-3.5" />
-                            <span>Sản phẩm trong khung hình</span>
-                          </div>
-                          {modalHasStock ? (
-                            <span className="inline-flex items-center gap-1.5 text-[10.5px] text-emerald-600 dark:text-emerald-400 font-medium tracking-wider uppercase">
-                              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" /> Sẵn hàng
-                            </span>
+                      <Link
+                        key={entry.id}
+                        to="/lookbook"
+                        search={{ collection: entry.slug }}
+                        className="lookbook-collection-card group block"
+                      >
+                        <div className="relative overflow-hidden bg-secondary">
+                          {image ? (
+                            <img
+                              src={image}
+                              alt={entry.title}
+                              loading="lazy"
+                              className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"
+                            />
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 text-[10.5px] text-amber-600 dark:text-amber-400 font-medium tracking-wider uppercase">
-                              <span className="size-1.5 rounded-full bg-amber-500" /> Tạm hết hàng
-                            </span>
+                            <div className="aspect-[4/5]" />
                           )}
+                          <span className="absolute left-3 top-3 bg-background px-2.5 py-1 text-[10px] text-foreground">
+                            {index + 1}
+                          </span>
+                          <span className="absolute bottom-3 right-3 inline-flex size-9 items-center justify-center rounded-full bg-background text-foreground transition-transform group-hover:translate-x-0.5">
+                            <ArrowRight className="size-4" />
+                          </span>
                         </div>
-
-                        <div className="flex gap-3">
-                          <img
-                            src={matchedProduct.images[0] || activeItem.item.image_url}
-                            alt={matchedProduct.name}
-                            className="size-20 rounded-lg object-cover border border-border shrink-0 bg-background"
-                          />
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <h4 className="text-xs font-medium text-foreground line-clamp-2 leading-snug">
-                              {matchedProduct.name}
-                            </h4>
-                            <div className="flex items-baseline gap-2 pt-1">
-                              <span className="text-sm font-semibold text-foreground">
-                                {formatVND(matchedProduct.price)}
-                              </span>
-                              {matchedProduct.salePrice && (
-                                <span className="text-xs text-muted-foreground line-through">
-                                  {formatVND(matchedProduct.salePrice)}
-                                </span>
-                              )}
-                            </div>
-                            {matchedProduct.category && (
-                              <p className="text-[11px] text-muted-foreground">
-                                {getCategory(matchedProduct.category)?.name || matchedProduct.category}
+                        <div className="flex items-start justify-between gap-3 pt-3">
+                          <div>
+                            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                              {normalizeLookbookSeason(entry.season) || "ÉLANE"}
+                            </p>
+                            <h3 className="mt-1 font-serif text-xl text-foreground">
+                              {entry.title}
+                            </h3>
+                            {entry.subtitle && (
+                              <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                                {entry.subtitle}
                               </p>
                             )}
                           </div>
+                          <span className="shrink-0 pt-1 text-xs text-muted-foreground">
+                            {entry.items.length} looks
+                          </span>
                         </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="bg-secondary/50 px-5 py-8 text-sm text-muted-foreground">
+                  Chưa có bộ ảnh nào được xuất bản.
+                </p>
+              )}
+            </section>
+          </>
+        ) : activeLookbook ? (
+          <>
+            <header className="mb-8 flex flex-col justify-between gap-5 pb-7 sm:mb-10 sm:flex-row sm:items-end">
+              <div className="max-w-2xl">
+                <p className="mb-3 text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+                  {normalizeLookbookSeason(activeLookbook.season) || "ÉLANE · LOOKBOOK"}
+                </p>
+                <h1 className="font-serif text-4xl leading-tight text-foreground sm:text-5xl">
+                  {activeLookbook.title}
+                </h1>
+                {activeLookbook.subtitle && (
+                  <p className="mt-3 text-sm text-foreground">{activeLookbook.subtitle}</p>
+                )}
+                {activeLookbook.description && (
+                  <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+                    {activeLookbook.description}
+                  </p>
+                )}
+              </div>
+              <Link
+                to="/lookbook"
+                search={{ collection: undefined }}
+                className="inline-flex w-fit items-center gap-2 pb-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ChevronLeft className="size-3.5" /> Tất cả bộ ảnh
+              </Link>
+            </header>
 
-                        {/* Action buttons */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                          {/* Virtual Try-On Button */}
-                          <button
-                            type="button"
-                            onClick={() => handleOpenTryOn(matchedProduct)}
-                            className="group/modal relative overflow-hidden cursor-pointer inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-black via-neutral-800 to-neutral-500 px-3 py-2 text-xs font-medium text-white shadow-sm hover:shadow-lg hover:shadow-black/25 transition-all duration-300"
-                          >
-                            <span
-                              aria-hidden="true"
-                              className="absolute inset-0 bg-gradient-to-r from-black via-neutral-700 to-neutral-200 opacity-0 transition-opacity duration-300 ease-out group-hover/modal:opacity-100 pointer-events-none"
-                            />
-                            <Sparkles className="relative z-10 size-3.5 text-neutral-200 transition-transform duration-300 group-hover/modal:scale-110 group-hover/modal:rotate-12 group-hover/modal:text-white" />
-                            <span className="relative z-10">Thử đồ AI</span>
-                          </button>
+            {currentItem ? (
+              <section className="lookbook-detail-layout grid items-start gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(340px,0.75fr)] lg:gap-12">
+                <div className="lookbook-sticky-photo">
+                  <div className="lookbook-stage relative overflow-hidden bg-secondary">
+                    <img
+                      key={currentItem.id}
+                      src={currentItem.image_url}
+                      alt={currentItem.title || `Look ${safeLookIndex + 1}`}
+                      className="lookbook-stage-image aspect-[4/5] w-full object-cover"
+                    />
+                    <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3 sm:p-5">
+                      <span className="bg-background px-3 py-2 text-[10px] tracking-wide text-foreground">
+                        LOOK {safeLookIndex + 1} / {lookItems.length}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setLightboxItem(currentItem)}
+                        aria-label="Phóng to ảnh"
+                        className="inline-flex size-9 cursor-pointer items-center justify-center bg-background text-foreground transition-colors hover:bg-foreground hover:text-background"
+                      >
+                        <ZoomIn className="size-4" />
+                      </button>
+                    </div>
+                    {lookItems.length > 1 && (
+                      <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-3 sm:px-5">
+                        <button
+                          type="button"
+                          onClick={() => moveLook(-1)}
+                          aria-label="Look trước"
+                          className="inline-flex size-10 cursor-pointer items-center justify-center rounded-full bg-background/90 text-foreground transition-colors hover:bg-background"
+                        >
+                          <ChevronLeft className="size-5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveLook(1)}
+                          aria-label="Look tiếp theo"
+                          className="inline-flex size-10 cursor-pointer items-center justify-center rounded-full bg-background/90 text-foreground transition-colors hover:bg-background"
+                        >
+                          <ChevronRight className="size-5" />
+                        </button>
+                      </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 bg-black/50 px-4 py-4 text-white sm:px-6 sm:py-5">
+                      <p className="max-w-[80%] text-sm font-medium">
+                        {currentItem.title || activeLookbook.title}
+                      </p>
+                      <span className="text-[10px]">{safeLookIndex + 1}</span>
+                    </div>
+                  </div>
+                  {lookItems.length > 1 && (
+                    <div className="mt-3 flex gap-2 overflow-x-auto pb-1" aria-label="Chọn look">
+                      {lookItems.map((item, index) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setLookIndex(index)}
+                          aria-label={`Chọn look ${index + 1}`}
+                          aria-pressed={index === safeLookIndex}
+                          className={`lookbook-thumb relative w-16 shrink-0 cursor-pointer overflow-hidden sm:w-[76px] ${index === safeLookIndex ? "is-active" : ""}`}
+                        >
+                          <img
+                            src={item.image_url}
+                            alt=""
+                            loading="lazy"
+                            className="aspect-[4/5] w-full object-cover"
+                          />
+                          <span className="absolute bottom-1 left-1 bg-background px-1.5 py-0.5 text-[9px] text-foreground">
+                            {index + 1}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-                          {/* View Product Details */}
+                <div className="lookbook-detail-copy lg:pt-2">
+                  <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    <span>ÉLANE Editorial</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{normalizeLookbookSeason(activeLookbook.season) || "Lookbook"}</span>
+                  </div>
+                  <h2 className="mt-4 font-serif text-3xl leading-tight text-foreground sm:text-4xl">
+                    {currentItem.title || `Look ${safeLookIndex + 1}`}
+                  </h2>
+                  {currentItem.caption && (
+                    <p className="mt-4 max-w-xl text-sm leading-7 text-muted-foreground">
+                      {currentItem.caption}
+                    </p>
+                  )}
+
+                  {currentProduct ? (
+                    <div className="mt-8 bg-secondary/45 p-5">
+                      <p className="mb-4 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                        Sản phẩm trong look
+                      </p>
+                      <div className="flex gap-4">
+                        <Link
+                          to="/san-pham/$slug"
+                          params={{ slug: currentProduct.slug }}
+                          className="w-20 shrink-0 overflow-hidden bg-secondary sm:w-24"
+                        >
+                          <img
+                            src={currentProduct.images[0] || currentItem.image_url}
+                            alt={currentProduct.name}
+                            className="aspect-[3/4] w-full object-cover"
+                          />
+                        </Link>
+                        <div className="min-w-0 flex-1">
                           <Link
                             to="/san-pham/$slug"
-                            params={{ slug: matchedProduct.slug }}
-                            className="cursor-pointer inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground transition hover:bg-muted"
+                            params={{ slug: currentProduct.slug }}
+                            className="line-clamp-2 text-sm leading-5 text-foreground transition-colors hover:text-muted-foreground"
                           >
-                            <span>Xem sản phẩm</span>
-                            <ArrowRight className="size-3" />
+                            {currentProduct.name}
+                          </Link>
+                          <p className="mt-2 text-sm font-medium text-foreground">
+                            {formatVND(currentProduct.salePrice || currentProduct.price)}
+                          </p>
+                          {currentProduct.salePrice && (
+                            <p className="mt-1 text-xs text-muted-foreground line-through">
+                              {formatVND(currentProduct.price)}
+                            </p>
+                          )}
+                          <Link
+                            to="/san-pham/$slug"
+                            params={{ slug: currentProduct.slug }}
+                            className="mt-3 inline-flex items-center gap-2 text-xs text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
+                          >
+                            Xem sản phẩm <ArrowRight className="size-3" />
                           </Link>
                         </div>
                       </div>
-                    );
-                  })() : activeItem.item.link_url ? (
-                    <div className="rounded-xl border border-border bg-secondary/30 p-4">
-                      <p className="text-xs text-muted-foreground mb-2">Liên kết thời trang:</p>
-                      <Link
-                        to={activeItem.item.link_url}
-                        className="cursor-pointer inline-flex items-center gap-1.5 text-xs text-primary font-medium hover:underline"
+                      <button
+                        type="button"
+                        onClick={() => openTryOn(currentProduct)}
+                        className="mt-5 inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 bg-foreground px-4 text-xs font-medium text-background transition-colors hover:bg-foreground/85"
                       >
-                        <span>Xem chi tiết thiết kế này</span>
-                        <ExternalLink className="size-3" />
-                      </Link>
+                        <Sparkles className="size-3.5" /> Thử đồ AI
+                      </button>
                     </div>
+                  ) : currentItem.link_url ? (
+                    <a
+                      href={currentItem.link_url}
+                      className="mt-7 inline-flex items-center gap-2 bg-secondary/50 px-4 py-3 text-sm text-foreground hover:underline"
+                    >
+                      Khám phá thiết kế <ExternalLink className="size-3.5" />
+                    </a>
                   ) : null}
+
+                  {productsInCollection.length > 1 && (
+                    <div className="mt-8">
+                      <div className="mb-4 flex items-center justify-between">
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                          Sản phẩm trong bộ ảnh
+                        </p>
+                        <span className="text-xs text-muted-foreground">
+                          {productsInCollection.length}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+                        {productsInCollection.map((product) => (
+                          <Link
+                            key={product.id}
+                            to="/san-pham/$slug"
+                            params={{ slug: product.slug }}
+                            className="group block"
+                          >
+                            <div className="overflow-hidden bg-secondary">
+                              <img
+                                src={product.images[0]}
+                                alt={product.name}
+                                loading="lazy"
+                                className="aspect-[4/5] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                              />
+                            </div>
+                            <p className="mt-2 line-clamp-2 text-xs leading-5 text-foreground">
+                              {product.name}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {formatVND(product.salePrice || product.price)}
+                            </p>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {getCommercialCollectionSlug(activeLookbook.slug) && (
+                    <Link
+                      to="/bo-suu-tap/$slug"
+                      params={{ slug: getCommercialCollectionSlug(activeLookbook.slug)! }}
+                      className="mt-8 flex min-h-14 items-center justify-between border border-border px-4 text-xs text-foreground transition-colors hover:bg-secondary sm:px-5"
+                    >
+                      <span>Xem bộ sưu tập tại cửa hàng</span>
+                      <ArrowRight className="size-4" />
+                    </Link>
+                  )}
                 </div>
+              </section>
+            ) : (
+              <div className="bg-secondary/50 px-5 py-14 text-center text-sm text-muted-foreground">
+                Bộ ảnh này chưa có look nào được xuất bản.
               </div>
-            </div>
+            )}
+
+            {lookbooks.length > 1 && (
+              <section className="mt-16 pt-8">
+                <div className="mb-5 flex items-end justify-between">
+                  <div>
+                    <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                      Keep exploring
+                    </p>
+                    <h2 className="font-serif text-2xl text-foreground">Câu chuyện tiếp theo</h2>
+                  </div>
+                  <Link
+                    to="/lookbook"
+                    search={{ collection: undefined }}
+                    className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                  >
+                    Tất cả bộ ảnh
+                  </Link>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {lookbooks
+                    .filter((entry) => entry.id !== activeLookbook.id)
+                    .slice(0, 3)
+                    .map((entry) => {
+                      const image = entry.cover_image_url || entry.items[0]?.image_url;
+                      return (
+                        <Link
+                          key={entry.id}
+                          to="/lookbook"
+                          search={{ collection: entry.slug }}
+                          className="group flex items-center gap-4 bg-secondary/40 p-3"
+                        >
+                          {image && (
+                            <img
+                              src={image}
+                              alt=""
+                              loading="lazy"
+                              className="size-16 object-cover sm:size-20"
+                            />
+                          )}
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
+                              {normalizeLookbookSeason(entry.season) || "ÉLANE"}
+                            </span>
+                            <span className="mt-1 block truncate font-serif text-lg text-foreground">
+                              {entry.title}
+                            </span>
+                          </span>
+                          <ArrowRight className="mr-1 size-4 shrink-0 transition-transform group-hover:translate-x-1" />
+                        </Link>
+                      );
+                    })}
+                </div>
+              </section>
+            )}
+          </>
+        ) : null}
+      </main>
+
+      <Dialog
+        open={!!lightboxItem}
+        onOpenChange={(open) => {
+          if (!open) setLightboxItem(null);
+        }}
+      >
+        <DialogContent className="max-w-5xl overflow-hidden rounded-none border-0 bg-black p-0">
+          <DialogTitle className="sr-only">
+            {lightboxItem?.title || activeLookbook?.title || "Lookbook ÉLANE"}
+          </DialogTitle>
+          {lightboxItem && (
+            <img
+              src={lightboxItem.image_url}
+              alt={lightboxItem.title || "Lookbook ÉLANE"}
+              className="max-h-[90vh] w-full object-contain"
+            />
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Virtual Try-On Dialog Integration */}
       {tryOnProduct && (
         <VirtualTryOnDialog
           open={tryOnOpen}
           onOpenChange={setTryOnOpen}
           product={tryOnProduct}
+          selectedColorwayId={tryOnProduct.colorways[0]?.id ?? ""}
+          selectedSize={null}
         />
       )}
     </>

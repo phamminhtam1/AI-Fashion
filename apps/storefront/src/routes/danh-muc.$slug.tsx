@@ -86,8 +86,12 @@ function ListingContent({
   const [sort, setSort] = useState<keyof typeof sorts>("new");
   const [size, setSize] = useState<string | null>(null);
   const [maxPrice, setMaxPrice] = useState(4000000);
-  const [showFilterDesktop, setShowFilterDesktop] = useState(false);
+  const [showFilterDesktop, setShowFilterDesktop] = useState(true);
   const [showFilterMobile, setShowFilterMobile] = useState(false);
+
+  useEffect(() => {
+    setShowFilterDesktop(true);
+  }, [slug]);
 
   const pricePercent = useMemo(() => {
     return Math.min(100, Math.max(0, ((maxPrice - 300000) / (4000000 - 300000)) * 100));
@@ -223,7 +227,7 @@ function ListingContent({
   }, [items]);
 
   return (
-    <div className="mx-auto max-w-[1600px] px-6 py-10 md:px-8">
+    <div className="mx-auto max-w-[1600px] px-6 pb-10 pt-5 md:px-8">
       <nav aria-label="Breadcrumb" className="text-base text-muted-foreground font-medium flex items-center gap-2 flex-wrap">
         <Link to="/" className="hover:text-foreground transition-colors">
           Trang chủ
@@ -248,11 +252,6 @@ function ListingContent({
           </span>
         )}
       </nav>
-      <header className="mt-6 max-w-2xl">
-        <h1 className="text-4xl md:text-5xl">{initialData.title}</h1>
-        <p className="mt-3 text-muted-foreground">{initialData.description}</p>
-      </header>
-
       {/* Main layout: Left sidebar column ("1 dãy bên trái") + Right product list */}
       <div className="mt-8 flex items-start gap-8 lg:gap-10">
         {/* =========================================================================
@@ -292,9 +291,9 @@ function ListingContent({
           </div>
 
           {/* Desktop Filter Heading */}
-          <div className="hidden lg:flex items-center justify-between pb-4 border-b border-border/60">
+          <div className="hidden lg:flex items-center justify-between border-b border-border/70 pb-5">
             <div className="flex items-center gap-2">
-              <span className="text-xs md:text-sm font-semibold uppercase tracking-[0.22em] text-foreground">
+              <span className="text-[13px] font-semibold uppercase tracking-[0.24em] text-foreground">
                 Bộ lọc
               </span>
               {activeFilterCount > 0 && (
@@ -310,7 +309,7 @@ function ListingContent({
                   setSize(null);
                   setMaxPrice(4000000);
                 }}
-                className="inline-flex items-center gap-1.5 text-xs normal-case text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                className="inline-flex cursor-pointer items-center gap-1.5 text-xs normal-case text-muted-foreground transition-colors hover:text-foreground"
               >
                 <RotateCcw className="size-3" />
                 <span>Đặt lại</span>
@@ -318,12 +317,12 @@ function ListingContent({
             )}
           </div>
 
-          <div className="space-y-8 pt-6">
+          <div className="space-y-7 pt-5">
             {/* 01 · KÍCH CỠ */}
             <div>
-              <div className="mb-3.5 flex items-center justify-between">
+              <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs md:text-[13px] font-semibold uppercase tracking-[0.18em] text-foreground">
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-foreground">
                     Kích cỡ
                   </span>
                   {size && (
@@ -334,21 +333,20 @@ function ListingContent({
                 </div>
                 <Link
                   to="/huong-dan-chon-size"
-                  className="group/guide inline-flex items-center gap-1.5 text-xs normal-case tracking-normal text-muted-foreground hover:text-foreground transition-colors"
+                  className="group/guide inline-flex items-center gap-1.5 text-xs normal-case tracking-normal text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
                 >
                   <Ruler className="size-3.5" />
-                  <span className="underline underline-offset-2">Bảng size</span>
+                  <span>Bảng size</span>
                 </Link>
               </div>
 
-              {/* Size Pills Grid (3 cols, enlarged) */}
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setSize(null)}
-                  className={`h-10 md:h-11 rounded-xl text-xs md:text-sm uppercase tracking-wider font-medium transition-all duration-150 cursor-pointer select-none ${size === null
-                      ? "bg-foreground text-background font-semibold shadow-xs"
-                      : "bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground border border-border/50"
+                  className={`h-10 cursor-pointer select-none rounded-md border text-xs font-medium uppercase tracking-wide transition-colors ${size === null
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-background text-muted-foreground hover:border-foreground/40 hover:text-foreground"
                     }`}
                 >
                   Tất cả
@@ -364,17 +362,17 @@ function ListingContent({
                       type="button"
                       disabled={isOutOfStock}
                       onClick={() => setSize(isSelected ? null : s)}
-                      className={`relative h-10 md:h-11 rounded-xl text-xs md:text-sm font-sans transition-all duration-150 select-none ${isOutOfStock ? "cursor-not-allowed" : "cursor-pointer"
+                      className={`relative h-10 select-none rounded-md border text-xs font-sans transition-colors ${isOutOfStock ? "cursor-not-allowed" : "cursor-pointer"
                         } ${isSelected
-                          ? "bg-foreground text-background font-semibold shadow-xs"
+                          ? "border-foreground bg-foreground text-background font-semibold"
                           : isOutOfStock
-                            ? "bg-muted/20 border border-dashed border-border/40 text-muted-foreground/30 line-through"
-                            : "bg-background hover:bg-secondary border border-border/70 text-foreground hover:border-foreground/30"
+                            ? "border-dashed border-border/50 bg-muted/20 text-muted-foreground/40 line-through"
+                            : "border-border bg-background text-foreground hover:border-foreground/40 hover:bg-secondary/40"
                         }`}
                     >
                       <span className="tracking-wide">{s}</span>
                       <sup
-                        className={`ml-1 text-[10px] md:text-[11px] font-mono ${isSelected ? "text-background/70" : "text-muted-foreground/60"
+                        className={`ml-1 align-super font-mono text-[9px] ${isSelected ? "text-background/70" : "text-muted-foreground/65"
                           }`}
                       >
                         {count}
@@ -386,12 +384,12 @@ function ListingContent({
             </div>
 
             {/* 02 · KHOẢNG GIÁ */}
-            <div className="border-t border-border/60 pt-6">
-              <div className="mb-3.5 flex items-center justify-between">
-                <span className="text-xs md:text-[13px] font-semibold uppercase tracking-[0.18em] text-foreground">
+            <div className="border-t border-border/70 pt-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-foreground">
                   Khoảng giá
                 </span>
-                <span className="text-xs md:text-sm font-semibold text-foreground normal-case font-sans">
+                <span className="text-xs font-semibold text-foreground normal-case">
                   {maxPrice >= 4000000 ? "Tất cả mức giá" : `≤ ${formatVND(maxPrice)}`}
                 </span>
               </div>
@@ -426,12 +424,12 @@ function ListingContent({
                   [&::-moz-range-thumb]:cursor-pointer
                 "
               />
-              <div className="mt-1.5 flex justify-between text-[10px] md:text-xs font-mono text-muted-foreground">
+              <div className="mt-2 flex justify-between text-xs font-medium tabular-nums tracking-normal text-muted-foreground">
                 <span>300.000₫</span>
                 <span>4.000.000₫+</span>
               </div>
 
-              <div className="mt-3.5 flex flex-wrap gap-2">
+              <div className="mt-4 grid grid-cols-3 gap-2">
                 {[
                   { label: "< 1 triệu", val: 1000000 },
                   { label: "< 2 triệu", val: 2000000 },
@@ -443,9 +441,9 @@ function ListingContent({
                       key={p.label}
                       type="button"
                       onClick={() => setMaxPrice(p.val)}
-                      className={`flex-1 min-w-[75px] rounded-lg py-2 text-center text-xs md:text-[13px] font-medium transition-colors cursor-pointer normal-case tracking-normal ${selected
-                          ? "bg-foreground text-background font-semibold"
-                          : "bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground border border-border/50"
+                      className={`min-w-0 cursor-pointer rounded-md border px-1.5 py-2 text-center text-xs font-medium normal-case tracking-normal transition-colors ${selected
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-background text-muted-foreground hover:border-foreground/40 hover:bg-secondary/40 hover:text-foreground"
                         }`}
                     >
                       {p.label}
@@ -482,10 +480,10 @@ function ListingContent({
         <div className="flex-1 min-w-0">
           {/* Top Sticky Toolbar */}
           <div
-            className="sticky z-20 border-y border-border bg-background/95 backdrop-blur-md transition-[top] duration-200"
+            className="sticky z-20 bg-background/95 backdrop-blur-md transition-[top] duration-200"
             style={{ top: "var(--header-height, 146px)" }}
           >
-            <div className="flex flex-wrap items-center justify-between gap-y-2 py-3 text-xs uppercase tracking-widest">
+            <div className="flex flex-wrap items-center justify-between gap-y-2 py-2 text-xs uppercase tracking-widest">
               {/* Left side: Desktop Toggle / Mobile Trigger + Active chips */}
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Desktop Toggle Button */}
@@ -493,8 +491,8 @@ function ListingContent({
                   type="button"
                   onClick={() => setShowFilterDesktop((s) => !s)}
                   className={`hidden lg:inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-medium transition cursor-pointer select-none text-xs tracking-wider border ${showFilterDesktop
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border/80 bg-background hover:bg-secondary text-foreground"
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border/80 bg-background hover:bg-secondary text-foreground"
                     }`}
                 >
                   <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -502,8 +500,8 @@ function ListingContent({
                   {activeFilterCount > 0 && (
                     <span
                       className={`inline-flex items-center justify-center size-4.5 rounded-full text-[10px] font-bold ${showFilterDesktop
-                          ? "bg-background text-foreground"
-                          : "bg-foreground text-background"
+                        ? "bg-background text-foreground"
+                        : "bg-foreground text-background"
                         }`}
                     >
                       {activeFilterCount}

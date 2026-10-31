@@ -127,6 +127,7 @@ publicContentRoutes.get("/lookbooks", async (c) => {
       sort_order: lookbookItems.sortOrder,
       product_slug: products.slug,
       product_name: products.name,
+      product_status: products.status,
     })
     .from(lookbookItems)
     .leftJoin(products, eq(products.id, lookbookItems.productId))
@@ -158,7 +159,11 @@ publicContentRoutes.get("/lookbooks", async (c) => {
         product_id: it.product_id,
         product_slug: it.product_slug,
         product_name: it.product_name,
-        link_url: it.link_url || (it.product_slug ? `/san-pham/${it.product_slug}` : null),
+        link_url: it.product_id
+          ? it.product_status === "published" && it.product_slug
+            ? `/san-pham/${it.product_slug}`
+            : null
+          : it.link_url,
         sort_order: it.sort_order,
       })),
     })),
@@ -191,6 +196,7 @@ publicContentRoutes.get("/lookbooks/:slug", async (c) => {
       sort_order: lookbookItems.sortOrder,
       product_slug: products.slug,
       product_name: products.name,
+      product_status: products.status,
     })
     .from(lookbookItems)
     .leftJoin(products, eq(products.id, lookbookItems.productId))
@@ -214,7 +220,11 @@ publicContentRoutes.get("/lookbooks/:slug", async (c) => {
       product_id: it.product_id,
       product_slug: it.product_slug,
       product_name: it.product_name,
-      link_url: it.link_url || (it.product_slug ? `/san-pham/${it.product_slug}` : null),
+      link_url: it.product_id
+        ? it.product_status === "published" && it.product_slug
+          ? `/san-pham/${it.product_slug}`
+          : null
+        : it.link_url,
       sort_order: it.sort_order,
     })),
   });

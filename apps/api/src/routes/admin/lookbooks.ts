@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { auditLogs, lookbooks, lookbookItems, products } from "@elane/db";
+import { auditLogs, lookbooks, lookbookItems, mediaAssets, productMedia, products } from "@elane/db";
 import type { AppVars } from "../../middleware/auth.js";
 import { requireAuth } from "../../middleware/auth.js";
 import { ApiError, requestId } from "../../lib/errors.js";
@@ -215,17 +215,48 @@ adminLookbookRoutes.get("/:id", async (c) => {
       updated_at: lookbookItems.updatedAt,
       product_name: products.name,
       product_slug: products.slug,
+      product_status: products.status,
     })
     .from(lookbookItems)
     .leftJoin(products, eq(products.id, lookbookItems.productId))
     .where(eq(lookbookItems.lookbookId, lb.id))
     .orderBy(asc(lookbookItems.sortOrder), asc(lookbookItems.createdAt));
 
+  const attachedProducts = Array.isArray(lb.attached_products) ? lb.attached_products : [];
+  const productIds = Array.from(new Set([
+    ...items.map((item) => item.product_id).filter((id): id is string => Boolean(id)),
+    ...attachedProducts.map((product: { id?: string }) => product.id).filter((id): id is string => Boolean(id)),
+  ]));
+  const productMediaRows = productIds.length
+    ? await db
+        .select({
+          productId: productMedia.productId,
+          objectKey: mediaAssets.objectKey,
+        })
+        .from(productMedia)
+        .innerJoin(mediaAssets, eq(mediaAssets.id, productMedia.assetId))
+        .where(inArray(productMedia.productId, productIds))
+        .orderBy(desc(productMedia.isCover), asc(productMedia.sortOrder))
+    : [];
+  const productImageById = new Map<string, string>();
+  for (const media of productMediaRows) {
+    if (!productImageById.has(media.productId)) {
+      productImageById.set(media.productId, mediaPublicUrl(media.objectKey));
+    }
+  }
+
   return c.json({
     ...lb,
+    attached_products: attachedProducts.map((product: { id: string; image_url?: string | null }) => ({
+      ...product,
+      image_url: product.image_url || productImageById.get(product.id) || null,
+    })),
     items: items.map((it) => ({
       ...it,
-      link_url: it.link_url || (it.product_slug ? `/san-pham/${it.product_slug}` : null),
+      product_image_url: it.product_id ? productImageById.get(it.product_id) || null : null,
+      link_url: it.product_id && it.product_slug
+        ? `/san-pham/${it.product_slug}`
+        : it.link_url,
     })),
   });
 });
@@ -509,8 +540,11 @@ adminLookbookRoutes.patch("/items/:itemId", async (c) => {
   if (body.product_id !== undefined || body.productId !== undefined) {
     const pid = body.product_id ?? body.productId;
     if (pid) {
-      const [p] = await db.select().from(products).where(eq(products.id, pid)).limit(1);
+      const [p] = await db.select({ id: products.id, slug: products.slug }).from(products).where(eq(products.id, pid)).limit(1);
       patch.productId = p ? p.id : null;
+      if (p && body.link_url === undefined && body.linkUrl === undefined) {
+        patch.linkUrl = `/san-pham/${p.slug}`;
+      }
     } else {
       patch.productId = null;
     }

@@ -344,7 +344,7 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
 
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-6 md:px-8 md:py-10">
-      <nav aria-label="Breadcrumb" className="text-base text-muted-foreground font-medium flex items-center gap-2 flex-wrap">
+      <nav aria-label="Breadcrumb" className="mb-8 flex flex-wrap items-center gap-2 text-base font-medium text-muted-foreground md:mb-10">
         <Link to="/" className="hover:text-foreground transition-colors">Trang chủ</Link>
         <span className="opacity-40">/</span>
         {cat && (
@@ -356,7 +356,7 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
         <span className="text-foreground">{p.name}</span>
       </nav>
 
-      <div className="mt-6 grid gap-8 xl:grid-cols-[1.3fr_1fr] xl:gap-12">
+      <div className="grid gap-8 xl:grid-cols-[1.3fr_1fr] xl:gap-12">
         <div className="mx-auto grid w-full max-w-[760px] gap-3 xl:mx-0 xl:max-w-none xl:grid-cols-[80px_1fr]">
           {/* Phones and tablets: horizontal strip */}
           <div

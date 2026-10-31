@@ -10,12 +10,16 @@ import {
   Download,
   Gift,
   HeartHandshake,
+  Info,
+  Landmark,
   Loader2,
   MapPin,
   Package,
   ShieldCheck,
   Sparkles,
+  Tag,
   Truck,
+  Wallet,
 } from "lucide-react";
 import { formatVND, products } from "@/lib/products";
 import { useStore, getCartItemImage } from "@/lib/store";
@@ -831,7 +835,7 @@ function Checkout() {
   const checkoutItems = isBuyNowMode && buyNowItem ? [buyNowItem] : cart;
   const currentSubtotal = checkoutItems.reduce((acc, it) => {
     const p = products.find((x) => x.id === it.productId);
-    const pr = p ? p.salePrice ?? p.price : 0;
+    const pr = p ? p.salePrice ?? p.price : it.unitPrice ?? 0;
     return acc + pr * it.qty;
   }, 0);
 
@@ -839,8 +843,25 @@ function Checkout() {
   const [success, setSuccess] = useState<Success | null>(null);
   const [pay, setPay] = useState<"cod" | "bank">("cod");
   const paymentOptions = [
-    ...(storeSettings.payments.codEnabled ? [{ value: "cod" as const, label: "Thanh toán khi nhận hàng (COD)" }] : []),
-    ...(storeSettings.payments.bankEnabled ? [{ value: "bank" as const, label: "Chuyển khoản ngân hàng" }] : []),
+    ...(storeSettings.payments.codEnabled
+      ? [
+        {
+          value: "cod" as const,
+          label: "Thanh toán khi nhận hàng",
+          description: "Thanh toán bằng tiền mặt khi nhận hàng tại địa chỉ của bạn.",
+        },
+      ]
+      : []),
+    ...(storeSettings.payments.bankEnabled
+      ? [
+        {
+          value: "bank" as const,
+          label: "Chuyển khoản ngân hàng",
+          description:
+            "Chuyển khoản qua tài khoản ngân hàng của ÉLANE. Xác nhận đơn hàng nhanh chóng.",
+        },
+      ]
+      : []),
   ];
   const [bankInfo, setBankInfo] = useState<BankInfo | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -1061,10 +1082,10 @@ function Checkout() {
     );
 
   return (
-    <div className="mx-auto max-w-[1320px] px-6 py-12">
+    <div className="mx-auto w-full max-w-[1720px] px-4 py-8 sm:px-6 lg:px-8 lg:py-12 2xl:px-12">
       <h1 className="text-4xl">Thanh toán</h1>
       <form
-        className="mt-10 grid gap-12 lg:grid-cols-[1fr_380px]"
+        className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-12 xl:gap-14"
         onSubmit={(e) => {
           e.preventDefault();
           if (pay === "bank" && !bankInfo) {
@@ -1239,84 +1260,201 @@ function Checkout() {
             </div>
           </fieldset>
 
-          <fieldset>
-            <legend className="mb-4 text-sm uppercase tracking-widest font-semibold">Phương thức thanh toán</legend>
-            <div className="divide-y divide-border border border-border">
-              {paymentOptions.length ? paymentOptions.map(({ value, label }) => (
-                  <label key={value} className="flex cursor-pointer items-center gap-3 px-4 py-4 text-[15px]">
-                    <input
-                      type="radio"
-                      name="pay"
-                      value={value}
-                      checked={pay === value}
-                      onChange={() => setPay(value)}
-                      className="accent-foreground"
-                    />{" "}
-                    {label}
-                  </label>
-              )) : <p className="px-4 py-4 text-sm text-muted-foreground">Hiện chưa có phương thức thanh toán khả dụng. Vui lòng liên hệ cửa hàng.</p>}
-            </div>
+          <fieldset className=" pt-5">
+            <legend className="mb-4 text-sm font-semibold uppercase tracking-widest">
+              Phương thức thanh toán
+            </legend>
+            {paymentOptions.length ? (
+              <div className="space-y-3">
+                <div
+                  className={`grid gap-3 ${paymentOptions.length > 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
+                    }`}
+                >
+                  {paymentOptions.map(({ value, label, description }) => {
+                    const selected = pay === value;
+                    const PaymentIcon = value === "cod" ? Wallet : Landmark;
+                    return (
+                      <label
+                        key={value}
+                        className={`flex min-w-0 w-full cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-3 text-left transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-foreground sm:gap-3 sm:px-3.5 sm:py-3.5 ${selected
+                            ? "border-[#c5ad8b] bg-[#fbf8f3] shadow-[0_0_0_1px_rgba(197,173,139,0.18)]"
+                            : "border-border/80 bg-white shadow-sm hover:border-[#c5ad8b]/70"
+                          }`}
+                      >
+                        <input
+                          type="radio"
+                          name="pay"
+                          value={value}
+                          checked={selected}
+                          onChange={() => setPay(value)}
+                          className="h-4 w-4 shrink-0 accent-[#ad8f61] sm:h-[18px] sm:w-[18px]"
+                          aria-label={label}
+                        />
+                        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#f1ede7] sm:h-14 sm:w-14">
+                          <PaymentIcon
+                            aria-hidden="true"
+                            className={`h-6 w-6 ${selected ? "text-[#9a7c50]" : "text-foreground"}`}
+                            strokeWidth={1.7}
+                          />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold leading-snug text-foreground sm:text-[15px]">
+                            {label} {value === "cod" ? "(COD)" : ""}
+                          </span>
+                          <span className="mt-1.5 block text-xs leading-relaxed text-muted-foreground sm:text-[13px]">
+                            {description}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <div className="flex items-start gap-2.5 rounded-xl bg-[#f5f3ef] px-3 py-3 text-sm sm:gap-3 sm:px-3.5">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-foreground/20">
+                    <Info
+                      aria-hidden="true"
+                      className="h-3.5 w-3.5 text-foreground"
+                      strokeWidth={1.8}
+                    />
+                  </span>
+                  <div>
+                    <p className="font-semibold text-foreground">Xác nhận đơn hàng</p>
+                    <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+                      Sau khi đặt hàng, ÉLANE sẽ liên hệ xác nhận đơn hàng qua điện thoại hoặc email
+                      trong vòng 30 phút (giờ hành chính).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="border border-border px-4 py-4 text-sm text-muted-foreground">
+                Hiện chưa có phương thức thanh toán khả dụng. Vui lòng liên hệ cửa hàng.
+              </p>
+            )}
           </fieldset>
         </div>
 
-        <aside className="h-fit bg-secondary p-8">
-          <ul className=" space-y-4">
+        <aside
+          aria-label="Tóm tắt đơn hàng"
+          className="h-fit overflow-hidden rounded-tl-[1.75rem] rounded-br-[1.75rem] border border-border/80 bg-[#f6f5f2]"
+        >
+          <div className="flex items-center justify-between gap-4 px-5 pb-4 pt-5 sm:px-6 sm:pt-6">
+            <div>
+              <h2 className="mt-1 text-xl font-semibold tracking-tight">Đơn hàng của bạn</h2>
+            </div>
+            <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border/80 bg-white px-3 py-1.5 text-xs font-medium text-foreground">
+              {checkoutItems.length} sản phẩm
+            </span>
+          </div>
+
+          <ul
+            className={`divide-y divide-border/80 border-y border-border/80 bg-white/65 px-5 sm:px-6 ${
+              checkoutItems.length > 3
+                ? "max-h-[23.5rem] overflow-y-auto overscroll-contain sm:max-h-[25.75rem]"
+                : ""
+            }`}
+          >
             {checkoutItems.map((it, i) => {
               const p = products.find((x) => x.id === it.productId);
               const itemImg = getCartItemImage(it, p);
-              const itemName = p?.name ?? "Sản phẩm";
-              const itemPrice = p ? (p.salePrice ?? p.price) * it.qty : 0;
+              const itemName = p?.name ?? it.productName ?? "Sản phẩm";
+              const itemPrice = (p ? (p.salePrice ?? p.price) : (it.unitPrice ?? 0)) * it.qty;
+              const productSlug = p?.slug ?? it.productSlug;
               return (
-                <li key={i} className="flex gap-4 text-[14.5px] items-start">
+                <li key={i} className="flex items-start gap-3.5 py-4 text-sm sm:gap-4">
                   {itemImg ? (
-                    <img src={itemImg} alt={itemName} className="w-[96px] h-[128px] object-cover shrink-0 border border-border/80 bg-secondary" />
+                    productSlug ? (
+                      <Link to="/san-pham/$slug" params={{ slug: productSlug }} className="shrink-0">
+                        <img
+                          src={itemImg}
+                          alt={itemName}
+                          className="h-[92px] w-[70px] rounded-tl-xl rounded-br-xl border border-border/70 bg-secondary object-cover sm:h-[104px] sm:w-[78px]"
+                        />
+                      </Link>
+                    ) : (
+                      <img
+                        src={itemImg}
+                        alt={itemName}
+                        className="h-[92px] w-[70px] shrink-0 rounded-tl-xl rounded-br-xl border border-border/70 bg-secondary object-cover sm:h-[104px] sm:w-[78px]"
+                      />
+                    )
                   ) : (
-                    <div className="w-[96px] h-[128px] bg-secondary shrink-0 border border-border/80" />
+                    <div className="h-[92px] w-[70px] shrink-0 rounded-tl-xl rounded-br-xl border border-border/70 bg-secondary sm:h-[104px] sm:w-[78px]" />
                   )}
-                  <div className="flex-1">
-                    <p className="line-clamp-2 font-medium leading-snug" title={itemName}>
-                      {itemName}
-                    </p>
-                    <p className="text-[13px] text-muted-foreground mt-0.5">
+                  <div className="min-w-0 flex-1 py-0.5">
+                    {productSlug ? (
+                      <Link
+                        to="/san-pham/$slug"
+                        params={{ slug: productSlug }}
+                        className="line-clamp-2 font-medium leading-snug text-foreground transition-opacity hover:opacity-65"
+                        title={itemName}
+                      >
+                        {itemName}
+                      </Link>
+                    ) : (
+                      <p className="line-clamp-2 font-medium leading-snug text-foreground" title={itemName}>
+                        {itemName}
+                      </p>
+                    )}
+                    <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
                       {it.colorName ? `${it.colorName} · ` : ""}
-                      {it.sku} · Size {it.size} · x{it.qty}
+                      Size {it.size} · {it.sku}
                     </p>
+                    <span className="mt-2 inline-flex rounded-sm bg-secondary px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-foreground/75">
+                      SL: {it.qty}
+                    </span>
                   </div>
-                  <span className="font-medium">{formatVND(itemPrice)}</span>
+                  <span className="shrink-0 pt-0.5 text-right text-[13px] font-semibold tabular-nums">
+                    {formatVND(itemPrice)}
+                  </span>
                 </li>
               );
             })}
           </ul>
-          <dl className="mt-6 space-y-2.5 border-t border-border pt-4 text-[14.5px]">
-            <div className="flex justify-between">
-              <dt>Tạm tính</dt>
-              <dd>{formatVND(currentSubtotal)}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt>Vận chuyển</dt>
-              <dd>{shipping ? formatVND(shipping) : "Miễn phí"}</dd>
-            </div>
-            {applied && (
-              <div className="flex justify-between text-success">
-                <dt>Giảm giá ({applied.code})</dt>
-                <dd>−{formatVND(applied.discount_vnd)}</dd>
+
+          <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
+            <dl className="space-y-3 text-[13px] sm:text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Tạm tính</dt>
+                <dd className="shrink-0 font-medium tabular-nums">{formatVND(currentSubtotal)}</dd>
               </div>
-            )}
-            <div className="pt-2">
-              <label className="mb-2 block text-[13px] uppercase tracking-widest text-muted-foreground">Mã giảm giá</label>
-              <div className="flex gap-2">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Vận chuyển</dt>
+                <dd className="shrink-0 font-medium tabular-nums">
+                  {shipping ? formatVND(shipping) : "Miễn phí"}
+                </dd>
+              </div>
+              {applied && (
+                <div className="flex justify-between gap-4 text-success">
+                  <dt>Giảm giá ({applied.code})</dt>
+                  <dd className="shrink-0 font-medium tabular-nums">
+                    −{formatVND(applied.discount_vnd)}
+                  </dd>
+                </div>
+              )}
+            </dl>
+
+            <div className="rounded-xl border border-border/80 bg-white/80 p-3.5 sm:p-4">
+              <label
+                htmlFor="checkout-coupon"
+                className="mb-2.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+              >
+                <Tag aria-hidden="true" className="h-3.5 w-3.5" /> Mã giảm giá
+              </label>
+              <div className="flex min-w-0 gap-2">
                 <input
+                  id="checkout-coupon"
                   value={couponInput}
                   onChange={(e) => setCouponInput(e.target.value)}
-                  placeholder="Nhập mã"
-                  className={input}
+                  placeholder="Nhập mã ưu đãi"
+                  className={`${input} min-w-0 flex-1 bg-background px-3 py-2.5 text-sm disabled:bg-secondary/60`}
                   aria-label="Mã giảm giá"
                   disabled={!!applied}
                 />
                 {applied ? (
                   <button
                     type="button"
-                    className="shrink-0 border border-border px-3 text-xs uppercase tracking-widest"
+                    className="shrink-0 border border-border px-3 text-[10px] font-semibold uppercase tracking-wider transition-colors hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
                     onClick={() => {
                       setApplied(null);
                       setCouponError(null);
@@ -1328,27 +1466,51 @@ function Checkout() {
                   <button
                     type="button"
                     disabled={couponBusy}
-                    className="shrink-0 border border-foreground px-3 text-xs uppercase tracking-widest disabled:opacity-60"
+                    className="shrink-0 border border-foreground bg-white px-3 text-[10px] font-semibold uppercase tracking-wider transition-colors hover:bg-foreground hover:text-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground disabled:cursor-wait disabled:opacity-60"
                     onClick={() => void applyCoupon()}
                   >
-                    {couponBusy ? "…" : "Áp dụng"}
+                    {couponBusy ? (
+                      <Loader2 aria-label="Đang kiểm tra mã" className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Áp dụng"
+                    )}
                   </button>
                 )}
               </div>
-              {couponError && <p className="mt-2 text-xs text-destructive">{couponError}</p>}
+              {couponError && (
+                <p role="alert" className="mt-2 text-xs text-destructive">
+                  {couponError}
+                </p>
+              )}
             </div>
-            <div className="flex justify-between pt-2.5 text-base sm:text-lg font-semibold border-t border-border/80">
-              <dt>Tổng cộng</dt>
-              <dd className=" text-xl sm:text-2xl">{formatVND(grand)}</dd>
+
+            <div className="flex items-end justify-between gap-3 border-t border-foreground/15 pt-4">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Tổng thanh toán
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">Đã gồm phí vận chuyển</p>
+              </div>
+              <p className="text-[23px] font-semibold leading-none tracking-tight tabular-nums sm:text-[26px]">
+                {formatVND(grand)}
+              </p>
             </div>
-          </dl>
-          <button
-            type="submit"
-            disabled={submitting || !storeSettingsReady || paymentOptions.length === 0}
-            className="mt-6 w-full bg-primary py-4 text-xs sm:text-sm font-semibold uppercase tracking-widest text-primary-foreground disabled:opacity-60 transition-opacity hover:opacity-95"
-          >
-            {submitting ? "Đang đặt…" : "Đặt hàng"}
-          </button>
+
+            <button
+              type="submit"
+              disabled={submitting || !storeSettingsReady || paymentOptions.length === 0}
+              className="group flex w-full items-center justify-center gap-3 rounded-sm bg-primary px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-primary-foreground transition-[background-color,opacity] hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
+            >
+              {submitting ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : null}
+              {submitting ? "Đang đặt hàng…" : "Đặt hàng"}
+              {!submitting && (
+                <ArrowRight
+                  aria-hidden="true"
+                  className="h-4 w-4 transition-transform group-hover:translate-x-1 motion-reduce:transform-none"
+                />
+              )}
+            </button>
+          </div>
         </aside>
       </form>
     </div>

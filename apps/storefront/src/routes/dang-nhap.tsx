@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { btnCls, inputCls, seo } from "@/components/site/PageHeader";
+import { AuthLayout, authInputClass } from "@/components/site/AuthLayout";
+import { seo } from "@/components/site/PageHeader";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dang-nhap")({
@@ -13,15 +15,18 @@ export const Route = createFileRoute("/dang-nhap")({
 });
 
 function Login() {
-  const { login } = useStore();
+  const { login, storeSettings } = useStore();
   const nav = useNavigate();
   const { next } = Route.useSearch();
+
   return (
-    <div className="mx-auto max-w-md px-6 py-20">
-      <h1 className="text-center text-4xl">Đăng nhập</h1>
-      <p className="mt-3 text-center text-sm text-muted-foreground">Chào mừng bạn quay trở lại ÉLANE.</p>
+    <AuthLayout
+      mode="login"
+      title="Chào mừng bạn trở lại"
+      description="Đăng nhập để tiếp tục hành trình cùng ÉLANE."
+    >
       <form
-        className="mt-10 space-y-3"
+        className="mt-8 space-y-5"
         onSubmit={(e) => {
           e.preventDefault();
           const f = new FormData(e.currentTarget);
@@ -36,15 +41,31 @@ function Login() {
           })();
         }}
       >
-        <input name="email" required type="email" placeholder="Email" aria-label="Email" className={inputCls} />
-        <input name="password" required type="password" minLength={6} placeholder="Mật khẩu" aria-label="Mật khẩu" className={inputCls} />
-        <div className="flex justify-between py-2 text-xs">
-          <label className="flex items-center gap-2"><input type="checkbox" className="accent-foreground" /> Ghi nhớ đăng nhập</label>
-          <span className="text-muted-foreground">Quên mật khẩu? (sắp có)</span>
+        <div>
+          <label htmlFor="login-email" className="text-[15px] font-medium text-[#26231f]">Email</label>
+          <input id="login-email" name="email" required type="email" autoComplete="email" placeholder="email@vidu.com" className={authInputClass} />
         </div>
-        <button type="submit" className={`${btnCls} w-full`}>Đăng nhập</button>
+        <div>
+          <label htmlFor="login-password" className="text-[15px] font-medium text-[#26231f]">Mật khẩu</label>
+          <input id="login-password" name="password" required type="password" minLength={6} autoComplete="current-password" placeholder="Nhập mật khẩu của bạn" className={authInputClass} />
+        </div>
+        <div className="flex justify-end text-sm">
+          <a
+            href={`mailto:${storeSettings.brand.supportEmail}?subject=${encodeURIComponent("Hỗ trợ đăng nhập tài khoản ÉLANE")}`}
+            className="text-[#6e6a64] underline decoration-[#b69b72] underline-offset-4 transition-colors hover:text-[#171717]"
+          >
+            Cần hỗ trợ đăng nhập?
+          </a>
+        </div>
+        <button type="submit" className="group flex min-h-14 w-full items-center justify-center gap-3 bg-[#111111] px-6 text-sm font-medium tracking-[0.08em] text-white transition-colors hover:bg-[#34312d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111111] focus-visible:ring-offset-2">
+          Đăng nhập
+          <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
+        </button>
       </form>
-      <p className="mt-8 text-center text-sm text-muted-foreground">Chưa có tài khoản? <Link to="/dang-ky" className="text-foreground underline">Đăng ký ngay</Link></p>
-    </div>
+      <p className="mt-7 border-t border-[#e5e1da] pt-6 text-[15px] text-[#6e6a64]">
+        Chưa có tài khoản?{" "}
+        <Link to="/dang-ky" className="font-medium text-[#171717] underline decoration-[#b69b72] underline-offset-4 transition-colors hover:text-[#8b6d43]">Đăng ký ngay</Link>
+      </p>
+    </AuthLayout>
   );
 }
