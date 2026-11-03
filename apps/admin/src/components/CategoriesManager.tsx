@@ -681,7 +681,7 @@ export function CategoriesManager({ permissions = [] }: { permissions?: string[]
               Hủy
             </Button>
             <Button
-              className="h-9 gap-1.5 rounded-xs bg-[#6d3df0] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#5a2fd6] transition-colors disabled:opacity-60 cursor-pointer"
+              className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#1B2E42] transition-colors disabled:opacity-60 cursor-pointer"
               disabled={saving}
               onClick={save}
             >
@@ -1018,7 +1018,7 @@ export function CategoriesManager({ permissions = [] }: { permissions?: string[]
             <ArrowUpDown className="size-3.5" />
             <span>Sắp xếp lại</span>
           </Button>
-          {canWrite && <Button asChild className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-3.5 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer">
+          {canWrite && <Button asChild className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-3.5 text-sm font-semibold text-white shadow-xs hover:bg-[#1B2E42] transition-colors cursor-pointer">
             <a
               href="/danhmuc/them"
               onClick={(e) => {
@@ -1340,7 +1340,7 @@ export function CategoriesManager({ permissions = [] }: { permissions?: string[]
                     <input
                       type="checkbox"
                       aria-label="Chọn tất cả"
-                      className="size-4 rounded-xs accent-[#6941c6]"
+                      className="size-4 rounded-xs accent-[#243B53]"
                       checked={allFilteredSelected}
                       ref={(el) => {
                         if (el) el.indeterminate = someFilteredSelected && !allFilteredSelected;
@@ -1370,7 +1370,7 @@ export function CategoriesManager({ permissions = [] }: { permissions?: string[]
                       id={`cat-row-${cat.id}`}
                       className={cn(
                         "group border-b border-border/70 transition-colors last:border-b-0",
-                        checked || focused ? "bg-purple-50/40" : "hover:bg-slate-50/70",
+                        checked || focused ? "bg-[#EAF0F6]/40" : "hover:bg-slate-50/70",
                         archived && "opacity-60",
                       )}
                     >
@@ -1378,7 +1378,7 @@ export function CategoriesManager({ permissions = [] }: { permissions?: string[]
                         <input
                           type="checkbox"
                           aria-label={`Chọn ${cat.name}`}
-                          className="size-4 rounded-xs accent-[#6941c6]"
+                          className="size-4 rounded-xs accent-[#243B53]"
                           checked={checked}
                           onChange={() => toggleOne(cat.id)}
                         />
@@ -1405,7 +1405,7 @@ export function CategoriesManager({ permissions = [] }: { permissions?: string[]
                           <div className="min-w-0">
                             <a
                               href={`/danhmuc/sua/${cat.id}`}
-                              className="block max-w-full truncate text-left text-sm font-semibold text-slate-950 hover:text-[#6941c6] hover:underline"
+                              className="block max-w-full truncate text-left text-sm font-semibold text-slate-950 hover:text-[#243B53] hover:underline"
                               onClick={(e) => {
                                 e.preventDefault();
                                 openEdit(cat);

@@ -7,15 +7,15 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ChannelId } from "../types";
-import { ChannelLogo, Switch, card } from "../ui";
+import { ChannelLogo, SocialBackButton, Switch, card } from "../ui";
 import {
   CATEGORIES, COLLECTIONS, EXTRAS, SAMPLE_PRODUCTS,
   type Cfg, type ChannelFlow, type ContentCfg, type ExtraKey, type FlowAccount,
 } from "./channelFlow";
 
 /* ───────────── Helpers & primitives ───────────── */
-const VIOLET = "bg-[#6941c6] hover:bg-[#5b36b0]";
-const FIELD = "w-full rounded-xs border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-2 focus:ring-violet-100 disabled:bg-slate-50";
+const VIOLET = "bg-[#243B53] hover:bg-[#1B2E42]";
+const FIELD = "w-full rounded-xs border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#243B53] focus:ring-2 focus:ring-[#DCE6F0] disabled:bg-slate-50";
 export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const compact = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(".0", "")}K` : `${n}`);
 const soon = () => toast.info("Tính năng này sẽ được bổ sung");
@@ -35,7 +35,7 @@ export function Badge({ tone, icon, children }: { tone: BadgeTone; icon?: React.
 
 function StepAvatar({ name, cls = "size-12 text-base" }: { name: string; cls?: string }) {
   return (
-    <span className={cn("grid shrink-0 place-items-center rounded-full bg-violet-100 font-semibold text-[#6941c6]", cls)}>
+    <span className={cn("grid shrink-0 place-items-center rounded-full bg-[#DCE6F0] font-semibold text-[#243B53]", cls)}>
       {name.replace(/^@/, "").charAt(0).toUpperCase()}
     </span>
   );
@@ -46,14 +46,14 @@ const Tick = ({ on = true }: { on?: boolean }) => (
   </span>
 );
 const Radio = ({ on }: { on: boolean }) => (
-  <span className={cn("grid size-5 shrink-0 place-items-center rounded-full border-2", on ? "border-[#6941c6] bg-[#6941c6]" : "border-slate-300 bg-white")}>
+  <span className={cn("grid size-5 shrink-0 place-items-center rounded-full border-2", on ? "border-[#243B53] bg-[#243B53]" : "border-slate-300 bg-white")}>
     {on && <Check className="size-3 text-white" strokeWidth={3} />}
   </span>
 );
 function Checkbox({ on, onChange, label, desc }: { on: boolean; onChange: (v: boolean) => void; label: string; desc: string }) {
   return (
     <button type="button" role="checkbox" aria-checked={on} onClick={() => onChange(!on)} className="flex w-full items-start gap-3 text-left">
-      <span className={cn("mt-0.5 grid size-5 shrink-0 place-items-center rounded border", on ? "border-[#6941c6] bg-[#6941c6]" : "border-slate-300 bg-white")}>
+      <span className={cn("mt-0.5 grid size-5 shrink-0 place-items-center rounded border", on ? "border-[#243B53] bg-[#243B53]" : "border-slate-300 bg-white")}>
         {on && <Check className="size-3.5 text-white" strokeWidth={3} />}
       </span>
       <span><span className="block text-sm font-medium">{label}</span><span className="block text-xs text-slate-500">{desc}</span></span>
@@ -105,7 +105,7 @@ function Footer({ onBack, onNext, nextLabel = "Tiếp tục", disabled, busy, ic
 }) {
   return (
     <footer className="flex items-center justify-between gap-3 p-5">
-      <Button variant="outline" onClick={onBack}>Quay lại</Button>
+      <SocialBackButton onClick={onBack} />
       <Button onClick={onNext} disabled={disabled || busy} className={cn("gap-2", VIOLET, wide && "flex-1")}>
         {busy ? <Loader2 className="size-4 animate-spin" /> : icon}{nextLabel}<ArrowRight className="size-4" />
       </Button>
@@ -133,17 +133,17 @@ export function StepBar({ current, onGo }: { current: number; onGo: (n: number) 
             >
               <span className={cn(
                 "social-step-dot grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold transition-all duration-300",
-                active && "is-active bg-[#6941c6] text-white shadow-[0_0_0_4px_rgba(105,65,198,0.12)]",
-                done && "bg-[#6941c6] text-white group-hover:scale-105",
+                active && "is-active bg-[#243B53] text-white shadow-[0_0_0_4px_rgba(36, 59, 83, 0.12)]",
+                done && "bg-[#243B53] text-white group-hover:scale-105",
                 !active && !done && "bg-slate-100 text-slate-500",
               )}>
                 {done ? <Check className="size-3.5" strokeWidth={3} /> : n}
               </span>
-              <span className={cn("hidden whitespace-nowrap text-sm font-semibold sm:block", active || done ? "text-[#6941c6]" : "text-slate-500")}>{s.title}</span>
+              <span className={cn("hidden whitespace-nowrap text-sm font-semibold sm:block", active || done ? "text-[#243B53]" : "text-slate-500")}>{s.title}</span>
             </button>
             {i < STEPS.length - 1 && (
               <span className="relative mx-3 h-px min-w-5 flex-1 overflow-hidden bg-slate-200" aria-hidden="true">
-                <span className={cn("social-step-line absolute inset-y-0 left-0 bg-[#6941c6]", done ? "is-complete w-full" : "w-0")} />
+                <span className={cn("social-step-line absolute inset-y-0 left-0 bg-[#243B53]", done ? "is-complete w-full" : "w-0")} />
               </span>
             )}
           </li>
@@ -198,7 +198,7 @@ export function ApiConfigStep({ id, name, configured, initial, busy, onSave, onB
       </Block>
       <Block n={2} title="Đường dẫn xác thực" desc="Sao chép đường dẫn này vào phần OAuth/Redirect của nền tảng.">
         <input value={form.redirectUri} onChange={(e) => setForm({ ...form, redirectUri: e.target.value })} className={cn(FIELD, "h-9")} placeholder="https://.../oauth/callback" />
-        <div className="mt-3 rounded-lg border border-violet-100 bg-violet-50/70 p-3 text-xs leading-5 text-slate-600">Sau khi lưu thành công, bước đăng nhập mới được mở. Bạn sẽ không cần quay sang trang cấu hình khác.</div>
+        <div className="mt-3 rounded-lg border border-[#DCE6F0] bg-[#EAF0F6]/70 p-3 text-xs leading-5 text-slate-600">Sau khi lưu thành công, bước đăng nhập mới được mở. Bạn sẽ không cần quay sang trang cấu hình khác.</div>
       </Block>
       <Footer onBack={onBack} onNext={() => onSave(form)} disabled={!valid} busy={busy} nextLabel={configured ? "Lưu và tiếp tục" : "Lưu cấu hình API"} />
     </section>
@@ -220,7 +220,7 @@ export function ConnectStep({ id, name, flow, loggedIn, busy, accountId, onLogin
         right={<Button variant="outline" size="sm" onClick={soon} className="gap-2"><BookOpen className="size-4" />Xem hướng dẫn</Button>} />
 
       <Block n={1} title="Đăng nhập tài khoản" desc={`Bạn sẽ được chuyển đến ${name} để đăng nhập và cấp quyền truy cập cho ÉLANE.`}>
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-violet-100 bg-violet-50/60 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-[#DCE6F0] bg-[#EAF0F6]/60 p-4">
           <div className="flex items-center gap-3">
             <ChannelLogo id={id} size="lg" />
             <div><p className="font-semibold">{flow.loginTitle}</p><p className="max-w-md text-xs text-slate-500">{flow.loginDesc}</p></div>
@@ -235,7 +235,7 @@ export function ConnectStep({ id, name, flow, loggedIn, busy, accountId, onLogin
                 size="sm"
                 onClick={onLogin}
                 disabled={busy}
-                className="gap-1.5 text-xs text-violet-700 hover:bg-violet-50 border-violet-200"
+                className="gap-1.5 text-xs text-[#243B53] hover:bg-[#EAF0F6] border-[#C4D3E1]"
               >
                 {busy ? <Loader2 className="size-3.5 animate-spin" /> : <ExternalLink className="size-3.5" />}
                 Đăng nhập lại / Cấp lại quyền Meta
@@ -268,7 +268,7 @@ export function ConnectStep({ id, name, flow, loggedIn, busy, accountId, onLogin
             return (
               <button key={a.id} type="button" disabled={!loggedIn} onClick={() => onPick(a.id)}
                 className={cn("grid w-full items-center gap-3 border-b border-slate-100 px-4 py-3 text-left last:border-b-0 grid-cols-[20px_48px_minmax(0,1fr)] sm:grid-cols-[20px_48px_minmax(0,1fr)_130px_130px]",
-                  on ? "bg-violet-50/70 ring-1 ring-inset ring-[#6941c6]" : "hover:bg-slate-50")}>
+                  on ? "bg-[#EAF0F6]/70 ring-1 ring-inset ring-[#243B53]" : "hover:bg-slate-50")}>
                 <Radio on={on} />
                 <StepAvatar name={a.name} />
                 <span className="min-w-0">
@@ -320,14 +320,14 @@ export function InfoPanel({ id, name, desc, flow, popular }: { id: ChannelId; na
         </ul>
       </section>
 
-      <section className="rounded-lg border border-violet-100 bg-gradient-to-br from-violet-50 to-white p-5">
+      <section className="rounded-lg border border-[#DCE6F0] bg-gradient-to-br from-[#EAF0F6] to-white p-5">
         <div className="flex items-start gap-3">
-          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-violet-100 text-[#6941c6]"><Headphones className="size-6" /></span>
+          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-[#DCE6F0] text-[#243B53]"><Headphones className="size-6" /></span>
           <div><h3 className="font-semibold">Cần hỗ trợ?</h3><p className="mt-1 text-xs leading-5 text-slate-500">Xem hướng dẫn chi tiết hoặc liên hệ đội ngũ hỗ trợ nếu gặp khó khăn trong quá trình kết nối.</p></div>
         </div>
         <div className="mt-4 flex items-center justify-between gap-2">
-          <Button variant="outline" size="sm" onClick={soon} className="border-violet-200 bg-white text-[#6941c6] hover:bg-violet-50 hover:text-[#6941c6]">Xem hướng dẫn</Button>
-          <button onClick={() => toast.info("Chúng tôi sẽ liên hệ lại với bạn")} className="inline-flex items-center gap-1 text-sm font-medium text-[#6941c6] hover:underline">Liên hệ hỗ trợ<ArrowRight className="size-4" /></button>
+          <Button variant="outline" size="sm" onClick={soon} className="border-[#C4D3E1] bg-white text-[#243B53] hover:bg-[#EAF0F6] hover:text-[#243B53]">Xem hướng dẫn</Button>
+          <button onClick={() => toast.info("Chúng tôi sẽ liên hệ lại với bạn")} className="inline-flex items-center gap-1 text-sm font-medium text-[#243B53] hover:underline">Liên hệ hỗ trợ<ArrowRight className="size-4" /></button>
         </div>
       </section>
     </>
@@ -384,13 +384,13 @@ export function ConfigStep({ id, name, flow, cfg, patch, accountId, onAccount, o
                   <p className="mb-1 text-xs text-slate-500">Ảnh đại diện</p>
                   <div className="flex items-center gap-3">
                     <StepAvatar name={cfg.name || name} cls="size-16 text-xl" />
-                    <div><Button variant="outline" size="sm" onClick={soon} className="border-violet-200 text-[#6941c6]">Thay đổi</Button><p className="mt-1 text-[11px] text-slate-400">JPG, PNG (tối đa 2MB)</p></div>
+                    <div><Button variant="outline" size="sm" onClick={soon} className="border-[#C4D3E1] text-[#243B53]">Thay đổi</Button><p className="mt-1 text-[11px] text-slate-400">JPG, PNG (tối đa 2MB)</p></div>
                   </div>
                 </div>
                 <div>
                   <p className="mb-1 text-xs text-slate-500">Ảnh bìa</p>
-                  <div className="relative h-16 rounded-lg bg-gradient-to-br from-stone-200 via-stone-100 to-violet-100">
-                    <Button variant="outline" size="sm" onClick={soon} className="absolute bottom-1.5 right-1.5 h-7 bg-white text-xs text-[#6941c6]">Thay đổi</Button>
+                  <div className="relative h-16 rounded-lg bg-gradient-to-br from-stone-200 via-stone-100 to-[#DCE6F0]">
+                    <Button variant="outline" size="sm" onClick={soon} className="absolute bottom-1.5 right-1.5 h-7 bg-white text-xs text-[#243B53]">Thay đổi</Button>
                   </div>
                   <p className="mt-1 text-right text-[11px] text-slate-400">JPG, PNG (tối đa 10MB)</p>
                 </div>
@@ -402,14 +402,14 @@ export function ConfigStep({ id, name, flow, cfg, patch, accountId, onAccount, o
 
       {flow.commerce && (
         <Block n={nSync} title="Đồng bộ sản phẩm">
-          <div className="overflow-hidden rounded-lg border border-violet-100">
-            <div className="flex items-center gap-4 bg-violet-50/70 p-4">
+          <div className="overflow-hidden rounded-lg border border-[#DCE6F0]">
+            <div className="flex items-center gap-4 bg-[#EAF0F6]/70 p-4">
               <Switch checked={cfg.syncProducts} onChange={(v) => patch({ syncProducts: v })} />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">Đồng bộ sản phẩm từ ÉLANE lên {flow.shopName}</p>
                 <p className="text-xs text-slate-500">Tự động cập nhật sản phẩm, giá, tồn kho và hình ảnh từ hệ thống.</p>
               </div>
-              <Button variant="outline" size="sm" onClick={soon} className="hidden gap-1.5 border-violet-200 bg-white text-[#6941c6] sm:inline-flex"><BookOpen className="size-4" />Xem hướng dẫn</Button>
+              <Button variant="outline" size="sm" onClick={soon} className="hidden gap-1.5 border-[#C4D3E1] bg-white text-[#243B53] sm:inline-flex"><BookOpen className="size-4" />Xem hướng dẫn</Button>
             </div>
             {cfg.syncProducts && (
               <div className="p-4">
@@ -417,7 +417,7 @@ export function ConfigStep({ id, name, flow, cfg, patch, accountId, onAccount, o
                 <div className="grid gap-3 md:grid-cols-3">
                   {COLLECTIONS.map((c) => (
                     <button key={c.id} type="button" role="radio" aria-checked={cfg.collection === c.id} onClick={() => patch({ collection: c.id })}
-                      className={cn("flex items-start gap-3 rounded-lg border p-3 text-left", cfg.collection === c.id ? "border-[#6941c6] bg-violet-50/60" : "border-slate-200 hover:bg-slate-50")}>
+                      className={cn("flex items-start gap-3 rounded-lg border p-3 text-left", cfg.collection === c.id ? "border-[#243B53] bg-[#EAF0F6]/60" : "border-slate-200 hover:bg-slate-50")}>
                       <Radio on={cfg.collection === c.id} />
                       <span><b className="block text-sm font-medium">{c.title}</b><span className="text-xs text-slate-500">{c.desc}</span></span>
                     </button>
@@ -431,7 +431,7 @@ export function ConfigStep({ id, name, flow, cfg, patch, accountId, onAccount, o
 
       {flow.canPost && (
         <Block n={nPost} title="Tự động đăng bài">
-          <div className="flex items-center gap-4 rounded-lg bg-violet-50/70 p-4">
+          <div className="flex items-center gap-4 rounded-lg bg-[#EAF0F6]/70 p-4">
             <Switch checked={cfg.autoPost} onChange={(v) => patch({ autoPost: v })} />
             <div>
               <p className="text-sm font-semibold">Cho phép tự động đăng bài theo lịch</p>
@@ -464,7 +464,7 @@ function MiniPage({ flow, name, followers, verified, tab, onTab, children }: {
 }) {
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-      <div className="grid h-28 place-items-center bg-gradient-to-br from-stone-200 via-stone-100 to-violet-100 font-serif text-lg tracking-[0.25em] text-stone-500">ÉLANE</div>
+      <div className="grid h-28 place-items-center bg-gradient-to-br from-stone-200 via-stone-100 to-[#DCE6F0] font-serif text-lg tracking-[0.25em] text-stone-500">ÉLANE</div>
       <div className="-mt-9 flex items-end gap-3 px-4">
         <StepAvatar name={name} cls="size-[72px] border-4 border-white text-2xl" />
         <div className="min-w-0 pb-1">
@@ -479,7 +479,7 @@ function MiniPage({ flow, name, followers, verified, tab, onTab, children }: {
       </div>
       <div className="mt-3 flex overflow-x-auto border-b border-slate-200 px-2 text-xs">
         {flow.previewTabs.map((t, i) => (
-          <button key={t} type="button" onClick={() => onTab?.(i)} className={cn("whitespace-nowrap px-3 py-2", i === tab ? "border-b-2 border-[#6941c6] font-medium text-[#6941c6]" : "text-slate-500", !onTab && "cursor-default")}>{t}</button>
+          <button key={t} type="button" onClick={() => onTab?.(i)} className={cn("whitespace-nowrap px-3 py-2", i === tab ? "border-b-2 border-[#243B53] font-medium text-[#243B53]" : "text-slate-500", !onTab && "cursor-default")}>{t}</button>
         ))}
       </div>
       {children}
@@ -514,7 +514,7 @@ export function ConfigAside({ flow, cfg, patch, account }: { flow: ChannelFlow; 
     <>
       <section className={cn(card, "p-5")}>
         <div className="mb-4 flex items-center justify-between gap-2">
-          <h3 className="flex items-center gap-2 text-base font-semibold">Xem trước {flow.accountLabel}<ExternalLink className="size-4 text-[#6941c6]" /></h3>
+          <h3 className="flex items-center gap-2 text-base font-semibold">Xem trước {flow.accountLabel}<ExternalLink className="size-4 text-[#243B53]" /></h3>
           <SelectBox className="w-28" value={view} onChange={setView} options={[{ value: "desktop", label: "Desktop" }, { value: "mobile", label: "Mobile" }]} />
         </div>
         <div className={cn(view === "mobile" && "mx-auto max-w-[260px]")}>
@@ -531,11 +531,11 @@ export function ConfigAside({ flow, cfg, patch, account }: { flow: ChannelFlow; 
         </section>
       )}
 
-      <section className="rounded-lg border border-violet-100 bg-violet-50/70 p-5">
+      <section className="rounded-lg border border-[#DCE6F0] bg-[#EAF0F6]/70 p-5">
         <div className="flex items-start gap-3">
-          <Info className="mt-0.5 size-5 shrink-0 text-[#6941c6]" />
+          <Info className="mt-0.5 size-5 shrink-0 text-[#243B53]" />
           <div>
-            <h3 className="text-sm font-semibold text-[#53389e]">Lưu ý quan trọng</h3>
+            <h3 className="text-sm font-semibold text-[#1B2E42]">Lưu ý quan trọng</h3>
             <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-5 text-slate-600">
               <li>Đảm bảo {flow.accountLabel} có quyền quản lý đầy đủ.</li>
               <li>Việc đồng bộ dữ liệu có thể mất vài phút.</li>
@@ -639,8 +639,8 @@ export function ReadyAside({ flow, name, account, busy, onBack, onFinish }: {
       <section className={cn(card, "p-5")}>
         <h3 className="mb-4 text-base font-semibold">Xem trước kênh sau khi kết nối</h3>
         <MiniPage flow={flow} name={name} followers={account?.followers ?? 0} verified tab={tab} onTab={setTab}><Placeholder flow={flow} /></MiniPage>
-        <div className="mt-4 flex items-start gap-3 rounded-lg bg-violet-50/80 p-3">
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#6941c6] text-white"><Check className="size-4" strokeWidth={3} /></span>
+        <div className="mt-4 flex items-start gap-3 rounded-lg bg-[#EAF0F6]/80 p-3">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#243B53] text-white"><Check className="size-4" strokeWidth={3} /></span>
           <div><p className="text-sm font-semibold">Kênh đã sẵn sàng</p><p className="text-xs leading-5 text-slate-600">Bạn có thể bắt đầu tạo nội dung{flow.canPost ? ", đăng bài" : ""}{flow.commerce ? " và đồng bộ sản phẩm" : ""} ngay bây giờ.</p></div>
         </div>
       </section>
@@ -650,7 +650,7 @@ export function ReadyAside({ flow, name, account, busy, onBack, onFinish }: {
         <ol className="mt-4 space-y-3.5">
           {next.map(([t, d], i) => (
             <li key={t} className="flex items-start gap-3">
-              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-violet-50 text-sm font-semibold text-[#6941c6]">{i + 1}</span>
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#EAF0F6] text-sm font-semibold text-[#243B53]">{i + 1}</span>
               <div><p className="text-sm font-semibold">{t}</p><p className="text-xs text-slate-500">{d}</p></div>
             </li>
           ))}

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Minus, Plus, X } from "lucide-react";
 import { formatVND, products } from "@/lib/products";
-import { useStore, getCartItemImage } from "@/lib/store";
+import { useStore, getCartItemImage, getCartItemUnitPrice } from "@/lib/store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/gio-hang")({
@@ -44,7 +44,7 @@ function CartPage() {
             const p = products.find((x) => x.id === it.productId);
             const itemImg = getCartItemImage(it, p);
             const itemName = p?.name ?? it.productName ?? "Sản phẩm";
-            const itemPrice = (p ? (p.salePrice ?? p.price) : (it.unitPrice ?? 0)) * it.qty;
+            const itemPrice = getCartItemUnitPrice(it, p) * it.qty;
             const productSlug = p?.slug ?? it.productSlug;
             return (
               <li key={i} className="flex gap-5 py-6">

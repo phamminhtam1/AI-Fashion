@@ -1083,7 +1083,7 @@ export function AdminApp({
               <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
               <Input
                 placeholder="Tìm sản phẩm, đơn hàng, khách hàng..."
-                className="h-10 w-full rounded-xs border-slate-200 bg-slate-50/70 pl-10 pr-12 text-sm text-slate-800 placeholder:text-slate-400 shadow-2xs focus:border-[#6941c6] focus:bg-white focus:ring-1 focus:ring-[#6941c6] transition-all"
+                className="h-10 w-full rounded-xs border-slate-200 bg-slate-50/70 pl-10 pr-12 text-sm text-slate-800 placeholder:text-slate-400 shadow-2xs focus:border-[#243B53] focus:bg-white focus:ring-1 focus:ring-[#243B53] transition-all"
               />
               <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-xs border border-slate-200 bg-white px-1.5 py-0.5 text-xs font-medium text-slate-400 shadow-2xs">
                 ⌘ K
@@ -1433,14 +1433,14 @@ function NavGroup({
                 className={cn(
                   "admin-sidebar-item group flex w-full items-center gap-3 rounded-xs px-3 py-2 text-sm font-medium transition-[background-color,color,border-color,box-shadow] duration-300 ease-in-out cursor-pointer",
                   isCurrent
-                    ? "bg-[#f4f3ff] text-[#6941c6] font-semibold shadow-2xs"
+                    ? "bg-[#EAF0F6] text-[#243B53] font-semibold shadow-2xs"
                     : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900",
                 )}
               >
                 <Icon
                   className={cn(
                     "size-4 shrink-0 transition-colors duration-300 ease-in-out",
-                    isCurrent ? "text-[#6941c6]" : "text-slate-400 group-hover:text-slate-600",
+                    isCurrent ? "text-[#243B53]" : "text-slate-400 group-hover:text-slate-600",
                   )}
                 />
                 <span>{item.label}</span>
@@ -1519,7 +1519,7 @@ function NavGroup({
                             className={cn(
                               "block rounded-xs px-2.5 py-1 text-xs font-medium transition-colors duration-300 ease-in-out cursor-pointer",
                               isSubActive
-                                ? "bg-[#f4f3ff] text-[#6941c6] font-semibold"
+                                ? "bg-[#EAF0F6] text-[#243B53] font-semibold"
                                 : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/60",
                             )}
                           >
@@ -1568,7 +1568,7 @@ function ModulePage({
         <span className="text-sm text-muted-foreground">{filtered.length} mục dữ liệu</span>
         <Button
           asChild
-          className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
+          className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#1B2E42] transition-colors cursor-pointer"
         >
           <a
             href={createHref}

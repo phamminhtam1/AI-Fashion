@@ -1764,9 +1764,7 @@ export type AdminCollection = {
   id: string;
   name: string;
   slug: string;
-  tagline: string | null;
   category: string;
-  description: string | null;
   cover_image_url: string | null;
   hero_image_url: string | null;
   gallery_images?: Array<{ url: string; layout: "half" | "wide" }>;

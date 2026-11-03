@@ -227,7 +227,7 @@ function ListingContent({
   }, [items]);
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 pb-10 pt-5 md:px-6">
+    <div className="mx-auto max-w-[1800px] px-2 pb-10 pt-5 sm:px-3 md:px-4 xl:px-5">
       <nav aria-label="Breadcrumb" className="relative left-1/2 mb-8 flex w-screen max-w-[100vw] -translate-x-1/2 px-4 md:px-6">
         <span className="flex w-fit max-w-full flex-wrap items-center gap-2 border-b border-border/60 pb-4 text-base font-medium text-muted-foreground">
         <Link to="/" className="hover:text-foreground transition-colors">
@@ -612,7 +612,7 @@ function ListingContent({
           ) : (
             <div
               ref={productGridRef}
-              className={`mt-8 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 ${showFilterDesktop ? "lg:grid-cols-3 xl:grid-cols-3" : "lg:grid-cols-4 xl:grid-cols-4"
+              className={`mt-8 grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-3 md:gap-x-6 ${showFilterDesktop ? "lg:grid-cols-3 xl:grid-cols-3" : "lg:grid-cols-4 xl:grid-cols-4"
                 }`}
             >
               {items.map((p) => (

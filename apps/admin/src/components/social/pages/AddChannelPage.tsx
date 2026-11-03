@@ -29,7 +29,7 @@ function ChannelCard({ id, done, onPick, onMenu }: { id: ChannelId; done: boolea
   const m = CHANNEL_META[id];
   return (
     <div className="relative flex flex-col overflow-hidden rounded-xs border border-slate-200 bg-white p-4">
-      <div className="pointer-events-none absolute right-0 top-0 size-32 bg-gradient-to-bl from-violet-50/80 to-transparent" />
+      <div className="pointer-events-none absolute right-0 top-0 size-32 bg-gradient-to-bl from-[#EAF0F6]/80 to-transparent" />
       <div className="relative flex items-start justify-between">
         <div className="flex items-center gap-2">
           <ChannelLogo id={id} size="lg" />
@@ -46,7 +46,7 @@ function ChannelCard({ id, done, onPick, onMenu }: { id: ChannelId; done: boolea
       ) : done ? (
         <Button disabled variant="outline" className="relative mt-3 w-full gap-2 bg-slate-50"><CheckCircle2 className="size-4" />Đã kết nối</Button>
       ) : (
-        <Button variant="outline" onClick={onPick} className="relative mt-3 w-full border-violet-200 font-medium text-[#6941c6] hover:bg-violet-50 hover:text-[#6941c6]">
+        <Button variant="outline" onClick={onPick} className="relative mt-3 w-full border-[#C4D3E1] font-medium text-[#243B53] hover:bg-[#EAF0F6] hover:text-[#243B53]">
           Kết nối<ArrowRight className="absolute right-3 size-4" />
         </Button>
       )}
@@ -177,8 +177,8 @@ export function AddChannelPage({ ctx }: { ctx: SocialCtx }) {
                   <h2 className="text-lg font-semibold">Chọn kênh muốn kết nối</h2>
                   <p className="mt-1 text-sm text-slate-500">Chọn một hoặc nhiều kênh bán hàng để bắt đầu kết nối với ÉLANE.</p>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => toast.info("Chúng tôi sẽ liên hệ lại với bạn")} className="gap-2 border-violet-200 text-xs text-slate-700">
-                  <Info className="size-4 text-[#6941c6]" />Không tìm thấy kênh bạn cần?<ChevronRight className="size-4 text-[#6941c6]" />
+                <Button variant="outline" size="sm" onClick={() => toast.info("Chúng tôi sẽ liên hệ lại với bạn")} className="gap-2 border-[#C4D3E1] text-xs text-slate-700">
+                  <Info className="size-4 text-[#243B53]" />Không tìm thấy kênh bạn cần?<ChevronRight className="size-4 text-[#243B53]" />
                 </Button>
               </div>
               <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -190,7 +190,7 @@ export function AddChannelPage({ ctx }: { ctx: SocialCtx }) {
                   );
                 })}
                 <div className="relative flex flex-col overflow-hidden rounded-xs border border-slate-200 bg-white p-4">
-                  <div className="pointer-events-none absolute right-0 top-0 size-32 bg-gradient-to-bl from-violet-50/80 to-transparent" />
+                  <div className="pointer-events-none absolute right-0 top-0 size-32 bg-gradient-to-bl from-[#EAF0F6]/80 to-transparent" />
                   <div className="relative flex items-start justify-between">
                     <span className="grid size-12 place-items-center rounded-xl bg-slate-100 text-slate-500"><MoreHorizontal className="size-6" /></span>
                     <button aria-label="Tùy chọn" onClick={() => toast.info("Chúng tôi sẽ liên hệ lại với bạn")} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"><MoreHorizontal className="size-5" /></button>
@@ -238,17 +238,17 @@ export function AddChannelPage({ ctx }: { ctx: SocialCtx }) {
 function OverviewAside({ ctx, connected, pct }: { ctx: SocialCtx; connected: ChannelId[]; pct: number }) {
   return (
     <>
-      <section className={cn(card, "bg-gradient-to-br from-violet-50/70 to-white p-4")}>
+      <section className={cn(card, "bg-gradient-to-br from-[#EAF0F6]/70 to-white p-4")}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-lg border border-violet-100 bg-white text-[#6941c6]"><Layers className="size-5" /></span>
+            <span className="grid size-9 place-items-center rounded-lg border border-[#DCE6F0] bg-white text-[#243B53]"><Layers className="size-5" /></span>
             <h3 className="font-semibold">Tổng quan kết nối</h3>
           </div>
-          <Button variant="outline" size="sm" onClick={() => ctx.go("connect")} className="border-violet-200 text-xs text-[#6941c6]">Xem tất cả</Button>
+          <Button variant="outline" size="sm" onClick={() => ctx.go("connect")} className="border-[#C4D3E1] text-xs text-[#243B53]">Xem tất cả</Button>
         </div>
-        <p className="mt-4"><span className="text-3xl font-bold text-[#6941c6]">{connected.length}</span><span className="text-xl text-slate-600"> / {TOTAL}</span></p>
+        <p className="mt-4"><span className="text-3xl font-bold text-[#243B53]">{connected.length}</span><span className="text-xl text-slate-600"> / {TOTAL}</span></p>
         <p className="text-sm text-slate-500">kênh đã được kết nối</p>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-[#6941c6] transition-all" style={{ width: `${pct}%` }} /></div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-[#243B53] transition-all" style={{ width: `${pct}%` }} /></div>
         {connected.length > 0 && (
           <ul className="mt-4 space-y-2">
             {connected.map((id) => (
@@ -269,13 +269,13 @@ function OverviewAside({ ctx, connected, pct }: { ctx: SocialCtx; connected: Cha
         <div>
           <h3 className="text-sm font-semibold text-amber-800">Kết nối an toàn &amp; bảo mật</h3>
           <p className="mt-1 text-xs leading-5 text-slate-600">ÉLANE chỉ yêu cầu các quyền cần thiết thông qua cơ chế OAuth chính thức từ các nền tảng. Thông tin tài khoản của bạn luôn được mã hóa và bảo mật tuyệt đối.</p>
-          <button onClick={() => toast.info("Hướng dẫn chi tiết sẽ được bổ sung")} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#6941c6] hover:underline">Tìm hiểu thêm<ArrowRight className="size-3.5" /></button>
+          <button onClick={() => toast.info("Hướng dẫn chi tiết sẽ được bổ sung")} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#243B53] hover:underline">Tìm hiểu thêm<ArrowRight className="size-3.5" /></button>
         </div>
       </section>
 
       <section className={cn(card, "p-4")}>
         <div className="flex items-center gap-3">
-          <span className="grid size-9 place-items-center rounded-lg bg-violet-50 text-[#6941c6]"><Zap className="size-5" /></span>
+          <span className="grid size-9 place-items-center rounded-lg bg-[#EAF0F6] text-[#243B53]"><Zap className="size-5" /></span>
           <h3 className="font-semibold">Lợi ích khi kết nối đa kênh</h3>
         </div>
         <ul className="mt-4 space-y-4">

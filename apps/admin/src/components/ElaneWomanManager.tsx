@@ -112,7 +112,7 @@ const TOPIC_TINTS = [
 
 const STATUS_UI: Record<StatusUi, { label: string; pill: string; dot: string }> = {
   published: { label: "Đã xuất bản", pill: "bg-emerald-500/10 text-emerald-700", dot: "bg-emerald-500" },
-  draft: { label: "Bản nháp", pill: "bg-violet-500/10 text-violet-700", dot: "bg-violet-500" },
+  draft: { label: "Bản nháp", pill: "bg-[#243B53]/10 text-[#243B53]", dot: "bg-[#243B53]" },
   scheduled: { label: "Lên lịch", pill: "bg-orange-500/10 text-orange-700", dot: "bg-orange-500" },
   hidden: { label: "Đã ẩn", pill: "bg-muted text-muted-foreground", dot: "bg-muted-foreground/60" },
 };
@@ -605,7 +605,7 @@ function ElaneWomanForm({
               )}
             </Button>
           )}
-          <Button className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white hover:bg-[#53389e]" disabled={saving} onClick={() => void submit()}>
+          <Button className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white hover:bg-[#1B2E42]" disabled={saving} onClick={() => void submit()}>
             {saving ? <Loader2 className="size-4 animate-spin" /> : editing ? <Save className="size-4" /> : <Plus className="size-4" />}
             {saving ? "Đang lưu…" : editing ? "Lưu thay đổi" : "Lưu bài đăng"}
           </Button>
@@ -783,7 +783,7 @@ function ElaneWomanForm({
 
           <PCard title="Liên kết Instagram (tùy chọn)">
             <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600 text-white">
+              <span className="pointer-events-none absolute left-3 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md bg-gradient-to-tr from-amber-400 via-pink-500 to-[#1B2E42] text-white">
                 <LinkIcon className="size-3.5" />
               </span>
               <Input
@@ -1257,7 +1257,7 @@ export function ElaneWomanManager({ permissions = [] }: { permissions?: string[]
             </p>
           </div>
         </div>
-        {canWrite && <Button asChild className="h-9 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white hover:bg-[#53389e]">
+        {canWrite && <Button asChild className="h-9 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white hover:bg-[#1B2E42]">
           <a
             href="/elanewoman/them"
             onClick={(e) => {

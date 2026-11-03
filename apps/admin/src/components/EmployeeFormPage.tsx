@@ -26,7 +26,7 @@ import { adminErrorMessage } from "@/lib/admin-language";
 import { adminApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-const BRAND = "#6335ee";
+const BRAND = "#243B53";
 const INK = "text-[#0b0c24]";
 const MUTED = "text-[#5a6a8e]";
 const LINE = "border-[#e6eaf2]";
@@ -59,7 +59,7 @@ type FormState = {
 };
 
 const roleStyle: Record<string, { icon: IconType; cls: string; bg: string }> = {
-  system_owner: { icon: Crown, cls: "text-[#693ae5]", bg: "bg-[#f5f1ff]" },
+  system_owner: { icon: Crown, cls: "text-[#243B53]", bg: "bg-[#EAF0F6]" },
   ops_manager: { icon: UserCog, cls: "text-[#2f7bff]", bg: "bg-[#eff5ff]" },
   sales_staff: { icon: ShoppingCart, cls: "text-[#ff7a1a]", bg: "bg-[#fff4e9]" },
   content_editor: { icon: PenLine, cls: "text-[#f0125f]", bg: "bg-[#fff0f6]" },
@@ -89,13 +89,13 @@ function RoleCard({ role, selected, onSelect }: { role: RoleItem; selected: bool
   const style = roleStyle[role.code] ?? { icon: UserRound, cls: "text-[#2f7bff]", bg: "bg-[#eff5ff]" };
   const Icon = style.icon;
   return (
-    <button type="button" onClick={onSelect} className={cn("flex min-h-[72px] items-center gap-3 rounded-xs border p-3 text-left transition", selected ? "border-[#6b3cf0] bg-[#faf8ff] shadow-[0_0_0_1px_#6b3cf0]" : "border-[#e1e6ef] bg-white hover:border-violet-300")}>
+    <button type="button" onClick={onSelect} className={cn("flex min-h-[72px] items-center gap-3 rounded-xs border p-3 text-left transition", selected ? "border-[#243B53] bg-[#EAF0F6] shadow-[0_0_0_1px_#243B53]" : "border-[#e1e6ef] bg-white hover:border-[#AFC2D4]")}>
       <span className={cn("grid size-10 shrink-0 place-items-center rounded-xs", style.bg)}><Icon className={cn("size-5", style.cls)} strokeWidth={1.8} /></span>
       <span className="min-w-0 flex-1">
         <span className={cn("block text-sm font-semibold", INK)}>{role.name}</span>
         <span className={cn("mt-0.5 block line-clamp-2 text-xs leading-4", MUTED)}>{role.description}</span>
       </span>
-      <span className={cn("grid size-4 shrink-0 place-items-center rounded-full border", selected ? "border-[#6b3cf0] bg-[#6b3cf0] text-white" : "border-[#b9c3d5] bg-white")}>
+      <span className={cn("grid size-4 shrink-0 place-items-center rounded-full border", selected ? "border-[#243B53] bg-[#243B53] text-white" : "border-[#b9c3d5] bg-white")}>
         {selected && <Check className="size-3" strokeWidth={3} />}
       </span>
     </button>
@@ -110,7 +110,7 @@ function AvatarPicker({ form, mode, uploading, onFile, onRemove }: { form: FormS
       <div className="flex items-center gap-3">
         <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) onFile(file); event.target.value = ""; }} />
         <Button type="button" variant="outline" className={cn("h-9 gap-2 px-3 text-sm", outlineBtn)} onClick={() => inputRef.current?.click()} disabled={uploading}>
-          <ImagePlus className="size-4 text-[#6335ee]" /> {uploading ? "Đang tải..." : mode === "edit" ? "Thay đổi ảnh" : "Thêm ảnh"}
+          <ImagePlus className="size-4 text-[#243B53]" /> {uploading ? "Đang tải..." : mode === "edit" ? "Thay đổi ảnh" : "Thêm ảnh"}
         </Button>
         {mode === "edit" && form.avatar_url && <Button type="button" variant="outline" className={cn("h-9 gap-2 border-red-200 px-3 text-sm text-red-600 hover:bg-red-50", outlineBtn)} onClick={onRemove}><Trash2 className="size-4" /> Xóa ảnh</Button>}
         <p className={cn("absolute mt-[68px] text-xs", MUTED)}>JPG, PNG tối đa 2MB</p>
@@ -235,8 +235,8 @@ export function EmployeeFormPage({ mode, employeeId, permissions = [], onBack }:
           <p className={cn("mt-1 text-sm", MUTED)}>Chọn vai trò cho nhân viên hoặc thiết lập quyền tùy chỉnh.</p>
           <p className="mt-5 text-sm font-semibold text-[#0b0c24]">Chọn vai trò <span className="text-red-500">*</span></p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">{roles.filter((role) => role.code !== "system_owner" || permissions.includes("*")).map((role) => <RoleCard key={role.id || role.code} role={role} selected={form.role_code === role.code} onSelect={() => setField("role_code", role.code)} />)}</div>
-          {selectedRole && <p className={cn("mt-4 rounded-xs bg-[#f8f6ff] px-3 py-2 text-xs", MUTED)}>Đang chọn: <strong className="text-[#6335ee]">{selectedRole.name}</strong> · {roleDescription(selectedRole.code)}</p>}
-          <button type="button" className="mt-4 flex w-full items-center justify-between rounded-xs bg-[#f8f6ff] px-3 py-3 text-sm text-[#6335ee] hover:bg-[#f1edff]" onClick={() => toast.info("Bạn có thể tinh chỉnh quyền chi tiết trong tab Vai trò sau khi tạo nhân viên.")}><span>Hoặc thiết lập quyền tùy chỉnh</span><span className="font-semibold">Thiết lập quyền chi tiết <Plus className="ml-1 inline size-4" /></span></button>
+          {selectedRole && <p className={cn("mt-4 rounded-xs bg-[#EAF0F6] px-3 py-2 text-xs", MUTED)}>Đang chọn: <strong className="text-[#243B53]">{selectedRole.name}</strong> · {roleDescription(selectedRole.code)}</p>}
+          <button type="button" className="mt-4 flex w-full items-center justify-between rounded-xs bg-[#EAF0F6] px-3 py-3 text-sm text-[#243B53] hover:bg-[#EAF0F6]" onClick={() => toast.info("Bạn có thể tinh chỉnh quyền chi tiết trong tab Vai trò sau khi tạo nhân viên.")}><span>Hoặc thiết lập quyền tùy chỉnh</span><span className="font-semibold">Thiết lập quyền chi tiết <Plus className="ml-1 inline size-4" /></span></button>
         </section>
       </div>
 

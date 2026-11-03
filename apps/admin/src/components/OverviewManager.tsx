@@ -46,16 +46,16 @@ type OverviewManagerProps = {
 
 type Tone = "green" | "amber" | "blue" | "purple" | "red" | "gray";
 
-const PURPLE = "#6d4aff";
-const PURPLE_SOFT = "#c9b9ff";
-const DONUT_COLORS = ["#7755e7", "#ec4899", "#f5b94c", "#60a5fa", "#9ca3af"];
+const PURPLE = "#243B53";
+const PURPLE_SOFT = "#AFC2D4";
+const DONUT_COLORS = ["#243B53", "#ec4899", "#f5b94c", "#60a5fa", "#9ca3af"];
 const CHANNEL_FRAME = ["Website", "Shopee", "TikTok Shop", "Facebook", "Khác"];
 
 const TONE: Record<Tone, { pill: string; dot: string }> = {
   green: { pill: "border border-emerald-200/80 bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
   amber: { pill: "border border-amber-200/80 bg-amber-50 text-amber-700", dot: "bg-amber-500" },
   blue: { pill: "border border-blue-200/80 bg-blue-50 text-blue-700", dot: "bg-blue-500" },
-  purple: { pill: "border border-purple-200 bg-purple-50 text-[#6941c6]", dot: "bg-[#6941c6]" },
+  purple: { pill: "border border-[#C4D3E1] bg-[#EAF0F6] text-[#243B53]", dot: "bg-[#243B53]" },
   red: { pill: "border border-rose-200/80 bg-rose-50 text-rose-700", dot: "bg-rose-500" },
   gray: { pill: "border border-slate-200 bg-slate-100 text-slate-700", dot: "bg-slate-400" },
 };
@@ -108,7 +108,7 @@ function CardHeader({ title, action }: { title: string; action?: ReactNode }) {
 }
 
 function ViewAll({ onClick }: { onClick: () => void }) {
-  return <Button variant="ghost" size="sm" onClick={onClick} className="h-9 shrink-0 gap-1 rounded-sm px-3 text-sm font-medium text-violet-700 hover:bg-violet-50">Xem tất cả <ArrowRight className="size-3" /></Button>;
+  return <Button variant="ghost" size="sm" onClick={onClick} className="h-9 shrink-0 gap-1 rounded-sm px-3 text-sm font-medium text-[#243B53] hover:bg-[#EAF0F6]">Xem tất cả <ArrowRight className="size-3" /></Button>;
 }
 
 function StatusPill({ tone, children }: { tone: Tone; children: ReactNode }) {
@@ -128,7 +128,7 @@ function Thumb({ src, alt, className }: { src?: string | null; alt: string; clas
 
 function Avatar({ name }: { name: string }) {
   const initials = name.split(" ").filter(Boolean).slice(-2).map((word) => word[0]).join("").toUpperCase();
-  return <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-violet-50 text-xs font-semibold text-violet-700">{initials || "?"}</span>;
+  return <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#EAF0F6] text-xs font-semibold text-[#243B53]">{initials || "?"}</span>;
 }
 
 function Trend({ value }: { value?: number }) {
@@ -209,7 +209,7 @@ export function OverviewManager({ onNavigate, onNavigateToOrder, userName = "Adm
       </header>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard icon={WalletCards} label="Tổng doanh thu" value={loading ? "…" : formatVnd(data?.total_revenue_vnd)} trend={trends.revenue} series={revenueSeries} color="#7c3aed" tint="text-violet-600" />
+        <MetricCard icon={WalletCards} label="Tổng doanh thu" value={loading ? "…" : formatVnd(data?.total_revenue_vnd)} trend={trends.revenue} series={revenueSeries} color="#243B53" tint="text-[#1B2E42]" />
         <MetricCard icon={ShoppingBag} label="Đơn hàng mới" value={loading ? "…" : formatNum(data?.total_orders)} trend={trends.orders} series={orderSeries} color="#3b82f6" tint="text-blue-600" />
         <MetricCard icon={Users} label="Khách hàng mới" value={loading ? "…" : formatNum(data?.new_customers)} trend={trends.customers} series={customerSeries} color="#10b981" tint="text-emerald-600" />
         <MetricCard icon={Package} label="Sản phẩm đã bán" value={loading ? "…" : formatNum(data?.total_items_sold)} trend={trends.items} series={productSeries} color="#f59e0b" tint="text-amber-600" />
@@ -218,7 +218,7 @@ export function OverviewManager({ onNavigate, onNavigateToOrder, userName = "Adm
       <section className="overview-charts">
         <Card>
           <CardHeader title="Doanh thu & Đơn hàng" action={<span className="rounded-sm border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-600">Theo ngày</span>} />
-          <div className="px-3 pb-3 pt-2"><div className="mb-1.5 flex justify-center gap-5 text-xs text-slate-500"><span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-[2px] bg-violet-300" />Doanh thu (₫)</span><span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-4 bg-violet-600" />Số đơn hàng</span></div><div className="overview-chart">
+          <div className="px-3 pb-3 pt-2"><div className="mb-1.5 flex justify-center gap-5 text-xs text-slate-500"><span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-[2px] bg-[#AFC2D4]" />Doanh thu (₫)</span><span className="inline-flex items-center gap-1.5"><span className="h-0.5 w-4 bg-[#1B2E42]" />Số đơn hàng</span></div><div className="overview-chart">
             {daily.length === 0 ? <div className="flex h-full items-center justify-center text-xs text-slate-400">Chưa có dữ liệu trong khoảng thời gian này.</div> : <ResponsiveContainer width="100%" height="100%"><ComposedChart data={daily} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}><CartesianGrid strokeDasharray="2 3" vertical={false} stroke="#e9edf3" /><XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#7c8798", fontSize: 12 }} minTickGap={20} /><YAxis yAxisId="money" axisLine={false} tickLine={false} tick={{ fill: "#7c8798", fontSize: 12 }} tickFormatter={compactAxis} width={44} /><YAxis yAxisId="orders" orientation="right" axisLine={false} tickLine={false} tick={{ fill: "#7c8798", fontSize: 12 }} width={28} allowDecimals={false} /><Tooltip content={({ active, payload }) => { if (!active || !payload?.length) return null; const item = payload[0].payload; return <div className="rounded-sm bg-slate-950 px-3 py-2 text-white shadow-xl"><p className="text-xs text-white/60">{item.label}</p><p className="mt-0.5 text-xs font-semibold">{formatVnd(item.revenue)}</p><p className="text-xs text-white/60">{formatNum(item.orders)} đơn</p></div>; }} /><Bar yAxisId="money" dataKey="revenue" fill={PURPLE_SOFT} radius={[2, 2, 0, 0]} maxBarSize={13} isAnimationActive animationDuration={600} animationEasing="ease-out" /><Line yAxisId="orders" type="monotone" dataKey="orders" stroke={PURPLE} strokeWidth={1.8} dot={{ r: 2.5, fill: "white", stroke: PURPLE, strokeWidth: 1.5 }} isAnimationActive animationDuration={680} animationEasing="ease-out" /></ComposedChart></ResponsiveContainer>}
           </div></div>
         </Card>
@@ -240,19 +240,19 @@ export function OverviewManager({ onNavigate, onNavigateToOrder, userName = "Adm
 
         <Card>
           <CardHeader title="Kênh bán hàng" action={<span className="text-xs text-slate-400">Theo đơn hàng</span>} />
-          <div className="space-y-3.5 p-4">{(channels.length ? channels : CHANNEL_FRAME.map((name, index) => ({ key: String(index), name, percent: 0, orders: 0 }))).map((channel, index) => <div key={channel.key} className="overview-channel"><span className={cn("flex size-[22px] items-center justify-center rounded-sm font-semibold", ["bg-violet-100 text-violet-700", "bg-orange-100 text-orange-700", "bg-slate-900 text-white", "bg-blue-100 text-blue-700", "bg-slate-100 text-slate-600"][index % 5])}>{channel.name.slice(0, 1)}</span><span className="truncate font-medium text-slate-700">{channel.name}</span><span className="h-1.5 overflow-hidden rounded-full bg-slate-100"><span className="block h-full rounded-full bg-violet-500" style={{ width: `${Math.min(100, channel.percent)}%` }} /></span><strong className="text-right font-semibold tabular-nums text-slate-950">{channels.length ? `${channel.percent.toFixed(1)}%` : "—"}</strong><span className="text-right font-medium tabular-nums text-slate-500">{channels.length ? `${formatNum(channel.orders)} đơn` : "—"}</span></div>)}</div>
+          <div className="space-y-3.5 p-4">{(channels.length ? channels : CHANNEL_FRAME.map((name, index) => ({ key: String(index), name, percent: 0, orders: 0 }))).map((channel, index) => <div key={channel.key} className="overview-channel"><span className={cn("flex size-[22px] items-center justify-center rounded-sm font-semibold", ["bg-[#DCE6F0] text-[#243B53]", "bg-orange-100 text-orange-700", "bg-slate-900 text-white", "bg-blue-100 text-blue-700", "bg-slate-100 text-slate-600"][index % 5])}>{channel.name.slice(0, 1)}</span><span className="truncate font-medium text-slate-700">{channel.name}</span><span className="h-1.5 overflow-hidden rounded-full bg-slate-100"><span className="block h-full rounded-full bg-[#243B53]" style={{ width: `${Math.min(100, channel.percent)}%` }} /></span><strong className="text-right font-semibold tabular-nums text-slate-950">{channels.length ? `${channel.percent.toFixed(1)}%` : "—"}</strong><span className="text-right font-medium tabular-nums text-slate-500">{channels.length ? `${formatNum(channel.orders)} đơn` : "—"}</span></div>)}</div>
         </Card>
 
         <Card>
           <CardHeader title="Đơn hàng gần đây" action={<ViewAll onClick={() => onNavigate("orders")} />} />
-          <div className="overflow-x-auto"><table className="w-full min-w-[750px] table-fixed text-sm"><colgroup><col style={{width: "14%"}} /><col style={{width: "19%"}} /><col style={{width: "16%"}} /><col style={{width: "15%"}} /><col style={{width: "14%"}} /><col style={{width: "12%"}} /><col style={{width: "10%"}} /></colgroup><thead className="border-y border-slate-200 bg-slate-50/80 text-sm font-semibold tracking-tight text-slate-700"><tr><th className={th}>Mã đơn</th><th className={th}>Khách hàng</th><th className={th}>Phương thức</th><th className={th}>Thanh toán</th><th className={cn(th, "text-right")}>Số tiền</th><th className={th}>Trạng thái</th><th className={cn(th, "text-right")}>Thời gian</th></tr></thead><tbody className="divide-y divide-slate-100">{recentOrders.length ? recentOrders.map((order) => { return <tr key={order.id} onClick={() => goOrder(order.order_number)} className="cursor-pointer transition-colors hover:bg-slate-50"><td className={cn(td, "truncate font-semibold text-violet-700 hover:underline")}>#{order.order_number}</td><td className={td}><div className="flex min-w-0 items-center gap-2"><Avatar name={order.customer_name} /><span className="truncate font-semibold text-slate-950">{order.customer_name}</span></div></td><td className={cn(td, "font-medium text-slate-600")}>{{ cod: "Thanh toán khi nhận", bank: "Chuyển khoản", bank_transfer: "Chuyển khoản", card: "Thẻ", cash: "Tiền mặt" }[order.payment_method] ?? "Khác"}</td><td className={td}><PaymentStatusBadge status={order.payment_status} orderStatus={order.status} /></td><td className={cn(td, "whitespace-nowrap text-right font-semibold tabular-nums text-slate-950")}>{formatVnd(order.grand_total_vnd)}</td><td className={td}><OrderStatusBadge status={order.status} fulfillmentStatus={order.fulfillment_status} paymentStatus={order.payment_status} /></td><td className={cn(td, "truncate text-right font-medium text-slate-500 tabular-nums")}>{timeAgo(order.placed_at)}</td></tr>; }) : <PlaceholderRows columns={7} rows={5} />}</tbody></table></div>
+          <div className="overflow-x-auto"><table className="w-full min-w-[750px] table-fixed text-sm"><colgroup><col style={{width: "14%"}} /><col style={{width: "19%"}} /><col style={{width: "16%"}} /><col style={{width: "15%"}} /><col style={{width: "14%"}} /><col style={{width: "12%"}} /><col style={{width: "10%"}} /></colgroup><thead className="border-y border-slate-200 bg-slate-50/80 text-sm font-semibold tracking-tight text-slate-700"><tr><th className={th}>Mã đơn</th><th className={th}>Khách hàng</th><th className={th}>Phương thức</th><th className={th}>Thanh toán</th><th className={cn(th, "text-right")}>Số tiền</th><th className={th}>Trạng thái</th><th className={cn(th, "text-right")}>Thời gian</th></tr></thead><tbody className="divide-y divide-slate-100">{recentOrders.length ? recentOrders.map((order) => { return <tr key={order.id} onClick={() => goOrder(order.order_number)} className="cursor-pointer transition-colors hover:bg-slate-50"><td className={cn(td, "truncate font-semibold text-[#243B53] hover:underline")}>#{order.order_number}</td><td className={td}><div className="flex min-w-0 items-center gap-2"><Avatar name={order.customer_name} /><span className="truncate font-semibold text-slate-950">{order.customer_name}</span></div></td><td className={cn(td, "font-medium text-slate-600")}>{{ cod: "Thanh toán khi nhận", bank: "Chuyển khoản", bank_transfer: "Chuyển khoản", card: "Thẻ", cash: "Tiền mặt" }[order.payment_method] ?? "Khác"}</td><td className={td}><PaymentStatusBadge status={order.payment_status} orderStatus={order.status} /></td><td className={cn(td, "whitespace-nowrap text-right font-semibold tabular-nums text-slate-950")}>{formatVnd(order.grand_total_vnd)}</td><td className={td}><OrderStatusBadge status={order.status} fulfillmentStatus={order.fulfillment_status} paymentStatus={order.payment_status} /></td><td className={cn(td, "truncate text-right font-medium text-slate-500 tabular-nums")}>{timeAgo(order.placed_at)}</td></tr>; }) : <PlaceholderRows columns={7} rows={5} />}</tbody></table></div>
         </Card>
       </section>
 
       <section className="overview-content">
         <Card>
           <CardHeader title="Khuyến mãi đang diễn ra" action={<ViewAll onClick={() => onNavigate("promotions")} />} />
-          <div className="overflow-x-auto"><table className="w-full min-w-[430px] table-fixed text-sm"><colgroup><col /><col style={{width: 90}} /><col style={{width: 135}} /></colgroup><thead className="border-y border-slate-200 bg-slate-50/80 text-sm font-semibold tracking-tight text-slate-700"><tr><th className={th}>Tên chương trình</th><th className={th}>Giảm giá</th><th className={th}>Trạng thái</th></tr></thead><tbody className="divide-y divide-slate-100">{promotions.length ? promotions.slice(0, 3).map((promotion) => { const status = statusOf(promotion.status); return <tr key={promotion.id}><td className={td}><div className="flex min-w-0 items-center gap-2.5"><Thumb src={promotion.image_url} alt={promotion.name} className="h-9 w-11" /><div className="min-w-0"><p className="truncate font-semibold text-slate-950">{promotion.name}</p><p className="truncate text-xs font-medium text-slate-500">{fmtDM(promotion.start_at)} – {fmtDM(promotion.end_at)}</p></div></div></td><td className={cn(td, "font-semibold text-violet-700")}>{promotion.discount_label}</td><td className={td}><StatusPill tone={status.tone}>{status.label}</StatusPill></td></tr>; }) : <PlaceholderRows columns={3} />}</tbody></table></div>
+          <div className="overflow-x-auto"><table className="w-full min-w-[430px] table-fixed text-sm"><colgroup><col /><col style={{width: 90}} /><col style={{width: 135}} /></colgroup><thead className="border-y border-slate-200 bg-slate-50/80 text-sm font-semibold tracking-tight text-slate-700"><tr><th className={th}>Tên chương trình</th><th className={th}>Giảm giá</th><th className={th}>Trạng thái</th></tr></thead><tbody className="divide-y divide-slate-100">{promotions.length ? promotions.slice(0, 3).map((promotion) => { const status = statusOf(promotion.status); return <tr key={promotion.id}><td className={td}><div className="flex min-w-0 items-center gap-2.5"><Thumb src={promotion.image_url} alt={promotion.name} className="h-9 w-11" /><div className="min-w-0"><p className="truncate font-semibold text-slate-950">{promotion.name}</p><p className="truncate text-xs font-medium text-slate-500">{fmtDM(promotion.start_at)} – {fmtDM(promotion.end_at)}</p></div></div></td><td className={cn(td, "font-semibold text-[#243B53]")}>{promotion.discount_label}</td><td className={td}><StatusPill tone={status.tone}>{status.label}</StatusPill></td></tr>; }) : <PlaceholderRows columns={3} />}</tbody></table></div>
         </Card>
 
         <Card>

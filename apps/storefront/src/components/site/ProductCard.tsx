@@ -1,9 +1,37 @@
 import { Link } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatVND, type Product } from "@/lib/products";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+
+function getInvertedTitleLines(
+  name: string,
+  availableWidth: number,
+  font: string,
+  letterSpacing: number,
+) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length < 2) return [name];
+
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  if (!context) return [name];
+  context.font = font;
+
+  let firstEnd = 0;
+  for (let end = 1; end <= words.length; end++) {
+    const candidate = words.slice(0, end).join(" ").toLocaleUpperCase("vi-VN");
+    const measuredWidth =
+      context.measureText(candidate).width + Math.max(0, candidate.length - 1) * letterSpacing;
+    if (measuredWidth > availableWidth) break;
+    firstEnd = end;
+  }
+
+  if (firstEnd === words.length) return [name];
+  if (firstEnd === 0) firstEnd = 1;
+  return [words.slice(0, firstEnd).join(" "), words.slice(firstEnd).join(" ")];
+}
 
 export function ProductCard({
   product: p,
@@ -14,6 +42,8 @@ export function ProductCard({
 }) {
   const { wishlist, toggleWishlist, addToCart } = useStore();
   const [selectedCwId, setSelectedCwId] = useState<string>(p.colorways[0]?.id ?? "");
+  const titleRef = useRef<HTMLAnchorElement>(null);
+  const [invertedTitleLines, setInvertedTitleLines] = useState([p.name]);
 
   const liked = wishlist.includes(p.id);
   const discount = p.salePrice
@@ -29,12 +59,34 @@ export function ProductCard({
   const hoverImg =
     activeCw?.images?.[1] ?? p.images[1] ?? primaryImg;
 
+  useEffect(() => {
+    const title = titleRef.current;
+    if (!title) return;
+
+    const updateTitleLines = () => {
+      const style = window.getComputedStyle(title);
+      const canvasFont = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      setInvertedTitleLines(
+        getInvertedTitleLines(
+          p.name,
+          title.clientWidth,
+          canvasFont,
+          Number.parseFloat(style.letterSpacing) || 0,
+        ),
+      );
+    };
+
+    updateTitleLines();
+    const observer = new ResizeObserver(updateTitleLines);
+    observer.observe(title);
+    return () => observer.disconnect();
+  }, [p.name]);
+
   return (
-    <article className="group flex h-full flex-col">
-      {/* IMAGE AREA — GIỮ NGUYÊN */}
+    <article className="group flex h-full min-w-0 flex-col">
       <div
         data-category-image-reveal={imageRevealOnScroll ? "" : undefined}
-        className="relative aspect-[3/4] overflow-hidden bg-secondary"
+        className="relative aspect-[5/8] overflow-hidden bg-[#f4f3f1]"
       >
         <Link
           to="/san-pham/$slug"
@@ -57,46 +109,43 @@ export function ProductCard({
             loading="lazy"
             width={768}
             height={1024}
-            className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-700 group-hover:scale-105 group-hover:opacity-100"
+            className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-700 group-hover:opacity-100"
           />
         </Link>
 
-        {/* Badges — GIỮ NGUYÊN */}
-        <div className="pointer-events-none absolute left-3 top-3 flex flex-col gap-1">
+        <div className="pointer-events-none absolute left-3 top-3 flex flex-col items-start gap-1.5">
           {p.isNew && (
-            <span className="bg-background px-2 py-1 text-[10px] font-semibold uppercase tracking-widest">
+            <span className="bg-background/95 px-2.5 py-1.5 text-[9px] font-medium uppercase tracking-[0.16em] text-foreground">
               Mới
             </span>
           )}
 
           {p.bestSeller && !p.isNew && (
-            <span className="bg-foreground px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-background">
+            <span className="bg-foreground px-2.5 py-1.5 text-[9px] font-medium uppercase tracking-[0.16em] text-background">
               Bán chạy
             </span>
           )}
 
           {discount > 0 && (
-            <span className="bg-sale px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-primary-foreground">
+            <span className="bg-sale px-2.5 py-1.5 text-[9px] font-medium uppercase tracking-[0.13em] text-primary-foreground">
               -{discount}%
             </span>
           )}
         </div>
 
-        {/* Wishlist — GIỮ NGUYÊN */}
         <button
           onClick={() => toggleWishlist(p.id)}
           aria-label={liked ? "Bỏ yêu thích" : "Yêu thích"}
-          className="absolute right-3 top-3 grid h-9 w-9 place-items-center bg-background/80 backdrop-blur transition hover:bg-background"
+          className="absolute right-3 top-3 grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-background/90 text-foreground/75 opacity-100 shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-background hover:text-foreground md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
         >
           <Heart
-            className={`h-4 w-4 ${liked ? "fill-foreground" : ""}`}
+            className={`h-[17px] w-[17px] ${liked ? "fill-current" : ""}`}
             strokeWidth={1.5}
           />
         </button>
 
-        {/* Quick size — GIỮ NGUYÊN */}
-        <div className="absolute inset-x-0 bottom-0 hidden translate-y-full p-3 transition-transform duration-300 group-hover:translate-y-0 md:block">
-          <div className="flex flex-wrap justify-center gap-1 bg-background/95 p-2 backdrop-blur">
+        <div className="absolute inset-x-0 bottom-0 hidden translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 md:block md:group-focus-within:translate-y-0 md:group-focus-within:opacity-100">
+          <div className="flex flex-wrap items-center justify-center gap-1.5 bg-background/95 px-3 py-3 backdrop-blur-sm">
             {p.sizes.map((s) => {
               const v =
                 p.variants.find(
@@ -117,7 +166,7 @@ export function ProductCard({
                     event.stopPropagation();
                     if (v && inStock) addToCart(p, v.id);
                   }}
-                  className="min-w-9 cursor-pointer px-2 py-1 text-xs hover:bg-primary hover:text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  className="min-w-9 cursor-pointer border border-border/80 bg-background px-2 py-1.5 text-[11px] text-foreground transition-colors hover:border-foreground hover:bg-foreground hover:text-background disabled:cursor-not-allowed disabled:opacity-35"
                   title={
                     !inStock
                       ? `Size ${s} hết hàng`
@@ -132,46 +181,54 @@ export function ProductCard({
         </div>
       </div>
 
-      {/* PRODUCT INFO — REDESIGN STYLE 2 */}
-      <div className="flex flex-1 flex-col border-x border-b border-border/70 bg-background px-3.5 pb-3.5 pt-3.5 sm:px-4 sm:pb-4 sm:pt-4">
+      <div className="flex flex-1 flex-col bg-background pt-3 sm:pt-3.5">
         <div className="flex flex-1 flex-col">
-          {/* Product name */}
           <Link
             to="/san-pham/$slug"
             params={{ slug: p.slug }}
-            className="line-clamp-2 min-h-[2.6em] font-serif text-[16px] font-medium leading-[1.3] tracking-[-0.015em] text-foreground transition-opacity hover:opacity-70" title={p.name}
+            ref={titleRef}
+            className="mx-0 text-center text-[14px] font-normal uppercase leading-[1.35] tracking-[0.025em] text-foreground transition-colors hover:text-foreground/70 xl:mx-8 xl:text-left xl:text-[15px]"
+            title={p.name}
           >
-            {p.name}
+            <span className="flex min-h-[2.7em] flex-col items-center xl:hidden">
+              {invertedTitleLines.map((line, index) => (
+                <span
+                  key={`${index}-${line}`}
+                  className={cn(
+                    "block max-w-full",
+                    index === 0
+                      ? "overflow-hidden text-clip whitespace-nowrap"
+                      : "truncate",
+                    index === 0 && "w-full",
+                    index === 1 && "w-[82%]",
+                  )}
+                >
+                  {line}
+                </span>
+              ))}
+            </span>
+            <span className="hidden truncate xl:block">{p.name}</span>
           </Link>
 
-          {/* Price */}
-          <div className="mt-2.5 flex items-baseline gap-x-2 whitespace-nowrap leading-tight">
+          <div className="mt-2 flex min-h-5 items-baseline justify-center gap-x-2 whitespace-nowrap leading-tight">
             {p.salePrice ? (
               <>
-                <span className="text-[13px] font-semibold text-sale sm:text-[14.5px]">
+                <span className="text-[15px] font-semibold tabular-nums text-sale sm:text-base">
                   {formatVND(p.salePrice)}
                 </span>
 
-                <span className="text-[10.5px] text-muted-foreground line-through sm:text-[12px]">
+                <span className="text-[10px] tabular-nums text-muted-foreground/80 line-through sm:text-[11px]">
                   {formatVND(p.price)}
                 </span>
               </>
             ) : (
-              <span className="text-[13px] font-semibold text-foreground sm:text-[14.5px]">
+              <span className="text-[15px] font-medium tabular-nums text-foreground sm:text-base">
                 {formatVND(p.price)}
               </span>
             )}
           </div>
 
-          {/* Color count - separate row */}
-          <div className="mt-0.5 flex items-center justify-end leading-none">
-            <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-              {Math.max(1, p.colorways?.length ?? 1)} màu
-            </span>
-          </div>
-
-          {/* Colorways */}
-          <div className="mt-1 flex min-h-[36px] sm:min-h-[38px] items-center gap-1.5 sm:gap-2">
+          <div className="mt-2.5 flex min-h-7 items-center justify-center gap-1.5">
             {p.colorways.map((c) => {
               const isSelected =
                 c.id === (activeCw?.id ?? selectedCwId);
@@ -186,10 +243,10 @@ export function ProductCard({
                     setSelectedCwId(c.id);
                   }}
                   className={cn(
-                    "relative h-[34px] w-[26px] overflow-hidden rounded-[3px] transition-all duration-200",
+                    "relative h-7 w-6 overflow-hidden border border-transparent bg-secondary transition-all duration-200",
                     isSelected
-                      ? "z-10 -translate-y-1 scale-110 opacity-100 shadow-[0_4px_12px_rgba(0,0,0,0.28)]"
-                      : "opacity-50 hover:-translate-y-0.5 hover:opacity-85 hover:shadow-sm",
+                      ? "opacity-100 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-foreground/65"
+                      : "opacity-55 hover:opacity-90",
                   )}
                   title={c.name}
                 >
@@ -203,16 +260,6 @@ export function ProductCard({
             })}
           </div>
 
-          {/* Secondary metadata */}
-          <div className="mt-2 flex items-center justify-between border-t border-border/50 pt-2.5">
-            <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
-              ÉLANE
-            </span>
-
-            <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-              {p.isNew ? "New arrival" : "Collection"}
-            </span>
-          </div>
         </div>
       </div>
     </article>

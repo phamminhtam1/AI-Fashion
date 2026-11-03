@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
   Calendar, CalendarClock, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, Filter, Heart,
   Image as ImageIcon, MessageCircle, MoreHorizontal, Pencil, Play, Plus, RefreshCw, RotateCcw, Search, Send, Sparkles,
-  Trash2, X, XCircle, AlertCircle, ExternalLink, Link2, ArrowLeft, FileText, Loader2,
+  Trash2, X, XCircle, AlertCircle, ExternalLink, Link2, FileText, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { adminApi, type SocialContentItem } from "@/lib/api";
@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { resolveAdminPath } from "@/lib/routes";
 import { CHANNEL_META, type PostRow, type PostStatus } from "../mock";
 import type { ChannelId, SocialCtx } from "../types";
-import { ChannelLogo, Empty, PageHeader, Pill, Modal, card } from "../ui";
+import { ChannelLogo, Empty, PageHeader, Pill, Modal, SocialBackButton, card } from "../ui";
 import { PostDetailPage } from "./PostDetailPage";
 import { ACTIONS, MENUS, PRIMARY, toState, toStatus, type ActionId, type PostState } from "./postActions";
 
@@ -215,11 +215,11 @@ function CreateMenu({ onAi, onManual }: { onAi: () => void; onManual: () => void
   const [open, setOpen] = useState(false);
   return (
     <div className="relative flex">
-      <Button onClick={onAi} className="gap-2 rounded-r-none bg-[#6941c6] hover:bg-[#5b36b0]">
+      <Button onClick={onAi} className="gap-2 rounded-r-none bg-[#243B53] hover:bg-[#1B2E42]">
         <Plus className="size-4" />
         Tạo nội dung
       </Button>
-      <Button onClick={() => setOpen((v) => !v)} aria-label="Các cách tạo nội dung" className="rounded-l-none border-l border-white/25 bg-[#6941c6] px-2.5 hover:bg-[#5b36b0]">
+      <Button onClick={() => setOpen((v) => !v)} aria-label="Các cách tạo nội dung" className="rounded-l-none border-l border-white/25 bg-[#243B53] px-2.5 hover:bg-[#1B2E42]">
         <ChevronDown className="size-4" />
       </Button>
       {open && (
@@ -227,7 +227,7 @@ function CreateMenu({ onAi, onManual }: { onAi: () => void; onManual: () => void
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-xs border border-slate-200 bg-white py-1.5 text-sm shadow-xl">
             <button className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-50" onClick={() => { setOpen(false); onAi(); }}>
-              <Sparkles className="size-4 text-[#6941c6]" />Tạo bằng AI
+              <Sparkles className="size-4 text-[#243B53]" />Tạo bằng AI
             </button>
             <button className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-50" onClick={() => { setOpen(false); onManual(); }}>
               <Pencil className="size-4 text-slate-500" />Tạo thủ công
@@ -279,7 +279,7 @@ function ScheduleModal({
       <div className="space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
-            <CalendarClock className="size-5 text-[#6941c6]" />
+            <CalendarClock className="size-5 text-[#243B53]" />
             <h3 className="text-base font-bold text-slate-900">
               {post.state === "scheduled" ? "Đổi lịch đăng bài" : "Lên lịch đăng bài viết"}
             </h3>
@@ -303,7 +303,7 @@ function ScheduleModal({
             type="datetime-local"
             value={val}
             onChange={(e) => setVal(e.target.value)}
-            className="h-9 w-full rounded-xs border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-800 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+            className="h-9 w-full rounded-xs border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-800 outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
           />
         </div>
 
@@ -327,7 +327,7 @@ function ScheduleModal({
 
         <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
           <Button variant="outline" onClick={onClose} disabled={loading}>Hủy</Button>
-          <Button onClick={() => onConfirm(new Date(val).toISOString())} disabled={loading || !val} className="bg-[#6941c6] hover:bg-[#5b36b0]">
+          <Button onClick={() => onConfirm(new Date(val).toISOString())} disabled={loading || !val} className="bg-[#243B53] hover:bg-[#1B2E42]">
             {loading ? "Đang lưu..." : "Xác nhận lên lịch"}
           </Button>
         </div>
@@ -378,7 +378,7 @@ function FeedbackModal({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder={isReject ? "Nhập lý do từ chối duyệt bài..." : "Nhập yêu cầu cụ thể (VD: Thay ảnh 2, sửa lại hashtag...)"}
-          className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-800 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+          className="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-800 outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
         />
 
         <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
@@ -511,7 +511,7 @@ function EditPostModal({
       <div className="space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
-            <Pencil className="size-5 text-[#6941c6]" />
+            <Pencil className="size-5 text-[#243B53]" />
             <h3 className="text-base font-bold text-slate-900">Chỉnh sửa bài viết</h3>
           </div>
           <button onClick={onClose} className="rounded-xs p-1 text-slate-400 hover:bg-slate-100" aria-label="Đóng">
@@ -525,7 +525,7 @@ function EditPostModal({
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
             />
           </div>
 
@@ -538,7 +538,7 @@ function EditPostModal({
               rows={4}
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-800 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+              className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-800 outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
             />
           </div>
 
@@ -549,7 +549,7 @@ function EditPostModal({
                 value={ctaLabel}
                 onChange={(e) => setCtaLabel(e.target.value)}
                 placeholder="VD: Khám phá ngay →"
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-[#6941c6]"
+                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-[#243B53]"
               />
             </div>
             <div>
@@ -558,7 +558,7 @@ function EditPostModal({
                 value={ctaUrl}
                 onChange={(e) => setCtaUrl(e.target.value)}
                 placeholder="https://elane.vn/collections/..."
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-[#6941c6]"
+                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-[#243B53]"
               />
             </div>
           </div>
@@ -633,7 +633,7 @@ function EditPostModal({
               },
             })}
             disabled={loading || !title.trim()}
-            className="bg-[#6941c6] hover:bg-[#5b36b0]"
+            className="bg-[#243B53] hover:bg-[#1B2E42]"
           >
             {loading ? "Đang lưu..." : "Lưu thay đổi"}
           </Button>
@@ -661,7 +661,7 @@ function CalendarScheduleModal({
       <div className="space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
-            <CalendarDays className="size-5 text-[#6941c6]" />
+            <CalendarDays className="size-5 text-[#243B53]" />
             <h3 className="text-base font-bold text-slate-900">Lịch đăng bài viết</h3>
           </div>
           <button onClick={onClose} className="rounded-xs p-1 text-slate-400 hover:bg-slate-100" aria-label="Đóng">
@@ -683,7 +683,7 @@ function CalendarScheduleModal({
               <div
                 key={p.id}
                 onClick={() => { onClose(); onSelectPost(p.id); }}
-                className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-3.5 transition hover:border-[#6941c6] hover:shadow-sm"
+                className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-3.5 transition hover:border-[#243B53] hover:shadow-sm"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <PostThumb post={p} className="size-12" />
@@ -748,7 +748,7 @@ function ManualCreateModal({
       <div className="space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
-            <Pencil className="size-5 text-[#6941c6]" />
+            <Pencil className="size-5 text-[#243B53]" />
             <h3 className="text-base font-bold text-slate-900">Tạo bài viết thủ công</h3>
           </div>
           <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100" aria-label="Đóng">
@@ -763,7 +763,7 @@ function ManualCreateModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="VD: Ra mắt BST Mùa Hè 2024..."
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
             />
           </div>
 
@@ -774,7 +774,7 @@ function ManualCreateModal({
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
               placeholder="Nhập nội dung bài viết đăng lên kênh..."
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-800 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+              className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-800 outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
             />
           </div>
 
@@ -785,7 +785,7 @@ function ManualCreateModal({
                 value={ctaLabel}
                 onChange={(e) => setCtaLabel(e.target.value)}
                 placeholder="VD: Khám phá ngay →"
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-[#6941c6]"
+                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-[#243B53]"
               />
             </div>
             <div>
@@ -794,7 +794,7 @@ function ManualCreateModal({
                 value={ctaUrl}
                 onChange={(e) => setCtaUrl(e.target.value)}
                 placeholder="https://elane.vn/collections/..."
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-[#6941c6]"
+                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-[#243B53]"
               />
             </div>
           </div>
@@ -857,7 +857,7 @@ function ManualCreateModal({
               },
             })}
             disabled={loading || !title.trim() || !mediaUrls.length}
-            className="bg-[#6941c6] hover:bg-[#5b36b0]"
+            className="bg-[#243B53] hover:bg-[#1B2E42]"
           >
             {loading ? "Đang lưu..." : "Gửi duyệt ngay"}
           </Button>
@@ -1323,7 +1323,7 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
     if (posts.length === 0) {
       return (
         <div className="flex min-h-[460px] flex-col items-center justify-center gap-3">
-          <Loader2 className="size-8 animate-spin text-[#6941c6]" />
+          <Loader2 className="size-8 animate-spin text-[#243B53]" />
           <p className="text-sm text-slate-500">Đang tải chi tiết bài viết…</p>
         </div>
       );
@@ -1337,24 +1337,21 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
           <h2 className="text-lg font-bold text-slate-900">Không tìm thấy bài viết</h2>
           <p className="mt-1 text-sm text-slate-500">Bài viết với mã &ldquo;{openId}&rdquo; không tồn tại hoặc đã bị xóa.</p>
         </div>
-        <Button onClick={closePostDetail} variant="outline" className="gap-2">
-          <ArrowLeft className="size-4" />
-          Quay lại danh sách bài viết
-        </Button>
+        <SocialBackButton onClick={closePostDetail} label="Quay lại danh sách bài viết" />
       </div>
     );
   }
 
   const chip = (active: boolean) =>
     cn("inline-flex h-9 items-center gap-2 rounded-xs border px-3.5 text-sm font-medium transition-colors",
-      active ? "border-[#6941c6] bg-violet-50 text-[#6941c6]" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50");
+      active ? "border-[#243B53] bg-[#EAF0F6] text-[#243B53]" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50");
 
   return (
     <div className="space-y-5 pb-8 text-slate-900">
       {actionLoading && createPortal(
         <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/25 p-4 backdrop-blur-[2px]" role="status" aria-live="polite">
           <div className="flex w-full max-w-xs flex-col items-center rounded-2xl border border-white/70 bg-white px-6 py-5 text-center shadow-2xl">
-            <span className="grid size-12 place-items-center rounded-full bg-violet-100 text-[#6941c6]"><RefreshCw className="size-6 animate-spin" /></span>
+            <span className="grid size-12 place-items-center rounded-full bg-[#DCE6F0] text-[#243B53]"><RefreshCw className="size-6 animate-spin" /></span>
             <p className="mt-3 text-sm font-semibold text-slate-900">Đang xử lý bài viết…</p>
             <p className="mt-1 text-xs leading-5 text-slate-500">Đang gửi yêu cầu lên nền tảng. Vui lòng chờ.</p>
           </div>
@@ -1371,10 +1368,10 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
               variant="outline"
               disabled={syncingAll}
               onClick={handleSyncAllMetrics}
-              className="gap-2 bg-white text-slate-700 hover:border-[#6941c6] hover:bg-violet-50 hover:text-[#6941c6]"
+              className="gap-2 bg-white text-slate-700 hover:border-[#243B53] hover:bg-[#EAF0F6] hover:text-[#243B53]"
               title="Đồng bộ lại toàn bộ chỉ số thực tế từ Instagram"
             >
-              <RefreshCw className={cn("size-4", syncingAll && "animate-spin text-[#6941c6]")} />
+              <RefreshCw className={cn("size-4", syncingAll && "animate-spin text-[#243B53]")} />
               {syncingAll ? "Đang đồng bộ..." : "Đồng bộ chỉ số"}
             </Button>
             <Button variant="outline" onClick={() => setShowCalendarModal(true)} className="gap-2 bg-white">
@@ -1398,7 +1395,7 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
               onClick={() => { setTab(t.id); setPage(1); }}
               className={cn(
                 "whitespace-nowrap rounded-xs border-b-2 px-4 py-2 text-sm transition-colors",
-                tab === t.id ? "border-[#6941c6] bg-violet-50 font-semibold text-[#6941c6]" : "border-transparent bg-slate-50 font-medium text-slate-700 hover:bg-slate-100",
+                tab === t.id ? "border-[#243B53] bg-[#EAF0F6] font-semibold text-[#243B53]" : "border-transparent bg-slate-50 font-medium text-slate-700 hover:bg-slate-100",
               )}
             >
               {t.label} ({tabCount(t.id)})
@@ -1412,7 +1409,7 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
             <select
               value={channel}
               onChange={(e) => { setChannel(e.target.value as ChannelId | "all"); setPage(1); }}
-              className="h-9 appearance-none rounded-xs border border-slate-200 bg-white pl-3 pr-9 text-sm font-medium text-slate-800 outline-none hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-[#6941c6]/30"
+              className="h-9 appearance-none rounded-xs border border-slate-200 bg-white pl-3 pr-9 text-sm font-medium text-slate-800 outline-none hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-[#243B53]/30"
             >
               <option value="all">Tất cả nền tảng</option>
               {PLATFORMS.map((id) => <option key={id} value={id}>{CHANNEL_META[id].name}</option>)}
@@ -1434,13 +1431,13 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setPage(1); }}
                 placeholder="Tìm kiếm bài viết..."
-                className="h-9 w-full rounded-xs border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#6941c6]/30"
+                className="h-9 w-full rounded-xs border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#243B53]/30"
               />
             </div>
             <button onClick={() => setShowFilter((v) => !v)} className={cn(chip(showFilter || kind !== "all"), "relative")}>
               <Filter className="size-4" />
               Bộ lọc
-              {kind !== "all" && <span className="absolute -right-1 -top-1 size-2.5 rounded-full bg-[#6941c6]" />}
+              {kind !== "all" && <span className="absolute -right-1 -top-1 size-2.5 rounded-full bg-[#243B53]" />}
             </button>
           </div>
         </div>
@@ -1449,16 +1446,16 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
           <div className="flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 px-4 py-3 text-sm">
             <span className="mr-1 font-medium text-slate-700">Loại nội dung:</span>
             {KINDS.map((k) => (
-              <button key={k.id} onClick={() => { setKind(k.id); setPage(1); }} className={cn("rounded-xs border px-3.5 py-1.5 font-medium", kind === k.id ? "border-[#6941c6] bg-white text-[#6941c6]" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}>
+              <button key={k.id} onClick={() => { setKind(k.id); setPage(1); }} className={cn("rounded-xs border px-3.5 py-1.5 font-medium", kind === k.id ? "border-[#243B53] bg-white text-[#243B53]" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}>
                 {k.label}
               </button>
             ))}
-            {kind !== "all" && <button onClick={() => setKind("all")} className="ml-auto text-xs font-medium text-[#6941c6] hover:underline">Xóa bộ lọc</button>}
+            {kind !== "all" && <button onClick={() => setKind("all")} className="ml-auto text-xs font-medium text-[#243B53] hover:underline">Xóa bộ lọc</button>}
           </div>
         )}
 
         {selected.size > 0 && (
-          <div className="flex items-center justify-between rounded-lg bg-violet-50 px-4 py-2 text-sm text-[#6941c6]">
+          <div className="flex items-center justify-between rounded-lg bg-[#EAF0F6] px-4 py-2 text-sm text-[#243B53]">
             <span className="font-medium">Đã chọn {selected.size} bài viết</span>
             <button onClick={() => setSelected(new Set())} className="font-medium hover:underline">Bỏ chọn</button>
           </div>
@@ -1469,7 +1466,7 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
           <div className="overflow-x-auto">
           <div className="min-w-[1360px]">
             <div className={cn(COLS, "rounded-lg bg-slate-50 px-4 py-3.5 text-sm font-medium text-slate-800")}>
-              <input type="checkbox" checked={allChecked} onChange={toggleAll} aria-label="Chọn tất cả" className="size-[18px] rounded border-slate-300 accent-[#6941c6]" />
+              <input type="checkbox" checked={allChecked} onChange={toggleAll} aria-label="Chọn tất cả" className="size-[18px] rounded border-slate-300 accent-[#243B53]" />
               <span>Nội dung</span>
               <span>Nền tảng</span>
               <span>Trạng thái</span>
@@ -1488,8 +1485,8 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
               const captionSubtitle = captionLines.slice(1).join(" ") || p.title || p.time;
 
               return (
-                <div key={p.id} className={cn(COLS, "border-b border-slate-100 px-4 py-3 text-sm last:border-b-0", selected.has(p.id) && "bg-violet-50/40")}>
-                  <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleOne(p.id)} aria-label={`Chọn ${p.title}`} className="size-[18px] rounded border-slate-300 accent-[#6941c6]" />
+                <div key={p.id} className={cn(COLS, "border-b border-slate-100 px-4 py-3 text-sm last:border-b-0", selected.has(p.id) && "bg-[#EAF0F6]/40")}>
+                  <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleOne(p.id)} aria-label={`Chọn ${p.title}`} className="size-[18px] rounded border-slate-300 accent-[#243B53]" />
 
                   <a
                     href={`/kenhbanhang/baiviet/chitiet/${encodeURIComponent(p.id)}`}
@@ -1503,7 +1500,7 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
                   >
                     <Thumb post={p} />
                     <div className="min-w-0">
-                      <p className="truncate font-semibold group-hover:text-[#6941c6] transition-colors" title={captionTitle}>{captionTitle}</p>
+                      <p className="truncate font-semibold group-hover:text-[#243B53] transition-colors" title={captionTitle}>{captionTitle}</p>
                       <p className="mt-1 truncate text-xs text-slate-500" title={captionSubtitle}>{captionSubtitle}</p>
                     </div>
                   </a>
@@ -1531,7 +1528,7 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
                         title="Bấm để xem chi tiết hiệu quả bài viết"
                       >
                         <span className="flex items-center gap-1 text-xs font-semibold text-slate-700" title="Lượt tiếp cận (Reach)">
-                          <Eye className="size-3.5 text-[#6941c6]" />
+                          <Eye className="size-3.5 text-[#243B53]" />
                           {p.metrics.views}
                         </span>
                         <span className="flex items-center gap-1 text-xs font-semibold text-slate-700" title="Lượt thích (Likes)">
@@ -1556,7 +1553,7 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
                             openPostDetail(p.id);
                           }
                         }}
-                        className="inline-flex h-9 w-[125px] items-center justify-center rounded-xs border border-[#6941c6] bg-white text-sm font-medium text-[#6941c6] shadow-2xs transition-colors hover:bg-[#6941c6] hover:text-white"
+                        className="inline-flex h-9 w-[125px] items-center justify-center rounded-xs border border-[#243B53] bg-white text-sm font-medium text-[#243B53] shadow-2xs transition-colors hover:bg-[#243B53] hover:text-white"
                       >
                         {primary.label}
                       </a>
@@ -1564,7 +1561,7 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
                       <Button
                         variant="outline"
                         onClick={() => run(primary.id, p)}
-                        className={cn("h-9 w-[125px] bg-white text-sm font-medium", primary.violet ? "border-[#6941c6] bg-[#6941c6] text-white shadow-sm hover:border-[#5b36b0] hover:bg-[#5b36b0] hover:text-white hover:shadow-md" : "border-slate-200 text-slate-800")}
+                        className={cn("h-9 w-[125px] bg-white text-sm font-medium", primary.violet ? "border-[#243B53] bg-[#243B53] text-white shadow-sm hover:border-[#1B2E42] hover:bg-[#1B2E42] hover:text-white hover:shadow-md" : "border-slate-200 text-slate-800")}
                       >
                         {primary.label}
                       </Button>
@@ -1599,7 +1596,7 @@ export function PostsPage({ ctx, initialPostId }: { ctx: SocialCtx; initialPostI
               <ChevronLeft className="size-4" />
             </button>
             {pageNumbers(cur, pages).map((n) => (
-              <button key={n} onClick={() => setPage(n)} className={cn("grid size-10 place-items-center rounded-full text-sm font-medium", n === cur ? "bg-[#6941c6] text-white" : "text-slate-700 hover:bg-slate-100")}>
+              <button key={n} onClick={() => setPage(n)} className={cn("grid size-10 place-items-center rounded-full text-sm font-medium", n === cur ? "bg-[#243B53] text-white" : "text-slate-700 hover:bg-slate-100")}>
                 {n}
               </button>
             ))}

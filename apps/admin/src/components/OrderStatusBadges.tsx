@@ -95,8 +95,8 @@ export function OrderStatusBadge({
 
   if (isPending) {
     return (
-      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-sm font-semibold tracking-tight text-[#6941c6] shadow-2xs">
-        <span className="size-1.5 rounded-full bg-[#6941c6]" />
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[#C4D3E1] bg-[#EAF0F6] px-2.5 py-0.5 text-sm font-semibold tracking-tight text-[#243B53] shadow-2xs">
+        <span className="size-1.5 rounded-full bg-[#243B53]" />
         Chờ xác nhận
       </span>
     );
@@ -104,8 +104,8 @@ export function OrderStatusBadge({
 
   if (s === "shipping" || f === "shipping") {
     return (
-      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-sm font-semibold tracking-tight text-indigo-700 shadow-2xs">
-        <span className="size-1.5 rounded-full bg-indigo-500" />
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[#C4D3E1] bg-[#EAF0F6] px-2.5 py-0.5 text-sm font-semibold tracking-tight text-[#243B53] shadow-2xs">
+        <span className="size-1.5 rounded-full bg-[#EAF0F6]0" />
         Đang giao
       </span>
     );

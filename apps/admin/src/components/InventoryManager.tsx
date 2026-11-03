@@ -153,7 +153,11 @@ function mapAdminProductsToCatalog(
   for (const p of prods) {
     const coverImg =
       p.images?.[0] ||
-      p.media?.find((m) => (m as { isCover?: boolean; is_cover?: boolean }).isCover || (m as { isCover?: boolean; is_cover?: boolean }).is_cover)?.url ||
+      p.media?.find(
+        (m) =>
+          (m as { isCover?: boolean; is_cover?: boolean }).isCover ||
+          (m as { isCover?: boolean; is_cover?: boolean }).is_cover,
+      )?.url ||
       p.media?.[0]?.url ||
       null;
     const variants: CatalogVariant[] = [];
@@ -184,9 +188,7 @@ function mapAdminProductsToCatalog(
       });
     }
     if (!variants.length) continue;
-    variants.sort((a, b) =>
-      `${a.color} ${a.size}`.localeCompare(`${b.color} ${b.size}`, "vi"),
-    );
+    variants.sort((a, b) => `${a.color} ${a.size}`.localeCompare(`${b.color} ${b.size}`, "vi"));
     list.push({ id: p.id, name: p.name, image_url: coverImg, variants });
   }
   list.sort((a, b) => a.name.localeCompare(b.name, "vi"));
@@ -282,11 +284,14 @@ function matrixAxes(product: CatalogProduct) {
 type Tone = "green" | "amber" | "red" | "grey" | "violet";
 
 const TONE_CLASS: Record<Tone, { pill: string; dot: string }> = {
-  green: { pill: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300", dot: "bg-emerald-500" },
+  green: {
+    pill: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    dot: "bg-emerald-500",
+  },
   amber: { pill: "bg-amber-500/10 text-amber-700 dark:text-amber-300", dot: "bg-amber-500" },
   red: { pill: "bg-red-500/10 text-red-700 dark:text-red-300", dot: "bg-red-500" },
   grey: { pill: "bg-muted text-muted-foreground", dot: "bg-muted-foreground/60" },
-  violet: { pill: "bg-violet-500/10 text-violet-700 dark:text-violet-300", dot: "bg-violet-500" },
+  violet: { pill: "bg-[#243B53]/10 text-[#243B53] dark:text-[#AFC2D4]", dot: "bg-[#243B53]" },
 };
 
 function DotPill({ tone, children }: { tone: Tone; children: React.ReactNode }) {
@@ -326,36 +331,69 @@ function MetricCard({
   onClick?: () => void;
 }) {
   const toneStyles = {
-    brand: { border: "border-t-[#6941c6]", icon: "text-[#6941c6]", value: "text-slate-950" },
-    neutral: { border: "border-t-slate-300", icon: "text-slate-400", value: "text-slate-950" },
-    warning: { border: "border-t-amber-500", icon: "text-amber-600", value: "text-amber-700" },
-    danger: { border: "border-t-rose-500", icon: "text-rose-600", value: "text-rose-700" },
-    success: { border: "border-t-emerald-500", icon: "text-emerald-600", value: "text-emerald-700" },
+    brand: {
+      border: "border-t-[#243B53]",
+      icon: "text-[#243B53]",
+      value: "text-slate-950",
+      active: "border-[#243B53]/50 bg-[#EAF0F6]",
+    },
+    neutral: {
+      border: "border-t-slate-300",
+      icon: "text-slate-400",
+      value: "text-slate-950",
+      active: "border-slate-300 bg-slate-50",
+    },
+    warning: {
+      border: "border-t-amber-500",
+      icon: "text-amber-600",
+      value: "text-amber-700",
+      active: "border-amber-300 bg-amber-50/60",
+    },
+    danger: {
+      border: "border-t-rose-500",
+      icon: "text-rose-600",
+      value: "text-rose-700",
+      active: "border-rose-300 bg-rose-50/60",
+    },
+    success: {
+      border: "border-t-emerald-500",
+      icon: "text-emerald-600",
+      value: "text-emerald-700",
+      active: "border-emerald-300 bg-emerald-50/60",
+    },
   }[tone];
   const className = cn(
-      "min-w-0",
-      variant === "strip"
-        ? "px-4 py-3"
-        : variant === "tile"
-          ? `rounded-xs border border-slate-200 border-t-2 bg-white px-4 py-3.5 ${toneStyles.border}`
-          : "rounded-xs border border-slate-200 bg-white p-4",
-      onClick && "w-full cursor-pointer text-left transition duration-200 ease-out hover:-translate-y-0.5 hover:border-x-slate-300 hover:border-b-slate-300 hover:bg-slate-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
-      active && "border-[#6941c6]/50 bg-[#f8f7ff]",
-    );
+    "min-w-0",
+    variant === "strip"
+      ? "px-4 py-3"
+      : variant === "tile"
+        ? `rounded-xs border border-slate-200 border-t-2 bg-white px-4 py-3.5 ${toneStyles.border}`
+        : "rounded-xs border border-slate-200 bg-white p-4",
+    onClick &&
+      "w-full cursor-pointer text-left transition duration-200 ease-out hover:-translate-y-0.5 hover:border-x-slate-300 hover:border-b-slate-300 hover:bg-slate-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2",
+    active && toneStyles.active,
+  );
   const content = (
     <>
       <span className="flex items-center justify-between gap-2 text-slate-500">
         <span className="flex min-w-0 items-center gap-2 truncate text-sm font-medium text-slate-600">
-          {variant === "tile" && <span className={cn("shrink-0 [&>svg]:size-4", toneStyles.icon)}>{icon}</span>}
+          {variant === "tile" && (
+            <span className={cn("shrink-0 [&>svg]:size-4", toneStyles.icon)}>{icon}</span>
+          )}
           <span className="truncate">{label}</span>
         </span>
-        {variant === "card" && <span className="shrink-0 text-slate-400 [&>svg]:size-4">{icon}</span>}
+        {variant === "card" && (
+          <span className="shrink-0 text-slate-400 [&>svg]:size-4">{icon}</span>
+        )}
       </span>
-      <span className={cn(
-        "mt-1.5 block truncate font-semibold tracking-tight tabular-nums",
-        variant === "tile" ? "text-2xl" : "text-xl",
-        variant === "tile" ? toneStyles.value : "text-slate-950",
-      )} title={value}>
+      <span
+        className={cn(
+          "mt-1.5 block truncate font-semibold tracking-tight tabular-nums",
+          variant === "tile" ? "text-2xl" : "text-xl",
+          variant === "tile" ? toneStyles.value : "text-slate-950",
+        )}
+        title={value}
+      >
         <AnimatedValue value={value} />
       </span>
       <span className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-500">
@@ -393,7 +431,7 @@ function SelectBox({
         aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-full appearance-none rounded-xs border border-slate-200 bg-white pl-3 pr-8 text-sm font-semibold text-slate-800 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+        className="h-9 w-full appearance-none rounded-xs border border-slate-200 bg-white pl-3 pr-8 text-sm font-semibold text-slate-800 outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -485,7 +523,9 @@ function PrintInventoryDocModal({
         <div className="overflow-y-auto p-8 font-sans text-foreground print:overflow-visible print:p-0">
           <div className="flex items-start justify-between border-b pb-6">
             <div>
-              <p className="font-sans admin-metric font-semibold tracking-wider text-primary">ÉLANE</p>
+              <p className="font-sans admin-metric font-semibold tracking-wider text-primary">
+                ÉLANE
+              </p>
               <p className="text-xs uppercase tracking-[0.04em] text-muted-foreground">
                 Hệ Thống Kho Vận & Quản Lý Tồn Kho
               </p>
@@ -493,27 +533,30 @@ function PrintInventoryDocModal({
                 Kho lưu trữ: <span className="font-medium text-foreground">Kho Tổng (MAIN)</span>
               </p>
               <p className="text-sm text-muted-foreground">
-                Lý do: <span className="font-medium text-foreground">{doc.reason || "Vận hành kho"}</span>
+                Lý do:{" "}
+                <span className="font-medium text-foreground">{doc.reason || "Vận hành kho"}</span>
               </p>
             </div>
             <div className="text-right">
-              <h2 className="font-sans uppercase text-foreground admin-section-title">
-                {title}
-              </h2>
+              <h2 className="font-sans uppercase text-foreground admin-section-title">{title}</h2>
               <p className="mt-1 tabular-nums text-base font-semibold text-primary">#{doc.code}</p>
               <p className="text-sm text-muted-foreground">Ngày lập: {fmtDate(doc.created_at)}</p>
               {doc.posted_at && (
-                <p className="text-sm text-muted-foreground">Ngày ghi sổ: {fmtDate(doc.posted_at)}</p>
+                <p className="text-sm text-muted-foreground">
+                  Ngày ghi sổ: {fmtDate(doc.posted_at)}
+                </p>
               )}
               <div className="mt-2 inline-flex flex-col items-center">
                 <div className="flex h-7 items-stretch gap-[2px]">
-                  {[3, 1, 2, 4, 1, 3, 2, 1, 4, 2, 1, 3, 2, 4, 1, 2, 3, 1, 4, 2, 1, 3].map((w, idx) => (
-                    <div
-                      key={idx}
-                      className={cn("bg-foreground", idx % 2 === 0 ? "opacity-100" : "opacity-0")}
-                      style={{ width: `${w}px` }}
-                    />
-                  ))}
+                  {[3, 1, 2, 4, 1, 3, 2, 1, 4, 2, 1, 3, 2, 4, 1, 2, 3, 1, 4, 2, 1, 3].map(
+                    (w, idx) => (
+                      <div
+                        key={idx}
+                        className={cn("bg-foreground", idx % 2 === 0 ? "opacity-100" : "opacity-0")}
+                        style={{ width: `${w}px` }}
+                      />
+                    ),
+                  )}
                 </div>
                 <span className="tabular-nums text-xs tracking-widest text-muted-foreground">
                   *{doc.code}*
@@ -596,7 +639,9 @@ function PrintInventoryDocModal({
               {totalCost > 0 && (
                 <div className="flex justify-between border-t border-border pt-2 text-sm font-semibold text-foreground">
                   <span>
-                    {doc.type === "issue" ? "Tổng giá trị xuất (Hóa đơn):" : "Tổng giá trị vốn nhập:"}
+                    {doc.type === "issue"
+                      ? "Tổng giá trị xuất (Hóa đơn):"
+                      : "Tổng giá trị vốn nhập:"}
                   </span>
                   <span className="font-sans text-base text-primary">{fmtVND(totalCost)}</span>
                 </div>
@@ -664,7 +709,8 @@ export function InventoryManager({
   const location = useLocation();
   const route = resolveAdminPath(location.pathname);
   const activeDocParam = route.tabId === "inventory" ? route.subParam : null;
-  const hasPermission = (permission: string) => permissions.includes("*") || permissions.includes(permission);
+  const hasPermission = (permission: string) =>
+    permissions.includes("*") || permissions.includes(permission);
   const canReceive = hasPermission("inventory.receive");
   const canIssue = hasPermission("inventory.issue");
   const canAdjustRequest = hasPermission("inventory.adjust.request");
@@ -817,35 +863,38 @@ export function InventoryManager({
   }, [docs, loadDocs]);
 
   // Open Document Detail
-  const openDocDetailInternal = useCallback(async (id: string) => {
-    setSelectedDocId(id);
-    setLoadingDoc(true);
-    setView("doc_detail");
-    setDocLinePage(1);
-    setDocLineQuery("");
-    try {
-      const d = await adminApi.inventoryDocument(id);
-      const enhancedLines = d.lines.map((l) => {
-        if (l.unit_cost_vnd != null && Number(l.unit_cost_vnd) > 0) {
-          return l;
-        }
-        const match = items.find((it) => it.variant_id === l.variant_id || it.sku === l.sku);
-        const fallbackCost =
-          d.type === "issue"
-            ? (match?.price_vnd ?? null)
-            : (match?.cost_vnd ?? (match?.price_vnd ? Math.round(match.price_vnd * 0.45) : null));
-        return {
-          ...l,
-          unit_cost_vnd: fallbackCost ?? l.unit_cost_vnd,
-        };
-      });
-      setDocDetail({ ...d, lines: enhancedLines });
-    } catch (e) {
-      toast.error(e instanceof Error ? adminErrorMessage(e) : "Không tải được phiếu kho");
-    } finally {
-      setLoadingDoc(false);
-    }
-  }, [items]);
+  const openDocDetailInternal = useCallback(
+    async (id: string) => {
+      setSelectedDocId(id);
+      setLoadingDoc(true);
+      setView("doc_detail");
+      setDocLinePage(1);
+      setDocLineQuery("");
+      try {
+        const d = await adminApi.inventoryDocument(id);
+        const enhancedLines = d.lines.map((l) => {
+          if (l.unit_cost_vnd != null && Number(l.unit_cost_vnd) > 0) {
+            return l;
+          }
+          const match = items.find((it) => it.variant_id === l.variant_id || it.sku === l.sku);
+          const fallbackCost =
+            d.type === "issue"
+              ? (match?.price_vnd ?? null)
+              : (match?.cost_vnd ?? (match?.price_vnd ? Math.round(match.price_vnd * 0.45) : null));
+          return {
+            ...l,
+            unit_cost_vnd: fallbackCost ?? l.unit_cost_vnd,
+          };
+        });
+        setDocDetail({ ...d, lines: enhancedLines });
+      } catch (e) {
+        toast.error(e instanceof Error ? adminErrorMessage(e) : "Không tải được phiếu kho");
+      } finally {
+        setLoadingDoc(false);
+      }
+    },
+    [items],
+  );
 
   const openDocDetail = (id: string, code?: string) => {
     void openDocDetailInternal(id);
@@ -884,7 +933,8 @@ export function InventoryManager({
         const targetId = match?.id ?? activeDocParam;
         const routeMatchesDetail =
           docDetail &&
-          (docDetail.id === targetId || docDetail.code.toLowerCase() === activeDocParam.toLowerCase());
+          (docDetail.id === targetId ||
+            docDetail.code.toLowerCase() === activeDocParam.toLowerCase());
 
         if (!routeMatchesDetail && !loadingDoc && selectedDocId !== targetId) {
           void openDocDetailInternal(targetId);
@@ -971,7 +1021,8 @@ export function InventoryManager({
     }
     const ok = await confirm({
       title: "Hủy phiếu kho?",
-      description: "Phiếu này sẽ bị xóa khỏi hệ thống. Nếu đã ghi sổ, tồn kho sẽ được đảo ngược lại.",
+      description:
+        "Phiếu này sẽ bị xóa khỏi hệ thống. Nếu đã ghi sổ, tồn kho sẽ được đảo ngược lại.",
       confirmLabel: "Xác nhận xóa",
       destructive: true,
     });
@@ -1038,7 +1089,7 @@ export function InventoryManager({
           try {
             const extra = await adminApi.product(pId);
             if (extra) fetchedProducts.push(extra);
-          } catch { }
+          } catch {}
         }
       }
 
@@ -1109,7 +1160,9 @@ export function InventoryManager({
                   ? v.cost_vnd
                   : targetType === "issue"
                     ? v.price_vnd
-                    : (v.price_vnd ? Math.round(v.price_vnd * 0.3) : 0);
+                    : v.price_vnd
+                      ? Math.round(v.price_vnd * 0.3)
+                      : 0;
               return {
                 product_id: target.id,
                 variant_id: v.id,
@@ -1130,9 +1183,7 @@ export function InventoryManager({
               mQty[v.id] = "1";
             }
             setMatrixQty(mQty);
-            toast.success(
-              `Đã tự động điền phân loại và giá nhập (${target.name}) vào phiếu!`,
-            );
+            toast.success(`Đã tự động điền phân loại và giá nhập (${target.name}) vào phiếu!`);
           } else {
             setMatrixProductId("");
             setMatrixQty({});
@@ -1157,10 +1208,10 @@ export function InventoryManager({
       seed ||
       (seedProduct
         ? {
-          productId: seedProduct.productId,
-          productName: seedProduct.productName,
-          docType: "receipt" as const,
-        }
+            productId: seedProduct.productId,
+            productName: seedProduct.productName,
+            docType: "receipt" as const,
+          }
         : null);
     if (!activeSeed || loading) return;
     void openCreateForm(activeSeed).finally(() => onSeedConsumed?.());
@@ -1260,9 +1311,15 @@ export function InventoryManager({
         variant_id: l.variant_id,
         qty: Number(l.qty),
         direction:
-          formType === "receipt" ? ("in" as const) : formType === "issue" ? ("out" as const) : l.direction,
+          formType === "receipt"
+            ? ("in" as const)
+            : formType === "issue"
+              ? ("out" as const)
+              : l.direction,
         unit_cost_vnd:
-          l.unit_cost_vnd !== undefined && l.unit_cost_vnd !== null && !Number.isNaN(Number(l.unit_cost_vnd))
+          l.unit_cost_vnd !== undefined &&
+          l.unit_cost_vnd !== null &&
+          !Number.isNaN(Number(l.unit_cost_vnd))
             ? Math.round(Number(l.unit_cost_vnd))
             : undefined,
       }));
@@ -1324,7 +1381,8 @@ export function InventoryManager({
       submitted: docs.filter((d) => d.status === "submitted").length,
       approved: docs.filter((d) => d.status === "approved").length,
       postedToday: docs.filter(
-        (d) => d.status === "posted" && d.posted_at && new Date(d.posted_at).toDateString() === today,
+        (d) =>
+          d.status === "posted" && d.posted_at && new Date(d.posted_at).toDateString() === today,
       ).length,
     };
   }, [docs]);
@@ -1348,7 +1406,8 @@ export function InventoryManager({
     if (stockTab === "low") rows = rows.filter(isLow);
     if (stockTab === "out") rows = rows.filter(isOut);
     if (stockTab === "safe") rows = rows.filter((it) => it.available > it.reorder_point);
-    if (whFilter !== "all") rows = rows.filter((r) => (r.warehouse_code ?? warehouseLabel) === whFilter);
+    if (whFilter !== "all")
+      rows = rows.filter((r) => (r.warehouse_code ?? warehouseLabel) === whFilter);
     if (catFilter !== "all") rows = rows.filter((r) => r.category_name === catFilter);
     if (onlyReserved) rows = rows.filter((r) => (r.reserved ?? 0) > 0);
 
@@ -1378,7 +1437,8 @@ export function InventoryManager({
     let list = docs as DocRow[];
     if (docTab !== "all") list = list.filter((d) => d.status === docTab);
     if (docTypeFilter !== "all") list = list.filter((d) => d.type === docTypeFilter);
-    if (docWhFilter !== "all") list = list.filter((d) => (d.warehouse_code ?? warehouseLabel) === docWhFilter);
+    if (docWhFilter !== "all")
+      list = list.filter((d) => (d.warehouse_code ?? warehouseLabel) === docWhFilter);
     if (dateFrom) {
       const from = new Date(`${dateFrom}T00:00:00`).getTime();
       list = list.filter((d) => new Date(d.created_at).getTime() >= from);
@@ -1390,7 +1450,8 @@ export function InventoryManager({
     if (postedTodayOnly) {
       const today = toLocalDateInput(new Date());
       list = list.filter(
-        (d) => d.status === "posted" && d.posted_at && toLocalDateInput(new Date(d.posted_at)) === today,
+        (d) =>
+          d.status === "posted" && d.posted_at && toLocalDateInput(new Date(d.posted_at)) === today,
       );
     }
 
@@ -1406,7 +1467,17 @@ export function InventoryManager({
       );
     }
     return list;
-  }, [docs, docTab, docTypeFilter, docWhFilter, dateFrom, dateTo, postedTodayOnly, docQuery, warehouseLabel]);
+  }, [
+    docs,
+    docTab,
+    docTypeFilter,
+    docWhFilter,
+    dateFrom,
+    dateTo,
+    postedTodayOnly,
+    docQuery,
+    warehouseLabel,
+  ]);
 
   // Reset pagination / selection when filters change
   useEffect(() => {
@@ -1444,7 +1515,8 @@ export function InventoryManager({
   }, [docDetail?.lines, docLineQuery]);
 
   const pagedDocLines = useMemo(
-    () => filteredDocLines.slice((docLinePage - 1) * docLinePageSize, docLinePage * docLinePageSize),
+    () =>
+      filteredDocLines.slice((docLinePage - 1) * docLinePageSize, docLinePage * docLinePageSize),
     [filteredDocLines, docLinePage, docLinePageSize],
   );
 
@@ -1541,7 +1613,18 @@ export function InventoryManager({
       ? filteredStock.filter((r) => stockSelected.has(r.variant_id))
       : filteredStock;
     downloadCsv("ton-kho.csv", [
-      ["SKU", "Sản phẩm", "Danh mục", "Phân loại", "Kho", "Khả dụng", "Giữ chỗ", "Đang về", "Mức đặt lại", "Trạng thái"],
+      [
+        "SKU",
+        "Sản phẩm",
+        "Danh mục",
+        "Phân loại",
+        "Kho",
+        "Khả dụng",
+        "Giữ chỗ",
+        "Đang về",
+        "Mức đặt lại",
+        "Trạng thái",
+      ],
       ...rows.map((r) => [
         r.sku,
         r.product_name,
@@ -1580,9 +1663,20 @@ export function InventoryManager({
   }
 
   function exportDocs() {
-    const rows = docSelected.size ? filteredDocs.filter((d) => docSelected.has(d.id)) : filteredDocs;
+    const rows = docSelected.size
+      ? filteredDocs.filter((d) => docSelected.has(d.id))
+      : filteredDocs;
     downloadCsv("phieu-kho.csv", [
-      ["Mã phiếu", "Loại", "Kho", "Người yêu cầu", "Người duyệt", "Số lượng", "Trạng thái", "Ngày tạo"],
+      [
+        "Mã phiếu",
+        "Loại",
+        "Kho",
+        "Người yêu cầu",
+        "Người duyệt",
+        "Số lượng",
+        "Trạng thái",
+        "Ngày tạo",
+      ],
       ...rows.map((d) => [
         d.code,
         TYPE_LABEL[d.type as DocType] ?? d.type,
@@ -1636,26 +1730,36 @@ export function InventoryManager({
                 <Download className="size-3.5 text-slate-500" />
                 <span>Xuất file</span>
               </Button>
-              {canCreateAnyDocument && <Button asChild className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer">
-                <a
-                  href="/khohang/taophieu"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    openCreateDoc();
-                  }}
+              {canCreateAnyDocument && (
+                <Button
+                  asChild
+                  className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#1B2E42] transition-colors cursor-pointer"
                 >
-                  <Plus className="size-3.5" />
-                  <span>{view === "stock" ? "Tạo phiếu kho" : "Tạo phiếu"}</span>
-                </a>
-              </Button>}
+                  <a
+                    href="/khohang/taophieu"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openCreateDoc();
+                    }}
+                  >
+                    <Plus className="size-3.5" />
+                    <span>{view === "stock" ? "Tạo phiếu kho" : "Tạo phiếu"}</span>
+                  </a>
+                </Button>
+              )}
             </div>
           </div>
 
-          <nav aria-label="Kho hàng" className="mb-2 inline-flex w-fit items-center gap-0.5 rounded-sm border border-slate-200 bg-slate-100/70 p-1">
-            {([
-              ["stock", "Tồn kho", Package],
-              ["docs", "Phiếu kho", FileText],
-            ] as const).map(([id, label]) => {
+          <nav
+            aria-label="Kho hàng"
+            className="mb-2 inline-flex w-fit items-center gap-0.5 rounded-sm border border-slate-200 bg-slate-100/70 p-1"
+          >
+            {(
+              [
+                ["stock", "Tồn kho", Package],
+                ["docs", "Phiếu kho", FileText],
+              ] as const
+            ).map(([id, label]) => {
               const active = view === id;
               const Icon = id === "stock" ? Package : FileText;
               return (
@@ -1668,13 +1772,16 @@ export function InventoryManager({
                     handleBackToList(id);
                   }}
                   className={cn(
-                    "inline-flex items-center gap-2 rounded-xs px-4 py-2 text-sm transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2 cursor-pointer",
+                    "inline-flex items-center gap-2 rounded-xs px-4 py-2 text-sm transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2 cursor-pointer",
                     active
                       ? "border border-slate-200 bg-white font-semibold text-slate-900"
                       : "border border-transparent font-medium text-slate-600 hover:bg-white/70 hover:text-slate-900",
                   )}
                 >
-                  <Icon aria-hidden="true" className={cn("size-4", active ? "text-slate-600" : "text-slate-400")} />
+                  <Icon
+                    aria-hidden="true"
+                    className={cn("size-4", active ? "text-slate-600" : "text-slate-400")}
+                  />
                   {label}
                 </a>
               );
@@ -1684,828 +1791,1002 @@ export function InventoryManager({
       )}
 
       {isListView && (
-      <AnimatedPanel transitionKey={view} className="min-w-0">
-      <div className="space-y-5">
-      {/* ── VIEW 1: TỒN KHO ─────────────────────────────────────────────────── */}
-      {view === "stock" && (
-        <>
-          <section aria-label="Lọc nhanh tồn kho" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricCard
-              icon={<Package className="size-4" />}
-              label="Tổng tồn thực tế"
-              value={stockMetrics.onHand.toLocaleString("vi-VN")}
-              note={`${items.length} biến thể SKU`}
-              extra={`Kho ${warehouseLabel}`}
-              variant="tile"
-              tone="brand"
-              active={stockTab === "all" && !onlyReserved}
-              onClick={() => applyStockMetricFilter("all")}
-            />
-            <MetricCard
-              icon={<Lock className="size-4" />}
-              label="Đang giữ chỗ"
-              value={stockMetrics.reserved.toLocaleString("vi-VN")}
-              note={`${stockMetrics.reservedSkus} SKU chờ xuất đơn`}
-              variant="tile"
-              tone="neutral"
-              active={stockTab === "all" && onlyReserved}
-              onClick={() => applyStockMetricFilter("reserved")}
-            />
-            <MetricCard
-              icon={<AlertTriangle className="size-4" />}
-              label="SKU sắp hết hàng"
-              value={String(stockMetrics.low)}
-              note={stockMetrics.low > 0 ? "Cần lập phiếu nhập" : "Trong mức an toàn"}
-              variant="tile"
-              tone="warning"
-              active={stockTab === "low"}
-              onClick={() => applyStockMetricFilter("low")}
-            />
-            <MetricCard
-              icon={<Ban className="size-4" />}
-              label="Hết hàng"
-              value={String(stockMetrics.out)}
-              note={stockMetrics.out > 0 ? "Đang ngừng bán" : "Không có SKU hết hàng"}
-              variant="tile"
-              tone={stockMetrics.out > 0 ? "danger" : "neutral"}
-              active={stockTab === "out"}
-              onClick={() => applyStockMetricFilter("out")}
-            />
-          </section>
+        <AnimatedPanel transitionKey={view} className="min-w-0">
+          <div className="space-y-5">
+            {/* ── VIEW 1: TỒN KHO ─────────────────────────────────────────────────── */}
+            {view === "stock" && (
+              <>
+                <section
+                  aria-label="Lọc nhanh tồn kho"
+                  className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+                >
+                  <MetricCard
+                    icon={<Package className="size-4" />}
+                    label="Tổng tồn thực tế"
+                    value={stockMetrics.onHand.toLocaleString("vi-VN")}
+                    note={`${items.length} biến thể SKU`}
+                    extra={`Kho ${warehouseLabel}`}
+                    variant="tile"
+                    tone="brand"
+                    active={stockTab === "all" && !onlyReserved}
+                    onClick={() => applyStockMetricFilter("all")}
+                  />
+                  <MetricCard
+                    icon={<Lock className="size-4" />}
+                    label="Đang giữ chỗ"
+                    value={stockMetrics.reserved.toLocaleString("vi-VN")}
+                    note={`${stockMetrics.reservedSkus} SKU chờ xuất đơn`}
+                    variant="tile"
+                    tone="neutral"
+                    active={stockTab === "all" && onlyReserved}
+                    onClick={() => applyStockMetricFilter("reserved")}
+                  />
+                  <MetricCard
+                    icon={<AlertTriangle className="size-4" />}
+                    label="SKU sắp hết hàng"
+                    value={String(stockMetrics.low)}
+                    note={stockMetrics.low > 0 ? "Cần lập phiếu nhập" : "Trong mức an toàn"}
+                    variant="tile"
+                    tone="warning"
+                    active={stockTab === "low"}
+                    onClick={() => applyStockMetricFilter("low")}
+                  />
+                  <MetricCard
+                    icon={<Ban className="size-4" />}
+                    label="Hết hàng"
+                    value={String(stockMetrics.out)}
+                    note={stockMetrics.out > 0 ? "Đang ngừng bán" : "Không có SKU hết hàng"}
+                    variant="tile"
+                    tone={stockMetrics.out > 0 ? "danger" : "neutral"}
+                    active={stockTab === "out"}
+                    onClick={() => applyStockMetricFilter("out")}
+                  />
+                </section>
 
-          <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_272px]">
-            <div className="min-w-0 space-y-3">
-              {/* Toolbar */}
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="relative min-w-[240px] flex-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    value={stockQuery}
-                    onChange={(e) => setStockQuery(e.target.value)}
-                    className="h-9 rounded-xs border-slate-200 bg-white pl-8.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
-                    placeholder="Tìm theo SKU, tên sản phẩm hoặc biến thể…"
-                  />
-                </div>
-                <SelectBox
-                  label="Kho"
-                  value={whFilter}
-                  onChange={setWhFilter}
-                  className="w-36"
-                  options={[
-                    { value: "all", label: "Tất cả kho" },
-                    ...warehouseOptions.map((w) => ({ value: w, label: `Kho ${w}` })),
-                  ]}
-                />
-                <SelectBox
-                  label="Trạng thái"
-                  value={stockTab}
-                  onChange={(v) => setStockTab(v as StockFilter)}
-                  className="w-44"
-                  options={[
-                    { value: "all", label: "Mọi trạng thái" },
-                    { value: "safe", label: `Còn hàng (${stockMetrics.safe})` },
-                    { value: "low", label: `Sắp hết (${stockMetrics.low})` },
-                    { value: "out", label: `Hết hàng (${stockMetrics.out})` },
-                  ]}
-                />
-                {categoryOptions.length > 0 && (
-                  <SelectBox
-                    label="Danh mục"
-                    value={catFilter}
-                    onChange={setCatFilter}
-                    className="w-40"
-                    options={[
-                      { value: "all", label: "Mọi danh mục" },
-                      ...categoryOptions.map((c) => ({ value: c, label: c })),
-                    ]}
-                  />
-                )}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50",
-                        onlyReserved && "border-primary/40 bg-accent/40",
-                      )}
-                    >
-                      <SlidersHorizontal className="size-3.5 text-slate-500" />
-                      <span>Bộ lọc khác</span>
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="w-60 p-3 rounded-xs shadow-xl text-sm">
-                    <label className="flex cursor-pointer items-center gap-2.5 font-semibold text-slate-800">
-                      <input
-                        type="checkbox"
-                        className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
-                        checked={onlyReserved}
-                        onChange={(e) => setOnlyReserved(e.target.checked)}
+                <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_272px]">
+                  <div className="min-w-0 space-y-3">
+                    {/* Toolbar */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="relative min-w-[240px] flex-1">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+                        <Input
+                          value={stockQuery}
+                          onChange={(e) => setStockQuery(e.target.value)}
+                          className="h-9 rounded-xs border-slate-200 bg-white pl-8.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
+                          placeholder="Tìm theo SKU, tên sản phẩm hoặc biến thể…"
+                        />
+                      </div>
+                      <SelectBox
+                        label="Kho"
+                        value={whFilter}
+                        onChange={setWhFilter}
+                        className="w-36"
+                        options={[
+                          { value: "all", label: "Tất cả kho" },
+                          ...warehouseOptions.map((w) => ({ value: w, label: `Kho ${w}` })),
+                        ]}
                       />
-                      <span>Chỉ SKU đang giữ chỗ</span>
-                    </label>
-                  </PopoverContent>
-                </Popover>
-
-                <div className="ml-auto flex items-center gap-2.5">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50">
-                        <LayoutGrid className="size-3.5 text-slate-500" />
-                        <span>Cột hiển thị</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent align="end" className="w-52 p-2 rounded-xs shadow-xl text-sm">
-                      {STOCK_COLS.map((c) => (
-                        <label
-                          key={c.key}
-                          className="flex cursor-pointer items-center gap-2.5 rounded-xs px-2.5 py-1.5 font-semibold text-slate-800 hover:bg-slate-100"
-                        >
-                          <input
-                            type="checkbox"
-                            className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
-                            checked={visibleCols.has(c.key)}
-                            onChange={() =>
-                              setVisibleCols((prev) => {
-                                const next = new Set(prev);
-                                if (next.has(c.key)) next.delete(c.key);
-                                else next.add(c.key);
-                                return next;
-                              })
-                            }
-                          />
-                          <span>{c.label}</span>
-                        </label>
-                      ))}
-                    </PopoverContent>
-                  </Popover>
-                  <SelectBox
-                    label="Sắp xếp"
-                    value={stockSort}
-                    onChange={(v) => setStockSort(v as typeof stockSort)}
-                    className="w-48"
-                    options={[
-                      { value: "available_asc", label: "Sắp xếp: Tồn thấp nhất" },
-                      { value: "available_desc", label: "Sắp xếp: Tồn cao nhất" },
-                      { value: "name", label: "Sắp xếp: Tên A→Z" },
-                      { value: "sku", label: "Sắp xếp: SKU" },
-                    ]}
-                  />
-                </div>
-              </div>
-
-              {/* Bulk bar */}
-              {stockSelected.size > 0 && (
-                <div className="flex flex-wrap items-center gap-2.5 rounded-xs border border-slate-200 bg-purple-50/40 px-3.5 py-2 text-sm">
-                  <span className="font-semibold text-slate-950">Đã chọn {stockSelected.size}</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 gap-1 rounded-xs bg-white px-3 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50"
-                    onClick={() =>
-                      createSlipForRows(
-                        filteredStock.filter((r) => stockSelected.has(r.variant_id)),
-                        "receipt",
-                      )
-                    }
-                  >
-                    <PackagePlus className="size-3.5 text-slate-600" />
-                    <span>Lập phiếu nhập</span>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 gap-1 rounded-xs bg-white px-3 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50"
-                    onClick={() =>
-                      createSlipForRows(
-                        filteredStock.filter((r) => stockSelected.has(r.variant_id)),
-                        "issue",
-                      )
-                    }
-                  >
-                    <PackageMinus className="size-3.5 text-slate-600" />
-                    <span>Lập phiếu xuất</span>
-                  </Button>
-                  <Button size="sm" variant="ghost" className="h-8 px-2.5 text-sm font-semibold text-slate-600 hover:text-slate-900 rounded-xs" onClick={() => setStockSelected(new Set())}>
-                    Bỏ chọn
-                  </Button>
-                </div>
-              )}
-
-              {/* Table */}
-              <section className="admin-table-frame overflow-hidden rounded-xs border border-slate-200 bg-white">
-                <div className="overflow-x-auto">
-                  <table className="admin-data-table w-full min-w-[1000px] text-left text-sm">
-                    <thead className="border-b border-slate-200 bg-white text-xs font-medium text-slate-500">
-                      <tr>
-                        <th className="w-12 px-3 py-2.5">
-                          <input
-                            type="checkbox"
-                            aria-label="Chọn tất cả"
-                            className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
-                            checked={allStockPageSelected}
-                            ref={(el) => {
-                              if (el) el.indeterminate = someStockPageSelected && !allStockPageSelected;
-                            }}
-                            onChange={toggleStockPage}
-                          />
-                        </th>
-                        <th className="px-3 py-2.5 font-semibold text-slate-700">SKU</th>
-                        {visibleCols.has("product") && <th className="px-3 py-2.5 font-semibold text-slate-700">Sản phẩm</th>}
-                        {visibleCols.has("variant") && <th className="px-3 py-2.5 font-semibold text-slate-700">Phân loại</th>}
-                        {visibleCols.has("warehouse") && <th className="px-3 py-2.5 font-semibold text-slate-700">Kho</th>}
-                        {visibleCols.has("available") && (
-                          <th className="px-3 py-2.5 text-center font-semibold text-slate-700">Khả dụng</th>
-                        )}
-                        {visibleCols.has("reserved") && (
-                          <th className="px-3 py-2.5 text-center font-semibold text-slate-700">Giữ chỗ</th>
-                        )}
-                        {visibleCols.has("incoming") && (
-                          <th className="px-3 py-2.5 text-center font-semibold text-slate-700">Đang về</th>
-                        )}
-                        {visibleCols.has("reorder") && (
-                          <th className="px-3 py-2.5 text-center font-semibold text-slate-700">Mức đặt lại</th>
-                        )}
-                        {visibleCols.has("status") && <th className="px-3 py-2.5 font-semibold text-slate-700">Trạng thái</th>}
-                        <th className="w-24 whitespace-nowrap px-3 py-2.5 text-center font-semibold text-slate-700">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {loading && items.length === 0 ? (
-                        <tr>
-                          <td colSpan={11} className="py-14 text-center text-sm text-slate-500">
-                            <div className="flex flex-col items-center gap-2">
-                              <Loader2 className="size-5 animate-spin text-[#6941c6]" />
-                              <span className="font-semibold text-slate-700">Đang tải số liệu tồn kho…</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : filteredStock.length === 0 ? (
-                        <tr>
-                          <td colSpan={11} className="py-14 text-center text-sm font-medium text-slate-500">
-                            Không tìm thấy mặt hàng nào phù hợp với bộ lọc.
-                          </td>
-                        </tr>
-                      ) : (
-                        pagedStock.map((row) => {
-                          const imgUrl = resolveImageUrl(row.image_url);
-                          const st = stockStatus(row);
-                          const checked = stockSelected.has(row.variant_id);
-                          return (
-                            <tr
-                              key={row.variant_id}
-                              className={cn(
-                                "border-b border-slate-100 transition-colors last:border-b-0 hover:bg-slate-50/80",
-                                checked && "bg-purple-50/30",
-                              )}
-                            >
-                              <td className="px-3 py-2">
-                                <input
-                                  type="checkbox"
-                                  aria-label={`Chọn ${row.sku}`}
-                                  className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
-                                  checked={checked}
-                                  onChange={() => toggleSet(setStockSelected, row.variant_id)}
-                                />
-                              </td>
-                              <td className="px-3 py-2">
-                                <div className="flex items-center gap-2.5">
-                                  <div className="relative size-9 shrink-0 overflow-hidden rounded-xs border border-slate-200 bg-slate-100">
-                                    {imgUrl ? (
-                                      <img
-                                        src={imgUrl}
-                                        alt={row.product_name}
-                                        className="size-full object-cover"
-                                        onError={(e) => {
-                                          (e.target as HTMLElement).style.display = "none";
-                                        }}
-                                      />
-                                    ) : (
-                                      <div className="flex size-full items-center justify-center text-slate-400">
-                                        <Package className="size-3.5 stroke-[1.5]" />
-                                      </div>
-                                    )}
-                                  </div>
-                                  <span className="max-w-[130px] break-all tabular-nums text-sm font-semibold leading-tight text-slate-950">{row.sku}</span>
-                                </div>
-                              </td>
-                              {visibleCols.has("product") && (
-                                <td className="px-3 py-2">
-                                  <p className="max-w-[200px] truncate text-sm font-semibold text-slate-950">
-                                    {row.product_name}
-                                  </p>
-                                  {row.category_name && (
-                                    <p className="text-sm font-medium text-slate-500 mt-0.5">{row.category_name}</p>
-                                  )}
-                                </td>
-                              )}
-                              {visibleCols.has("variant") && (
-                                <td className="px-3 py-2 text-sm font-semibold text-slate-800">
-                                  {row.size_label} / {row.color_name}
-                                </td>
-                              )}
-                              {visibleCols.has("warehouse") && (
-                                <td className="px-3 py-2 text-sm font-semibold text-slate-700">
-                                  {row.warehouse_code ?? warehouseLabel}
-                                </td>
-                              )}
-                              {visibleCols.has("available") && (
-                                <td className="px-3 py-2 text-center tabular-nums font-semibold text-slate-950 text-sm">{row.available}</td>
-                              )}
-                              {visibleCols.has("reserved") && (
-                                <td className="px-3 py-2 text-center tabular-nums text-sm font-semibold text-slate-700">{row.reserved ?? 0}</td>
-                              )}
-                              {visibleCols.has("incoming") && (
-                                <td className="px-3 py-2 text-center tabular-nums text-sm font-semibold text-slate-700">{row.incoming ?? "—"}</td>
-                              )}
-                              {visibleCols.has("reorder") && (
-                                <td className="px-3 py-2 text-center tabular-nums text-sm font-semibold text-slate-700">{row.reorder_point}</td>
-                              )}
-                              {visibleCols.has("status") && (
-                                <td className="px-3 py-2">
-                                  <DotPill tone={st.tone}>{st.label}</DotPill>
-                                </td>
-                              )}
-                              <td className="px-3 py-2 text-center">
-                                <Popover
-                                  open={rowMenu === row.variant_id}
-                                  onOpenChange={(o) => setRowMenu(o ? row.variant_id : null)}
-                                >
-                                  <PopoverTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="size-7 rounded-xs text-slate-500 hover:text-slate-800"
-                                      aria-label={`Thao tác với ${row.sku}`}
-                                    >
-                                      <MoreHorizontal className="size-3.5" />
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent align="end" className="w-48 p-1 rounded-xs shadow-xl">
-                                    <MenuItem
-                                      icon={<PackagePlus className="size-3.5" />}
-                                      label="Lập phiếu nhập"
-                                      onClick={() => {
-                                        setRowMenu(null);
-                                        createSlipForRows([row], "receipt");
-                                      }}
-                                    />
-                                    <MenuItem
-                                      icon={<PackageMinus className="size-3.5" />}
-                                      label="Lập phiếu xuất"
-                                      onClick={() => {
-                                        setRowMenu(null);
-                                        createSlipForRows([row], "issue");
-                                      }}
-                                    />
-                                    <MenuItem
-                                      icon={<Copy className="size-3.5" />}
-                                      label="Sao chép SKU"
-                                      onClick={() => {
-                                        setRowMenu(null);
-                                        copyText("mã SKU", row.sku);
-                                      }}
-                                    />
-                                  </PopoverContent>
-                                </Popover>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-              <AdminPagination
-                count={filteredStock.length}
-                page={stockPage}
-                pageSize={stockPageSize}
-                noun="SKU tồn kho"
-                onPageChange={setStockPage}
-                onPageSizeChange={(size) => {
-                  setStockPageSize(size);
-                  setStockPage(1);
-                }}
-              />
-            </div>
-
-            <aside className="min-w-0 border-t border-slate-200 pt-4 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0">
-              <div className="flex items-baseline justify-between gap-2">
-                <h2 className="text-sm font-semibold text-slate-900">Cần xử lý</h2>
-                <span className="text-xs tabular-nums text-slate-500">{stockMetrics.low + stockMetrics.out} SKU</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => { setStockTab("low"); setStockQuery(""); setWhFilter("all"); setCatFilter("all"); setOnlyReserved(false); }}
-                className="mt-3 flex w-full items-center justify-between gap-3 border-t border-slate-200 py-3 text-left hover:bg-slate-50"
-              >
-                <span><strong className="block text-sm font-semibold text-slate-900">Sắp hết hàng</strong><span className="mt-0.5 block text-xs text-slate-500">Dưới mức đặt lại</span></span>
-                <span className="tabular-nums text-base font-semibold text-amber-700">{stockMetrics.low}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setStockTab("out"); setStockQuery(""); setWhFilter("all"); setCatFilter("all"); setOnlyReserved(false); }}
-                className="flex w-full items-center justify-between gap-3 border-t border-slate-200 py-3 text-left hover:bg-slate-50"
-              >
-                <span><strong className="block text-sm font-semibold text-slate-900">Hết hàng</strong><span className="mt-0.5 block text-xs text-slate-500">Cần kiểm tra tồn</span></span>
-                <span className="tabular-nums text-base font-semibold text-rose-700">{stockMetrics.out}</span>
-              </button>
-              <h3 className="mb-1 mt-5 text-sm font-semibold text-slate-900">SKU cần chú ý</h3>
-              {[...items].filter((row) => isLow(row) || isOut(row)).sort((a, b) => a.available - b.available).slice(0, 4).map((row) => (
-                <button
-                  key={row.variant_id}
-                  type="button"
-                  onClick={() => { setStockTab("all"); setWhFilter("all"); setCatFilter("all"); setOnlyReserved(false); setStockQuery(row.sku); }}
-                  className="block w-full border-t border-slate-200 py-2.5 text-left hover:bg-slate-50"
-                >
-                  <span className="block truncate text-xs font-semibold text-slate-800">{row.sku}</span>
-                  <span className="mt-0.5 flex items-center justify-between gap-2 text-xs text-slate-500">
-                    <span className="truncate">{row.product_name}</span>
-                    <span className="shrink-0 tabular-nums font-medium text-slate-700">{row.available} còn</span>
-                  </span>
-                </button>
-              ))}
-              {stockMetrics.low + stockMetrics.out === 0 && (
-                <p className="mt-3 border-t border-slate-200 pt-3 text-xs text-slate-500">Không có SKU nào dưới mức đặt lại.</p>
-              )}
-            </aside>
-          </div>
-        </>
-      )}
-
-      {/* ── VIEW 2: PHIẾU KHO ───────────────────────────────────────────────── */}
-      {view === "docs" && (
-        <>
-          <section aria-label="Lọc nhanh phiếu kho" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricCard
-              icon={<FileText className="size-4" />}
-              label="Phiếu nháp"
-              value={String(docMetrics.draft)}
-              note={`${docs.length} phiếu tổng cộng`}
-              variant="tile"
-              tone="neutral"
-              active={docTab === "draft"}
-              onClick={() => applyDocMetricFilter("draft")}
-            />
-            <MetricCard
-              icon={<Clock className="size-4" />}
-              label="Chờ duyệt"
-              value={String(docMetrics.submitted)}
-              note="Đang chờ xác nhận"
-              variant="tile"
-              tone={docMetrics.submitted > 0 ? "warning" : "neutral"}
-              active={docTab === "submitted"}
-              onClick={() => applyDocMetricFilter("submitted")}
-            />
-            <MetricCard
-              icon={<Package className="size-4" />}
-              label="Chờ ghi sổ"
-              value={String(docMetrics.approved)}
-              note="Cần ghi sổ để cập nhật tồn"
-              variant="tile"
-              tone={docMetrics.approved > 0 ? "brand" : "neutral"}
-              active={docTab === "approved"}
-              onClick={() => applyDocMetricFilter("approved")}
-            />
-            <MetricCard
-              icon={<CheckCircle2 className="size-4" />}
-              label="Ghi sổ hôm nay"
-              value={String(docMetrics.postedToday)}
-              note={
-                docMetrics.postedToday > 0
-                  ? "Phiếu đã cập nhật tồn kho"
-                  : `${docs.filter((d) => d.status === "posted").length} phiếu đã ghi sổ trước đó`
-              }
-              variant="tile"
-              tone={docMetrics.postedToday > 0 ? "success" : "neutral"}
-              active={docTab === "posted" && postedTodayOnly}
-              onClick={() => applyDocMetricFilter("posted", true)}
-            />
-          </section>
-
-          {/* Toolbar */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="relative min-w-[240px] flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
-              <Input
-                value={docQuery}
-                onChange={(e) => setDocQuery(e.target.value)}
-                className="h-9 rounded-xs border-slate-200 bg-white pl-8.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
-                placeholder="Tìm số phiếu, lý do hoặc người yêu cầu…"
-              />
-            </div>
-            <SelectBox
-              label="Loại phiếu"
-              value={docTypeFilter}
-              onChange={(v) => setDocTypeFilter(v as "all" | DocType)}
-              className="w-36"
-              options={[
-                { value: "all", label: "Mọi loại" },
-                { value: "receipt", label: "Nhập kho" },
-                { value: "issue", label: "Xuất kho" },
-                { value: "adjustment", label: "Điều chỉnh" },
-              ]}
-            />
-            <SelectBox
-              label="Kho"
-              value={docWhFilter}
-              onChange={setDocWhFilter}
-              className="w-36"
-              options={[
-                { value: "all", label: "Tất cả kho" },
-                ...warehouseOptions.map((w) => ({ value: w, label: `Kho ${w}` })),
-              ]}
-            />
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50",
-                    (dateFrom || dateTo || postedTodayOnly) && "border-primary/40 bg-accent/40",
-                  )}
-                >
-                  <Calendar className="size-3.5 text-slate-500" />
-                  <span>
-                    {postedTodayOnly
-                      ? "Ghi sổ hôm nay"
-                      : dateFrom || dateTo
-                      ? `${dateFrom ? new Date(dateFrom).toLocaleDateString("vi-VN") : "…"} – ${dateTo ? new Date(dateTo).toLocaleDateString("vi-VN") : "…"}`
-                      : "Khoảng ngày"}
-                  </span>
-                  <ChevronDown className="size-3 text-slate-400" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="w-60 space-y-2.5 p-3 rounded-xs shadow-xl text-sm">
-                <label className="block font-semibold text-slate-700">
-                  <span>Từ ngày</span>
-                  <Input
-                    type="date"
-                    className="mt-1 h-8.5 rounded-xs text-sm font-semibold text-slate-900"
-                    value={dateFrom}
-                    onChange={(e) => {
-                      setPostedTodayOnly(false);
-                      setDateFrom(e.target.value);
-                    }}
-                  />
-                </label>
-                <label className="block font-semibold text-slate-700">
-                  <span>Đến ngày</span>
-                  <Input
-                    type="date"
-                    className="mt-1 h-8.5 rounded-xs text-sm font-semibold text-slate-900"
-                    value={dateTo}
-                    onChange={(e) => {
-                      setPostedTodayOnly(false);
-                      setDateTo(e.target.value);
-                    }}
-                  />
-                </label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-sm font-semibold rounded-xs w-full text-slate-500 hover:text-slate-800"
-                  onClick={() => {
-                    setDateFrom("");
-                    setDateTo("");
-                    setPostedTodayOnly(false);
-                  }}
-                >
-                  Xóa khoảng ngày
-                </Button>
-              </PopoverContent>
-            </Popover>
-
-            <div className="ml-auto inline-flex items-center gap-0.5 rounded-xs border border-slate-200/90 bg-slate-100/80 p-0.5 shadow-2xs">
-              {(
-                [
-                  ["all", "Tất cả"],
-                  ["draft", "Nháp"],
-                  ["submitted", "Chờ duyệt"],
-                  ["approved", "Đã duyệt"],
-                  ["posted", "Đã ghi sổ"],
-                  ["void", "Đã hủy"],
-                ] as const
-              ).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => {
-                    setPostedTodayOnly(false);
-                    setDocTab(id);
-                  }}
-                  className={cn(
-                    "rounded-xs px-3 py-1.5 text-sm font-semibold transition-all cursor-pointer",
-                    docTab === id
-                      ? "border border-slate-200/90 bg-white text-slate-950 shadow-2xs"
-                      : "border border-transparent text-slate-600 hover:text-slate-950 hover:bg-white/50",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {docSelected.size > 0 && (
-            <div className="flex flex-wrap items-center gap-2.5 rounded-xs border border-slate-200 bg-purple-50/40 px-3.5 py-2 text-sm">
-              <span className="font-semibold text-slate-950">Đã chọn {docSelected.size}</span>
-              <Button size="sm" variant="outline" className="h-8 gap-1 rounded-xs bg-white px-3 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50" onClick={exportDocs}>
-                <Download className="size-3.5 text-slate-600" />
-                <span>Xuất file</span>
-              </Button>
-              <Button size="sm" variant="ghost" className="h-8 px-2.5 text-sm font-semibold text-slate-600 hover:text-slate-900 rounded-xs" onClick={() => setDocSelected(new Set())}>
-                Bỏ chọn
-              </Button>
-            </div>
-          )}
-
-          {/* Table */}
-          <section className="admin-table-frame overflow-hidden rounded-xs border border-slate-200 bg-white">
-            <div className="overflow-x-auto">
-              <table className="admin-data-table w-full min-w-[1000px] text-left text-sm">
-                <thead className="border-b border-slate-200 bg-white text-xs font-medium text-slate-500">
-                  <tr>
-                    <th className="w-12 px-3 py-2.5">
-                      <input
-                        type="checkbox"
-                        aria-label="Chọn tất cả"
-                        className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
-                        checked={allDocPageSelected}
-                        ref={(el) => {
-                          if (el) el.indeterminate = someDocPageSelected && !allDocPageSelected;
-                        }}
-                        onChange={toggleDocPage}
+                      <SelectBox
+                        label="Trạng thái"
+                        value={stockTab}
+                        onChange={(v) => setStockTab(v as StockFilter)}
+                        className="w-44"
+                        options={[
+                          { value: "all", label: "Mọi trạng thái" },
+                          { value: "safe", label: `Còn hàng (${stockMetrics.safe})` },
+                          { value: "low", label: `Sắp hết (${stockMetrics.low})` },
+                          { value: "out", label: `Hết hàng (${stockMetrics.out})` },
+                        ]}
                       />
-                    </th>
-                    <th className="px-3 py-2.5 font-semibold text-slate-700">Số phiếu</th>
-                    <th className="px-3 py-2.5 font-semibold text-slate-700">Loại</th>
-                    <th className="px-3 py-2.5 font-semibold text-slate-700">Kho</th>
-                    <th className="px-3 py-2.5 font-semibold text-slate-700">Người yêu cầu</th>
-                    <th className="px-3 py-2.5 font-semibold text-slate-700">Người duyệt</th>
-                    <th className="px-3 py-2.5 text-center font-semibold text-slate-700">Số lượng</th>
-                    <th className="px-3 py-2.5 text-right font-semibold text-slate-700 whitespace-nowrap">Tổng tiền (₫)</th>
-                    <th className="px-3 py-2.5 font-semibold text-slate-700">Trạng thái</th>
-                    <th className="px-3 py-2.5 font-semibold text-slate-700">Ngày</th>
-                    <th className="w-24 whitespace-nowrap px-3 py-2.5 text-center font-semibold text-slate-700">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading && docs.length === 0 ? (
-                    <tr>
-                      <td colSpan={11} className="py-14 text-center text-sm text-slate-500">
-                        <div className="flex flex-col items-center gap-2">
-                          <Loader2 className="size-5 animate-spin text-[#6941c6]" />
-                          <span className="font-semibold text-slate-700">Đang tải danh sách phiếu kho…</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : filteredDocs.length === 0 ? (
-                    <tr>
-                      <td colSpan={11} className="py-14 text-center text-sm font-medium text-slate-500">
-                        Chưa có phiếu kho nào phù hợp.
-                      </td>
-                    </tr>
-                  ) : (
-                    pagedDocs.map((doc) => {
-                      const checked = docSelected.has(doc.id);
-                      const typeTone: Tone =
-                        doc.type === "receipt" ? "green" : doc.type === "issue" ? "red" : "violet";
-                      const statusTone: Tone =
-                        doc.status === "posted"
-                          ? "green"
-                          : doc.status === "submitted"
-                            ? "amber"
-                            : doc.status === "approved"
-                              ? "amber"
-                              : doc.status === "void"
-                                ? "red"
-                                : "grey";
-                      const dp = fmtDateParts(doc.created_at);
-                      return (
-                        <tr
-                          key={doc.id}
-                          onClick={() => openDocDetail(doc.id, doc.code)}
-                          className={cn(
-                            "cursor-pointer border-b border-slate-100 transition-colors last:border-b-0 hover:bg-slate-50/80",
-                            checked && "bg-purple-50/30",
-                          )}
+                      {categoryOptions.length > 0 && (
+                        <SelectBox
+                          label="Danh mục"
+                          value={catFilter}
+                          onChange={setCatFilter}
+                          className="w-40"
+                          options={[
+                            { value: "all", label: "Mọi danh mục" },
+                            ...categoryOptions.map((c) => ({ value: c, label: c })),
+                          ]}
+                        />
+                      )}
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50",
+                              onlyReserved && "border-primary/40 bg-accent/40",
+                            )}
+                          >
+                            <SlidersHorizontal className="size-3.5 text-slate-500" />
+                            <span>Bộ lọc khác</span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          align="start"
+                          className="w-60 p-3 rounded-xs shadow-xl text-sm"
                         >
-                          <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                          <label className="flex cursor-pointer items-center gap-2.5 font-semibold text-slate-800">
                             <input
                               type="checkbox"
-                              aria-label={`Chọn ${doc.code}`}
-                              className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
-                              checked={checked}
-                              onChange={() => toggleSet(setDocSelected, doc.id)}
+                              className="size-3.5 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
+                              checked={onlyReserved}
+                              onChange={(e) => setOnlyReserved(e.target.checked)}
                             />
-                          </td>
-                          <td className="px-3 py-2 tabular-nums text-sm font-semibold text-[#6941c6]">
-                            <a
-                              href={`/khohang/${doc.code}`}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openDocDetail(doc.id, doc.code);
-                              }}
-                              className="hover:underline"
-                            >
-                              {doc.code}
-                            </a>
-                          </td>
-                          <td className="px-3 py-2">
-                            <DotPill tone={typeTone}>
-                              {TYPE_LABEL[doc.type as DocType] ?? doc.type}
-                            </DotPill>
-                          </td>
-                          <td className="px-3 py-2 text-sm font-semibold text-slate-700">
-                            {doc.warehouse_code ?? warehouseLabel}
-                          </td>
-                          <td className="px-3 py-2">
-                            <p className="text-sm font-semibold text-slate-900">{doc.requested_by_name || "—"}</p>
-                            {doc.requested_by_role && (
-                              <p className="text-sm font-medium text-slate-500 mt-0.5">{doc.requested_by_role}</p>
-                            )}
-                          </td>
-                          <td className="px-3 py-2">
-                            <p className="text-sm font-semibold text-slate-900">{doc.approved_by_name || "—"}</p>
-                            {doc.approved_by_role && (
-                              <p className="text-sm font-medium text-slate-500 mt-0.5">{doc.approved_by_role}</p>
-                            )}
-                          </td>
-                          <td className="px-3 py-2 text-center tabular-nums font-semibold text-slate-950 text-sm">
-                            {Number(doc.total_qty) > 0 ? Number(doc.total_qty).toLocaleString("vi-VN") : "—"}
-                          </td>
-                          <td className="px-3 py-2 text-right tabular-nums font-semibold text-slate-950 text-sm tabular-nums whitespace-nowrap">
-                            {doc.total_amount_vnd ? fmtVND(doc.total_amount_vnd) : "—"}
-                          </td>
-                          <td className="px-3 py-2">
-                            <DotPill tone={statusTone}>{STATUS_LABEL[doc.status] ?? doc.status}</DotPill>
-                          </td>
-                          <td className="px-3 py-2">
-                            <p className="text-sm font-semibold text-slate-900">{dp.date}</p>
-                            <p className="text-sm font-medium text-slate-500 tabular-nums mt-0.5">{dp.time}</p>
-                          </td>
-                          <td className="px-3 py-2 text-center" onClick={(e) => e.stopPropagation()}>
-                            <Popover
-                              open={docMenu === doc.id}
-                              onOpenChange={(o) => setDocMenu(o ? doc.id : null)}
-                            >
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="size-7 rounded-xs text-slate-500 hover:text-slate-800"
-                                  aria-label={`Thao tác với ${doc.code}`}
-                                >
-                                  <MoreHorizontal className="size-3.5" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent align="end" className="w-44 p-1 rounded-xs shadow-xl">
-                                <MenuItem
-                                  icon={<Eye className="size-3.5" />}
-                                  label="Xem chi tiết"
-                                  onClick={() => {
-                                    setDocMenu(null);
-                                    openDocDetail(doc.id, doc.code);
-                                  }}
-                                />
-                                {canDeleteDocument(doc.type, doc.status) && <MenuItem
-                                  icon={<Trash2 className="size-3.5" />}
-                                  label="Xóa phiếu"
-                                  destructive
-                                  onClick={() => {
-                                    setDocMenu(null);
-                                    void handleDeleteDoc(doc.id);
-                                  }}
-                                />}
-                              </PopoverContent>
-                            </Popover>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-          <AdminPagination
-            count={filteredDocs.length}
-            page={docPage}
-            pageSize={docPageSize}
-            noun="phiếu kho"
-            onPageChange={setDocPage}
-            onPageSizeChange={(size) => {
-              setDocPageSize(size);
-              setDocPage(1);
-            }}
-          />
-        </>
-      )}
+                            <span>Chỉ SKU đang giữ chỗ</span>
+                          </label>
+                        </PopoverContent>
+                      </Popover>
 
-      </div>
-      </AnimatedPanel>
+                      <div className="ml-auto flex items-center gap-2.5">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50"
+                            >
+                              <LayoutGrid className="size-3.5 text-slate-500" />
+                              <span>Cột hiển thị</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            align="end"
+                            className="w-52 p-2 rounded-xs shadow-xl text-sm"
+                          >
+                            {STOCK_COLS.map((c) => (
+                              <label
+                                key={c.key}
+                                className="flex cursor-pointer items-center gap-2.5 rounded-xs px-2.5 py-1.5 font-semibold text-slate-800 hover:bg-slate-100"
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="size-3.5 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
+                                  checked={visibleCols.has(c.key)}
+                                  onChange={() =>
+                                    setVisibleCols((prev) => {
+                                      const next = new Set(prev);
+                                      if (next.has(c.key)) next.delete(c.key);
+                                      else next.add(c.key);
+                                      return next;
+                                    })
+                                  }
+                                />
+                                <span>{c.label}</span>
+                              </label>
+                            ))}
+                          </PopoverContent>
+                        </Popover>
+                        <SelectBox
+                          label="Sắp xếp"
+                          value={stockSort}
+                          onChange={(v) => setStockSort(v as typeof stockSort)}
+                          className="w-48"
+                          options={[
+                            { value: "available_asc", label: "Sắp xếp: Tồn thấp nhất" },
+                            { value: "available_desc", label: "Sắp xếp: Tồn cao nhất" },
+                            { value: "name", label: "Sắp xếp: Tên A→Z" },
+                            { value: "sku", label: "Sắp xếp: SKU" },
+                          ]}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Bulk bar */}
+                    {stockSelected.size > 0 && (
+                      <div className="flex flex-wrap items-center gap-2.5 rounded-xs border border-slate-200 bg-[#EAF0F6]/40 px-3.5 py-2 text-sm">
+                        <span className="font-semibold text-slate-950">
+                          Đã chọn {stockSelected.size}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 gap-1 rounded-xs bg-white px-3 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50"
+                          onClick={() =>
+                            createSlipForRows(
+                              filteredStock.filter((r) => stockSelected.has(r.variant_id)),
+                              "receipt",
+                            )
+                          }
+                        >
+                          <PackagePlus className="size-3.5 text-slate-600" />
+                          <span>Lập phiếu nhập</span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 gap-1 rounded-xs bg-white px-3 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50"
+                          onClick={() =>
+                            createSlipForRows(
+                              filteredStock.filter((r) => stockSelected.has(r.variant_id)),
+                              "issue",
+                            )
+                          }
+                        >
+                          <PackageMinus className="size-3.5 text-slate-600" />
+                          <span>Lập phiếu xuất</span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 px-2.5 text-sm font-semibold text-slate-600 hover:text-slate-900 rounded-xs"
+                          onClick={() => setStockSelected(new Set())}
+                        >
+                          Bỏ chọn
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Table */}
+                    <section className="admin-table-frame overflow-hidden rounded-xs border border-slate-200 bg-white">
+                      <div className="overflow-x-auto">
+                        <table className="admin-data-table w-full min-w-[1000px] text-left text-sm">
+                          <thead className="border-b border-slate-200 bg-white text-xs font-medium text-slate-500">
+                            <tr>
+                              <th className="w-12 px-3 py-2.5">
+                                <input
+                                  type="checkbox"
+                                  aria-label="Chọn tất cả"
+                                  className="size-3.5 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
+                                  checked={allStockPageSelected}
+                                  ref={(el) => {
+                                    if (el)
+                                      el.indeterminate =
+                                        someStockPageSelected && !allStockPageSelected;
+                                  }}
+                                  onChange={toggleStockPage}
+                                />
+                              </th>
+                              <th className="px-3 py-2.5 font-semibold text-slate-700">SKU</th>
+                              {visibleCols.has("product") && (
+                                <th className="px-3 py-2.5 font-semibold text-slate-700">
+                                  Sản phẩm
+                                </th>
+                              )}
+                              {visibleCols.has("variant") && (
+                                <th className="px-3 py-2.5 font-semibold text-slate-700">
+                                  Phân loại
+                                </th>
+                              )}
+                              {visibleCols.has("warehouse") && (
+                                <th className="px-3 py-2.5 font-semibold text-slate-700">Kho</th>
+                              )}
+                              {visibleCols.has("available") && (
+                                <th className="px-3 py-2.5 text-center font-semibold text-slate-700">
+                                  Khả dụng
+                                </th>
+                              )}
+                              {visibleCols.has("reserved") && (
+                                <th className="px-3 py-2.5 text-center font-semibold text-slate-700">
+                                  Giữ chỗ
+                                </th>
+                              )}
+                              {visibleCols.has("incoming") && (
+                                <th className="px-3 py-2.5 text-center font-semibold text-slate-700">
+                                  Đang về
+                                </th>
+                              )}
+                              {visibleCols.has("reorder") && (
+                                <th className="px-3 py-2.5 text-center font-semibold text-slate-700">
+                                  Mức đặt lại
+                                </th>
+                              )}
+                              {visibleCols.has("status") && (
+                                <th className="px-3 py-2.5 font-semibold text-slate-700">
+                                  Trạng thái
+                                </th>
+                              )}
+                              <th className="w-24 whitespace-nowrap px-3 py-2.5 text-center font-semibold text-slate-700">
+                                Thao tác
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {loading && items.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={11}
+                                  className="py-14 text-center text-sm text-slate-500"
+                                >
+                                  <div className="flex flex-col items-center gap-2">
+                                    <Loader2 className="size-5 animate-spin text-[#243B53]" />
+                                    <span className="font-semibold text-slate-700">
+                                      Đang tải số liệu tồn kho…
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            ) : filteredStock.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={11}
+                                  className="py-14 text-center text-sm font-medium text-slate-500"
+                                >
+                                  Không tìm thấy mặt hàng nào phù hợp với bộ lọc.
+                                </td>
+                              </tr>
+                            ) : (
+                              pagedStock.map((row) => {
+                                const imgUrl = resolveImageUrl(row.image_url);
+                                const st = stockStatus(row);
+                                const checked = stockSelected.has(row.variant_id);
+                                return (
+                                  <tr
+                                    key={row.variant_id}
+                                    className={cn(
+                                      "border-b border-slate-100 transition-colors last:border-b-0 hover:bg-slate-50/80",
+                                      checked && "bg-[#EAF0F6]/30",
+                                    )}
+                                  >
+                                    <td className="px-3 py-2">
+                                      <input
+                                        type="checkbox"
+                                        aria-label={`Chọn ${row.sku}`}
+                                        className="size-3.5 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
+                                        checked={checked}
+                                        onChange={() => toggleSet(setStockSelected, row.variant_id)}
+                                      />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <div className="flex items-center gap-2.5">
+                                        <div className="relative size-9 shrink-0 overflow-hidden rounded-xs border border-slate-200 bg-slate-100">
+                                          {imgUrl ? (
+                                            <img
+                                              src={imgUrl}
+                                              alt={row.product_name}
+                                              className="size-full object-cover"
+                                              onError={(e) => {
+                                                (e.target as HTMLElement).style.display = "none";
+                                              }}
+                                            />
+                                          ) : (
+                                            <div className="flex size-full items-center justify-center text-slate-400">
+                                              <Package className="size-3.5 stroke-[1.5]" />
+                                            </div>
+                                          )}
+                                        </div>
+                                        <span className="max-w-[130px] break-all tabular-nums text-sm font-semibold leading-tight text-slate-950">
+                                          {row.sku}
+                                        </span>
+                                      </div>
+                                    </td>
+                                    {visibleCols.has("product") && (
+                                      <td className="px-3 py-2">
+                                        <p className="max-w-[200px] truncate text-sm font-semibold text-slate-950">
+                                          {row.product_name}
+                                        </p>
+                                        {row.category_name && (
+                                          <p className="text-sm font-medium text-slate-500 mt-0.5">
+                                            {row.category_name}
+                                          </p>
+                                        )}
+                                      </td>
+                                    )}
+                                    {visibleCols.has("variant") && (
+                                      <td className="px-3 py-2 text-sm font-semibold text-slate-800">
+                                        {row.size_label} / {row.color_name}
+                                      </td>
+                                    )}
+                                    {visibleCols.has("warehouse") && (
+                                      <td className="px-3 py-2 text-sm font-semibold text-slate-700">
+                                        {row.warehouse_code ?? warehouseLabel}
+                                      </td>
+                                    )}
+                                    {visibleCols.has("available") && (
+                                      <td className="px-3 py-2 text-center tabular-nums font-semibold text-slate-950 text-sm">
+                                        {row.available}
+                                      </td>
+                                    )}
+                                    {visibleCols.has("reserved") && (
+                                      <td className="px-3 py-2 text-center tabular-nums text-sm font-semibold text-slate-700">
+                                        {row.reserved ?? 0}
+                                      </td>
+                                    )}
+                                    {visibleCols.has("incoming") && (
+                                      <td className="px-3 py-2 text-center tabular-nums text-sm font-semibold text-slate-700">
+                                        {row.incoming ?? "—"}
+                                      </td>
+                                    )}
+                                    {visibleCols.has("reorder") && (
+                                      <td className="px-3 py-2 text-center tabular-nums text-sm font-semibold text-slate-700">
+                                        {row.reorder_point}
+                                      </td>
+                                    )}
+                                    {visibleCols.has("status") && (
+                                      <td className="px-3 py-2">
+                                        <DotPill tone={st.tone}>{st.label}</DotPill>
+                                      </td>
+                                    )}
+                                    <td className="px-3 py-2 text-center">
+                                      <Popover
+                                        open={rowMenu === row.variant_id}
+                                        onOpenChange={(o) => setRowMenu(o ? row.variant_id : null)}
+                                      >
+                                        <PopoverTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="size-7 rounded-xs text-slate-500 hover:text-slate-800"
+                                            aria-label={`Thao tác với ${row.sku}`}
+                                          >
+                                            <MoreHorizontal className="size-3.5" />
+                                          </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                          align="end"
+                                          className="w-48 p-1 rounded-xs shadow-xl"
+                                        >
+                                          <MenuItem
+                                            icon={<PackagePlus className="size-3.5" />}
+                                            label="Lập phiếu nhập"
+                                            onClick={() => {
+                                              setRowMenu(null);
+                                              createSlipForRows([row], "receipt");
+                                            }}
+                                          />
+                                          <MenuItem
+                                            icon={<PackageMinus className="size-3.5" />}
+                                            label="Lập phiếu xuất"
+                                            onClick={() => {
+                                              setRowMenu(null);
+                                              createSlipForRows([row], "issue");
+                                            }}
+                                          />
+                                          <MenuItem
+                                            icon={<Copy className="size-3.5" />}
+                                            label="Sao chép SKU"
+                                            onClick={() => {
+                                              setRowMenu(null);
+                                              copyText("mã SKU", row.sku);
+                                            }}
+                                          />
+                                        </PopoverContent>
+                                      </Popover>
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                    <AdminPagination
+                      count={filteredStock.length}
+                      page={stockPage}
+                      pageSize={stockPageSize}
+                      noun="SKU tồn kho"
+                      onPageChange={setStockPage}
+                      onPageSizeChange={(size) => {
+                        setStockPageSize(size);
+                        setStockPage(1);
+                      }}
+                    />
+                  </div>
+
+                  <aside className="min-w-0 border-t border-slate-200 pt-4 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <h2 className="text-sm font-semibold text-slate-900">Cần xử lý</h2>
+                      <span className="text-xs tabular-nums text-slate-500">
+                        {stockMetrics.low + stockMetrics.out} SKU
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStockTab("low");
+                        setStockQuery("");
+                        setWhFilter("all");
+                        setCatFilter("all");
+                        setOnlyReserved(false);
+                      }}
+                      className="mt-3 flex w-full items-center justify-between gap-3 border-t border-slate-200 py-3 text-left hover:bg-slate-50"
+                    >
+                      <span>
+                        <strong className="block text-sm font-semibold text-slate-900">
+                          Sắp hết hàng
+                        </strong>
+                        <span className="mt-0.5 block text-xs text-slate-500">
+                          Dưới mức đặt lại
+                        </span>
+                      </span>
+                      <span className="tabular-nums text-base font-semibold text-amber-700">
+                        {stockMetrics.low}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStockTab("out");
+                        setStockQuery("");
+                        setWhFilter("all");
+                        setCatFilter("all");
+                        setOnlyReserved(false);
+                      }}
+                      className="flex w-full items-center justify-between gap-3 border-t border-slate-200 py-3 text-left hover:bg-slate-50"
+                    >
+                      <span>
+                        <strong className="block text-sm font-semibold text-slate-900">
+                          Hết hàng
+                        </strong>
+                        <span className="mt-0.5 block text-xs text-slate-500">
+                          Cần kiểm tra tồn
+                        </span>
+                      </span>
+                      <span className="tabular-nums text-base font-semibold text-rose-700">
+                        {stockMetrics.out}
+                      </span>
+                    </button>
+                    <h3 className="mb-1 mt-5 text-sm font-semibold text-slate-900">
+                      SKU cần chú ý
+                    </h3>
+                    {[...items]
+                      .filter((row) => isLow(row) || isOut(row))
+                      .sort((a, b) => a.available - b.available)
+                      .slice(0, 4)
+                      .map((row) => (
+                        <button
+                          key={row.variant_id}
+                          type="button"
+                          onClick={() => {
+                            setStockTab("all");
+                            setWhFilter("all");
+                            setCatFilter("all");
+                            setOnlyReserved(false);
+                            setStockQuery(row.sku);
+                          }}
+                          className="block w-full border-t border-slate-200 py-2.5 text-left hover:bg-slate-50"
+                        >
+                          <span className="block truncate text-xs font-semibold text-slate-800">
+                            {row.sku}
+                          </span>
+                          <span className="mt-0.5 flex items-center justify-between gap-2 text-xs text-slate-500">
+                            <span className="truncate">{row.product_name}</span>
+                            <span className="shrink-0 tabular-nums font-medium text-slate-700">
+                              {row.available} còn
+                            </span>
+                          </span>
+                        </button>
+                      ))}
+                    {stockMetrics.low + stockMetrics.out === 0 && (
+                      <p className="mt-3 border-t border-slate-200 pt-3 text-xs text-slate-500">
+                        Không có SKU nào dưới mức đặt lại.
+                      </p>
+                    )}
+                  </aside>
+                </div>
+              </>
+            )}
+
+            {/* ── VIEW 2: PHIẾU KHO ───────────────────────────────────────────────── */}
+            {view === "docs" && (
+              <>
+                <section
+                  aria-label="Lọc nhanh phiếu kho"
+                  className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+                >
+                  <MetricCard
+                    icon={<FileText className="size-4" />}
+                    label="Phiếu nháp"
+                    value={String(docMetrics.draft)}
+                    note={`${docs.length} phiếu tổng cộng`}
+                    variant="tile"
+                    tone="neutral"
+                    active={docTab === "draft"}
+                    onClick={() => applyDocMetricFilter("draft")}
+                  />
+                  <MetricCard
+                    icon={<Clock className="size-4" />}
+                    label="Chờ duyệt"
+                    value={String(docMetrics.submitted)}
+                    note="Đang chờ xác nhận"
+                    variant="tile"
+                    tone={docMetrics.submitted > 0 ? "warning" : "neutral"}
+                    active={docTab === "submitted"}
+                    onClick={() => applyDocMetricFilter("submitted")}
+                  />
+                  <MetricCard
+                    icon={<Package className="size-4" />}
+                    label="Chờ ghi sổ"
+                    value={String(docMetrics.approved)}
+                    note="Cần ghi sổ để cập nhật tồn"
+                    variant="tile"
+                    tone={docMetrics.approved > 0 ? "brand" : "neutral"}
+                    active={docTab === "approved"}
+                    onClick={() => applyDocMetricFilter("approved")}
+                  />
+                  <MetricCard
+                    icon={<CheckCircle2 className="size-4" />}
+                    label="Ghi sổ hôm nay"
+                    value={String(docMetrics.postedToday)}
+                    note={
+                      docMetrics.postedToday > 0
+                        ? "Phiếu đã cập nhật tồn kho"
+                        : `${docs.filter((d) => d.status === "posted").length} phiếu đã ghi sổ trước đó`
+                    }
+                    variant="tile"
+                    tone={docMetrics.postedToday > 0 ? "success" : "neutral"}
+                    active={docTab === "posted" && postedTodayOnly}
+                    onClick={() => applyDocMetricFilter("posted", true)}
+                  />
+                </section>
+
+                {/* Toolbar */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="relative min-w-[240px] flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
+                    <Input
+                      value={docQuery}
+                      onChange={(e) => setDocQuery(e.target.value)}
+                      className="h-9 rounded-xs border-slate-200 bg-white pl-8.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
+                      placeholder="Tìm số phiếu, lý do hoặc người yêu cầu…"
+                    />
+                  </div>
+                  <SelectBox
+                    label="Loại phiếu"
+                    value={docTypeFilter}
+                    onChange={(v) => setDocTypeFilter(v as "all" | DocType)}
+                    className="w-36"
+                    options={[
+                      { value: "all", label: "Mọi loại" },
+                      { value: "receipt", label: "Nhập kho" },
+                      { value: "issue", label: "Xuất kho" },
+                      { value: "adjustment", label: "Điều chỉnh" },
+                    ]}
+                  />
+                  <SelectBox
+                    label="Kho"
+                    value={docWhFilter}
+                    onChange={setDocWhFilter}
+                    className="w-36"
+                    options={[
+                      { value: "all", label: "Tất cả kho" },
+                      ...warehouseOptions.map((w) => ({ value: w, label: `Kho ${w}` })),
+                    ]}
+                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50",
+                          (dateFrom || dateTo || postedTodayOnly) &&
+                            "border-primary/40 bg-accent/40",
+                        )}
+                      >
+                        <Calendar className="size-3.5 text-slate-500" />
+                        <span>
+                          {postedTodayOnly
+                            ? "Ghi sổ hôm nay"
+                            : dateFrom || dateTo
+                              ? `${dateFrom ? new Date(dateFrom).toLocaleDateString("vi-VN") : "…"} – ${dateTo ? new Date(dateTo).toLocaleDateString("vi-VN") : "…"}`
+                              : "Khoảng ngày"}
+                        </span>
+                        <ChevronDown className="size-3 text-slate-400" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="start"
+                      className="w-60 space-y-2.5 p-3 rounded-xs shadow-xl text-sm"
+                    >
+                      <label className="block font-semibold text-slate-700">
+                        <span>Từ ngày</span>
+                        <Input
+                          type="date"
+                          className="mt-1 h-8.5 rounded-xs text-sm font-semibold text-slate-900"
+                          value={dateFrom}
+                          onChange={(e) => {
+                            setPostedTodayOnly(false);
+                            setDateFrom(e.target.value);
+                          }}
+                        />
+                      </label>
+                      <label className="block font-semibold text-slate-700">
+                        <span>Đến ngày</span>
+                        <Input
+                          type="date"
+                          className="mt-1 h-8.5 rounded-xs text-sm font-semibold text-slate-900"
+                          value={dateTo}
+                          onChange={(e) => {
+                            setPostedTodayOnly(false);
+                            setDateTo(e.target.value);
+                          }}
+                        />
+                      </label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-sm font-semibold rounded-xs w-full text-slate-500 hover:text-slate-800"
+                        onClick={() => {
+                          setDateFrom("");
+                          setDateTo("");
+                          setPostedTodayOnly(false);
+                        }}
+                      >
+                        Xóa khoảng ngày
+                      </Button>
+                    </PopoverContent>
+                  </Popover>
+
+                  <div className="ml-auto inline-flex items-center gap-0.5 rounded-xs border border-slate-200/90 bg-slate-100/80 p-0.5 shadow-2xs">
+                    {(
+                      [
+                        ["all", "Tất cả"],
+                        ["draft", "Nháp"],
+                        ["submitted", "Chờ duyệt"],
+                        ["approved", "Đã duyệt"],
+                        ["posted", "Đã ghi sổ"],
+                        ["void", "Đã hủy"],
+                      ] as const
+                    ).map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => {
+                          setPostedTodayOnly(false);
+                          setDocTab(id);
+                        }}
+                        className={cn(
+                          "rounded-xs px-3 py-1.5 text-sm font-semibold transition-all cursor-pointer",
+                          docTab === id
+                            ? "border border-slate-200/90 bg-white text-slate-950 shadow-2xs"
+                            : "border border-transparent text-slate-600 hover:text-slate-950 hover:bg-white/50",
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {docSelected.size > 0 && (
+                  <div className="flex flex-wrap items-center gap-2.5 rounded-xs border border-slate-200 bg-[#EAF0F6]/40 px-3.5 py-2 text-sm">
+                    <span className="font-semibold text-slate-950">Đã chọn {docSelected.size}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 gap-1 rounded-xs bg-white px-3 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50"
+                      onClick={exportDocs}
+                    >
+                      <Download className="size-3.5 text-slate-600" />
+                      <span>Xuất file</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2.5 text-sm font-semibold text-slate-600 hover:text-slate-900 rounded-xs"
+                      onClick={() => setDocSelected(new Set())}
+                    >
+                      Bỏ chọn
+                    </Button>
+                  </div>
+                )}
+
+                {/* Table */}
+                <section className="admin-table-frame overflow-hidden rounded-xs border border-slate-200 bg-white">
+                  <div className="overflow-x-auto">
+                    <table className="admin-data-table w-full min-w-[1000px] text-left text-sm">
+                      <thead className="border-b border-slate-200 bg-white text-xs font-medium text-slate-500">
+                        <tr>
+                          <th className="w-12 px-3 py-2.5">
+                            <input
+                              type="checkbox"
+                              aria-label="Chọn tất cả"
+                              className="size-3.5 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
+                              checked={allDocPageSelected}
+                              ref={(el) => {
+                                if (el)
+                                  el.indeterminate = someDocPageSelected && !allDocPageSelected;
+                              }}
+                              onChange={toggleDocPage}
+                            />
+                          </th>
+                          <th className="px-3 py-2.5 font-semibold text-slate-700">Số phiếu</th>
+                          <th className="px-3 py-2.5 font-semibold text-slate-700">Loại</th>
+                          <th className="px-3 py-2.5 font-semibold text-slate-700">Kho</th>
+                          <th className="px-3 py-2.5 font-semibold text-slate-700">
+                            Người yêu cầu
+                          </th>
+                          <th className="px-3 py-2.5 font-semibold text-slate-700">Người duyệt</th>
+                          <th className="px-3 py-2.5 text-center font-semibold text-slate-700">
+                            Số lượng
+                          </th>
+                          <th className="px-3 py-2.5 text-right font-semibold text-slate-700 whitespace-nowrap">
+                            Tổng tiền (₫)
+                          </th>
+                          <th className="px-3 py-2.5 font-semibold text-slate-700">Trạng thái</th>
+                          <th className="px-3 py-2.5 font-semibold text-slate-700">Ngày</th>
+                          <th className="w-24 whitespace-nowrap px-3 py-2.5 text-center font-semibold text-slate-700">
+                            Thao tác
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {loading && docs.length === 0 ? (
+                          <tr>
+                            <td colSpan={11} className="py-14 text-center text-sm text-slate-500">
+                              <div className="flex flex-col items-center gap-2">
+                                <Loader2 className="size-5 animate-spin text-[#243B53]" />
+                                <span className="font-semibold text-slate-700">
+                                  Đang tải danh sách phiếu kho…
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : filteredDocs.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={11}
+                              className="py-14 text-center text-sm font-medium text-slate-500"
+                            >
+                              Chưa có phiếu kho nào phù hợp.
+                            </td>
+                          </tr>
+                        ) : (
+                          pagedDocs.map((doc) => {
+                            const checked = docSelected.has(doc.id);
+                            const typeTone: Tone =
+                              doc.type === "receipt"
+                                ? "green"
+                                : doc.type === "issue"
+                                  ? "red"
+                                  : "violet";
+                            const statusTone: Tone =
+                              doc.status === "posted"
+                                ? "green"
+                                : doc.status === "submitted"
+                                  ? "amber"
+                                  : doc.status === "approved"
+                                    ? "amber"
+                                    : doc.status === "void"
+                                      ? "red"
+                                      : "grey";
+                            const dp = fmtDateParts(doc.created_at);
+                            return (
+                              <tr
+                                key={doc.id}
+                                onClick={() => openDocDetail(doc.id, doc.code)}
+                                className={cn(
+                                  "cursor-pointer border-b border-slate-100 transition-colors last:border-b-0 hover:bg-slate-50/80",
+                                  checked && "bg-[#EAF0F6]/30",
+                                )}
+                              >
+                                <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="checkbox"
+                                    aria-label={`Chọn ${doc.code}`}
+                                    className="size-3.5 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
+                                    checked={checked}
+                                    onChange={() => toggleSet(setDocSelected, doc.id)}
+                                  />
+                                </td>
+                                <td className="px-3 py-2 tabular-nums text-sm font-semibold text-[#243B53]">
+                                  <a
+                                    href={`/khohang/${doc.code}`}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      openDocDetail(doc.id, doc.code);
+                                    }}
+                                    className="hover:underline"
+                                  >
+                                    {doc.code}
+                                  </a>
+                                </td>
+                                <td className="px-3 py-2">
+                                  <DotPill tone={typeTone}>
+                                    {TYPE_LABEL[doc.type as DocType] ?? doc.type}
+                                  </DotPill>
+                                </td>
+                                <td className="px-3 py-2 text-sm font-semibold text-slate-700">
+                                  {doc.warehouse_code ?? warehouseLabel}
+                                </td>
+                                <td className="px-3 py-2">
+                                  <p className="text-sm font-semibold text-slate-900">
+                                    {doc.requested_by_name || "—"}
+                                  </p>
+                                  {doc.requested_by_role && (
+                                    <p className="text-sm font-medium text-slate-500 mt-0.5">
+                                      {doc.requested_by_role}
+                                    </p>
+                                  )}
+                                </td>
+                                <td className="px-3 py-2">
+                                  <p className="text-sm font-semibold text-slate-900">
+                                    {doc.approved_by_name || "—"}
+                                  </p>
+                                  {doc.approved_by_role && (
+                                    <p className="text-sm font-medium text-slate-500 mt-0.5">
+                                      {doc.approved_by_role}
+                                    </p>
+                                  )}
+                                </td>
+                                <td className="px-3 py-2 text-center tabular-nums font-semibold text-slate-950 text-sm">
+                                  {Number(doc.total_qty) > 0
+                                    ? Number(doc.total_qty).toLocaleString("vi-VN")
+                                    : "—"}
+                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums font-semibold text-slate-950 text-sm tabular-nums whitespace-nowrap">
+                                  {doc.total_amount_vnd ? fmtVND(doc.total_amount_vnd) : "—"}
+                                </td>
+                                <td className="px-3 py-2">
+                                  <DotPill tone={statusTone}>
+                                    {STATUS_LABEL[doc.status] ?? doc.status}
+                                  </DotPill>
+                                </td>
+                                <td className="px-3 py-2">
+                                  <p className="text-sm font-semibold text-slate-900">{dp.date}</p>
+                                  <p className="text-sm font-medium text-slate-500 tabular-nums mt-0.5">
+                                    {dp.time}
+                                  </p>
+                                </td>
+                                <td
+                                  className="px-3 py-2 text-center"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Popover
+                                    open={docMenu === doc.id}
+                                    onOpenChange={(o) => setDocMenu(o ? doc.id : null)}
+                                  >
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="size-7 rounded-xs text-slate-500 hover:text-slate-800"
+                                        aria-label={`Thao tác với ${doc.code}`}
+                                      >
+                                        <MoreHorizontal className="size-3.5" />
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                      align="end"
+                                      className="w-44 p-1 rounded-xs shadow-xl"
+                                    >
+                                      <MenuItem
+                                        icon={<Eye className="size-3.5" />}
+                                        label="Xem chi tiết"
+                                        onClick={() => {
+                                          setDocMenu(null);
+                                          openDocDetail(doc.id, doc.code);
+                                        }}
+                                      />
+                                      {canDeleteDocument(doc.type, doc.status) && (
+                                        <MenuItem
+                                          icon={<Trash2 className="size-3.5" />}
+                                          label="Xóa phiếu"
+                                          destructive
+                                          onClick={() => {
+                                            setDocMenu(null);
+                                            void handleDeleteDoc(doc.id);
+                                          }}
+                                        />
+                                      )}
+                                    </PopoverContent>
+                                  </Popover>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+                <AdminPagination
+                  count={filteredDocs.length}
+                  page={docPage}
+                  pageSize={docPageSize}
+                  noun="phiếu kho"
+                  onPageChange={setDocPage}
+                  onPageSizeChange={(size) => {
+                    setDocPageSize(size);
+                    setDocPage(1);
+                  }}
+                />
+              </>
+            )}
+          </div>
+        </AnimatedPanel>
       )}
 
       {/* ── VIEW 3: XEM CHI TIẾT PHIẾU KHO (DOC DETAIL) ────────────────────── */}
@@ -2514,7 +2795,7 @@ export function InventoryManager({
           {loadingDoc || !docDetail ? (
             <div className="flex min-h-[360px] items-center justify-center rounded-xs border border-border/80 bg-card p-12">
               <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="size-6 animate-spin text-[#6941c6]" />
+                <Loader2 className="size-6 animate-spin text-[#243B53]" />
                 <p>Đang tải chi tiết phiếu kho…</p>
               </div>
             </div>
@@ -2609,7 +2890,7 @@ export function InventoryManager({
                     <Button
                       disabled={postingDoc}
                       onClick={() => handlePostDoc(docDetail.id)}
-                      className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
+                      className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#1B2E42] transition-colors cursor-pointer"
                     >
                       {postingDoc ? (
                         <Loader2 className="size-3.5 animate-spin" />
@@ -2620,22 +2901,24 @@ export function InventoryManager({
                     </Button>
                   )}
 
-                  {canDeleteDocument(docDetail.type, docDetail.status) && <Button
-                    variant="outline"
-                    onClick={() => handleDeleteDoc(docDetail.id)}
-                    className="h-9 gap-1.5 rounded-xs border-destructive/30 bg-white px-3.5 text-sm font-semibold text-destructive hover:bg-destructive/10 shadow-2xs transition-colors cursor-pointer"
-                    title="Xóa phiếu kho"
-                  >
-                    <Trash2 className="size-3.5" />
-                    <span>Xóa phiếu</span>
-                  </Button>}
+                  {canDeleteDocument(docDetail.type, docDetail.status) && (
+                    <Button
+                      variant="outline"
+                      onClick={() => handleDeleteDoc(docDetail.id)}
+                      className="h-9 gap-1.5 rounded-xs border-destructive/30 bg-white px-3.5 text-sm font-semibold text-destructive hover:bg-destructive/10 shadow-2xs transition-colors cursor-pointer"
+                      title="Xóa phiếu kho"
+                    >
+                      <Trash2 className="size-3.5" />
+                      <span>Xóa phiếu</span>
+                    </Button>
+                  )}
                 </div>
               </div>
 
               {/* Metric Overview Strip */}
               <div className="grid grid-cols-2 divide-x divide-y divide-slate-200 overflow-hidden rounded-xs border border-slate-200 bg-white sm:grid-cols-4 sm:divide-y-0">
                 <MetricCard
-                  icon={<FileText className="size-4 text-[#6941c6]" />}
+                  icon={<FileText className="size-4 text-[#243B53]" />}
                   label="Loại chứng từ"
                   value={TYPE_LABEL[docDetail.type as DocType] ?? docDetail.type}
                   note={docDetail.reason || "Vận hành kho thường kỳ"}
@@ -2692,9 +2975,7 @@ export function InventoryManager({
                     <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/50 p-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h2 className="text-slate-950 admin-section-title">
-                            Danh sách hàng hóa
-                          </h2>
+                          <h2 className="text-slate-950 admin-section-title">Danh sách hàng hóa</h2>
                           <span className="rounded-xs bg-slate-100 border border-slate-200 px-2 py-0.5 tabular-nums text-sm font-semibold text-slate-700">
                             {docDetail.lines.length} sản phẩm
                           </span>
@@ -2704,7 +2985,8 @@ export function InventoryManager({
                         </p>
                       </div>
                       <span className="tabular-nums text-sm font-semibold text-slate-800 bg-white border border-slate-200 rounded-xs px-2.5 py-1 shadow-2xs">
-                        Tổng {docDetail.lines.reduce((s, l) => s + l.qty, 0).toLocaleString("vi-VN")} cái
+                        Tổng{" "}
+                        {docDetail.lines.reduce((s, l) => s + l.qty, 0).toLocaleString("vi-VN")} cái
                       </span>
                     </div>
 
@@ -2720,7 +3002,7 @@ export function InventoryManager({
                             setDocLineQuery(e.target.value);
                             setDocLinePage(1);
                           }}
-                          className="h-8 pl-8 pr-7 text-sm font-medium rounded-xs border-slate-200 bg-white focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                          className="h-8 pl-8 pr-7 text-sm font-medium rounded-xs border-slate-200 bg-white focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                         />
                         {docLineQuery && (
                           <button
@@ -2735,28 +3017,42 @@ export function InventoryManager({
                           </button>
                         )}
                       </div>
-
                     </div>
 
                     <div className="overflow-x-auto">
                       <table className="admin-data-table w-full min-w-[980px] text-left text-sm p-2">
                         <thead className="border-b border-slate-200 bg-white text-xs font-medium text-slate-500">
                           <tr>
-                            <th className="py-2.5 pl-4 pr-3 font-semibold text-slate-700 min-w-[240px]">Sản phẩm</th>
-                            <th className="px-3 py-2.5 font-semibold text-slate-700 whitespace-nowrap">Phân loại</th>
-                            <th className="px-3 py-2.5 font-semibold text-slate-700 whitespace-nowrap">Mã SKU</th>
-                            <th className="px-3 py-2.5 text-center font-semibold text-slate-700 whitespace-nowrap">Chiều</th>
+                            <th className="py-2.5 pl-4 pr-3 font-semibold text-slate-700 min-w-[240px]">
+                              Sản phẩm
+                            </th>
+                            <th className="px-3 py-2.5 font-semibold text-slate-700 whitespace-nowrap">
+                              Phân loại
+                            </th>
+                            <th className="px-3 py-2.5 font-semibold text-slate-700 whitespace-nowrap">
+                              Mã SKU
+                            </th>
+                            <th className="px-3 py-2.5 text-center font-semibold text-slate-700 whitespace-nowrap">
+                              Chiều
+                            </th>
                             <th className="px-3 py-2.5 text-right font-semibold text-slate-700 whitespace-nowrap min-w-[130px]">
                               {docDetail.type === "issue" ? "Đơn giá xuất (₫)" : "Đơn giá vốn (₫)"}
                             </th>
-                            <th className="px-3 py-2.5 text-center font-semibold text-slate-700 whitespace-nowrap min-w-[100px]">Số lượng</th>
-                            <th className="py-2.5 pl-3 pr-4 text-right font-semibold text-slate-700 whitespace-nowrap min-w-[140px]">Thành tiền (₫)</th>
+                            <th className="px-3 py-2.5 text-center font-semibold text-slate-700 whitespace-nowrap min-w-[100px]">
+                              Số lượng
+                            </th>
+                            <th className="py-2.5 pl-3 pr-4 text-right font-semibold text-slate-700 whitespace-nowrap min-w-[140px]">
+                              Thành tiền (₫)
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {pagedDocLines.length === 0 ? (
                             <tr>
-                              <td colSpan={7} className="py-10 text-center text-sm text-slate-500 font-medium">
+                              <td
+                                colSpan={7}
+                                className="py-10 text-center text-sm text-slate-500 font-medium"
+                              >
                                 {docLineQuery
                                   ? `Không tìm thấy sản phẩm nào khớp với "${docLineQuery}"`
                                   : "Không có sản phẩm nào trong phiếu kho"}
@@ -2768,7 +3064,10 @@ export function InventoryManager({
                               const unitCost = resolveLineCost(line);
                               const lineTotal = unitCost * line.qty;
                               return (
-                                <tr key={line.id || idx} className="hover:bg-slate-50/80 transition-colors">
+                                <tr
+                                  key={line.id || idx}
+                                  className="hover:bg-slate-50/80 transition-colors"
+                                >
                                   {/* Cột sản phẩm: giới hạn độ rộng để tên tự động thu gọn và hiện dấu ... */}
                                   <td className="py-2.5 pl-4 pr-3 max-w-[280px]">
                                     <div className="flex items-center gap-2.5">
@@ -2884,7 +3183,9 @@ export function InventoryManager({
                     <div className="border-t border-slate-200 bg-slate-50/40 p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="text-sm font-medium text-slate-600">
-                          Chứng từ gồm <strong className="text-slate-950">{docDetail.lines.length}</strong> dòng sản phẩm
+                          Chứng từ gồm{" "}
+                          <strong className="text-slate-950">{docDetail.lines.length}</strong> dòng
+                          sản phẩm
                         </div>
 
                         <div className="space-y-1.5 sm:w-80 ml-auto">
@@ -2897,7 +3198,10 @@ export function InventoryManager({
                           <div className="flex justify-between text-sm text-slate-600">
                             <span>Tổng số lượng:</span>
                             <span className="tabular-nums font-semibold text-slate-950">
-                              {docDetail.lines.reduce((s, l) => s + l.qty, 0).toLocaleString("vi-VN")} cái
+                              {docDetail.lines
+                                .reduce((s, l) => s + l.qty, 0)
+                                .toLocaleString("vi-VN")}{" "}
+                              cái
                             </span>
                           </div>
                           {totalDocAmount > 0 && (
@@ -2907,7 +3211,7 @@ export function InventoryManager({
                                   ? "Tổng giá trị xuất (Hóa đơn):"
                                   : "Tổng giá trị vốn nhập:"}
                               </span>
-                              <span className="text-lg font-semibold text-[#6941c6] tabular-nums">
+                              <span className="text-lg font-semibold text-[#243B53] tabular-nums">
                                 {fmtVND(totalDocAmount)}
                               </span>
                             </div>
@@ -2984,7 +3288,9 @@ export function InventoryManager({
 
                       <div className="border-t border-slate-200 pt-2.5 space-y-2.5">
                         <div>
-                          <span className="font-semibold text-slate-600 block text-sm">Lý do thực hiện:</span>
+                          <span className="font-semibold text-slate-600 block text-sm">
+                            Lý do thực hiện:
+                          </span>
                           <p className="mt-0.5 font-semibold text-slate-950">
                             {docDetail.reason || "Vận hành kho thường kỳ"}
                           </p>
@@ -3005,13 +3311,17 @@ export function InventoryManager({
                         {docDetail.approved_by && (
                           <div className="flex items-center justify-between">
                             <span className="font-semibold text-slate-600">Người duyệt:</span>
-                            <span className="font-semibold text-slate-950">{docDetail.approved_by_name || "—"}</span>
+                            <span className="font-semibold text-slate-950">
+                              {docDetail.approved_by_name || "—"}
+                            </span>
                           </div>
                         )}
 
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-slate-600">Ngày lập:</span>
-                          <span className="tabular-nums font-semibold text-slate-800">{fmtDate(docDetail.created_at)}</span>
+                          <span className="tabular-nums font-semibold text-slate-800">
+                            {fmtDate(docDetail.created_at)}
+                          </span>
                         </div>
 
                         {docDetail.posted_at && (
@@ -3042,23 +3352,31 @@ export function InventoryManager({
                     <p className="text-sm leading-relaxed font-medium text-slate-600">
                       {docDetail.status === "posted" ? (
                         <>
-                          Chứng từ này <strong className="text-slate-950 font-semibold">đã được ghi sổ</strong>. Số lượng tồn kho thực tế và khả
-                          dụng của tất cả sản phẩm trong phiếu đã được cập nhật vào hệ thống.
+                          Chứng từ này{" "}
+                          <strong className="text-slate-950 font-semibold">đã được ghi sổ</strong>.
+                          Số lượng tồn kho thực tế và khả dụng của tất cả sản phẩm trong phiếu đã
+                          được cập nhật vào hệ thống.
                         </>
                       ) : docDetail.status === "submitted" ? (
                         <>
-                          Chứng từ đang <strong className="text-slate-950 font-semibold">chờ duyệt</strong>. Tồn kho thực tế chưa bị thay đổi;
-                          người có quyền duyệt cần kiểm tra trước khi cho phép ghi sổ.
+                          Chứng từ đang{" "}
+                          <strong className="text-slate-950 font-semibold">chờ duyệt</strong>. Tồn
+                          kho thực tế chưa bị thay đổi; người có quyền duyệt cần kiểm tra trước khi
+                          cho phép ghi sổ.
                         </>
                       ) : docDetail.status === "approved" ? (
                         <>
-                          Chứng từ đang ở trạng thái <strong className="text-slate-950 font-semibold">chờ ghi sổ</strong>. Tồn kho thực tế chưa
-                          bị thay đổi. Hãy kiểm tra chính xác hàng hóa trước khi xác nhận ghi sổ.
+                          Chứng từ đang ở trạng thái{" "}
+                          <strong className="text-slate-950 font-semibold">chờ ghi sổ</strong>. Tồn
+                          kho thực tế chưa bị thay đổi. Hãy kiểm tra chính xác hàng hóa trước khi
+                          xác nhận ghi sổ.
                         </>
                       ) : (
                         <>
-                          Chứng từ đang ở trạng thái <strong className="text-slate-950 font-semibold">nháp</strong>. Tồn kho thực tế chưa bị
-                          thay đổi; hãy tạo phiếu để gửi duyệt khi đã hoàn tất thông tin.
+                          Chứng từ đang ở trạng thái{" "}
+                          <strong className="text-slate-950 font-semibold">nháp</strong>. Tồn kho
+                          thực tế chưa bị thay đổi; hãy tạo phiếu để gửi duyệt khi đã hoàn tất thông
+                          tin.
                         </>
                       )}
                     </p>
@@ -3071,9 +3389,13 @@ export function InventoryManager({
                             variant="outline"
                             disabled={postingDoc}
                             onClick={() => handleApproveDoc(docDetail.id)}
-                            className="w-full h-9 gap-1.5 rounded-xs border-[#6941c6] text-[#6941c6] text-sm font-semibold hover:bg-purple-50 transition-colors cursor-pointer"
+                            className="w-full h-9 gap-1.5 rounded-xs border-[#243B53] text-[#243B53] text-sm font-semibold hover:bg-[#EAF0F6] transition-colors cursor-pointer"
                           >
-                            {postingDoc ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+                            {postingDoc ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <Check className="size-3.5" />
+                            )}
                             <span>Duyệt phiếu</span>
                           </Button>
                         )}
@@ -3082,9 +3404,13 @@ export function InventoryManager({
                             size="sm"
                             disabled={postingDoc}
                             onClick={() => handlePostDoc(docDetail.id)}
-                            className="w-full h-9 gap-1.5 rounded-xs bg-[#6941c6] text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
+                            className="w-full h-9 gap-1.5 rounded-xs bg-[#243B53] text-sm font-semibold text-white shadow-xs hover:bg-[#1B2E42] transition-colors cursor-pointer"
                           >
-                            {postingDoc ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5 text-white" />}
+                            {postingDoc ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="size-3.5 text-white" />
+                            )}
                             <span>Ghi sổ chứng từ ngay</span>
                           </Button>
                         )}
@@ -3115,9 +3441,7 @@ export function InventoryManager({
               </Button>
               <div>
                 <div className="flex items-center gap-2.5">
-                  <h1 className="text-slate-950 admin-page-title">
-                    Lập phiếu kho mới
-                  </h1>
+                  <h1 className="text-slate-950 admin-page-title">Lập phiếu kho mới</h1>
                   <DotPill
                     tone={
                       formType === "receipt" ? "green" : formType === "issue" ? "red" : "violet"
@@ -3133,7 +3457,7 @@ export function InventoryManager({
                 <p className="mt-1 text-sm font-medium text-slate-600">
                   Tạo chứng từ xuất, nhập hoặc kiểm kê tồn kho · Kho {warehouseLabel}
                   {linkedOrderId && (
-                    <span className="ml-1 font-semibold text-[#6941c6]">
+                    <span className="ml-1 font-semibold text-[#243B53]">
                       · Theo đơn #{linkedOrderId.slice(0, 8)}
                     </span>
                   )}
@@ -3158,23 +3482,35 @@ export function InventoryManager({
                 {saving ? <Loader2 className="size-3.5 animate-spin" /> : null}
                 <span>Lưu phiếu nháp</span>
               </Button>
-              {canCreateDocumentType(formType) && <Button
-                variant="outline"
-                disabled={saving || !lines.length}
-                onClick={() => handleSaveDoc("submit")}
-                className="h-9 gap-1.5 rounded-xs border-[#6941c6] bg-white px-4 text-sm font-semibold text-[#6941c6] shadow-2xs hover:bg-purple-50 transition-colors cursor-pointer"
-              >
-                {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
-                <span>Tạo phiếu</span>
-              </Button>}
-              {canApprove && canCreateDocumentType(formType) && <Button
-                disabled={saving || !lines.length}
-                onClick={() => handleSaveDoc("post")}
-                className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
-              >
-                {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
-                <span>Ghi sổ ngay</span>
-              </Button>}
+              {canCreateDocumentType(formType) && (
+                <Button
+                  variant="outline"
+                  disabled={saving || !lines.length}
+                  onClick={() => handleSaveDoc("submit")}
+                  className="h-9 gap-1.5 rounded-xs border-[#243B53] bg-white px-4 text-sm font-semibold text-[#243B53] shadow-2xs hover:bg-[#EAF0F6] transition-colors cursor-pointer"
+                >
+                  {saving ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Check className="size-3.5" />
+                  )}
+                  <span>Tạo phiếu</span>
+                </Button>
+              )}
+              {canApprove && canCreateDocumentType(formType) && (
+                <Button
+                  disabled={saving || !lines.length}
+                  onClick={() => handleSaveDoc("post")}
+                  className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#1B2E42] transition-colors cursor-pointer"
+                >
+                  {saving ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Check className="size-3.5" />
+                  )}
+                  <span>Ghi sổ ngay</span>
+                </Button>
+              )}
             </div>
           </div>
 
@@ -3203,22 +3539,24 @@ export function InventoryManager({
                           ["issue", "Xuất kho", PackageMinus],
                           ["adjustment", "Điều chỉnh", ArrowRightLeft],
                         ] as const
-                      ).filter(([t]) => canCreateDocumentType(t)).map(([t, lbl, Icon]) => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => setFormType(t)}
-                          className={cn(
-                            "flex items-center justify-center gap-1.5 rounded-xs py-1.5 text-sm font-semibold transition-colors cursor-pointer",
-                            formType === t
-                              ? "bg-white text-slate-950 shadow-2xs"
-                              : "text-slate-600 hover:text-slate-950",
-                          )}
-                        >
-                          <Icon className="size-3.5" />
-                          <span>{lbl}</span>
-                        </button>
-                      ))}
+                      )
+                        .filter(([t]) => canCreateDocumentType(t))
+                        .map(([t, lbl, Icon]) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setFormType(t)}
+                            className={cn(
+                              "flex items-center justify-center gap-1.5 rounded-xs py-1.5 text-sm font-semibold transition-colors cursor-pointer",
+                              formType === t
+                                ? "bg-white text-slate-950 shadow-2xs"
+                                : "text-slate-600 hover:text-slate-950",
+                            )}
+                          >
+                            <Icon className="size-3.5" />
+                            <span>{lbl}</span>
+                          </button>
+                        ))}
                     </div>
                   </div>
 
@@ -3227,7 +3565,7 @@ export function InventoryManager({
                       Lý do lập phiếu
                     </label>
                     <Input
-                      className="mt-1 h-9 rounded-xs border-slate-200 bg-white text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                      className="mt-1 h-9 rounded-xs border-slate-200 bg-white text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                       placeholder="Ví dụ: Nhập hàng may từ xưởng, Xuất đơn hàng #ELN..."
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
@@ -3240,9 +3578,9 @@ export function InventoryManager({
                   </div>
 
                   {linkedOrderId && (
-                    <div className="rounded-xs border border-[#6941c6]/30 bg-[#f4f3ff] px-3 py-2 text-sm flex items-center justify-between">
+                    <div className="rounded-xs border border-[#243B53]/30 bg-[#EAF0F6] px-3 py-2 text-sm flex items-center justify-between">
                       <span className="font-semibold text-slate-600">Đơn hàng liên kết:</span>
-                      <span className="tabular-nums font-semibold text-[#6941c6]">
+                      <span className="tabular-nums font-semibold text-[#243B53]">
                         #{linkedOrderId.slice(0, 8)}
                       </span>
                     </div>
@@ -3270,7 +3608,7 @@ export function InventoryManager({
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
                     <Input
-                      className="h-9 rounded-xs border-slate-200 bg-white pl-8.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                      className="h-9 rounded-xs border-slate-200 bg-white pl-8.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                       placeholder="Tìm tên hoặc SKU…"
                       value={productQuery}
                       onChange={(e) => setProductQuery(e.target.value)}
@@ -3278,14 +3616,16 @@ export function InventoryManager({
                   </div>
                   <div>
                     <select
-                      className="h-9 w-full appearance-none rounded-xs border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                      className="h-9 w-full appearance-none rounded-xs border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                       value={matrixProductId}
                       onChange={(e) => {
                         setMatrixProductId(e.target.value);
                         setMatrixQty({});
                       }}
                     >
-                      <option value="">{catalogLoading ? "Đang tìm kiếm..." : "Chọn sản phẩm…"}</option>
+                      <option value="">
+                        {catalogLoading ? "Đang tìm kiếm..." : "Chọn sản phẩm…"}
+                      </option>
                       {filteredCatalog.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name} ({p.variants.length} SKU)
@@ -3304,14 +3644,22 @@ export function InventoryManager({
                         <div className="flex items-center gap-2.5 rounded-xs border border-slate-200 bg-slate-50 p-2">
                           <div className="size-9 shrink-0 overflow-hidden rounded-xs border border-slate-200 bg-white">
                             {prodImg ? (
-                              <img src={prodImg} alt={matrixProduct.name} className="size-full object-cover" />
+                              <img
+                                src={prodImg}
+                                alt={matrixProduct.name}
+                                className="size-full object-cover"
+                              />
                             ) : (
                               <Package className="size-full p-1.5 text-slate-400" />
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-semibold text-slate-950">{matrixProduct.name}</p>
-                            <p className="text-sm font-medium text-slate-500">Chọn số lượng để thêm vào bảng</p>
+                            <p className="truncate text-sm font-semibold text-slate-950">
+                              {matrixProduct.name}
+                            </p>
+                            <p className="text-sm font-medium text-slate-500">
+                              Chọn số lượng để thêm vào bảng
+                            </p>
                           </div>
                         </div>
 
@@ -3335,12 +3683,17 @@ export function InventoryManager({
                             <tbody>
                               {colors.map((color) => (
                                 <tr key={color} className="border-t border-slate-200">
-                                  <td className="px-3.5 py-2 font-semibold text-slate-900 whitespace-nowrap">{color}</td>
+                                  <td className="px-3.5 py-2 font-semibold text-slate-900 whitespace-nowrap">
+                                    {color}
+                                  </td>
                                   {sizes.map((sz) => {
                                     const v = byKey.get(`${color}||${sz}`);
                                     if (!v) {
                                       return (
-                                        <td key={sz} className="px-2 py-2 text-center text-slate-400 min-w-[110px]">
+                                        <td
+                                          key={sz}
+                                          className="px-2 py-2 text-center text-slate-400 min-w-[110px]"
+                                        >
                                           —
                                         </td>
                                       );
@@ -3348,7 +3701,7 @@ export function InventoryManager({
                                     return (
                                       <td key={sz} className="px-2 py-2 text-center min-w-[110px]">
                                         <Input
-                                          className="h-8.5 w-24 sm:w-28 rounded-xs border-slate-200 text-center tabular-nums text-sm font-semibold bg-white mx-auto focus:border-[#6941c6] px-1.5 placeholder:text-xs placeholder:font-normal placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                          className="h-8.5 w-24 sm:w-28 rounded-xs border-slate-200 text-center tabular-nums text-sm font-semibold bg-white mx-auto focus:border-[#243B53] px-1.5 placeholder:text-xs placeholder:font-normal placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                           type="number"
                                           min={0}
                                           placeholder={
@@ -3363,10 +3716,14 @@ export function InventoryManager({
                                         />
                                         {formType === "issue" && (
                                           <span className="block text-xs text-slate-500 font-medium mt-1 whitespace-nowrap">
-                                            kho: <b className="text-slate-900 font-semibold">{v.on_hand ?? v.available}</b>
+                                            kho:{" "}
+                                            <b className="text-slate-900 font-semibold">
+                                              {v.on_hand ?? v.available}
+                                            </b>
                                             {(v.reserved ?? 0) > 0 ? (
                                               <span className="text-amber-700 font-semibold">
-                                                {" "}({v.reserved})
+                                                {" "}
+                                                ({v.reserved})
                                               </span>
                                             ) : null}
                                           </span>
@@ -3386,7 +3743,7 @@ export function InventoryManager({
                             size="sm"
                             disabled={!matrixProduct}
                             onClick={addMatrixToLines}
-                            className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
+                            className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#1B2E42] transition-colors cursor-pointer"
                           >
                             <Plus className="size-3.5" />
                             <span>Thêm vào phiếu</span>
@@ -3407,9 +3764,7 @@ export function InventoryManager({
             <div className="rounded-xs border border-slate-200 bg-white overflow-hidden shadow-xs">
               <div className="flex flex-wrap items-center justify-between border-b border-slate-200 bg-slate-50/70 px-4 py-3 gap-3">
                 <div className="flex items-center gap-2.5">
-                  <h3 className="text-slate-950 admin-subsection-title">
-                    Sản phẩm trong phiếu
-                  </h3>
+                  <h3 className="text-slate-950 admin-subsection-title">Sản phẩm trong phiếu</h3>
                   <span className="rounded-xs bg-white border border-slate-200 px-2.5 py-0.5 text-sm font-semibold text-slate-800 shadow-2xs">
                     {lines.length} dòng
                   </span>
@@ -3440,9 +3795,12 @@ export function InventoryManager({
               {lines.length === 0 ? (
                 <div className="py-12 text-center text-sm text-muted-foreground space-y-2">
                   <Package className="size-8 mx-auto text-slate-300 stroke-[1.5]" />
-                  <p className="text-sm font-semibold text-slate-900">Chưa có sản phẩm nào trong phiếu kho</p>
+                  <p className="text-sm font-semibold text-slate-900">
+                    Chưa có sản phẩm nào trong phiếu kho
+                  </p>
                   <p className="text-sm max-w-sm mx-auto text-slate-500 font-medium">
-                    Chọn sản phẩm và nhập số lượng ở lưới ma trận bên trên để đưa vào danh sách xuất / nhập.
+                    Chọn sản phẩm và nhập số lượng ở lưới ma trận bên trên để đưa vào danh sách xuất
+                    / nhập.
                   </p>
                 </div>
               ) : (
@@ -3450,9 +3808,13 @@ export function InventoryManager({
                   <table className="w-full text-left text-sm">
                     <thead className="bg-slate-50/80 border-b border-slate-200">
                       <tr className="text-slate-700">
-                        <th className="py-2.5 pl-4 w-12 text-center font-semibold text-slate-700">STT</th>
+                        <th className="py-2.5 pl-4 w-12 text-center font-semibold text-slate-700">
+                          STT
+                        </th>
                         <th className="py-2.5 px-3 font-semibold text-slate-700">Sản phẩm</th>
-                        <th className="py-2.5 px-3 font-semibold text-slate-700">Phân loại / SKU</th>
+                        <th className="py-2.5 px-3 font-semibold text-slate-700">
+                          Phân loại / SKU
+                        </th>
                         <th className="py-2.5 px-3 text-right font-semibold text-slate-700 min-w-[150px]">
                           {formType === "receipt"
                             ? "Giá vốn nhập (₫)"
@@ -3460,9 +3822,15 @@ export function InventoryManager({
                               ? "Đơn giá hóa đơn"
                               : "Đơn giá (₫)"}
                         </th>
-                        <th className="py-2.5 px-3 text-center font-semibold text-slate-700 min-w-[130px]">Số lượng</th>
-                        <th className="py-2.5 px-4 text-right font-semibold text-slate-700 min-w-[130px]">Thành tiền</th>
-                        <th className="py-2.5 pr-4 w-12 text-center font-semibold text-slate-700">Xóa</th>
+                        <th className="py-2.5 px-3 text-center font-semibold text-slate-700 min-w-[130px]">
+                          Số lượng
+                        </th>
+                        <th className="py-2.5 px-4 text-right font-semibold text-slate-700 min-w-[130px]">
+                          Thành tiền
+                        </th>
+                        <th className="py-2.5 pr-4 w-12 text-center font-semibold text-slate-700">
+                          Xóa
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -3472,9 +3840,12 @@ export function InventoryManager({
                         const displayName = p?.name ?? line.product_name ?? "Sản phẩm";
                         const variantLabel = v
                           ? `${v.color} · ${v.size}`
-                          : [line.color_label, line.size_label ? `Kích cỡ ${line.size_label}` : null]
-                            .filter(Boolean)
-                            .join(" · ") || "—";
+                          : [
+                              line.color_label,
+                              line.size_label ? `Kích cỡ ${line.size_label}` : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ") || "—";
                         const displaySku = v?.sku ?? line.sku ?? "—";
                         const img = line.image_url || v?.image_url || p?.image_url || null;
                         const imgUrl = resolveImageUrl(img);
@@ -3483,7 +3854,10 @@ export function InventoryManager({
                         const lineTotal = lineQty * lineCost;
 
                         return (
-                          <tr key={`${line.variant_id}-${idx}`} className="hover:bg-slate-50/70 transition-colors">
+                          <tr
+                            key={`${line.variant_id}-${idx}`}
+                            className="hover:bg-slate-50/70 transition-colors"
+                          >
                             {/* STT */}
                             <td className="py-3 pl-4 text-center tabular-nums font-semibold text-slate-500 text-sm">
                               {idx + 1}
@@ -3551,15 +3925,15 @@ export function InventoryManager({
                                         ls.map((l, i) =>
                                           i === idx
                                             ? {
-                                              ...l,
-                                              cost_input: val,
-                                              unit_cost_vnd: parsed,
-                                            }
+                                                ...l,
+                                                cost_input: val,
+                                                unit_cost_vnd: parsed,
+                                              }
                                             : l,
                                         ),
                                       );
                                     }}
-                                    className="h-8 w-28 pr-6 text-right tabular-nums text-sm font-semibold text-slate-900 bg-white rounded-xs border-slate-200 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                                    className="h-8 w-28 pr-6 text-right tabular-nums text-sm font-semibold text-slate-900 bg-white rounded-xs border-slate-200 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                                   />
                                   <span className="pointer-events-none absolute right-2 text-sm font-semibold text-slate-400">
                                     ₫
@@ -3592,15 +3966,15 @@ export function InventoryManager({
                                         ls.map((l, i) =>
                                           i === idx
                                             ? {
-                                              ...l,
-                                              cost_input: val,
-                                              unit_cost_vnd: parsed,
-                                            }
+                                                ...l,
+                                                cost_input: val,
+                                                unit_cost_vnd: parsed,
+                                              }
                                             : l,
                                         ),
                                       );
                                     }}
-                                    className="h-8 w-28 pr-6 text-right tabular-nums text-sm font-semibold text-slate-900 bg-white rounded-xs border-slate-200 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                                    className="h-8 w-28 pr-6 text-right tabular-nums text-sm font-semibold text-slate-900 bg-white rounded-xs border-slate-200 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                                   />
                                   <span className="pointer-events-none absolute right-2 text-sm font-semibold text-slate-400">
                                     ₫
@@ -3617,7 +3991,9 @@ export function InventoryManager({
                                   onClick={() => {
                                     const cur = Math.max(1, (Number(line.qty) || 1) - 1);
                                     setLines((ls) =>
-                                      ls.map((l, i) => (i === idx ? { ...l, qty: String(cur) } : l)),
+                                      ls.map((l, i) =>
+                                        i === idx ? { ...l, qty: String(cur) } : l,
+                                      ),
                                     );
                                   }}
                                   className="size-7 rounded-xs border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 flex items-center justify-center text-sm font-semibold transition-colors cursor-pointer shadow-2xs"
@@ -3631,7 +4007,9 @@ export function InventoryManager({
                                   value={line.qty}
                                   onChange={(e) =>
                                     setLines((ls) =>
-                                      ls.map((l, i) => (i === idx ? { ...l, qty: e.target.value } : l)),
+                                      ls.map((l, i) =>
+                                        i === idx ? { ...l, qty: e.target.value } : l,
+                                      ),
                                     )
                                   }
                                   className="h-7 w-13 text-center tabular-nums tabular-nums text-sm font-semibold text-slate-950 bg-white rounded-xs border-slate-200 px-1"
@@ -3641,7 +4019,9 @@ export function InventoryManager({
                                   onClick={() => {
                                     const cur = (Number(line.qty) || 0) + 1;
                                     setLines((ls) =>
-                                      ls.map((l, i) => (i === idx ? { ...l, qty: String(cur) } : l)),
+                                      ls.map((l, i) =>
+                                        i === idx ? { ...l, qty: String(cur) } : l,
+                                      ),
                                     );
                                   }}
                                   className="size-7 rounded-xs border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 flex items-center justify-center text-sm font-semibold transition-colors cursor-pointer shadow-2xs"
@@ -3685,13 +4065,17 @@ export function InventoryManager({
                 <div className="border-t border-slate-200 bg-slate-50/70 p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="text-sm font-medium text-slate-600">
-                      Hiển thị <strong className="font-semibold text-slate-950">{lines.length}</strong> dòng sản phẩm được chọn
+                      Hiển thị{" "}
+                      <strong className="font-semibold text-slate-950">{lines.length}</strong> dòng
+                      sản phẩm được chọn
                     </div>
 
                     <div className="space-y-1.5 sm:w-84 ml-auto">
                       <div className="flex justify-between text-sm text-slate-600">
                         <span className="font-medium">Tổng số mặt hàng:</span>
-                        <span className="tabular-nums font-semibold text-slate-950">{lines.length} dòng</span>
+                        <span className="tabular-nums font-semibold text-slate-950">
+                          {lines.length} dòng
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm text-slate-600">
                         <span className="font-medium">Tổng số lượng:</span>
@@ -3706,7 +4090,7 @@ export function InventoryManager({
                               ? "Tổng giá trị xuất (Hóa đơn):"
                               : "Tổng giá trị vốn nhập:"}
                           </span>
-                          <span className="text-lg font-semibold text-[#6941c6] tabular-nums">
+                          <span className="text-lg font-semibold text-[#243B53] tabular-nums">
                             {fmtVND(
                               lines.reduce(
                                 (s, l) => s + (Number(l.qty) || 0) * (l.unit_cost_vnd || 0),

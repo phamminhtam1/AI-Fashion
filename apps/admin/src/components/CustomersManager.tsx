@@ -56,14 +56,15 @@ const SEGMENT_LABEL: Record<CustomerSegment, string> = {
 };
 
 const SEGMENT_CLASS: Record<CustomerSegment, string> = {
-  vip: "bg-[#6941c6]/10 text-[#6941c6] border-[#6941c6]/20 dark:bg-[#6941c6]/20 dark:text-[#d6c7ff] dark:border-[#6941c6]/40",
-  loyal: "bg-blue-50 text-blue-700 border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60",
+  vip: "bg-[#243B53]/10 text-[#243B53] border-[#243B53]/20 dark:bg-[#243B53]/20 dark:text-[#d6c7ff] dark:border-[#243B53]/40",
+  loyal:
+    "bg-blue-50 text-blue-700 border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60",
   new: "bg-emerald-50 text-emerald-700 border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60",
 };
 
 const AVATAR_TINTS = [
   "bg-blue-50 text-blue-700 border-blue-200/60",
-  "bg-[#6941c6]/8 text-[#6941c6] border-[#6941c6]/20",
+  "bg-[#243B53]/8 text-[#243B53] border-[#243B53]/20",
   "bg-emerald-50 text-emerald-700 border-emerald-200/60",
   "bg-amber-50 text-amber-700 border-amber-200/60",
   "bg-rose-50 text-rose-700 border-rose-200/60",
@@ -128,8 +129,11 @@ function orderState(o: CustomerOrderSummary): { tone: "green" | "amber" | "red";
   if (o.status === "cancelled") return { tone: "red", label: "Đã hủy" };
   const paid =
     o.payment_status === "paid" ||
-    (o.payment_method === "cod" && (o.status === "confirmed" || o.fulfillment_status === "fulfilled"));
-  return paid ? { tone: "green", label: "Đã thanh toán" } : { tone: "amber", label: "Chờ thanh toán" };
+    (o.payment_method === "cod" &&
+      (o.status === "confirmed" || o.fulfillment_status === "fulfilled"));
+  return paid
+    ? { tone: "green", label: "Đã thanh toán" }
+    : { tone: "amber", label: "Chờ thanh toán" };
 }
 
 const TONE: Record<"green" | "amber" | "red" | "grey", { pill: string; dot: string }> = {
@@ -154,7 +158,12 @@ const TONE: Record<"green" | "amber" | "red" | "grey", { pill: string; dot: stri
 function DotPill({ tone, children }: { tone: keyof typeof TONE; children: React.ReactNode }) {
   const t = TONE[tone];
   return (
-    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-xs border px-2 py-0.5 text-xs font-semibold", t.pill)}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-xs border px-2 py-0.5 text-xs font-semibold",
+        t.pill,
+      )}
+    >
       <span className={cn("size-1.5 rounded-full shrink-0", t.dot)} />
       {children}
     </span>
@@ -177,10 +186,28 @@ function SegmentPill({ segment }: { segment: CustomerSegment }) {
 function Avatar({ c, className }: { c: CustomerExtra; className?: string }) {
   const tint = AVATAR_TINTS[(c.full_name?.charCodeAt(0) ?? 0) % AVATAR_TINTS.length];
   return c.avatar_url ? (
-    <img src={c.avatar_url} alt={c.full_name} className={cn("size-8.5 shrink-0 rounded-xs border border-border/60 object-cover", className)} />
+    <img
+      src={c.avatar_url}
+      alt={c.full_name}
+      className={cn("size-8.5 shrink-0 rounded-xs border border-border/60 object-cover", className)}
+    />
   ) : (
-    <span className={cn("grid size-8.5 shrink-0 place-items-center rounded-xs border text-sm font-semibold", tint, className)}>
-      {c.full_name ? c.full_name.trim().split(/\s+/).slice(-2).map((w) => w[0]).join("").toUpperCase() : "K"}
+    <span
+      className={cn(
+        "grid size-8.5 shrink-0 place-items-center rounded-xs border text-sm font-semibold",
+        tint,
+        className,
+      )}
+    >
+      {c.full_name
+        ? c.full_name
+            .trim()
+            .split(/\s+/)
+            .slice(-2)
+            .map((w) => w[0])
+            .join("")
+            .toUpperCase()
+        : "K"}
     </span>
   );
 }
@@ -203,23 +230,55 @@ function MetricCard({
   onClick?: () => void;
 }) {
   const tones = {
-    violet: { icon: "bg-[#6941c6]/8 text-[#6941c6]", bar: "before:bg-[#6941c6]", hover: "hover:border-[#6941c6]/30" },
-    green: { icon: "bg-emerald-50 text-emerald-700", bar: "before:bg-emerald-500", hover: "hover:border-emerald-200" },
-    blue: { icon: "bg-sky-50 text-sky-700", bar: "before:bg-sky-500", hover: "hover:border-sky-200" },
-    amber: { icon: "bg-amber-50 text-amber-700", bar: "before:bg-amber-500", hover: "hover:border-amber-200" },
-    teal: { icon: "bg-teal-50 text-teal-700", bar: "before:bg-teal-500", hover: "hover:border-teal-200" },
+    violet: {
+      icon: "bg-[#243B53]/8 text-[#243B53]",
+      bar: "before:bg-[#243B53]",
+      hover: "hover:border-[#243B53]/30",
+      active: "border-[#243B53]/30 bg-[#243B53]/5 ring-1 ring-[#243B53]/10",
+    },
+    green: {
+      icon: "bg-emerald-50 text-emerald-700",
+      bar: "before:bg-emerald-500",
+      hover: "hover:border-emerald-200",
+      active: "border-emerald-300 bg-emerald-50/50 ring-1 ring-emerald-100",
+    },
+    blue: {
+      icon: "bg-sky-50 text-sky-700",
+      bar: "before:bg-sky-500",
+      hover: "hover:border-sky-200",
+      active: "border-sky-300 bg-sky-50/50 ring-1 ring-sky-100",
+    },
+    amber: {
+      icon: "bg-amber-50 text-amber-700",
+      bar: "before:bg-amber-500",
+      hover: "hover:border-amber-200",
+      active: "border-amber-300 bg-amber-50/50 ring-1 ring-amber-100",
+    },
+    teal: {
+      icon: "bg-teal-50 text-teal-700",
+      bar: "before:bg-teal-500",
+      hover: "hover:border-teal-200",
+      active: "border-teal-300 bg-teal-50/50 ring-1 ring-teal-100",
+    },
   };
-  const selected = active && "border-[#6941c6]/30 bg-[#6941c6]/5 ring-1 ring-[#6941c6]/10";
+  const selected = active && tones[tone].active;
   const content = (
     <span className="relative flex h-full flex-col">
       <span className="flex items-start justify-between gap-2.5">
         <span className="pt-0.5 text-xs font-medium leading-5 text-slate-600">{label}</span>
-        <span className={cn("grid size-9 shrink-0 place-items-center rounded-md", tones[tone].icon)} aria-hidden="true">
+        <span
+          className={cn("grid size-9 shrink-0 place-items-center rounded-md", tones[tone].icon)}
+          aria-hidden="true"
+        >
           {icon}
         </span>
       </span>
-      <span className="mt-2 text-[1.65rem] font-semibold tabular-nums leading-none tracking-tight text-slate-950"><AnimatedValue value={value} /></span>
-      <span className="mt-auto pt-3 text-[11px] font-medium leading-4 text-slate-500">{detail}</span>
+      <span className="mt-2 text-[1.65rem] font-semibold tabular-nums leading-none tracking-tight text-slate-950">
+        <AnimatedValue value={value} />
+      </span>
+      <span className="mt-auto pt-3 text-[11px] font-medium leading-4 text-slate-500">
+        {detail}
+      </span>
     </span>
   );
   const className = cn(
@@ -227,7 +286,8 @@ function MetricCard({
     tones[tone].bar,
     active ? selected : cn("border-border/70 bg-white", tones[tone].hover),
     onClick && "cursor-pointer hover:-translate-y-0.5",
-    onClick && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
+    onClick &&
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2",
   );
 
   return onClick ? (
@@ -258,7 +318,7 @@ function SelectBox({
         aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-8.5 w-full appearance-none rounded-xs border border-border/70 bg-white pl-3 pr-8 text-sm outline-none focus:ring-1 focus:ring-[#6941c6]"
+        className="h-8.5 w-full appearance-none rounded-xs border border-border/70 bg-white pl-3 pr-8 text-sm outline-none focus:ring-1 focus:ring-[#243B53]"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -410,7 +470,8 @@ export function CustomersManager({
   const route = resolveAdminPath(location.pathname);
   const canWrite = permissions.includes("*") || permissions.includes("customer.write");
   const activeCustomerParam = route.tabId === "customers" ? route.subParam : null;
-  const isCreateRoute = route.tabId === "customers" && (route.action === "create" || activeCustomerParam === "them");
+  const isCreateRoute =
+    route.tabId === "customers" && (route.action === "create" || activeCustomerParam === "them");
   const detailParam = isCreateRoute ? null : activeCustomerParam;
 
   const [items, setItems] = useState<Customer[]>([]);
@@ -430,7 +491,9 @@ export function CustomersManager({
   const [menuId, setMenuId] = useState<string | null>(null);
 
   // View state
-  const [activeTab, setActiveTab] = useState<ViewTab>(isCreateRoute ? "form" : detailParam ? "detail" : "list");
+  const [activeTab, setActiveTab] = useState<ViewTab>(
+    isCreateRoute ? "form" : detailParam ? "detail" : "list",
+  );
   // Keep this empty on first mount so the URL-sync effect fetches deep-linked details after F5.
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [detail, setDetail] = useState<Customer | null>(null);
@@ -484,7 +547,9 @@ export function CustomersManager({
         setMetrics(res.overview_metrics);
       }
     } catch (e) {
-      setListError(e instanceof Error ? adminErrorMessage(e) : "Không tải được danh sách khách hàng.");
+      setListError(
+        e instanceof Error ? adminErrorMessage(e) : "Không tải được danh sách khách hàng.",
+      );
     } finally {
       setLoading(false);
     }
@@ -562,17 +627,17 @@ export function CustomersManager({
     (filters.sortBy !== "created_at_desc" ? 1 : 0);
   const hasActiveCustomerCriteria = Boolean(
     queryInput.trim() ||
-      query.trim() ||
-      filters.segment !== "all" ||
-      filters.status ||
-      filters.activity ||
-      filters.repeatOnly ||
-      filters.spentMin ||
-      filters.spentMax ||
-      filters.dateFrom ||
-      filters.dateTo ||
-      filters.city.trim() ||
-      filters.sortBy !== "created_at_desc",
+    query.trim() ||
+    filters.segment !== "all" ||
+    filters.status ||
+    filters.activity ||
+    filters.repeatOnly ||
+    filters.spentMin ||
+    filters.spentMax ||
+    filters.dateFrom ||
+    filters.dateTo ||
+    filters.city.trim() ||
+    filters.sortBy !== "created_at_desc",
   );
   const isInitialCustomerEmpty = total === 0 && !hasActiveCustomerCriteria && !listError;
 
@@ -616,7 +681,9 @@ export function CustomersManager({
       setDetail(full);
       setInternalNoteDraft(full.internal_note || "");
     } catch (e) {
-      setDetailError(e instanceof Error ? adminErrorMessage(e) : "Không tải được hồ sơ khách hàng.");
+      setDetailError(
+        e instanceof Error ? adminErrorMessage(e) : "Không tải được hồ sơ khách hàng.",
+      );
     } finally {
       setDetailLoading(false);
     }
@@ -676,7 +743,16 @@ export function CustomersManager({
       setSelectedCustomerId(null);
       setActiveTab("list");
     }
-  }, [route.tabId, isCreateRoute, detailParam, items, selectedCustomerId, activeTab, editingId, openDetailInternal]);
+  }, [
+    route.tabId,
+    isCreateRoute,
+    detailParam,
+    items,
+    selectedCustomerId,
+    activeTab,
+    editingId,
+    openDetailInternal,
+  ]);
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
@@ -699,7 +775,9 @@ export function CustomersManager({
     if (!ids.length) return;
     setBulkBusy(true);
     try {
-      await Promise.all(ids.map((id) => adminApi.updateCustomer(id, { status: active ? "active" : "blocked" })));
+      await Promise.all(
+        ids.map((id) => adminApi.updateCustomer(id, { status: active ? "active" : "blocked" })),
+      );
       toast.success(`${active ? "Đã mở khóa" : "Đã khóa"} ${ids.length} tài khoản`);
       setSelected(new Set());
       await load();
@@ -717,7 +795,9 @@ export function CustomersManager({
     try {
       await adminApi.updateCustomer(detail.id, { internal_note: internalNoteDraft });
       setDetail((prev) => (prev ? { ...prev, internal_note: internalNoteDraft } : null));
-      setItems((list) => list.map((x) => (x.id === detail.id ? { ...x, internal_note: internalNoteDraft } : x)));
+      setItems((list) =>
+        list.map((x) => (x.id === detail.id ? { ...x, internal_note: internalNoteDraft } : x)),
+      );
       toast.success("Đã lưu ghi chú chăm sóc khách hàng");
     } catch (e) {
       toast.error(e instanceof Error ? adminErrorMessage(e) : "Không lưu được ghi chú");
@@ -816,7 +896,8 @@ export function CustomersManager({
   // FORM VIEW (Thêm / Sửa khách hàng)
   // ─────────────────────────────────────────────────────────────────────────────
   if (activeTab === "form") {
-    const inputCls = "h-8.5 rounded-xs border-border/70 bg-white px-3 text-sm focus-visible:ring-1 focus-visible:ring-[#6941c6]";
+    const inputCls =
+      "h-8.5 rounded-xs border-border/70 bg-white px-3 text-sm focus-visible:ring-1 focus-visible:ring-[#243B53]";
     return (
       <div className="space-y-4 pb-12 font-sans text-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -825,7 +906,9 @@ export function CustomersManager({
               variant="outline"
               size="icon"
               className="size-8.5 shrink-0 rounded-xs border-border/70 bg-white text-muted-foreground hover:text-foreground shadow-2xs"
-              onClick={() => (editingId ? (setEditingId(null), setActiveTab("detail")) : handleBackToList())}
+              onClick={() =>
+                editingId ? (setEditingId(null), setActiveTab("detail")) : handleBackToList()
+              }
               aria-label="Quay lại"
             >
               <ArrowLeft className="size-4" />
@@ -835,7 +918,9 @@ export function CustomersManager({
                 {editingId ? "Chỉnh sửa khách hàng" : "Thêm khách hàng mới"}
               </h1>
               <p className="text-sm text-muted-foreground">
-                {editingId ? "Cập nhật thông tin khách hàng." : "Tạo tài khoản khách hàng mới vào hệ thống."}
+                {editingId
+                  ? "Cập nhật thông tin khách hàng."
+                  : "Tạo tài khoản khách hàng mới vào hệ thống."}
               </p>
             </div>
           </div>
@@ -843,16 +928,22 @@ export function CustomersManager({
             <Button
               variant="outline"
               className="h-8.5 rounded-xs border-border/70 bg-white px-3.5 text-sm hover:bg-secondary/60"
-              onClick={() => (editingId ? (setEditingId(null), setActiveTab("detail")) : handleBackToList())}
+              onClick={() =>
+                editingId ? (setEditingId(null), setActiveTab("detail")) : handleBackToList()
+              }
             >
               Hủy
             </Button>
             <Button
-              className="h-8.5 gap-1.5 rounded-xs bg-[#6941c6] hover:bg-[#53389e] text-white px-3.5 text-sm font-medium shadow-2xs"
+              className="h-8.5 gap-1.5 rounded-xs bg-[#243B53] hover:bg-[#1B2E42] text-white px-3.5 text-sm font-medium shadow-2xs"
               disabled={saving}
               onClick={saveForm}
             >
-              {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+              {saving ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Check className="size-3.5" />
+              )}
               {saving ? "Đang lưu…" : editingId ? "Lưu thay đổi" : "Lưu khách hàng"}
             </Button>
           </div>
@@ -989,7 +1080,7 @@ export function CustomersManager({
 
         <FormCard title="Ghi chú">
           <textarea
-            className="min-h-24 w-full resize-y rounded-xs border border-border/70 bg-white p-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-[#6941c6]"
+            className="min-h-24 w-full resize-y rounded-xs border border-border/70 bg-white p-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-[#243B53]"
             placeholder="Nhập ghi chú về khách hàng…"
             maxLength={NOTE_MAX}
             value={form.note}
@@ -1012,17 +1103,24 @@ export function CustomersManager({
         <div className="mt-8 grid min-h-[320px] place-items-center rounded-xs border border-border/70 bg-white p-6 text-sm text-muted-foreground">
           {detailLoading ? (
             <div role="status" className="flex flex-col items-center gap-2">
-              <Loader2 className="size-5 animate-spin text-[#6941c6]" />
+              <Loader2 className="size-5 animate-spin text-[#243B53]" />
               <p>Đang tải hồ sơ khách hàng…</p>
             </div>
           ) : (
             <div role="alert" className="flex max-w-md flex-col items-center gap-2 text-center">
-              <h2 className="text-base font-semibold text-slate-900">Không tải được hồ sơ khách hàng</h2>
+              <h2 className="text-base font-semibold text-slate-900">
+                Không tải được hồ sơ khách hàng
+              </h2>
               <p>{detailError || "Thử tải lại để tiếp tục."}</p>
               <div className="mt-1 flex flex-wrap justify-center gap-2">
-                <Button variant="outline" onClick={handleBackToList}>Quay lại danh sách</Button>
+                <Button variant="outline" onClick={handleBackToList}>
+                  Quay lại danh sách
+                </Button>
                 {selectedCustomerId && (
-                  <Button variant="outline" onClick={() => void openDetailInternal(selectedCustomerId)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => void openDetailInternal(selectedCustomerId)}
+                  >
                     Thử lại
                   </Button>
                 )}
@@ -1066,14 +1164,17 @@ export function CustomersManager({
             </Button>
             {onCreateOrder && (
               <Button
-                className="h-8.5 gap-1.5 rounded-xs bg-[#6941c6] hover:bg-[#53389e] text-white px-3.5 text-sm font-semibold shadow-2xs"
+                className="h-8.5 gap-1.5 rounded-xs bg-[#243B53] hover:bg-[#1B2E42] text-white px-3.5 text-sm font-semibold shadow-2xs"
                 onClick={() => onCreateOrder(detail)}
               >
                 <Plus className="size-3.5" />
                 Tạo đơn hàng
               </Button>
             )}
-            <Popover open={menuId === "detail"} onOpenChange={(o) => setMenuId(o ? "detail" : null)}>
+            <Popover
+              open={menuId === "detail"}
+              onOpenChange={(o) => setMenuId(o ? "detail" : null)}
+            >
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -1086,7 +1187,13 @@ export function CustomersManager({
               </PopoverTrigger>
               <PopoverContent align="end" className="w-52 p-1 rounded-xs shadow-md">
                 <MenuItem
-                  icon={detail.status === "active" ? <Lock className="size-3.5" /> : <Unlock className="size-3.5" />}
+                  icon={
+                    detail.status === "active" ? (
+                      <Lock className="size-3.5" />
+                    ) : (
+                      <Unlock className="size-3.5" />
+                    )
+                  }
                   label={detail.status === "active" ? "Khóa tài khoản" : "Mở khóa tài khoản"}
                   destructive={detail.status === "active"}
                   onClick={() => {
@@ -1108,12 +1215,19 @@ export function CustomersManager({
         </div>
 
         {detailError && (
-          <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xs border border-border/70 bg-white px-3.5 py-2.5">
-            <p className="text-sm text-slate-600">Không cập nhật được hồ sơ mới nhất. {detailError}</p>
+          <div
+            role="alert"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xs border border-border/70 bg-white px-3.5 py-2.5"
+          >
+            <p className="text-sm text-slate-600">
+              Không cập nhật được hồ sơ mới nhất. {detailError}
+            </p>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => selectedCustomerId && void openDetailInternal(selectedCustomerId, detail)}
+              onClick={() =>
+                selectedCustomerId && void openDetailInternal(selectedCustomerId, detail)
+              }
               className="h-8 rounded-xs"
             >
               Thử lại
@@ -1146,7 +1260,11 @@ export function CustomersManager({
                           onClick={() => copyText("email", "email", detail.email!)}
                           className="hover:text-slate-950"
                         >
-                          {copiedKey === "email" ? <Check className="size-3 text-emerald-600" /> : <Copy className="size-3 text-slate-500" />}
+                          {copiedKey === "email" ? (
+                            <Check className="size-3 text-emerald-600" />
+                          ) : (
+                            <Copy className="size-3 text-slate-500" />
+                          )}
                         </button>
                       </p>
                     )}
@@ -1162,7 +1280,11 @@ export function CustomersManager({
                           onClick={() => copyText("phone", "số điện thoại", detail.phone!)}
                           className="hover:text-slate-950"
                         >
-                          {copiedKey === "phone" ? <Check className="size-3 text-emerald-600" /> : <Copy className="size-3 text-slate-500" />}
+                          {copiedKey === "phone" ? (
+                            <Check className="size-3 text-emerald-600" />
+                          ) : (
+                            <Copy className="size-3 text-slate-500" />
+                          )}
                         </button>
                       </p>
                     )}
@@ -1176,7 +1298,9 @@ export function CustomersManager({
 
               <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border/70 pt-3.5 text-center">
                 <div>
-                  <p className="text-xl font-semibold tabular-nums text-slate-950">{an?.total_orders ?? orders.length}</p>
+                  <p className="text-xl font-semibold tabular-nums text-slate-950">
+                    {an?.total_orders ?? orders.length}
+                  </p>
                   <p className="text-xs font-semibold text-slate-600">Tổng đơn hàng</p>
                 </div>
                 <div>
@@ -1186,7 +1310,9 @@ export function CustomersManager({
                   <p className="text-xs font-semibold text-slate-600">Tổng chi tiêu</p>
                 </div>
                 <div>
-                  <p className="text-lg font-semibold tabular-nums text-slate-950">{formatVnd(an?.aov_vnd ?? 0)}</p>
+                  <p className="text-lg font-semibold tabular-nums text-slate-950">
+                    {formatVnd(an?.aov_vnd ?? 0)}
+                  </p>
                   <p className="text-xs font-semibold text-slate-600">AOV trung bình</p>
                 </div>
               </div>
@@ -1204,9 +1330,13 @@ export function CustomersManager({
                 <dt className="font-semibold text-slate-600">Ngày sinh</dt>
                 <dd className="font-semibold text-slate-800">{fmtDate(dx.birth_date)}</dd>
                 <dt className="font-semibold text-slate-600">Giới tính</dt>
-                <dd className="font-semibold text-slate-800">{dx.gender ? (GENDER_LABEL[dx.gender] ?? dx.gender) : "–"}</dd>
+                <dd className="font-semibold text-slate-800">
+                  {dx.gender ? (GENDER_LABEL[dx.gender] ?? dx.gender) : "–"}
+                </dd>
                 <dt className="font-semibold text-slate-600">Ghi chú</dt>
-                <dd className="whitespace-pre-line font-medium text-slate-800">{detail.internal_note || "–"}</dd>
+                <dd className="whitespace-pre-line font-medium text-slate-800">
+                  {detail.internal_note || "–"}
+                </dd>
               </dl>
             </section>
           </div>
@@ -1229,7 +1359,7 @@ export function CustomersManager({
                   className={cn(
                     "-mb-px border-b-2 px-1 pb-2.5 text-sm font-semibold transition-colors cursor-pointer",
                     detailTab === id
-                      ? "border-[#6941c6] text-[#6941c6]"
+                      ? "border-[#243B53] text-[#243B53]"
                       : "border-transparent text-slate-500 hover:text-slate-900",
                   )}
                 >
@@ -1240,14 +1370,17 @@ export function CustomersManager({
 
             {detailLoading && (
               <p className="mt-3 flex items-center gap-1.5 text-sm font-semibold text-slate-600">
-                <Loader2 className="size-3.5 animate-spin text-[#6941c6]" /> Đang đồng bộ dữ liệu mới nhất…
+                <Loader2 className="size-3.5 animate-spin text-[#243B53]" /> Đang đồng bộ dữ liệu
+                mới nhất…
               </p>
             )}
 
             {/* Orders */}
             {detailTab === "orders" && (
               <div className="mt-4">
-                <h3 className="text-slate-950 admin-subsection-title">Danh sách đơn hàng ({orders.length})</h3>
+                <h3 className="text-slate-950 admin-subsection-title">
+                  Danh sách đơn hàng ({orders.length})
+                </h3>
                 {orders.length === 0 ? (
                   <p className="py-12 text-center text-sm font-medium text-slate-500">
                     Khách hàng chưa có đơn hàng nào.
@@ -1256,94 +1389,127 @@ export function CustomersManager({
                   <>
                     <div className="admin-table-frame mt-3 overflow-hidden rounded-xs border border-slate-200 bg-white">
                       <div className="overflow-x-auto">
-                        <table aria-label="Đơn hàng của khách hàng" className="admin-data-table w-full min-w-[580px] text-left text-sm">
+                        <table
+                          aria-label="Đơn hàng của khách hàng"
+                          className="admin-data-table w-full min-w-[580px] text-left text-sm"
+                        >
                           <thead>
                             <tr>
-                              <th scope="col" className="w-8">#</th>
+                              <th scope="col" className="w-8">
+                                #
+                              </th>
                               <th scope="col">Mã đơn & Ngày đặt</th>
                               <th scope="col">Sản phẩm</th>
-                              <th scope="col" className="text-right">Tổng tiền</th>
+                              <th scope="col" className="text-right">
+                                Tổng tiền
+                              </th>
                               <th scope="col">Trạng thái</th>
-                              <th scope="col" className="w-24 whitespace-nowrap text-center">Thao tác</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {shownOrders.map((o, idx) => {
-                            const st = orderState(o);
-                            const its = o.items ?? [];
-                            return (
-                              <tr key={o.id} className="border-b border-border/60 last:border-b-0 hover:bg-slate-50/60 transition-colors">
-                                <td className="px-3 py-2.5 font-semibold text-slate-500">{idx + 1}</td>
-                                <td className="px-3 py-2.5">
-                                  <p className="text-sm font-semibold text-slate-950">#{o.order_number}</p>
-                                  <p className="text-sm font-medium text-slate-600">{fmtDate(o.placed_at)}</p>
-                                </td>
-                                <td className="px-3 py-2.5">
-                                  <div className="flex items-center gap-1">
-                                    {its.slice(0, 3).map((it) =>
-                                      it.image_url ? (
-                                        <img
-                                          key={it.id ?? it.sku}
-                                          src={it.image_url}
-                                          alt={it.product_name}
-                                          title={it.product_name}
-                                          className="size-8 rounded-xs border border-border/60 object-cover"
-                                        />
-                                      ) : (
-                                        <span
-                                          key={it.id ?? it.sku}
-                                          title={it.product_name}
-                                          className="grid size-8 place-items-center rounded-xs border border-border/60 bg-secondary text-slate-600"
-                                        >
-                                          <Package className="size-3.5" />
+                              <th scope="col" className="w-24 whitespace-nowrap text-center">
+                                Thao tác
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {shownOrders.map((o, idx) => {
+                              const st = orderState(o);
+                              const its = o.items ?? [];
+                              return (
+                                <tr
+                                  key={o.id}
+                                  className="border-b border-border/60 last:border-b-0 hover:bg-slate-50/60 transition-colors"
+                                >
+                                  <td className="px-3 py-2.5 font-semibold text-slate-500">
+                                    {idx + 1}
+                                  </td>
+                                  <td className="px-3 py-2.5">
+                                    <p className="text-sm font-semibold text-slate-950">
+                                      #{o.order_number}
+                                    </p>
+                                    <p className="text-sm font-medium text-slate-600">
+                                      {fmtDate(o.placed_at)}
+                                    </p>
+                                  </td>
+                                  <td className="px-3 py-2.5">
+                                    <div className="flex items-center gap-1">
+                                      {its.slice(0, 3).map((it) =>
+                                        it.image_url ? (
+                                          <img
+                                            key={it.id ?? it.sku}
+                                            src={it.image_url}
+                                            alt={it.product_name}
+                                            title={it.product_name}
+                                            className="size-8 rounded-xs border border-border/60 object-cover"
+                                          />
+                                        ) : (
+                                          <span
+                                            key={it.id ?? it.sku}
+                                            title={it.product_name}
+                                            className="grid size-8 place-items-center rounded-xs border border-border/60 bg-secondary text-slate-600"
+                                          >
+                                            <Package className="size-3.5" />
+                                          </span>
+                                        ),
+                                      )}
+                                      {its.length > 3 && (
+                                        <span className="text-xs font-semibold text-slate-600">
+                                          +{its.length - 3}
                                         </span>
-                                      ),
-                                    )}
-                                    {its.length > 3 && (
-                                      <span className="text-xs font-semibold text-slate-600">+{its.length - 3}</span>
-                                    )}
-                                    {its.length === 0 && <span className="text-xs text-slate-400">–</span>}
-                                  </div>
-                                </td>
-                                <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-slate-950">
-                                  {formatVndFull(o.grand_total_vnd)}
-                                </td>
-                                <td className="px-3 py-2.5">
-                                  <DotPill tone={st.tone}>{st.label}</DotPill>
-                                </td>
-                                <td className="px-3 py-2.5 text-center">
-                                  <Popover open={menuId === o.id} onOpenChange={(v) => setMenuId(v ? o.id : null)}>
-                                    <PopoverTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="size-7 rounded-xs text-slate-500 hover:text-slate-950" aria-label={`Thao tác đơn ${o.order_number}`}>
-                                        <MoreHorizontal className="size-3.5" />
-                                      </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent align="end" className="w-44 p-1 rounded-xs shadow-md">
-                                      {onNavigateToOrder && (
+                                      )}
+                                      {its.length === 0 && (
+                                        <span className="text-xs text-slate-400">–</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-slate-950">
+                                    {formatVndFull(o.grand_total_vnd)}
+                                  </td>
+                                  <td className="px-3 py-2.5">
+                                    <DotPill tone={st.tone}>{st.label}</DotPill>
+                                  </td>
+                                  <td className="px-3 py-2.5 text-center">
+                                    <Popover
+                                      open={menuId === o.id}
+                                      onOpenChange={(v) => setMenuId(v ? o.id : null)}
+                                    >
+                                      <PopoverTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="size-7 rounded-xs text-slate-500 hover:text-slate-950"
+                                          aria-label={`Thao tác đơn ${o.order_number}`}
+                                        >
+                                          <MoreHorizontal className="size-3.5" />
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent
+                                        align="end"
+                                        className="w-44 p-1 rounded-xs shadow-md"
+                                      >
+                                        {onNavigateToOrder && (
+                                          <MenuItem
+                                            icon={<ExternalLink className="size-3.5" />}
+                                            label="Xem đơn hàng"
+                                            onClick={() => {
+                                              setMenuId(null);
+                                              onNavigateToOrder(o.order_number);
+                                            }}
+                                          />
+                                        )}
                                         <MenuItem
-                                          icon={<ExternalLink className="size-3.5" />}
-                                          label="Xem đơn hàng"
+                                          icon={<Copy className="size-3.5" />}
+                                          label="Sao chép mã đơn"
                                           onClick={() => {
                                             setMenuId(null);
-                                            onNavigateToOrder(o.order_number);
+                                            copyText(`order-${o.id}`, "mã đơn", o.order_number);
                                           }}
                                         />
-                                      )}
-                                      <MenuItem
-                                        icon={<Copy className="size-3.5" />}
-                                        label="Sao chép mã đơn"
-                                        onClick={() => {
-                                          setMenuId(null);
-                                          copyText(`order-${o.id}`, "mã đơn", o.order_number);
-                                        }}
-                                      />
-                                    </PopoverContent>
-                                  </Popover>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
+                                      </PopoverContent>
+                                    </Popover>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
                         </table>
                       </div>
                     </div>
@@ -1352,7 +1518,7 @@ export function CustomersManager({
                         <button
                           type="button"
                           onClick={() => setShowAllOrders((v) => !v)}
-                          className="inline-flex items-center gap-1 text-sm font-semibold text-[#6941c6] hover:underline cursor-pointer"
+                          className="inline-flex items-center gap-1 text-sm font-semibold text-[#243B53] hover:underline cursor-pointer"
                         >
                           {showAllOrders ? "Thu gọn" : "Xem tất cả đơn hàng"}
                           {!showAllOrders && <ChevronRight className="size-3.5" />}
@@ -1367,7 +1533,9 @@ export function CustomersManager({
             {/* Shipping */}
             {detailTab === "shipping" && (
               <div className="mt-4">
-                <h3 className="text-slate-950 admin-subsection-title">Sổ địa chỉ giao hàng ({detail.addresses?.length ?? 0})</h3>
+                <h3 className="text-slate-950 admin-subsection-title">
+                  Sổ địa chỉ giao hàng ({detail.addresses?.length ?? 0})
+                </h3>
                 {!detail.addresses || detail.addresses.length === 0 ? (
                   <p className="py-12 text-center text-sm font-medium text-slate-500">
                     Khách hàng chưa lưu địa chỉ nào.
@@ -1379,7 +1547,9 @@ export function CustomersManager({
                         key={a.id}
                         className={cn(
                           "rounded-xs border p-3 text-sm shadow-2xs",
-                          a.is_default ? "border-[#6941c6]/40 bg-[#6941c6]/5" : "border-border/70 bg-white",
+                          a.is_default
+                            ? "border-[#243B53]/40 bg-[#243B53]/5"
+                            : "border-border/70 bg-white",
                         )}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -1388,7 +1558,7 @@ export function CustomersManager({
                             {a.recipient_name}
                           </p>
                           {a.is_default && (
-                            <span className="rounded-xs bg-[#6941c6]/10 px-1.5 py-0.5 text-xs font-semibold text-[#6941c6]">
+                            <span className="rounded-xs bg-[#243B53]/10 px-1.5 py-0.5 text-xs font-semibold text-[#243B53]">
                               Mặc định
                             </span>
                           )}
@@ -1405,18 +1575,22 @@ export function CustomersManager({
             {/* Notes */}
             {detailTab === "notes" && (
               <div className="mt-4">
-                <h3 className="text-slate-950 admin-subsection-title">Ghi chú chăm sóc khách hàng</h3>
-                <p className="mt-0.5 text-xs font-medium text-slate-500">Chỉ nhân viên và quản lý nhìn thấy.</p>
+                <h3 className="text-slate-950 admin-subsection-title">
+                  Ghi chú chăm sóc khách hàng
+                </h3>
+                <p className="mt-0.5 text-xs font-medium text-slate-500">
+                  Chỉ nhân viên và quản lý nhìn thấy.
+                </p>
                 <textarea
                   rows={5}
                   value={internalNoteDraft}
                   onChange={(e) => setInternalNoteDraft(e.target.value)}
                   placeholder="Ghi chú sở thích, thói quen thời trang, lưu ý khi tư vấn hoặc đóng gói hàng cho khách này…"
-                  className="mt-3 w-full resize-y rounded-xs border border-border/70 bg-white p-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-[#6941c6]"
+                  className="mt-3 w-full resize-y rounded-xs border border-border/70 bg-white p-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-[#243B53]"
                 />
                 <div className="mt-2.5 flex justify-end">
                   <Button
-                    className="h-8.5 gap-1.5 rounded-xs bg-[#6941c6] hover:bg-[#53389e] text-white text-sm px-3.5 font-semibold shadow-2xs"
+                    className="h-8.5 gap-1.5 rounded-xs bg-[#243B53] hover:bg-[#1B2E42] text-white text-sm px-3.5 font-semibold shadow-2xs"
                     onClick={saveInternalNote}
                     disabled={savingNote}
                   >
@@ -1448,18 +1622,26 @@ export function CustomersManager({
                       icon: <Clock className="size-3.5 text-muted-foreground" />,
                       label: "Lần mua gần nhất",
                       value:
-                        an?.days_since_last_order !== null && an?.days_since_last_order !== undefined
+                        an?.days_since_last_order !== null &&
+                        an?.days_since_last_order !== undefined
                           ? `${an.days_since_last_order} ngày trước`
                           : "Chưa mua",
-                      note: an?.last_order_at ? fmtDate(an.last_order_at) : "Chưa phát sinh giao dịch",
+                      note: an?.last_order_at
+                        ? fmtDate(an.last_order_at)
+                        : "Chưa phát sinh giao dịch",
                     },
                   ].map((k) => (
-                    <div key={k.label} className="rounded-xs border border-border/70 bg-white p-3.5 shadow-2xs">
+                    <div
+                      key={k.label}
+                      className="rounded-xs border border-border/70 bg-white p-3.5 shadow-2xs"
+                    >
                       <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
                         {k.icon}
                         {k.label}
                       </p>
-                      <p className="mt-1.5 text-xl font-semibold tabular-nums text-slate-950">{k.value}</p>
+                      <p className="mt-1.5 text-xl font-semibold tabular-nums text-slate-950">
+                        {k.value}
+                      </p>
                       <p className="mt-0.5 text-xs font-medium text-slate-500">{k.note}</p>
                     </div>
                   ))}
@@ -1475,14 +1657,16 @@ export function CustomersManager({
                           className="inline-flex items-center gap-1.5 rounded-xs border border-border/70 bg-white px-2.5 py-1 text-sm"
                         >
                           Kích cỡ {s.size}
-                          <span className="rounded-xs bg-[#6941c6] px-1.5 text-xs font-semibold text-white">
+                          <span className="rounded-xs bg-[#243B53] px-1.5 text-xs font-semibold text-white">
                             {s.count}
                           </span>
                         </span>
                       ))}
                     </div>
                   ) : (
-                    <p className="mt-1.5 text-sm text-muted-foreground">Chưa có dữ liệu kích cỡ đã mua.</p>
+                    <p className="mt-1.5 text-sm text-muted-foreground">
+                      Chưa có dữ liệu kích cỡ đã mua.
+                    </p>
                   )}
                 </div>
 
@@ -1491,9 +1675,16 @@ export function CustomersManager({
                     <h4 className="text-sm font-semibold text-foreground">Sản phẩm đã mua nhiều</h4>
                     <div className="mt-2 grid gap-2 md:grid-cols-2">
                       {an.top_products.slice(0, 4).map((p, idx) => (
-                        <div key={idx} className="flex items-center gap-2.5 rounded-xs border border-border/70 bg-white p-2 shadow-2xs">
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2.5 rounded-xs border border-border/70 bg-white p-2 shadow-2xs"
+                        >
                           {p.image_url ? (
-                            <img src={p.image_url} alt={p.name} className="size-9 rounded-xs border border-border/60 object-cover" />
+                            <img
+                              src={p.image_url}
+                              alt={p.name}
+                              className="size-9 rounded-xs border border-border/60 object-cover"
+                            />
                           ) : (
                             <span className="grid size-9 place-items-center rounded-xs border border-border/60 bg-secondary text-muted-foreground">
                               <Package className="size-3.5" />
@@ -1526,22 +1717,22 @@ export function CustomersManager({
       {/* 1. Page Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-slate-900 admin-page-title">
-            Khách hàng
-          </h1>
+          <h1 className="text-slate-900 admin-page-title">Khách hàng</h1>
           <p className="mt-1 text-sm text-slate-500 sm:text-sm">
             Quản lý thông tin khách hàng, lịch sử mua hàng và phân khúc khách hàng.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
-          {canWrite && <Button
+          {canWrite && (
+            <Button
               onClick={openCreate}
-              className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
+              className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#1B2E42] transition-colors cursor-pointer"
             >
               <Plus className="size-3.5" />
               <span>Thêm khách hàng</span>
-            </Button>}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1615,7 +1806,7 @@ export function CustomersManager({
               <Input
                 value={queryInput}
                 onChange={(e) => setQueryInput(e.target.value)}
-                className="h-8.5 rounded-xs border-border/70 bg-white pl-9 pr-8 text-sm focus-visible:ring-1 focus-visible:ring-[#6941c6]"
+                className="h-8.5 rounded-xs border-border/70 bg-white pl-9 pr-8 text-sm focus-visible:ring-1 focus-visible:ring-[#243B53]"
                 placeholder="Tìm kiếm theo tên, email, số điện thoại..."
               />
               {queryInput && (
@@ -1644,7 +1835,9 @@ export function CustomersManager({
             <SelectBox
               label="Trạng thái"
               value={filters.status}
-              onChange={(v) => setFilters((f) => ({ ...f, status: v as FilterState["status"], activity: "" }))}
+              onChange={(v) =>
+                setFilters((f) => ({ ...f, status: v as FilterState["status"], activity: "" }))
+              }
               className="w-38"
               options={[
                 { value: "", label: "Tất cả trạng thái" },
@@ -1659,7 +1852,8 @@ export function CustomersManager({
                   variant="outline"
                   className={cn(
                     "h-8.5 gap-1.5 rounded-xs border-border/70 bg-white text-sm font-normal hover:bg-secondary/60",
-                    (filters.dateFrom || filters.dateTo) && "border-[#6941c6]/50 bg-[#6941c6]/5 text-[#6941c6]",
+                    (filters.dateFrom || filters.dateTo) &&
+                      "border-[#243B53]/50 bg-[#243B53]/5 text-[#243B53]",
                   )}
                 >
                   <Calendar className="size-3.5" />
@@ -1704,13 +1898,13 @@ export function CustomersManager({
                   variant="outline"
                   className={cn(
                     "h-8.5 gap-1.5 rounded-xs border-border/70 bg-white text-sm hover:bg-secondary/60",
-                    advancedCount > 0 && "border-[#6941c6]/50 bg-[#6941c6]/5 text-[#6941c6]",
+                    advancedCount > 0 && "border-[#243B53]/50 bg-[#243B53]/5 text-[#243B53]",
                   )}
                 >
                   <SlidersHorizontal className="size-3.5" />
                   Lọc
                   {advancedCount > 0 && (
-                    <span className="inline-flex size-4 items-center justify-center rounded-xs bg-[#6941c6] text-xs font-semibold text-white">
+                    <span className="inline-flex size-4 items-center justify-center rounded-xs bg-[#243B53] text-xs font-semibold text-white">
                       {advancedCount}
                     </span>
                   )}
@@ -1719,7 +1913,9 @@ export function CustomersManager({
               <PopoverContent align="end" className="w-[320px] p-0 shadow-xl rounded-xs">
                 <div className="border-b border-border/70 px-3.5 py-2.5">
                   <p className="text-sm font-semibold">Bộ lọc nâng cao</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">Kết hợp tiêu chí để tìm đúng tệp khách hàng.</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Kết hợp tiêu chí để tìm đúng tệp khách hàng.
+                  </p>
                 </div>
                 <div className="space-y-3.5 p-3.5 text-sm">
                   <div className="space-y-1.5">
@@ -1729,14 +1925,24 @@ export function CustomersManager({
                         inputMode="numeric"
                         placeholder="Từ"
                         value={draftFilters.spentMin}
-                        onChange={(e) => setDraftFilters((f) => ({ ...f, spentMin: e.target.value.replace(/[^\d]/g, "") }))}
+                        onChange={(e) =>
+                          setDraftFilters((f) => ({
+                            ...f,
+                            spentMin: e.target.value.replace(/[^\d]/g, ""),
+                          }))
+                        }
                         className="h-8 rounded-xs bg-white text-sm"
                       />
                       <Input
                         inputMode="numeric"
                         placeholder="Đến"
                         value={draftFilters.spentMax}
-                        onChange={(e) => setDraftFilters((f) => ({ ...f, spentMax: e.target.value.replace(/[^\d]/g, "") }))}
+                        onChange={(e) =>
+                          setDraftFilters((f) => ({
+                            ...f,
+                            spentMax: e.target.value.replace(/[^\d]/g, ""),
+                          }))
+                        }
                         className="h-8 rounded-xs bg-white text-sm"
                       />
                     </div>
@@ -1750,11 +1956,13 @@ export function CustomersManager({
                         <button
                           key={p.l}
                           type="button"
-                          onClick={() => setDraftFilters((f) => ({ ...f, spentMin: p.min, spentMax: p.max }))}
+                          onClick={() =>
+                            setDraftFilters((f) => ({ ...f, spentMin: p.min, spentMax: p.max }))
+                          }
                           className={cn(
                             "rounded-xs border px-2 py-0.5 text-xs transition-colors",
                             draftFilters.spentMin === p.min && draftFilters.spentMax === p.max
-                              ? "border-[#6941c6] bg-[#6941c6] text-white font-medium"
+                              ? "border-[#243B53] bg-[#243B53] text-white font-medium"
                               : "border-border/70 bg-white text-muted-foreground hover:text-foreground",
                           )}
                         >
@@ -1775,7 +1983,7 @@ export function CustomersManager({
                   <div className="space-y-1.5">
                     <span className="font-medium text-foreground">Sắp xếp theo</span>
                     <select
-                      className="h-8 w-full rounded-xs border border-border/70 bg-white px-2.5 text-sm outline-none focus:ring-1 focus:ring-[#6941c6]"
+                      className="h-8 w-full rounded-xs border border-border/70 bg-white px-2.5 text-sm outline-none focus:ring-1 focus:ring-[#243B53]"
                       value={draftFilters.sortBy}
                       onChange={(e) => setDraftFilters((f) => ({ ...f, sortBy: e.target.value }))}
                     >
@@ -1794,7 +2002,13 @@ export function CustomersManager({
                     size="sm"
                     className="h-7.5 rounded-xs text-sm"
                     onClick={() => {
-                      const reset = { ...filters, spentMin: "", spentMax: "", city: "", sortBy: "created_at_desc" };
+                      const reset = {
+                        ...filters,
+                        spentMin: "",
+                        spentMax: "",
+                        city: "",
+                        sortBy: "created_at_desc",
+                      };
                       setDraftFilters(reset);
                       setFilters(reset);
                     }}
@@ -1804,7 +2018,7 @@ export function CustomersManager({
                   <Button
                     type="button"
                     size="sm"
-                    className="h-7.5 rounded-xs bg-[#6941c6] hover:bg-[#53389e] text-white text-sm px-3 shadow-2xs"
+                    className="h-7.5 rounded-xs bg-[#243B53] hover:bg-[#1B2E42] text-white text-sm px-3 shadow-2xs"
                     onClick={() => setFilters(draftFilters)}
                   >
                     Áp dụng
@@ -1821,7 +2035,7 @@ export function CustomersManager({
                   key={chip.key}
                   type="button"
                   onClick={chip.clear}
-                  className="inline-flex items-center gap-1 rounded-xs border border-border/80 bg-white px-2 py-0.5 text-xs transition-colors hover:border-[#6941c6]/40"
+                  className="inline-flex items-center gap-1 rounded-xs border border-border/80 bg-white px-2 py-0.5 text-xs transition-colors hover:border-[#243B53]/40"
                 >
                   {chip.label}
                   <X className="size-3 opacity-60" />
@@ -1830,7 +2044,7 @@ export function CustomersManager({
               <button
                 type="button"
                 onClick={resetFilters}
-                className="text-xs font-medium text-[#6941c6] underline-offset-2 hover:underline ml-1"
+                className="text-xs font-medium text-[#243B53] underline-offset-2 hover:underline ml-1"
               >
                 Xóa tất cả
               </button>
@@ -1842,13 +2056,31 @@ export function CustomersManager({
         {selected.size > 0 && (
           <div className="flex flex-wrap items-center gap-2 border-b border-border/70 bg-secondary/30 px-3.5 py-2">
             <span className="text-sm font-medium text-foreground">Đã chọn {selected.size}</span>
-            <Button size="sm" variant="outline" className="h-7 rounded-xs bg-white text-sm gap-1" disabled={bulkBusy} onClick={() => bulkSetStatus(false)}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 rounded-xs bg-white text-sm gap-1"
+              disabled={bulkBusy}
+              onClick={() => bulkSetStatus(false)}
+            >
               <Lock className="size-3" /> Khóa
             </Button>
-            <Button size="sm" variant="outline" className="h-7 rounded-xs bg-white text-sm gap-1" disabled={bulkBusy} onClick={() => bulkSetStatus(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 rounded-xs bg-white text-sm gap-1"
+              disabled={bulkBusy}
+              onClick={() => bulkSetStatus(true)}
+            >
               <Unlock className="size-3" /> Mở khóa
             </Button>
-            <Button size="sm" variant="ghost" className="h-7 rounded-xs text-sm" disabled={bulkBusy} onClick={() => setSelected(new Set())}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 rounded-xs text-sm"
+              disabled={bulkBusy}
+              onClick={() => setSelected(new Set())}
+            >
               Bỏ chọn
             </Button>
           </div>
@@ -1856,7 +2088,10 @@ export function CustomersManager({
 
         {/* Table */}
         <div className="overflow-x-auto customers-table-scroll">
-            <table aria-label="Danh sách khách hàng" className="admin-data-table w-full min-w-[1214px] table-fixed text-left text-sm">
+          <table
+            aria-label="Danh sách khách hàng"
+            className="admin-data-table w-full min-w-[1214px] table-fixed text-left text-sm"
+          >
             <colgroup>
               <col className="w-10" />
               <col className="w-[260px]" />
@@ -1875,7 +2110,7 @@ export function CustomersManager({
                   <input
                     type="checkbox"
                     aria-label="Chọn tất cả"
-                    className="size-3.5 rounded-xs accent-[#6941c6]"
+                    className="size-3.5 rounded-xs accent-[#243B53]"
                     checked={allSelected}
                     ref={(el) => {
                       if (el) el.indeterminate = someSelected && !allSelected;
@@ -1883,23 +2118,39 @@ export function CustomersManager({
                     onChange={toggleAll}
                   />
                 </th>
-                <th scope="col" className="sticky left-10 z-20 w-[260px] border-r border-slate-200 bg-white">Khách hàng</th>
+                <th
+                  scope="col"
+                  className="sticky left-10 z-20 w-[260px] border-r border-slate-200 bg-white"
+                >
+                  Khách hàng
+                </th>
                 <th scope="col">Liên hệ</th>
-                <th scope="col" className="text-right">Đơn hàng</th>
-                <th scope="col" className="text-right" title="Giá trị đơn hàng trung bình">Giá trị đơn TB</th>
-                <th scope="col" className="text-right">Tổng chi tiêu</th>
+                <th scope="col" className="text-right">
+                  Đơn hàng
+                </th>
+                <th scope="col" className="text-right" title="Giá trị đơn hàng trung bình">
+                  Giá trị đơn TB
+                </th>
+                <th scope="col" className="text-right">
+                  Tổng chi tiêu
+                </th>
                 <th scope="col">Lần mua cuối</th>
                 <th scope="col">Phân khúc</th>
                 <th scope="col">Trạng thái</th>
-                <th scope="col" className="whitespace-nowrap text-center">Thao tác</th>
+                <th scope="col" className="whitespace-nowrap text-center">
+                  Thao tác
+                </th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={10} className="py-14 text-center text-sm font-semibold text-slate-500">
+                  <td
+                    colSpan={10}
+                    className="py-14 text-center text-sm font-semibold text-slate-500"
+                  >
                     <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="size-4.5 animate-spin text-[#6941c6]" />
+                      <Loader2 className="size-4.5 animate-spin text-[#243B53]" />
                       <span>Đang tải danh sách khách hàng…</span>
                     </div>
                   </td>
@@ -1907,9 +2158,16 @@ export function CustomersManager({
               ) : listError ? (
                 <tr>
                   <td colSpan={10} className="py-12 text-center" role="alert">
-                    <p className="text-sm font-semibold text-slate-900">Không tải được danh sách khách hàng</p>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Không tải được danh sách khách hàng
+                    </p>
                     <p className="mt-1 text-xs font-medium text-slate-500">{listError}</p>
-                    <Button variant="outline" size="sm" onClick={() => void load()} className="mt-2.5 h-8 rounded-xs bg-white text-sm font-semibold text-slate-700">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void load()}
+                      className="mt-2.5 h-8 rounded-xs bg-white text-sm font-semibold text-slate-700"
+                    >
                       Thử lại
                     </Button>
                   </td>
@@ -1924,7 +2182,12 @@ export function CustomersManager({
                           Khách hàng sẽ xuất hiện từ đơn hàng hoặc khi được thêm vào hệ thống.
                         </p>
                         {canWrite && (
-                          <Button variant="outline" size="sm" onClick={openCreate} className="mt-2.5 h-7.5 rounded-xs bg-white text-sm font-semibold text-slate-700">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={openCreate}
+                            className="mt-2.5 h-7.5 rounded-xs bg-white text-sm font-semibold text-slate-700"
+                          >
                             <Plus className="mr-1 size-3.5" />
                             Thêm khách hàng
                           </Button>
@@ -1932,11 +2195,18 @@ export function CustomersManager({
                       </>
                     ) : (
                       <>
-                        <p className="text-sm font-semibold text-slate-900">Không tìm thấy khách hàng phù hợp</p>
+                        <p className="text-sm font-semibold text-slate-900">
+                          Không tìm thấy khách hàng phù hợp
+                        </p>
                         <p className="mt-1 text-xs font-medium text-slate-500">
                           Thử từ khóa khác hoặc bỏ bớt tiêu chí lọc.
                         </p>
-                        <Button variant="outline" size="sm" onClick={resetFilters} className="mt-2.5 h-7.5 rounded-xs bg-white text-sm font-semibold text-slate-700">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={resetFilters}
+                          className="mt-2.5 h-7.5 rounded-xs bg-white text-sm font-semibold text-slate-700"
+                        >
                           Bỏ lọc
                         </Button>
                       </>
@@ -1954,14 +2224,17 @@ export function CustomersManager({
                       onClick={() => openDetail(c)}
                       className={cn(
                         "cursor-pointer border-b border-border/60 transition-colors last:border-b-0 text-sm",
-                        checked ? "bg-[#6941c6]/5" : "hover:bg-slate-50/70",
+                        checked ? "bg-[#243B53]/5" : "hover:bg-slate-50/70",
                       )}
                     >
-                      <td className="sticky left-0 z-20 w-10 bg-inherit" onClick={(e) => e.stopPropagation()}>
+                      <td
+                        className="sticky left-0 z-20 w-10 bg-inherit"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <input
                           type="checkbox"
                           aria-label={`Chọn ${c.full_name}`}
-                          className="size-3.5 rounded-xs accent-[#6941c6]"
+                          className="size-3.5 rounded-xs accent-[#243B53]"
                           checked={checked}
                           onChange={() => toggleOne(c.id)}
                         />
@@ -1981,15 +2254,25 @@ export function CustomersManager({
                             >
                               {c.full_name}
                             </a>
-                            <p className="max-w-[180px] truncate text-sm font-medium text-slate-600">{c.email || "–"}</p>
+                            <p className="max-w-[180px] truncate text-sm font-medium text-slate-600">
+                              {c.email || "–"}
+                            </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-3 py-2.5 font-semibold text-slate-800">{c.phone || "–"}</td>
-                      <td className="text-right font-medium tabular-nums text-slate-700">{orderCount ?? 0}</td>
-                      <td className="text-right font-medium tabular-nums text-slate-700">{formatVndFull(x.avg_order_value_vnd ?? 0)}</td>
-                      <td className="text-right font-semibold tabular-nums text-slate-950">{formatVndFull(c.total_spent_vnd ?? 0)}</td>
-                      <td className="px-3 py-2.5 whitespace-nowrap font-semibold text-slate-700">{fmtDate(x.last_order_at)}</td>
+                      <td className="text-right font-medium tabular-nums text-slate-700">
+                        {orderCount ?? 0}
+                      </td>
+                      <td className="text-right font-medium tabular-nums text-slate-700">
+                        {formatVndFull(x.avg_order_value_vnd ?? 0)}
+                      </td>
+                      <td className="text-right font-semibold tabular-nums text-slate-950">
+                        {formatVndFull(c.total_spent_vnd ?? 0)}
+                      </td>
+                      <td className="px-3 py-2.5 whitespace-nowrap font-semibold text-slate-700">
+                        {fmtDate(x.last_order_at)}
+                      </td>
                       <td className="px-3 py-2.5">
                         <SegmentPill segment={c.segment} />
                       </td>
@@ -1999,9 +2282,17 @@ export function CustomersManager({
                         </DotPill>
                       </td>
                       <td className="px-3 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
-                        <Popover open={menuId === c.id} onOpenChange={(o) => setMenuId(o ? c.id : null)}>
+                        <Popover
+                          open={menuId === c.id}
+                          onOpenChange={(o) => setMenuId(o ? c.id : null)}
+                        >
                           <PopoverTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-7 rounded-xs text-muted-foreground hover:text-foreground" aria-label={`Thao tác với ${c.full_name}`}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 rounded-xs text-muted-foreground hover:text-foreground"
+                              aria-label={`Thao tác với ${c.full_name}`}
+                            >
                               <MoreHorizontal className="size-3.5" />
                             </Button>
                           </PopoverTrigger>
@@ -2023,7 +2314,13 @@ export function CustomersManager({
                               }}
                             />
                             <MenuItem
-                              icon={c.status === "active" ? <Lock className="size-3.5" /> : <Unlock className="size-3.5" />}
+                              icon={
+                                c.status === "active" ? (
+                                  <Lock className="size-3.5" />
+                                ) : (
+                                  <Unlock className="size-3.5" />
+                                )
+                              }
                               label={c.status === "active" ? "Khóa tài khoản" : "Mở khóa tài khoản"}
                               destructive={c.status === "active"}
                               onClick={() => {

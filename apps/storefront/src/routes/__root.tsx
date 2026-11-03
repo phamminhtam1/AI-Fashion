@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import { StoreProvider } from "@/lib/store";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
+import { BackToTop } from "@/components/site/BackToTop";
 import { Toaster } from "@/components/ui/sonner";
 import { hydrateCatalog } from "@/lib/products";
 import ElaneLoader from "@/components/common/ElaneLoader";
@@ -166,6 +167,7 @@ function RootComponent() {
         <Header navItems={navItems} />
         <main className="min-h-[60vh]"><Outlet /></main>
         <Footer />
+        <BackToTop />
         <Toaster position="bottom-center" />
       </StoreProvider>
     </QueryClientProvider>

@@ -29,7 +29,7 @@ export function PostThumb({ post, className }: { post: PostItem; className?: str
       }}
     />
   ) : (
-    <span className={cn("grid shrink-0 place-items-center rounded-md bg-gradient-to-br from-violet-50 to-stone-100 text-violet-300", className)}>
+    <span className={cn("grid shrink-0 place-items-center rounded-md bg-gradient-to-br from-[#EAF0F6] to-stone-100 text-[#AFC2D4]", className)}>
       <ImageIcon className="size-5" />
     </span>
   );

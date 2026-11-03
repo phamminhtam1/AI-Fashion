@@ -874,11 +874,11 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
                     className={cn(
                       "flex items-center gap-3 rounded-lg border p-4 text-left transition-colors",
                       on
-                        ? "border-[#6941c6] bg-violet-50 ring-1 ring-[#6941c6]"
-                        : "border-slate-200 hover:border-violet-200",
+                        ? "border-[#243B53] bg-[#EAF0F6] ring-1 ring-[#243B53]"
+                        : "border-slate-200 hover:border-[#C4D3E1]",
                     )}
                   >
-                    <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-violet-50 text-[#6941c6]">
+                    <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-[#EAF0F6] text-[#243B53]">
                       <Icon className="size-6" />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -888,10 +888,10 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
                     <span
                       className={cn(
                         "grid size-5 shrink-0 place-items-center rounded-full border-2",
-                        on ? "border-[#6941c6]" : "border-slate-300",
+                        on ? "border-[#243B53]" : "border-slate-300",
                       )}
                     >
-                      {on && <span className="size-2.5 rounded-full bg-[#6941c6]" />}
+                      {on && <span className="size-2.5 rounded-full bg-[#243B53]" />}
                     </span>
                   </button>
                 );
@@ -1041,15 +1041,15 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
           aria-label="Đang gửi bài viết"
         >
           <div className="flex w-full max-w-xs flex-col items-center rounded-2xl border border-white/70 bg-white px-6 py-5 text-center shadow-2xl">
-            <span className="grid size-12 place-items-center rounded-full bg-violet-100 text-[#6941c6]">
+            <span className="grid size-12 place-items-center rounded-full bg-[#DCE6F0] text-[#243B53]">
               <Loader2 className="size-6 animate-spin" />
             </span>
             <p className="mt-3 text-sm font-semibold text-slate-900">Đang gửi bài viết…</p>
             <p className="mt-1 text-xs leading-5 text-slate-500">
               Đang lưu nội dung và chờ hệ thống xử lý. Vui lòng không đóng trang.
             </p>
-            <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-violet-100">
-              <span className="block h-full w-2/5 animate-pulse rounded-full bg-[#6941c6]" />
+            <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-[#DCE6F0]">
+              <span className="block h-full w-2/5 animate-pulse rounded-full bg-[#243B53]" />
             </div>
           </div>
         </div>

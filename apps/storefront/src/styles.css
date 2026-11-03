@@ -105,6 +105,12 @@
   --sidebar-ring: oklch(0.178 0 0);
 }
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
 .dark {
   --font-serif: "Montserrat", Arial, sans-serif;
   --font-sans: "Montserrat", Arial, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -500,6 +506,21 @@ input:disabled,
 
 ::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+@media (max-width: 767px) {
+  html,
+  body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
 }
 
 /* Reveal supporting home sections as they enter the viewport. */

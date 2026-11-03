@@ -266,15 +266,15 @@ function FulfillmentStatusBadge({
   }
   if (s === "picking") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200/80 bg-indigo-50 px-2.5 py-0.5 text-sm font-semibold text-indigo-700 shadow-2xs">
-        <span className="size-1.5 rounded-full bg-indigo-500" />
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-[#C4D3E1] bg-[#EAF0F6] px-2.5 py-0.5 text-sm font-semibold text-[#243B53] shadow-2xs">
+        <span className="size-1.5 rounded-full bg-[#EAF0F6]0" />
         Đang lấy hàng
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200/80 bg-purple-50 px-2.5 py-0.5 text-sm font-semibold text-[#6941c6] shadow-2xs">
-      <span className="size-1.5 rounded-full bg-[#6941c6]" />
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#C4D3E1]/80 bg-[#EAF0F6] px-2.5 py-0.5 text-sm font-semibold text-[#243B53] shadow-2xs">
+      <span className="size-1.5 rounded-full bg-[#243B53]" />
       Chờ giao hàng
     </span>
   );
@@ -1913,7 +1913,7 @@ export function OrdersManager({
           {/* Create Order Button */}
           {canCreateOrder && <Button
             onClick={handleOpenCreateOrder}
-            className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
+            className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#1B2E42] transition-colors cursor-pointer"
           >
             <Plus className="size-3.5" />
             <span>Tạo đơn hàng</span>
@@ -1932,21 +1932,21 @@ export function OrdersManager({
             setPage(1);
           }}
           className={cn(
-            "group w-full rounded-xs border px-4 py-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
+            "group w-full rounded-xs border px-4 py-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2",
             statusFilter === "all" && sortByOption === "newest"
-              ? "border-[#6941c6]/35 bg-[#6941c6]/5 ring-1 ring-[#6941c6]/10"
-              : "border-slate-200 bg-white hover:border-[#6941c6]/30 hover:bg-slate-50/40",
+              ? "border-[#243B53]/35 bg-[#243B53]/5 ring-1 ring-[#243B53]/10"
+              : "border-slate-200 bg-white hover:border-[#243B53]/30 hover:bg-slate-50/40",
           )}
         >
           <span className="flex items-center justify-between gap-3">
             <span className="text-sm font-medium text-slate-600">Tổng đơn hàng</span>
-            <ShoppingBag className="size-4 shrink-0 text-[#6941c6]" aria-hidden="true" />
+            <ShoppingBag className="size-4 shrink-0 text-[#243B53]" aria-hidden="true" />
           </span>
-          <span className="mt-3 block text-[26px] font-semibold leading-none tracking-tight tabular-nums text-[#6941c6]">
+          <span className="mt-3 block text-[26px] font-semibold leading-none tracking-tight tabular-nums text-[#243B53]">
             <AnimatedValue value={orderStats.total.toLocaleString("vi-VN")} />
           </span>
           <span className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
-            <span className="size-1.5 rounded-full bg-[#6941c6]" aria-hidden="true" />
+            <span className="size-1.5 rounded-full bg-[#243B53]" aria-hidden="true" />
             <span><AnimatedValue value={orderStats.today_orders.toLocaleString("vi-VN")} /> đơn hôm nay</span>
           </span>
         </button>
@@ -1960,7 +1960,7 @@ export function OrdersManager({
             setPage(1);
           }}
           className={cn(
-            "group w-full rounded-xs border px-4 py-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
+            "group w-full rounded-xs border px-4 py-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2",
             statusFilter === "all" && sortByOption === "highest"
               ? "border-emerald-300 bg-emerald-50/50 ring-1 ring-emerald-100"
               : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/30",
@@ -1987,7 +1987,7 @@ export function OrdersManager({
             setPage(1);
           }}
           className={cn(
-            "group w-full rounded-xs border px-4 py-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
+            "group w-full rounded-xs border px-4 py-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2",
             statusFilter === "pending_payment"
               ? "border-amber-300 bg-amber-50/60 ring-1 ring-amber-100"
               : "border-slate-200 bg-white hover:border-amber-200 hover:bg-amber-50/30",
@@ -2014,7 +2014,7 @@ export function OrdersManager({
             setPage(1);
           }}
           className={cn(
-            "group w-full rounded-xs border px-4 py-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
+            "group w-full rounded-xs border px-4 py-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2",
             statusFilter === "shipping"
               ? "border-sky-300 bg-sky-50/60 ring-1 ring-sky-100"
               : "border-slate-200 bg-white hover:border-sky-200 hover:bg-sky-50/30",
@@ -2051,7 +2051,7 @@ export function OrdersManager({
               className={cn(
                 "inline-flex shrink-0 items-center gap-2 border-b-2 px-0.5 py-3 text-sm font-medium transition-colors cursor-pointer",
                 isActive
-                  ? "border-[#6941c6] text-slate-950"
+                  ? "border-[#243B53] text-slate-950"
                   : "border-transparent text-slate-600 hover:text-slate-950",
               )}
             >
@@ -2060,7 +2060,7 @@ export function OrdersManager({
                 <span
                   className={cn(
                     "min-w-4 text-xs tabular-nums leading-tight",
-                    tab.count > 0 ? (isActive ? "font-semibold text-[#6941c6]" : "text-slate-600") : "text-slate-400",
+                    tab.count > 0 ? (isActive ? "font-semibold text-[#243B53]" : "text-slate-600") : "text-slate-400",
                   )}
                 >
                   {tab.count}
@@ -2081,7 +2081,7 @@ export function OrdersManager({
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder="Tìm kiếm theo mã đơn, tên khách hàng hoặc SĐT..."
-              className="h-9 pl-8.5 rounded-xs border-slate-200 bg-white text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+              className="h-9 pl-8.5 rounded-xs border-slate-200 bg-white text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
             />
           </div>
 
@@ -2108,7 +2108,7 @@ export function OrdersManager({
                       className={cn(
                         "w-full text-left px-2.5 py-1.5 rounded-xs transition-colors font-semibold",
                         dateRangeLabel === opt
-                          ? "bg-purple-50 text-[#6941c6]"
+                          ? "bg-[#EAF0F6] text-[#243B53]"
                           : "hover:bg-slate-100 text-slate-700",
                       )}
                     >
@@ -2167,7 +2167,7 @@ export function OrdersManager({
                     type="checkbox"
                     checked={selectedOrderIds.size === pagedOrders.length && pagedOrders.length > 0}
                     onChange={toggleSelectAll}
-                    className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
+                    className="size-3.5 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
                   />
                 </th>
                 <th className="px-3.5 py-3 font-medium">Mã đơn</th>
@@ -2202,7 +2202,7 @@ export function OrdersManager({
                       onClick={() => handleOpenDetail(order)}
                       className={cn(
                         "cursor-pointer transition-colors hover:bg-slate-50/80",
-                        isSelected && "bg-[#f8f7ff]",
+                        isSelected && "bg-[#EAF0F6]",
                       )}
                     >
                       {/* Checkbox */}
@@ -2211,15 +2211,15 @@ export function OrdersManager({
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelectOrder(order.id)}
-                          className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
+                          className="size-3.5 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
                         />
                       </td>
 
                       {/* Order ID */}
                       <td className="px-3.5 py-1">
-                        <span className="tabular-nums font-semibold text-slate-950 text-sm hover:text-[#6941c6] inline-flex items-center gap-1 group">
+                        <span className="tabular-nums font-semibold text-slate-950 text-sm hover:text-[#243B53] inline-flex items-center gap-1 group">
                           <span>#{order.order_number}</span>
-                          <ChevronRight className="size-3 text-slate-400 group-hover:text-[#6941c6] group-hover:translate-x-0.5 transition-all" />
+                          <ChevronRight className="size-3 text-slate-400 group-hover:text-[#243B53] group-hover:translate-x-0.5 transition-all" />
                         </span>
                       </td>
 
@@ -2456,7 +2456,7 @@ export function OrdersManager({
               <div>
                 <label className="font-semibold text-slate-700">Hình thức thanh toán</label>
                 <select
-                  className="mt-1 flex h-9 w-full rounded-xs border border-slate-200 bg-white px-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[#6941c6]"
+                  className="mt-1 flex h-9 w-full rounded-xs border border-slate-200 bg-white px-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[#243B53]"
                   value={newOrderForm.payment_method}
                   onChange={(e) => setNewOrderForm((f) => ({ ...f, payment_method: e.target.value }))}
                 >
@@ -2469,7 +2469,7 @@ export function OrdersManager({
               <div>
                 <label className="font-semibold text-slate-700">Trạng thái thanh toán</label>
                 <select
-                  className="mt-1 flex h-9 w-full rounded-xs border border-slate-200 bg-white px-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[#6941c6]"
+                  className="mt-1 flex h-9 w-full rounded-xs border border-slate-200 bg-white px-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-[#243B53]"
                   value={newOrderForm.payment_status}
                   onChange={(e) => setNewOrderForm((f) => ({ ...f, payment_status: e.target.value }))}
                 >
@@ -2483,7 +2483,7 @@ export function OrdersManager({
               <Button type="button" variant="outline" onClick={() => setCreateOrderModalOpen(false)} className="h-9 px-4 text-sm font-semibold rounded-xs">
                 Hủy
               </Button>
-              <Button type="submit" className="h-9 px-4 text-sm font-semibold rounded-xs bg-[#6941c6] text-white hover:bg-[#53389e]">
+              <Button type="submit" className="h-9 px-4 text-sm font-semibold rounded-xs bg-[#243B53] text-white hover:bg-[#1B2E42]">
                 Tạo đơn hàng
               </Button>
             </DialogFooter>
@@ -2519,7 +2519,7 @@ export function OrdersManager({
                     className={cn(
                       "rounded-xs border px-2.5 py-1 text-sm font-semibold",
                       statusFilter === s.id
-                        ? "border-[#6941c6] bg-purple-50 text-[#6941c6]"
+                        ? "border-[#243B53] bg-[#EAF0F6] text-[#243B53]"
                         : "border-slate-200 bg-white text-slate-700",
                     )}
                   >
@@ -2549,7 +2549,7 @@ export function OrdersManager({
                     className={cn(
                       "rounded-xs border px-2.5 py-1 text-sm font-semibold",
                       statusFilter === s.id
-                        ? "border-[#6941c6] bg-purple-50 text-[#6941c6]"
+                        ? "border-[#243B53] bg-[#EAF0F6] text-[#243B53]"
                         : "border-slate-200 bg-white text-slate-700",
                     )}
                   >

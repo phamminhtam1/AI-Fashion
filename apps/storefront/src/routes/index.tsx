@@ -138,7 +138,7 @@ function Home() {
     <>
       <section className="relative h-[calc(100svh-7rem)] min-h-[520px] overflow-hidden bg-secondary">
         <img src={hero} alt="Bộ sưu tập Thu Đông 2026 ÉLANE" width={1920} height={1088} className="absolute inset-0 h-full w-full object-cover object-[75%_center] animate-in fade-in zoom-in-105 duration-[1500ms]" />
-        <div className="relative mx-auto flex h-full max-w-[1600px] items-center px-6 md:px-12">
+        <div className="relative mx-auto flex h-full max-w-[1800px] items-center px-4 sm:px-5 md:px-6 xl:px-8">
           <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-1000">
             <p className="text-[11px] uppercase tracking-[0.4em]">New Collection</p>
             <p className="mt-2 text-sm uppercase tracking-[0.3em] text-muted-foreground">Autumn / Winter 2026</p>
@@ -152,7 +152,7 @@ function Home() {
       </section>
 
       <section data-home-reveal className="border-b border-border">
-        <div className="mx-auto grid max-w-[1600px] grid-cols-1 divide-y divide-border px-6 text-sm md:grid-cols-3 md:divide-x md:divide-y-0">
+        <div className="mx-auto grid max-w-[1800px] grid-cols-1 divide-y divide-border px-2 text-sm sm:px-3 md:grid-cols-3 md:px-4 xl:px-5 md:divide-x md:divide-y-0">
           {[
             [Truck, "Miễn phí vận chuyển", storeSettings.shipping.freeShippingFromVnd > 0 ? `Cho đơn hàng từ ${formatVND(storeSettings.shipping.freeShippingFromVnd)}` : "Áp dụng cho mọi đơn hàng"],
             [RefreshCw, `Đổi trả ${storeSettings.returns.returnWindowDays} ngày`, `Theo điều kiện đổi trả của cửa hàng`],
@@ -169,7 +169,7 @@ function Home() {
         </div>
       </section>
 
-      <section data-home-reveal className="mx-auto max-w-[1600px] px-6 py-20 md:px-8">
+      <section data-home-reveal className="mx-auto max-w-[1800px] px-2 py-20 sm:px-3 md:px-4 xl:px-5">
         <SectionHead eyebrow="Danh mục" title="Mua sắm theo danh mục" />
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-7">
           {cats.map((c) => (
@@ -183,9 +183,9 @@ function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1600px] px-6 pb-20 md:px-8">
+      <section className="mx-auto max-w-[1800px] px-2 pb-20 sm:px-3 md:px-4 xl:px-5">
         <SectionHead eyebrow="Vừa cập bến" title="Hàng mới về" to="hang-moi" />
-        <div data-product-reveal className="product-reveal-grid grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 lg:grid-cols-4 lg:gap-y-10">
+        <div data-product-reveal className="product-reveal-grid grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 lg:grid-cols-4 lg:gap-y-10">
           {newIn.map((p) => <ProductCard key={p.id} product={p} />)}
         </div>
       </section>
@@ -202,14 +202,14 @@ function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1600px] px-6 py-20 md:px-8">
+      <section className="mx-auto max-w-[1800px] px-2 py-20 sm:px-3 md:px-4 xl:px-5">
         <SectionHead eyebrow="Được yêu thích" title="Bán chạy nhất" to="ban-chay" />
-        <div data-product-reveal className="product-reveal-grid grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 lg:grid-cols-4 lg:gap-y-10">
+        <div data-product-reveal className="product-reveal-grid grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 lg:grid-cols-4 lg:gap-y-10">
           {best.map((p) => <ProductCard key={p.id} product={p} />)}
         </div>
       </section>
 
-      <section data-home-reveal className="mx-auto max-w-[1600px] px-6 pb-20 md:px-8">
+      <section data-home-reveal className="mx-auto max-w-[1800px] px-2 pb-20 sm:px-3 md:px-4 xl:px-5">
         <SectionHead eyebrow="Dịp đặc biệt" title="Mua sắm theo dịp" />
         <div className="grid gap-4 md:grid-cols-3">
           {([["cong-so", "Công sở", coatImg], ["du-tiec", "Dự tiệc", dressImg], ["casual", "Casual", hero]] as [string, string, string][]).map(([slug, name, img]) => (
@@ -231,7 +231,7 @@ function Home() {
         <Link to="/danh-muc/$slug" params={{ slug: "sale" }} className="mt-8 inline-block bg-background px-10 py-4 text-xs uppercase tracking-widest text-foreground">Mua sale ngay</Link>
       </section>
 
-      <section data-home-reveal className="mx-auto max-w-[1600px] px-6 py-20 text-center md:px-8">
+      <section data-home-reveal className="mx-auto max-w-[1800px] px-2 py-20 text-center sm:px-3 md:px-4 xl:px-5">
         <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">@elane.official</p>
         <h2 className="mt-2 text-3xl md:text-4xl">#ÉLANEwoman</h2>
         <div className="mt-10 grid grid-cols-3 gap-2 md:grid-cols-6">

@@ -3,7 +3,7 @@ import { ArrowUpRight, Heart, Menu, Search, ShoppingBag, User, X, Minus, Plus, C
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { fetchProducts } from "@/lib/api";
+import { fetchCollections, fetchProducts, type StoreCollection } from "@/lib/api";
 import {
   categories,
   ensureCategories,
@@ -14,7 +14,7 @@ import {
   type NavItem,
   type Product,
 } from "@/lib/products";
-import { useStore, getCartItemImage } from "@/lib/store";
+import { useStore, getCartItemImage, getCartItemUnitPrice } from "@/lib/store";
 import { toast } from "sonner";
 import heroImg from "@/assets/hero.jpg";
 
@@ -39,7 +39,22 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
   const [open, setOpen] = useState<string | null>(null);
   const [mobileOpenCategory, setMobileOpenCategory] = useState<string | null>(null);
   const [navItems, setNavItems] = useState<NavItem[]>(navItemsProp);
+  const [collections, setCollections] = useState<StoreCollection[]>([]);
   const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCollections()
+      .then(({ items }) => {
+        if (!cancelled) setCollections(items);
+      })
+      .catch(() => {
+        // The local campaign image below remains available when collections cannot load.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     setNavItems(navItemsProp);
@@ -60,6 +75,14 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
 
   const openNav = open ? navItems.find((n) => n.slug === open && (n.children?.length ?? 0) > 0) : undefined;
   const megaCols = openNav?.children?.length ? chunk(openNav.children, 6) : [];
+  const normalizeGroup = (value: string) =>
+    value.trim().toLocaleLowerCase("vi-VN").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
+  const matchingCollections = openNav
+    ? collections.filter((item) => normalizeGroup(item.category) === normalizeGroup(openNav.label))
+    : [];
+  const menuCollection = matchingCollections.find((item) => item.is_featured) ?? matchingCollections[0] ?? null;
+  const menuBannerImage = menuCollection?.cover_image_url || menuCollection?.hero_image_url || heroImg;
+  const menuBannerTitle = menuCollection?.name || (openNav ? `Bộ sưu tập ${openNav.label}` : "Thu Đông 2026");
 
   const [scrolled, setScrolled] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -140,7 +163,7 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
       <div
         className="relative overflow-visible border-b border-border"
       >
-        <div className="mx-auto grid min-h-18 md:min-h-22 lg:min-h-26 max-w-[1600px] grid-cols-3 items-center px-4 py-1.5 md:py-2 md:px-8">
+        <div className="mx-auto grid min-h-16 md:min-h-18 lg:min-h-20 max-w-[1600px] grid-cols-3 items-center px-4 py-1.5 md:py-2 md:px-8">
           <div className="flex items-center gap-4">
             <button className="lg:hidden" onClick={() => setMobile(true)} aria-label="Mở menu">
               <Menu className="h-5 w-5" strokeWidth={1.5} />
@@ -158,7 +181,7 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
               <img
                 src="/images/elane-logo.png"
                 alt={`${storeSettings.brand.name} - ${storeSettings.brand.tagline}`}
-                className="h-[50px] sm:h-[58px] md:h-[72px] lg:h-[86px] w-auto object-contain transition-transform duration-300"
+                className="h-[44px] sm:h-[50px] md:h-[62px] lg:h-[72px] w-auto object-contain transition-transform duration-300"
               />
               <span className="header-logo-shimmer" aria-hidden="true" />
             </div>
@@ -257,7 +280,7 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
                 <h3 className="mb-3 border-b border-border/70 pb-3 text-sm font-semibold text-foreground">Khám phá thêm</h3>
                 <ul className="space-y-1">
                   <li>
-                    <Link to="/danh-muc/$slug" params={{ slug: "hang-moi" }} className="block rounded-sm px-2 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground" onClick={() => setOpen(null)}>
+                    <Link to="/bo-suu-tap" className="block rounded-sm px-2 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground" onClick={() => setOpen(null)}>
                       New Collection
                     </Link>
                   </li>
@@ -268,15 +291,31 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
                   </li>
                 </ul>
               </section>
-              <Link
-                to="/danh-muc/$slug"
-                params={{ slug: "hang-moi" }}
-                className="group relative hidden aspect-[4/3] w-full overflow-hidden bg-secondary lg:block lg:aspect-[3/4]"
-                onClick={() => setOpen(null)}
-              >
-                <img src={heroImg} alt="Bộ sưu tập Thu Đông 2026" className="h-full w-full object-cover object-right transition-transform duration-700 group-hover:scale-105" />
-                <span className="absolute inset-x-3 bottom-3 bg-background px-3 py-3 text-center text-sm font-medium text-foreground">Thu Đông 2026</span>
-              </Link>
+              {menuCollection ? (
+                <Link
+                  to="/bo-suu-tap/$slug"
+                  params={{ slug: menuCollection.slug }}
+                  className="group relative hidden aspect-[4/3] w-full overflow-hidden bg-secondary lg:block lg:aspect-[3/4]"
+                  onClick={() => setOpen(null)}
+                >
+                  <img
+                    src={menuBannerImage}
+                    alt={`Bộ sưu tập ${menuCollection.name}`}
+                    className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <span className="absolute inset-x-3 bottom-3 bg-background px-3 py-3 text-center text-sm font-medium text-foreground">{menuBannerTitle}</span>
+                </Link>
+              ) : (
+                <Link
+                  to="/danh-muc/$slug"
+                  params={{ slug: openNav.slug }}
+                  className="group relative hidden aspect-[4/3] w-full overflow-hidden bg-secondary lg:block lg:aspect-[3/4]"
+                  onClick={() => setOpen(null)}
+                >
+                  <img src={menuBannerImage} alt={menuBannerTitle} className="h-full w-full object-cover object-right transition-transform duration-700 group-hover:scale-105" />
+                  <span className="absolute inset-x-3 bottom-3 bg-background px-3 py-3 text-center text-sm font-medium text-foreground">{menuBannerTitle}</span>
+                </Link>
+              )}
             </div>
           </nav>
         ) : null}
@@ -550,7 +589,7 @@ function MiniCart() {
                 const p = products.find((x) => x.id === it.productId);
                 const itemImg = getCartItemImage(it, p);
                 const itemName = p?.name ?? it.productName ?? "Sản phẩm";
-                const itemPrice = (p ? (p.salePrice ?? p.price) : (it.unitPrice ?? 0)) * it.qty;
+                const itemPrice = getCartItemUnitPrice(it, p) * it.qty;
                 const productSlug = p?.slug ?? it.productSlug;
                 return (
                   <li key={i} className="flex gap-4">

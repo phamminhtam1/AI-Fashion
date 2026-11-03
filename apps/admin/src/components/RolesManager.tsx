@@ -46,8 +46,8 @@ import { adminApi } from "@/lib/api";
 
 /* ═════════════════════════ Design tokens (đo từ design) ═════════════════════════ */
 
-const BRAND = "#6941c6"; // màu nhấn dùng chung trong admin
-const ACCENT = "#6941c6"; // checkbox, chữ active, link
+const BRAND = "#243B53"; // màu nhấn dùng chung trong admin
+const ACCENT = "#243B53"; // checkbox, chữ active, link
 
 const INK = "text-slate-900"; // tiêu đề / chữ đậm
 const BODY = "text-slate-700"; // chữ nội dung (nhãn quyền, menu)
@@ -55,9 +55,9 @@ const MUTED = "text-slate-500"; // mô tả
 const LINE = "border-slate-200";
 
 const panel = "rounded-xs border border-slate-200 bg-white";
-const outlineBtn = "rounded-xs border-slate-200 bg-white font-medium text-slate-700 shadow-none transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2";
-const primaryBtn = "h-9 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-none transition-colors hover:bg-[#53389e] focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2";
-const inputCls = "rounded-xs border-slate-200 bg-white pl-9 text-sm shadow-none placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#6941c6]";
+const outlineBtn = "rounded-xs border-slate-200 bg-white font-medium text-slate-700 shadow-none transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2";
+const primaryBtn = "h-9 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white shadow-none transition-colors hover:bg-[#1B2E42] focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2";
+const inputCls = "rounded-xs border-slate-200 bg-white pl-9 text-sm shadow-none placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#243B53]";
 
 type IconType = ComponentType<{ className?: string; strokeWidth?: number }>;
 
@@ -108,7 +108,7 @@ const roles: Role[] = [
 ];
 
 const roleAccent: Record<string, { foreground: string; background: string; selectedBackground: string }> = {
-  system_owner: { foreground: "#6941c6", background: "#f1edff", selectedBackground: "#f7f4ff" },
+  system_owner: { foreground: "#243B53", background: "#EAF0F6", selectedBackground: "#EAF0F6" },
   ops_manager: { foreground: "#2878c7", background: "#edf6ff", selectedBackground: "#f5faff" },
   sales_staff: { foreground: "#16886b", background: "#eaf8f3", selectedBackground: "#f3fbf7" },
   content_editor: { foreground: "#c44575", background: "#fff0f5", selectedBackground: "#fff7fa" },
@@ -203,7 +203,7 @@ function Checkbox({ checked, onChange, label }: { checked: boolean; onChange: ()
       onClick={onChange}
       style={checked ? { backgroundColor: ACCENT, borderColor: ACCENT } : undefined}
       className={cn(
-        "grid shrink-0 place-items-center rounded-xs border text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
+        "grid shrink-0 place-items-center rounded-xs border text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2",
         "size-4",
         !checked && "border-slate-300 bg-white",
       )}
@@ -617,7 +617,7 @@ export function RolesManager({ permissions = [], onPermissionsChanged }: { permi
       {/* ───────── HEADER ───────── */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-start gap-[23px]">
-          <button type="button" className="ml-2.5 mt-[9px] grid size-8 place-items-center rounded-xs text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6]" aria-label="Quay lại">
+          <button type="button" className="ml-2.5 mt-[9px] grid size-8 place-items-center rounded-xs text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53]" aria-label="Quay lại">
             <ArrowLeft className="size-4" strokeWidth={1.75} />
           </button>
           <div>
@@ -677,11 +677,11 @@ export function RolesManager({ permissions = [], onPermissionsChanged }: { permi
                 document.getElementById(`permission-tab-${nextTab.id}`)?.focus();
               }}
               className={cn(
-                "inline-flex h-9 items-center gap-2 rounded-xs border px-4 text-sm font-medium transition-colors duration-300 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
-                active ? "border-slate-200 bg-white text-[#6941c6]" : "border-transparent text-slate-600 hover:bg-white/70 hover:text-slate-900",
+                "inline-flex h-9 items-center gap-2 rounded-xs border px-4 text-sm font-medium transition-colors duration-300 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2",
+                active ? "border-slate-200 bg-white text-[#243B53]" : "border-transparent text-slate-600 hover:bg-white/70 hover:text-slate-900",
               )}
             >
-              <TabIcon className={cn("size-4", active ? "text-[#6941c6]" : "text-slate-400")} strokeWidth={1.75} />
+              <TabIcon className={cn("size-4", active ? "text-[#243B53]" : "text-slate-400")} strokeWidth={1.75} />
               {label}
             </button>
           );
@@ -722,8 +722,8 @@ export function RolesManager({ permissions = [], onPermissionsChanged }: { permi
                   aria-pressed={isSelected}
                   onClick={() => setSelectedId(role.id)}
                   className={cn(
-                    "flex min-h-[112px] w-full items-start gap-3 rounded-xs border p-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
-                    isSelected ? "border-[#6941c6]" : "border-slate-200 bg-white hover:border-slate-300",
+                    "flex min-h-[112px] w-full items-start gap-3 rounded-xs border p-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2",
+                    isSelected ? "border-[#243B53]" : "border-slate-200 bg-white hover:border-slate-300",
                   )}
                   style={isSelected ? { backgroundColor: accent.selectedBackground } : undefined}
                 >
@@ -820,7 +820,7 @@ export function RolesManager({ permissions = [], onPermissionsChanged }: { permi
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className={cn("text-[17px] font-semibold leading-6", INK)}>Thiết lập quyền</h2>
-                  {permissionSaving && <span className="text-xs font-medium text-[#6941c6]">Đang lưu…</span>}
+                  {permissionSaving && <span className="text-xs font-medium text-[#243B53]">Đang lưu…</span>}
                 </div>
                 <p className={cn("mt-0.5 text-sm leading-5", MUTED)}>Chọn các quyền mà vai trò này được phép truy cập và thực hiện.</p>
               </div>
@@ -853,12 +853,12 @@ export function RolesManager({ permissions = [], onPermissionsChanged }: { permi
                           if (item.children) setExpanded((current) => ({ ...current, [item.id]: !current[item.id] }));
                         }}
                         className={cn(
-                          "flex w-full items-center gap-3 rounded-xs px-3 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#6941c6]",
+                          "flex w-full items-center gap-3 rounded-xs px-3 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#243B53]",
                           item.tall ? "h-[42px]" : "h-[37px]",
-                          isActive ? "bg-[#f2edff] font-semibold text-[#6941c6]" : "font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                          isActive ? "bg-[#EAF0F6] font-semibold text-[#243B53]" : "font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900",
                         )}
                       >
-                        <Icon className={cn("size-4 shrink-0", isActive ? "text-[#6941c6]" : "text-slate-400")} strokeWidth={1.75} />
+                        <Icon className={cn("size-4 shrink-0", isActive ? "text-[#243B53]" : "text-slate-400")} strokeWidth={1.75} />
                         {item.label}
                         {(item.children || item.chevron) && (
                           <ChevronDown className={cn("ml-auto size-3.5 text-[#66769a] transition-transform duration-300 ease-in-out", isOpen && "rotate-180")} />
@@ -877,7 +877,7 @@ export function RolesManager({ permissions = [], onPermissionsChanged }: { permi
                             <div className="relative -mt-1 mb-1">
                               <span className="absolute bottom-1 left-6 top-1 w-px bg-[#e6e9f1]" />
                               {item.children.map((child) => (
-                                <button key={child} type="button" onClick={() => activateSection("sales")} className="flex h-7 w-full items-center pl-12 text-left text-sm text-slate-500 transition-colors duration-300 ease-in-out hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#6941c6]">{child}</button>
+                                <button key={child} type="button" onClick={() => activateSection("sales")} className="flex h-7 w-full items-center pl-12 text-left text-sm text-slate-500 transition-colors duration-300 ease-in-out hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#243B53]">{child}</button>
                               ))}
                             </div>
                           </div>
@@ -910,8 +910,8 @@ export function RolesManager({ permissions = [], onPermissionsChanged }: { permi
                     const groupOpen = expandedGroups[group.id] ?? true;
                     return (
               <div key={group.id} id={`permission-group-${group.id}`} className={cn("rounded-xs border px-[18px] pb-5 pt-3", LINE)}>
-                        <button type="button" aria-expanded={groupOpen} aria-controls={`permission-items-${group.id}`} onClick={() => setExpandedGroups((current) => ({ ...current, [group.id]: !groupOpen }))} className="flex w-full items-center gap-3 text-left transition-colors duration-300 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2">
-                          <Icon className="size-4 shrink-0 text-[#6941c6]" strokeWidth={1.75} />
+                        <button type="button" aria-expanded={groupOpen} aria-controls={`permission-items-${group.id}`} onClick={() => setExpandedGroups((current) => ({ ...current, [group.id]: !groupOpen }))} className="flex w-full items-center gap-3 text-left transition-colors duration-300 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2">
+                          <Icon className="size-4 shrink-0 text-[#243B53]" strokeWidth={1.75} />
                           <div className="min-w-0 flex-1">
                             <h3 className={cn("text-sm font-semibold leading-5", INK)}>{group.title}</h3>
                             <p className={cn("text-[13px] leading-5", MUTED)}>{group.description}</p>
@@ -937,7 +937,7 @@ export function RolesManager({ permissions = [], onPermissionsChanged }: { permi
                                 role="checkbox"
                                 aria-checked={isOn}
                                 onClick={() => togglePermission(group.id, permission.code)}
-                                className={cn("flex items-center gap-3 rounded-xs py-1 text-left text-sm leading-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2", BODY)}
+                                className={cn("flex items-center gap-3 rounded-xs py-1 text-left text-sm leading-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2", BODY)}
                               >
                                 <span
                                   style={isOn ? { backgroundColor: ACCENT, borderColor: ACCENT } : undefined}
@@ -982,7 +982,7 @@ export function RolesManager({ permissions = [], onPermissionsChanged }: { permi
                   setRoleCreateCode(buildRoleCode(event.target.value));
                 }}
                 placeholder="Ví dụ: Nhân viên chăm sóc khách hàng"
-                className="h-10 rounded-xs border-slate-200 bg-white px-3 shadow-none focus-visible:ring-1 focus-visible:ring-[#6941c6]"
+                className="h-10 rounded-xs border-slate-200 bg-white px-3 shadow-none focus-visible:ring-1 focus-visible:ring-[#243B53]"
                 disabled={roleCreating}
               />
               <p className="text-xs text-slate-500">Từ 2 đến 80 ký tự.</p>
@@ -1007,7 +1007,7 @@ export function RolesManager({ permissions = [], onPermissionsChanged }: { permi
                 value={roleCreateDescription}
                 onChange={(event) => setRoleCreateDescription(event.target.value)}
                 placeholder="Mô tả trách nhiệm của vai trò này"
-                className="w-full resize-y rounded-xs border border-slate-200 bg-white px-3 py-2 text-sm leading-5 text-slate-800 shadow-none outline-none placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#6941c6] disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full resize-y rounded-xs border border-slate-200 bg-white px-3 py-2 text-sm leading-5 text-slate-800 shadow-none outline-none placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#243B53] disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={roleCreating}
               />
               <p className="text-right text-xs text-slate-500">{roleCreateDescription.length}/240</p>
@@ -1065,7 +1065,7 @@ export function RolesManager({ permissions = [], onPermissionsChanged }: { permi
                 maxLength={80}
                 value={roleEditName}
                 onChange={(event) => setRoleEditName(event.target.value)}
-                className="h-10 rounded-xs border-slate-200 bg-white px-3 shadow-none focus-visible:ring-1 focus-visible:ring-[#6941c6]"
+                className="h-10 rounded-xs border-slate-200 bg-white px-3 shadow-none focus-visible:ring-1 focus-visible:ring-[#243B53]"
                 disabled={roleSaving}
               />
               <p className="text-xs text-slate-500">Từ 2 đến 80 ký tự.</p>
@@ -1078,7 +1078,7 @@ export function RolesManager({ permissions = [], onPermissionsChanged }: { permi
                 maxLength={240}
                 value={roleEditDescription}
                 onChange={(event) => setRoleEditDescription(event.target.value)}
-                className="w-full resize-y rounded-xs border border-slate-200 bg-white px-3 py-2 text-sm leading-5 text-slate-800 shadow-none outline-none placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#6941c6] disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full resize-y rounded-xs border border-slate-200 bg-white px-3 py-2 text-sm leading-5 text-slate-800 shadow-none outline-none placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#243B53] disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={roleSaving}
               />
               <p className="text-right text-xs text-slate-500">{roleEditDescription.length}/240</p>
@@ -1117,7 +1117,7 @@ export function RolesManager({ permissions = [], onPermissionsChanged }: { permi
                   })}
                     className="flex w-full items-center gap-3 rounded-xs px-3 py-2 text-left hover:bg-slate-50"
                 >
-                  <span className={cn("grid size-4 shrink-0 place-items-center rounded-xs border text-white", checked ? "border-[#6941c6] bg-[#6941c6]" : "border-slate-300 bg-white")}>
+                  <span className={cn("grid size-4 shrink-0 place-items-center rounded-xs border text-white", checked ? "border-[#243B53] bg-[#243B53]" : "border-slate-300 bg-white")}>
                     {checked && <Check className="size-3" strokeWidth={3} />}
                   </span>
                   {member.avatarUrl
@@ -1152,7 +1152,7 @@ export function RolesManager({ permissions = [], onPermissionsChanged }: { permi
             <div className="space-y-2 rounded-xs border border-slate-200 bg-slate-50 p-3">
             {dependencyPrompt?.required.map((permission) => (
               <div key={permission.code} className="flex items-center gap-2 text-sm font-medium text-slate-800">
-                <span className="grid size-5 place-items-center rounded-full bg-[#6941c6] text-white">
+                <span className="grid size-5 place-items-center rounded-full bg-[#243B53] text-white">
                   <Check className="size-3" strokeWidth={3} />
                 </span>
                 <span>{permission.description || permissionLabelByCode[permission.code] || permission.code}</span>

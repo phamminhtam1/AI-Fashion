@@ -65,7 +65,7 @@ function resolvePreviewMedia(products: Product[], media: MediaItem[]): MediaItem
 
 function EmptyMedia({ draft }: { draft: Draft }) {
   return (
-    <div className="relative size-full bg-gradient-to-br from-stone-100 via-stone-50 to-violet-100 p-4">
+    <div className="relative size-full bg-gradient-to-br from-stone-100 via-stone-50 to-[#DCE6F0] p-4">
       <p className="font-serif text-[10px] tracking-[0.22em] text-slate-500">ÉLANE</p>
       <p className="mt-2 max-w-[80%] font-serif text-lg leading-tight text-slate-800">{draft.title || "Modern Office Look"}</p>
       {draft.cta && <span className="absolute bottom-3 left-3 rounded-sm bg-slate-900 px-2 py-1 text-[9px] font-semibold uppercase text-white">{draft.cta}</span>}
@@ -288,7 +288,7 @@ function WebsitePreview({ draft, products, media }: CardProps) {
       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3"><p className="font-serif text-base font-semibold tracking-[0.18em] text-slate-900">ÉLANE</p><div className="flex gap-3 text-[10px] font-medium uppercase tracking-wide text-slate-500"><span>Sản phẩm</span><span>Bộ sưu tập</span></div></div>
       <PreviewMedia draft={draft} products={products} media={media} ratio="aspect-[16/9]" className="rounded-none" layout="carousel" />
       <article className="p-4">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#6941c6]">Phong cách ÉLANE</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#243B53]">Phong cách ÉLANE</p>
         <h3 className="mt-1 font-serif text-xl leading-tight text-slate-900">{draft.title || "Bài viết mới từ ÉLANE"}</h3>
         <p className="mt-2 line-clamp-5 whitespace-pre-line text-sm leading-6 text-slate-600">{draft.caption || EMPTY_HINT}</p>
         {draft.hashtags.length > 0 && <p className="mt-2 line-clamp-2 text-xs text-slate-400">{draft.hashtags.slice(0, 8).join(" ")}</p>}
@@ -315,8 +315,8 @@ function GenericPreview({ channel, draft, products, media }: CardProps & { chann
       <PreviewMedia draft={draft} products={products} media={media} className="mt-3" />
       <div className="mt-3 space-y-1.5 text-sm text-slate-700">
         <p className="line-clamp-6 whitespace-pre-line">{draft.caption || <span className="text-slate-400">{EMPTY_HINT}</span>}</p>
-        {draft.cta && draft.caption && <p className="text-xs font-semibold text-slate-900">{renderCtaText(draft.cta, draft.ctaLink, "text-[#6941c6] hover:underline font-normal")}</p>}
-        {draft.hashtags.length > 0 && <p className="mt-1 text-sm text-[#6941c6]">{draft.hashtags.slice(0, 10).join(" ")}</p>}
+        {draft.cta && draft.caption && <p className="text-xs font-semibold text-slate-900">{renderCtaText(draft.cta, draft.ctaLink, "text-[#243B53] hover:underline font-normal")}</p>}
+        {draft.hashtags.length > 0 && <p className="mt-1 text-sm text-[#243B53]">{draft.hashtags.slice(0, 10).join(" ")}</p>}
       </div>
     </div>
   );
@@ -338,7 +338,7 @@ export function PreviewPanel({ title, channel, onChannel, device, onDevice, draf
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">{title}</h2>
         <label className="flex items-center gap-2 text-xs text-slate-500">Xem trước trên thiết bị
-          <select value={device} onChange={(e) => onDevice(e.target.value as Device)} className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700 outline-none focus:border-[#6941c6]">
+          <select value={device} onChange={(e) => onDevice(e.target.value as Device)} className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700 outline-none focus:border-[#243B53]">
             <option value="desktop">Desktop</option><option value="mobile">Mobile</option>
           </select>
         </label>
@@ -346,7 +346,7 @@ export function PreviewPanel({ title, channel, onChannel, device, onDevice, draf
       <div role="tablist" className="mt-3 flex gap-1 overflow-x-auto border-b border-slate-200">
         {previewChannels.map((id) => (
           <button key={id} role="tab" aria-selected={channel === id} onClick={() => onChannel(id)}
-            className={cn("flex items-center gap-1.5 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-xs font-medium", channel === id ? "border-[#6941c6] bg-violet-50 text-[#6941c6]" : "border-transparent text-slate-500 hover:text-slate-700")}>
+            className={cn("flex items-center gap-1.5 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-xs font-medium", channel === id ? "border-[#243B53] bg-[#EAF0F6] text-[#243B53]" : "border-transparent text-slate-500 hover:text-slate-700")}>
             <ChannelLogo id={id} size="xs" />{CH_NAME[id]}
           </button>
         ))}
@@ -362,7 +362,7 @@ export function PreviewPanel({ title, channel, onChannel, device, onDevice, draf
 function RadioRow({ checked, onClick, children }: { checked: boolean; onClick: () => void; children: string }) {
   return (
     <button type="button" role="radio" aria-checked={checked} onClick={onClick} className="flex w-full items-center gap-3 text-left text-sm">
-      <span className={cn("grid size-5 shrink-0 place-items-center rounded-full border-2", checked ? "border-[#6941c6]" : "border-slate-300")}>{checked && <span className="size-2.5 rounded-full bg-[#6941c6]" />}</span>
+      <span className={cn("grid size-5 shrink-0 place-items-center rounded-full border-2", checked ? "border-[#243B53]" : "border-slate-300")}>{checked && <span className="size-2.5 rounded-full bg-[#243B53]" />}</span>
       {children}
     </button>
   );
@@ -400,7 +400,7 @@ export function SchedulePanel({ mode, onMode, date, onDate, time, onTime, mediaU
             Duyệt & Đăng ngay
           </Button>
         )}
-        <Button onClick={onSubmit} disabled={busy} className="ml-auto flex-1 gap-2 bg-[#6941c6] hover:bg-[#5b36b0] sm:flex-none">
+        <Button onClick={onSubmit} disabled={busy} className="ml-auto flex-1 gap-2 bg-[#243B53] hover:bg-[#1B2E42] sm:flex-none">
           {busy ? <Loader2 className="size-4 animate-spin" /> : null}
           {mode === "schedule" ? "Gửi duyệt & Lên lịch" : "Gửi duyệt bài viết"}{!busy && <ArrowRight className="size-4" />}
         </Button>

@@ -46,7 +46,7 @@ export function AdminPagination({
           <select
             value={pageSize}
             onChange={(event) => onPageSizeChange(Number(event.target.value))}
-            className="h-8 cursor-pointer rounded-xs border border-slate-200 bg-white px-2 text-sm font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#6941c6]"
+            className="h-8 cursor-pointer rounded-xs border border-slate-200 bg-white px-2 text-sm font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#243B53]"
           >
             {[10, 20, 30, 50].map((size) => (
               <option key={size} value={size}>{size}</option>
@@ -89,7 +89,7 @@ export function AdminPagination({
             aria-current={page === number ? "page" : undefined}
             onClick={() => onPageChange(number)}
             className={page === number
-              ? "flex size-8 items-center justify-center rounded-xs bg-[#6941c6] text-sm font-semibold tabular-nums text-white"
+              ? "flex size-8 items-center justify-center rounded-xs bg-[#243B53] text-sm font-semibold tabular-nums text-white"
               : "flex size-8 items-center justify-center rounded-xs border border-slate-200 bg-white text-sm font-medium tabular-nums text-slate-700 transition-colors hover:bg-slate-100"}
           >
             {number}

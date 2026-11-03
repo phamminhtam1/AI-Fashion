@@ -151,14 +151,14 @@ const STATUS_STYLE: Record<CommentStatus, string> = {
 };
 
 const TAG_STYLE: Record<TagTone, string> = {
-  violet: "bg-[#ece7ff] text-[#6941c6]",
+  violet: "bg-[#EAF0F6] text-[#243B53]",
   blue: "bg-[#e0efff] text-[#2b7de9]",
   red: "bg-[#fde7ea] text-[#e03a52]",
   slate: "bg-slate-100 text-slate-700",
 };
 
 const AVATAR_TONES = [
-  "bg-violet-100 text-violet-700",
+  "bg-[#DCE6F0] text-[#243B53]",
   "bg-sky-100 text-sky-700",
   "bg-rose-100 text-rose-700",
   "bg-amber-100 text-amber-700",
@@ -319,7 +319,7 @@ function InboxHeader({ ctx, tab }: { ctx: SocialCtx; tab: InboxTab }) {
             type="button"
             variant="outline"
             onClick={() => ctx.go("channel-manage", { tab: "inbox" })}
-            className="gap-2 border-violet-200 bg-violet-50 text-[#6941c6] hover:bg-violet-100 hover:text-[#6941c6]"
+            className="gap-2 border-[#C4D3E1] bg-[#EAF0F6] text-[#243B53] hover:bg-[#DCE6F0] hover:text-[#243B53]"
           >
             <Settings />
             Cài đặt tự động trả lời
@@ -336,7 +336,7 @@ function InboxHeader({ ctx, tab }: { ctx: SocialCtx; tab: InboxTab }) {
               onClick={() => ctx.go(item.id)}
               className={cn(
                 "-mb-px inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm transition-colors",
-                active ? "border-[#6941c6] font-semibold text-[#6941c6]" : "border-transparent font-medium text-slate-500 hover:text-slate-800",
+                active ? "border-[#243B53] font-semibold text-[#243B53]" : "border-transparent font-medium text-slate-500 hover:text-slate-800",
               )}
             >
               <TabIcon kind={item.id} active={active} />
@@ -386,7 +386,7 @@ function ChannelChips({ value, onChange, className }: { value: ChannelFilter; on
             className={cn(
               "inline-flex h-9 items-center rounded-xs border text-[13px] font-medium",
               chip.id === "all" ? "px-3 text-sm" : "gap-1.5 px-2",
-              active ? "border-[#6941c6] bg-[#f3efff] text-[#6941c6]" : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50",
+              active ? "border-[#243B53] bg-[#EAF0F6] text-[#243B53]" : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50",
             )}
           >
             {chip.id !== "all" && <ChannelLogo id={chip.id} size={20} />}
@@ -433,12 +433,12 @@ function AddChip({ label, onAdd }: { label: string; onAdd: (value: string) => vo
           }
         }}
         placeholder={label}
-         className="h-8 w-36 rounded-xs border border-[#6941c6] px-2.5 text-sm outline-none"
+         className="h-8 w-36 rounded-xs border border-[#243B53] px-2.5 text-sm outline-none"
       />
     );
   }
   return (
-    <button type="button" onClick={() => setOpen(true)} className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-xs border border-[#6941c6] bg-white px-3 text-sm font-medium text-[#6941c6] hover:bg-[#f4f0ff]">
+    <button type="button" onClick={() => setOpen(true)} className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-xs border border-[#243B53] bg-white px-3 text-sm font-medium text-[#243B53] hover:bg-[#EAF0F6]">
       <Plus className="size-4" />
       {label}
     </button>
@@ -507,10 +507,10 @@ function CommentList({
               onClick={() => onSelect(item.id)}
               className={cn(
                 "relative flex w-full items-center gap-4 border-b border-slate-100 px-4 py-2.5 text-left transition-colors",
-                active ? "bg-[#efebff]" : "hover:bg-slate-50",
+                active ? "bg-[#EAF0F6]" : "hover:bg-slate-50",
               )}
             >
-               {active && <span className="absolute inset-y-0 left-0 w-[3px] bg-[#6941c6]" />}
+               {active && <span className="absolute inset-y-0 left-0 w-[3px] bg-[#243B53]" />}
               <Avatar name={item.name} src={item.avatar} channel={item.channel} size={50} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-base font-semibold leading-5 text-slate-900">{item.name}</span>
@@ -610,7 +610,7 @@ function CommentDetail({
             <div key={index} className="ml-11 mt-5 flex items-start gap-3">
               <BrandAvatar />
               <div className="min-w-0 flex-1">
-                <div className="rounded-xl bg-[#ebe6ff] px-3.5 py-2.5">
+                <div className="rounded-xl bg-[#EAF0F6] px-3.5 py-2.5">
                   <p className="text-[15px] leading-5">
                     <span className="font-bold text-slate-900">{reply.author}</span>
                     <span className="ml-2 text-sm text-slate-500">@{reply.handle}</span>
@@ -625,7 +625,7 @@ function CommentDetail({
           {item.escalationReason && (
             <div className="ml-11 mt-4 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800">
               <span>Cần nhân viên xử lý: {item.escalationReason}</span>
-               <button type="button" onClick={onRetry} className="shrink-0 font-semibold text-[#6941c6] hover:underline">
+               <button type="button" onClick={onRetry} className="shrink-0 font-semibold text-[#243B53] hover:underline">
                 Thử AI lại
               </button>
             </div>
@@ -640,9 +640,9 @@ function CommentDetail({
                   if (e.key === "Enter") onSend();
                 }}
                 placeholder="Viết phản hồi công khai..."
-                 className="h-9 min-w-0 flex-1 bg-transparent px-1 text-sm text-slate-900 caret-[#6941c6] outline-none placeholder:text-slate-400"
+                 className="h-9 min-w-0 flex-1 bg-transparent px-1 text-sm text-slate-900 caret-[#243B53] outline-none placeholder:text-slate-400"
               />
-               <button type="button" onClick={onSuggest} className="inline-flex h-9 shrink-0 items-center gap-2 rounded-xs border border-[#6941c6] bg-white px-3 text-sm font-medium text-[#6941c6] hover:bg-[#f4f0ff]">
+               <button type="button" onClick={onSuggest} className="inline-flex h-9 shrink-0 items-center gap-2 rounded-xs border border-[#243B53] bg-white px-3 text-sm font-medium text-[#243B53] hover:bg-[#EAF0F6]">
                 <Sparkles className="size-4" />
                 Gợi ý trả lời
                 <ChevronDown className="size-4" />
@@ -660,7 +660,7 @@ function CommentDetail({
                   GIF
                 </button>
               </div>
-             <button type="button" onClick={onSend} className="h-9 min-w-[86px] rounded-xs bg-[#6941c6] px-5 text-sm font-semibold text-white hover:bg-[#5b36b0]">
+             <button type="button" onClick={onSend} className="h-9 min-w-[86px] rounded-xs bg-[#243B53] px-5 text-sm font-semibold text-white hover:bg-[#1B2E42]">
                 Trả lời
               </button>
             </div>
@@ -724,7 +724,7 @@ function CommentSidebar({
                 <p className="mt-1.5 text-sm leading-[21px] text-slate-500">
                   {description}
                   {!expanded && post.description.length > 72 && (
-                     <button type="button" onClick={() => setExpanded(true)} className="ml-1.5 font-medium text-[#6941c6] hover:underline">
+                     <button type="button" onClick={() => setExpanded(true)} className="ml-1.5 font-medium text-[#243B53] hover:underline">
                       Xem thêm
                     </button>
                   )}
@@ -754,7 +754,7 @@ function CommentSidebar({
           aria-checked={autoReply}
           aria-label="Tự động trả lời"
           onClick={() => setAutoReply(!autoReply)}
-           className={cn("relative h-6 w-11 shrink-0 rounded-full transition-colors", autoReply ? "bg-[#6941c6]" : "bg-slate-300")}
+           className={cn("relative h-6 w-11 shrink-0 rounded-full transition-colors", autoReply ? "bg-[#243B53]" : "bg-slate-300")}
         >
           <span className={cn("absolute top-0.5 size-5 rounded-full bg-white shadow transition-all", autoReply ? "left-[22px]" : "left-0.5")} />
         </button>
@@ -896,7 +896,7 @@ export function CommentsPage({ ctx }: { ctx: SocialCtx }) {
             return (
               <button key={chip.id} type="button" onClick={() => setStatusFilter(chip.id)} className={cn(
                 "h-9 rounded-xs px-3 text-sm transition-colors",
-                active ? "bg-[#ede8ff] font-semibold text-[#6941c6]" : "bg-slate-50 font-medium text-slate-600 hover:bg-slate-100",
+                active ? "bg-[#EAF0F6] font-semibold text-[#243B53]" : "bg-slate-50 font-medium text-slate-600 hover:bg-slate-100",
               )}>
                 {chip.label} ({counts[chip.id]})
               </button>
@@ -976,10 +976,10 @@ function ConversationList({
               onClick={() => onSelect(thread)}
               className={cn(
                 "relative flex w-full items-center gap-4 border-b border-slate-100 px-4 py-[13px] text-left transition-colors",
-                active ? "bg-[#efebff]" : "hover:bg-slate-50",
+                active ? "bg-[#EAF0F6]" : "hover:bg-slate-50",
               )}
             >
-               {active && <span className="absolute inset-y-0 left-0 w-[3px] bg-[#6941c6]" />}
+               {active && <span className="absolute inset-y-0 left-0 w-[3px] bg-[#243B53]" />}
               <Avatar name={thread.name} src={thread.avatar} channel={thread.channel} size={50} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-base font-semibold leading-5 text-slate-900">{thread.name}</span>
@@ -988,7 +988,7 @@ function ConversationList({
               <span className="flex shrink-0 flex-col items-end gap-0.5">
                 <span className="text-sm leading-5 text-slate-500">{thread.time}</span>
                 {thread.unread > 0 ? (
-                  <span className="grid size-[22px] place-items-center rounded-full bg-[#6941c6] text-xs font-semibold text-white">{thread.unread}</span>
+                  <span className="grid size-[22px] place-items-center rounded-full bg-[#243B53] text-xs font-semibold text-white">{thread.unread}</span>
                 ) : (
                   <span className="size-[22px]" />
                 )}
@@ -1046,9 +1046,9 @@ function ConversationPane({ thread, draft, setDraft, onSend }: { thread?: Thread
             <div key={`${message.time}-${index}`} className={cn("flex items-start gap-3", mine ? "justify-end" : "justify-start")}>
               {!mine && <Avatar name={thread.name} src={thread.avatar} size={40} />}
               <div className={cn("flex min-w-0 max-w-[78%] flex-col", mine ? "items-end" : "items-start")}>
-                <div className={cn("rounded-xl px-3.5 py-2.5 text-base leading-6 text-slate-800", mine ? "bg-[#e9e4ff]" : "bg-[#f1f1f6]")}>
+                <div className={cn("rounded-xl px-3.5 py-2.5 text-base leading-6 text-slate-800", mine ? "bg-[#EAF0F6]" : "bg-[#f1f1f6]")}>
                   {message.from === "ai" && (
-                 <p className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-[#6941c6]">
+                 <p className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-[#243B53]">
                       <Sparkles className="size-3" />
                       AI đã trả lời
                     </p>
@@ -1064,7 +1064,7 @@ function ConversationPane({ thread, draft, setDraft, onSend }: { thread?: Thread
                 </div>
                 <div className="mt-1 flex items-center gap-1 text-sm text-slate-500">
                   {message.time}
-                   {mine && <CheckCheck className="size-[18px] text-[#6941c6]" />}
+                   {mine && <CheckCheck className="size-[18px] text-[#243B53]" />}
                 </div>
               </div>
             </div>
@@ -1093,7 +1093,7 @@ function ConversationPane({ thread, draft, setDraft, onSend }: { thread?: Thread
           placeholder="Nhập tin nhắn..."
            className={cn(inputCls, "min-w-0 flex-1 px-3.5")}
         />
-         <button type="button" onClick={onSend} className="h-9 shrink-0 rounded-xs bg-[#6941c6] px-5 text-sm font-semibold text-white hover:bg-[#5b36b0]">
+         <button type="button" onClick={onSend} className="h-9 shrink-0 rounded-xs bg-[#243B53] px-5 text-sm font-semibold text-white hover:bg-[#1B2E42]">
           Gửi
         </button>
       </div>
@@ -1127,7 +1127,7 @@ function ConversationInfo({ thread }: { thread?: Thread }) {
             </div>
           </div>
 
-           <button type="button" onClick={() => toast.info("Mở trang cá nhân trên mạng xã hội")} className="mt-5 inline-flex items-center gap-2.5 text-sm font-medium text-[#6941c6] hover:underline">
+           <button type="button" onClick={() => toast.info("Mở trang cá nhân trên mạng xã hội")} className="mt-5 inline-flex items-center gap-2.5 text-sm font-medium text-[#243B53] hover:underline">
             <ExternalLink className="size-5" />
             Xem trang cá nhân
           </button>

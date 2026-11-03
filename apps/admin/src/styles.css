@@ -56,19 +56,19 @@
   --card-foreground: #101828;
   --popover: #ffffff;
   --popover-foreground: #101828;
-  --primary: #6941c6;
+  --primary: #243B53;
   --primary-foreground: #ffffff;
   --secondary: #f4f5f7;
   --secondary-foreground: #344054;
   --muted: #f2f4f7;
   --muted-foreground: #667085;
-  --accent: #f4f3ff;
-  --accent-foreground: #6941c6;
+  --accent: #EAF0F6;
+  --accent-foreground: #243B53;
   --destructive: #d92d20;
   --destructive-foreground: #ffffff;
   --border: #eaecf0;
   --input: #d0d5dd;
-  --ring: #6941c6;
+  --ring: #243B53;
   --field: #ffffff;
 }
 
@@ -95,8 +95,57 @@
   border-radius: 9999px !important;
 }
 
+/* Keep page-level back controls consistent across admin forms and detail views. */
+.admin-app button:has(> svg.lucide-arrow-left):not(.social-commerce-ui button) {
+  width: auto;
+  min-width: 0;
+  height: 2.25rem;
+  gap: 0.5rem;
+  padding-inline: 0.75rem;
+  border: 1px solid #D7E1EA;
+  border-radius: 9999px;
+  background: #EAF0F6;
+  color: #1B2E42;
+  box-shadow: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.admin-app button:has(> svg.lucide-arrow-left):not(.social-commerce-ui button):hover {
+  border-color: #243B53;
+  background: #243B53;
+  color: #fff;
+}
+
+.admin-app button:has(> svg.lucide-arrow-left):not(.social-commerce-ui button) > svg {
+  color: inherit;
+  transition: transform 160ms ease;
+}
+
+.admin-app button:has(> svg.lucide-arrow-left):not(.social-commerce-ui button)::after {
+  content: "Quay lại";
+  white-space: nowrap;
+}
+
+.admin-app button:has(> svg.lucide-arrow-left):not(.social-commerce-ui button):hover > svg {
+  transform: translateX(-2px);
+}
+
+.admin-app button:has(> svg.lucide-arrow-left):not(.social-commerce-ui button):focus-visible {
+  outline: 2px solid #829BB2;
+  outline-offset: 2px;
+}
+
 .admin-sidebar {
   height: 100vh !important;
+}
+
+html {
+  scrollbar-gutter: stable;
 }
 
 .admin-sidebar nav {
@@ -222,6 +271,13 @@
   transition-timing-function: ease-in-out;
 }
 
+.admin-app [role="tab"].collection-summary-card,
+.admin-app [role="tab"].product-summary-card {
+  transition-property: translate, color, background-color, border-color, box-shadow;
+  transition-duration: 400ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .admin-app [role="tabpanel"][data-state="active"] {
   animation: admin-content-enter 300ms ease-in-out both;
 }
@@ -340,11 +396,11 @@ input:disabled,
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(105, 65, 198, 0.65); /* Soft purple tint matching ÉLANE primary */
+  background-color: rgba(36, 59, 83, 0.65); /* Soft navy tint matching the admin accent */
 }
 
 ::-webkit-scrollbar-thumb:active {
-  background-color: #6941c6;
+  background-color: #243B53;
 }
 
 /* Hide ugly Windows triangle arrow buttons */
@@ -356,6 +412,32 @@ input:disabled,
 
 ::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+.admin-thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184 / 45%) transparent;
+}
+
+.admin-thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.admin-thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-thin-scrollbar::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  background: rgb(148 163 184 / 40%);
+  background-clip: padding-box;
+}
+
+.admin-thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgb(36 59 83 / 65%);
+  background-clip: padding-box;
 }
 
 /* Specialized Sidebar subtle scroll */
@@ -383,7 +465,7 @@ input:disabled,
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: #6941c6;
+  background-color: #243B53;
 }
 
 
@@ -452,13 +534,16 @@ input:disabled,
 .social-commerce-ui button:not([role="switch"]):not([role="checkbox"]):not([role="radio"]) {
   min-height: 2.25rem;
 }
+.social-commerce-ui button.social-back-button {
+  border-radius: 9999px !important;
+}
 .social-commerce-ui textarea {
   padding: 0.75rem;
 }
 
 @keyframes social-step-pulse {
-  0%, 100% { box-shadow: 0 0 0 4px rgba(105, 65, 198, 0.12); }
-  50% { box-shadow: 0 0 0 7px rgba(105, 65, 198, 0.04); }
+  0%, 100% { box-shadow: 0 0 0 4px rgba(36, 59, 83, 0.12); }
+  50% { box-shadow: 0 0 0 7px rgba(36, 59, 83, 0.04); }
 }
 @keyframes social-step-fill {
   from { transform: scaleX(0); }

@@ -36,7 +36,7 @@ type PickState = "all" | "selected" | "unselected";
 type StockFilter = "all" | "in" | "out";
 
 const PAGE_LIMIT = 24;
-const BRAND = "#6941c6";
+const BRAND = "#243B53";
 const fmt = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
 
 const PRICE_RANGES: { id: string; label: string; min?: number; max?: number }[] = [
@@ -85,7 +85,7 @@ function mapApiProduct(p: AdminProduct, index = 0): Product {
     name: p.name,
     sku: baseSku,
     price: p.price_vnd,
-    tint: TINTS[index % TINTS.length] ?? "#e0e7ff",
+    tint: TINTS[index % TINTS.length] ?? "#DCE6F0",
     inStock: p.variants && p.variants.length > 0 ? p.variants.some((v) => (v.cost_vnd ?? 1) >= 0) : true,
     imageUrl: img ?? null,
     imageUrls: gallery,
@@ -113,7 +113,7 @@ function Thumb({ p, className }: { p: { imageUrl?: string | null; name: string }
 function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}
-      className={cn("relative h-6 w-11 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300", checked ? "bg-[#6941c6]" : "bg-slate-200")}>
+      className={cn("relative h-6 w-11 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#AFC2D4]", checked ? "bg-[#243B53]" : "bg-slate-200")}>
       <span className={cn("absolute left-0.5 top-0.5 size-5 rounded-full bg-white shadow transition-transform", checked && "translate-x-5")} />
     </button>
   );
@@ -122,7 +122,7 @@ function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: 
 function FilterSelect({ value, onChange, children, label }: { value: string; onChange: (v: string) => void; children: ReactNode; label: string }) {
   return (
     <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}
-      className="h-9 min-w-[7.5rem] cursor-pointer rounded-xs border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition-colors hover:border-violet-200 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]">
+      className="h-9 min-w-[7.5rem] cursor-pointer rounded-xs border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition-colors hover:border-[#C4D3E1] focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]">
       {children}
     </select>
   );
@@ -138,7 +138,7 @@ function StockBadge({ inStock }: { inStock: boolean }) {
 
 function Checkbox({ on }: { on: boolean }) {
   return (
-    <span aria-hidden className={cn("grid size-6 shrink-0 place-items-center rounded-md border-2 transition-colors", on ? "border-[#6941c6] bg-[#6941c6] text-white" : "border-slate-300 bg-white/90")}>
+    <span aria-hidden className={cn("grid size-6 shrink-0 place-items-center rounded-md border-2 transition-colors", on ? "border-[#243B53] bg-[#243B53] text-white" : "border-slate-300 bg-white/90")}>
       {on && <Check className="size-4" strokeWidth={3} />}
     </span>
   );
@@ -383,7 +383,7 @@ export function ProductBstPickerModal({
               ] as const).map(([id, Icon, label]) => (
                 <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
                   className={cn("-mb-px flex items-center gap-2 rounded-t-lg border-b-2 px-5 py-3 text-sm font-medium transition-colors",
-                    tab === id ? "border-[#6941c6] bg-violet-50 text-[#6941c6]" : "border-transparent text-slate-500 hover:text-slate-800")}>
+                    tab === id ? "border-[#243B53] bg-[#EAF0F6] text-[#243B53]" : "border-transparent text-slate-500 hover:text-slate-800")}>
                   <Icon className="size-4" />{label}
                 </button>
               ))}
@@ -391,7 +391,7 @@ export function ProductBstPickerModal({
             {tab === "products" && (
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 {loading ? (
-                  <span className="flex items-center gap-1 text-[#6941c6]">
+                  <span className="flex items-center gap-1 text-[#243B53]">
                     <Loader2 className="size-3.5 animate-spin" /> Đang tải từ API...
                   </span>
                 ) : (
@@ -409,10 +409,10 @@ export function ProductBstPickerModal({
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={tab === "products" ? "Tìm theo tên sản phẩm, mã SKU (gọi API real)..." : "Tìm theo tên bộ sưu tập..."}
-                className="h-9 w-full rounded-xs border border-slate-200 bg-white pl-10 pr-9 text-sm outline-none placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                className="h-9 w-full rounded-xs border border-slate-200 bg-white pl-10 pr-9 text-sm outline-none placeholder:text-slate-400 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
               />
               {loading && tab === "products" && (
-                <Loader2 className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-[#6941c6]" />
+                <Loader2 className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-[#243B53]" />
               )}
             </label>
             {tab === "products" && (
@@ -447,7 +447,7 @@ export function ProductBstPickerModal({
               <div className="flex rounded-xs border border-slate-200 p-0.5">
                 {([["grid", LayoutGrid, "Dạng lưới"], ["list", List, "Dạng danh sách"]] as const).map(([id, Icon, label]) => (
                   <button key={id} type="button" aria-label={label} aria-pressed={view === id} onClick={() => setView(id)}
-                    className={cn("grid size-8 place-items-center rounded-xs transition-colors", view === id ? "bg-violet-100 text-[#6941c6]" : "text-slate-400 hover:text-slate-700")}>
+                    className={cn("grid size-8 place-items-center rounded-xs transition-colors", view === id ? "bg-[#DCE6F0] text-[#243B53]" : "text-slate-400 hover:text-slate-700")}>
                     <Icon className="size-4" />
                   </button>
                 ))}
@@ -462,7 +462,7 @@ export function ProductBstPickerModal({
               loading && displayProducts.length === 0 ? (
                 <div className="grid h-56 place-items-center rounded-xl border border-dashed border-slate-200 text-center text-sm text-slate-500">
                   <div className="flex flex-col items-center gap-2">
-                    <Loader2 className="size-8 animate-spin text-[#6941c6]" />
+                    <Loader2 className="size-8 animate-spin text-[#243B53]" />
                     <span>Đang truy vấn danh mục sản phẩm từ máy chủ...</span>
                   </div>
                 </div>
@@ -480,7 +480,7 @@ export function ProductBstPickerModal({
                     const on = ids.includes(p.id);
                     return (
                       <button key={p.id} type="button" role="checkbox" aria-checked={on} onClick={() => toggle(p.id)}
-                        className={cn("group rounded-xl border bg-white p-2 text-left transition-all", on ? "border-[#6941c6] ring-1 ring-[#6941c6]" : "border-slate-200 hover:border-violet-300 hover:shadow-sm")}>
+                        className={cn("group rounded-xl border bg-white p-2 text-left transition-all", on ? "border-[#243B53] ring-1 ring-[#243B53]" : "border-slate-200 hover:border-[#AFC2D4] hover:shadow-sm")}>
                         <div className="relative overflow-hidden rounded-lg bg-slate-100">
                           <Thumb p={p} className="aspect-[3/4] w-full transition-transform duration-300 group-hover:scale-[1.03]" />
                           <span className="absolute right-2 top-2"><Checkbox on={on} /></span>
@@ -515,7 +515,7 @@ export function ProductBstPickerModal({
                     return (
                       <li key={p.id}>
                         <button type="button" role="checkbox" aria-checked={on} onClick={() => toggle(p.id)}
-                          className={cn("flex w-full items-center gap-3 rounded-xl border p-2.5 text-left transition-colors", on ? "border-[#6941c6] bg-violet-50/50 ring-1 ring-[#6941c6]" : "border-slate-200 hover:border-violet-300")}>
+                          className={cn("flex w-full items-center gap-3 rounded-xl border p-2.5 text-left transition-colors", on ? "border-[#243B53] bg-[#EAF0F6]/50 ring-1 ring-[#243B53]" : "border-slate-200 hover:border-[#AFC2D4]")}>
                           <Checkbox on={on} />
                           <Thumb p={p} className="size-14 shrink-0 rounded-lg" />
                           <span className="min-w-0 flex-1">
@@ -553,7 +553,7 @@ export function ProductBstPickerModal({
                   const on = collection?.id === l.id;
                   return (
                     <button key={l.id} type="button" role="radio" aria-checked={on} onClick={() => setCollection(on ? null : l)}
-                      className={cn("group rounded-xl border bg-white p-2 text-left transition-all", on ? "border-[#6941c6] ring-1 ring-[#6941c6]" : "border-slate-200 hover:border-violet-300 hover:shadow-sm")}>
+                      className={cn("group rounded-xl border bg-white p-2 text-left transition-all", on ? "border-[#243B53] ring-1 ring-[#243B53]" : "border-slate-200 hover:border-[#AFC2D4] hover:shadow-sm")}>
                       <div className="relative overflow-hidden rounded-lg bg-slate-100">
                         <Thumb p={{ imageUrl: l.coverImageUrl ?? null, name: l.title }} className="h-40 w-full" />
                         <span className="absolute right-2 top-2"><Checkbox on={on} /></span>
@@ -578,7 +578,7 @@ export function ProductBstPickerModal({
                 <span>Trang <strong>{page}</strong> / <strong>{totalPages}</strong></span>
                 <span className="text-slate-300">|</span>
                 <span>Tổng {apiTotal.toLocaleString("vi-VN")} sản phẩm</span>
-                {loading && <Loader2 className="size-3.5 animate-spin text-[#6941c6]" />}
+                {loading && <Loader2 className="size-3.5 animate-spin text-[#243B53]" />}
               </div>
               <div className="flex items-center gap-1.5">
                 <Button
@@ -612,14 +612,14 @@ export function ProductBstPickerModal({
             <header className="flex items-center justify-between">
               <h3 className="text-base font-semibold">Sản phẩm đã chọn ({total})</h3>
               <button type="button" disabled={!ids.length && !collection} onClick={() => { setIds([]); setCollection(null); }}
-                className="flex items-center gap-1.5 text-sm font-medium text-[#6941c6] hover:underline disabled:cursor-not-allowed disabled:text-slate-300 disabled:no-underline">
+                className="flex items-center gap-1.5 text-sm font-medium text-[#243B53] hover:underline disabled:cursor-not-allowed disabled:text-slate-300 disabled:no-underline">
                 <Trash2 className="size-4" />Xóa tất cả
               </button>
             </header>
 
             <div className="mt-3 min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-1">
               {collection && (
-                <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-2.5">
+                <div className="rounded-xl border border-[#C4D3E1] bg-[#EAF0F6]/60 p-2.5">
                   <div className="flex items-center gap-3">
                     <Thumb p={{ imageUrl: collection.coverImageUrl ?? null, name: collection.title }} className="size-12 shrink-0 rounded-lg" />
                     <div className="min-w-0 flex-1">
@@ -630,7 +630,7 @@ export function ProductBstPickerModal({
                   </div>
                   {!singleSelect && collectionMissing.length > 0 && (
                     <button type="button" onClick={() => setIds((cur) => [...cur, ...collectionMissing])}
-                      className="mt-2 w-full rounded-lg border border-violet-200 bg-white py-1.5 text-xs font-medium text-[#6941c6] hover:bg-violet-50">
+                      className="mt-2 w-full rounded-lg border border-[#C4D3E1] bg-white py-1.5 text-xs font-medium text-[#243B53] hover:bg-[#EAF0F6]">
                       Thêm {collectionMissing.length} sản phẩm của bộ sưu tập này
                     </button>
                   )}
@@ -680,7 +680,7 @@ export function ProductBstPickerModal({
                 ["featured", Star, "Ưu tiên sản phẩm nổi bật", "Đặt các sản phẩm đã chọn ở vị trí nổi bật trong nội dung."],
               ] as const).map(([key, Icon, title, desc]) => (
                 <div key={key} className="flex items-center gap-3">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-violet-50 text-[#6941c6]"><Icon className="size-5" /></span>
+                  <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-[#EAF0F6] text-[#243B53]"><Icon className="size-5" /></span>
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium">{title}</div>
                     <div className="text-xs text-slate-500">{desc}</div>
@@ -691,7 +691,7 @@ export function ProductBstPickerModal({
             </div>
             <div className="mt-5 grid grid-cols-[1fr_1.4fr] gap-3">
               <Button type="button" variant="outline" className="h-9 rounded-xs" onClick={onClose}>Hủy</Button>
-              <Button type="button" className="h-9 rounded-xs text-white hover:opacity-90" style={{ background: `linear-gradient(135deg, ${BRAND}, #8b5cf6)` }} disabled={!ids.length && !collection} onClick={confirm}>
+              <Button type="button" className="h-9 rounded-xs text-white hover:opacity-90" style={{ background: `linear-gradient(135deg, ${BRAND}, #243B53)` }} disabled={!ids.length && !collection} onClick={confirm}>
                 Xác nhận sản phẩm ({total})
               </Button>
             </div>

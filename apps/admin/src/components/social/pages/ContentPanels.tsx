@@ -17,14 +17,14 @@ const copy = async (v: string, label: string) => { await navigator.clipboard.wri
 const optional = <span className="font-normal text-slate-400">(tùy chọn)</span>;
 
 const Checkbox = ({ on }: { on: boolean }) => (
-  <span className={cn("grid size-4 shrink-0 place-items-center rounded border", on ? "border-[#6941c6] bg-[#6941c6] text-white" : "border-slate-300 bg-white")}>{on && <Check className="size-3" />}</span>
+  <span className={cn("grid size-4 shrink-0 place-items-center rounded border", on ? "border-[#243B53] bg-[#243B53] text-white" : "border-slate-300 bg-white")}>{on && <Check className="size-3" />}</span>
 );
 
 /** Chip chọn kênh đăng – dùng chung cho cả hai phương thức. */
 function ChannelChip({ id, on, onToggle, className }: { id: ChannelId; on: boolean; onToggle: (id: ChannelId) => void; className?: string }) {
   return (
     <button type="button" aria-pressed={on} onClick={() => onToggle(id)}
-      className={cn("flex items-center gap-2 rounded-xs border px-2.5 py-2 text-xs font-medium", on ? "border-violet-300 bg-violet-50 text-slate-900" : "border-slate-200 text-slate-600 hover:bg-slate-50", className)}>
+      className={cn("flex items-center gap-2 rounded-xs border px-2.5 py-2 text-xs font-medium", on ? "border-[#AFC2D4] bg-[#EAF0F6] text-slate-900" : "border-slate-200 text-slate-600 hover:bg-slate-50", className)}>
       <Checkbox on={on} /><ChannelLogo id={id} size="xs" />{CH_NAME[id]}
     </button>
   );
@@ -151,7 +151,7 @@ export function AiInputPanel({
           <>
             Chọn sản phẩm / BST {preset === "product" && <span className="text-rose-500">*</span>}
             {form.picked.length > 0 && (
-              <span className="ml-2 font-normal text-xs text-violet-700">
+              <span className="ml-2 font-normal text-xs text-[#243B53]">
                 (Đã chọn {form.picked.length})
               </span>
             )}
@@ -162,7 +162,7 @@ export function AiInputPanel({
             <button
               type="button"
               onClick={onSeeAll}
-              className="text-xs font-semibold text-[#6941c6] hover:underline flex items-center gap-1"
+              className="text-xs font-semibold text-[#243B53] hover:underline flex items-center gap-1"
             >
               Xem tất cả &rarr;
             </button>
@@ -170,13 +170,13 @@ export function AiInputPanel({
         }
       >
         {selectedCollection && (
-          <div className="mb-2.5 flex items-center justify-between rounded-lg border border-violet-200 bg-violet-50/70 px-3 py-2 text-xs">
+          <div className="mb-2.5 flex items-center justify-between rounded-lg border border-[#C4D3E1] bg-[#EAF0F6]/70 px-3 py-2 text-xs">
             <div className="flex items-center gap-2 min-w-0">
-              <FolderHeart className="size-4 shrink-0 text-[#6941c6]" />
+              <FolderHeart className="size-4 shrink-0 text-[#243B53]" />
               <span className="truncate">
                 BST đang chọn: <strong className="text-slate-900">{selectedCollection.title}</strong>
                 {selectedCollection.category && (
-                  <span className="ml-1 text-violet-700 font-medium">({selectedCollection.category})</span>
+                  <span className="ml-1 text-[#243B53] font-medium">({selectedCollection.category})</span>
                 )}
               </span>
             </div>
@@ -201,7 +201,7 @@ export function AiInputPanel({
               size="sm"
               variant="outline"
               onClick={onSeeAll}
-              className="mt-3 h-8 gap-1.5 border-violet-200 text-xs text-[#6941c6] hover:bg-violet-50"
+              className="mt-3 h-8 gap-1.5 border-[#C4D3E1] text-xs text-[#243B53] hover:bg-[#EAF0F6]"
             >
               <Plus className="size-3.5" />
               Chọn sản phẩm
@@ -245,7 +245,7 @@ export function AiInputPanel({
                   title={`${p.name} (Bấm để bỏ chọn)`}
                   className={cn(
                     "!min-h-0 group relative w-[calc((100%-24px)/4)] min-w-[90px] max-w-[130px] shrink-0 rounded-lg border p-1 text-left transition-all",
-                    "border-[#6941c6] bg-violet-50/50 ring-1 ring-[#6941c6]"
+                    "border-[#243B53] bg-[#EAF0F6]/50 ring-1 ring-[#243B53]"
                   )}
                 >
                   <div className="relative aspect-[3/4] w-full overflow-hidden rounded-md bg-slate-100">
@@ -284,12 +284,12 @@ export function AiInputPanel({
                 type="button"
                 onClick={onSeeAll}
                 title="Chọn thêm sản phẩm khác"
-                className="!min-h-0 group flex w-[calc((100%-24px)/4)] min-w-[90px] max-w-[130px] shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-violet-300 bg-violet-50/30 p-2 text-center transition-colors hover:border-[#6941c6] hover:bg-violet-50"
+                className="!min-h-0 group flex w-[calc((100%-24px)/4)] min-w-[90px] max-w-[130px] shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-[#AFC2D4] bg-[#EAF0F6]/30 p-2 text-center transition-colors hover:border-[#243B53] hover:bg-[#EAF0F6]"
               >
-                <div className="grid size-7 place-items-center rounded-full bg-white text-[#6941c6] shadow-xs group-hover:scale-105 transition-transform">
+                <div className="grid size-7 place-items-center rounded-full bg-white text-[#243B53] shadow-xs group-hover:scale-105 transition-transform">
                   <Plus className="size-3.5" />
                 </div>
-                <span className="mt-1.5 text-[11px] font-medium text-[#6941c6]">Thêm SP</span>
+                <span className="mt-1.5 text-[11px] font-medium text-[#243B53]">Thêm SP</span>
               </button>
             </div>
           </div>
@@ -325,13 +325,13 @@ export function AiInputPanel({
                           onClick={() => onToggleProductImage?.(item.id)}
                           className={cn(
                             "group relative aspect-[3/4] overflow-hidden rounded-lg border-2 bg-slate-100 transition",
-                            selected ? "border-[#6941c6] ring-2 ring-violet-100" : "border-transparent hover:border-violet-200",
+                            selected ? "border-[#243B53] ring-2 ring-[#DCE6F0]" : "border-transparent hover:border-[#C4D3E1]",
                           )}
                           title={`${selected ? "Bỏ chọn" : "Chọn"} ${item.name}`}
                         >
                           <MediaView item={item} />
                           <span className="absolute left-1.5 top-1.5"><Checkbox on={selected} /></span>
-                          {selected && <span className="absolute inset-x-1.5 bottom-1.5 rounded bg-[#6941c6]/90 px-1 py-0.5 text-center text-[9px] font-semibold text-white">Gửi cho AI</span>}
+                          {selected && <span className="absolute inset-x-1.5 bottom-1.5 rounded bg-[#243B53]/90 px-1 py-0.5 text-center text-[9px] font-semibold text-white">Gửi cho AI</span>}
                         </button>
                       );
                     })}
@@ -352,7 +352,7 @@ export function AiInputPanel({
       <Field label="Đối tượng khách hàng">
         <div className="flex flex-wrap gap-2">{AUDIENCES.map((a) => (
           <button key={a} type="button" aria-pressed={form.audience === a} onClick={() => upd({ audience: a })}
-            className={cn("rounded-md border px-3 py-2 text-xs font-medium", form.audience === a ? "border-violet-300 bg-violet-50 text-[#6941c6]" : "border-slate-200 text-slate-600 hover:bg-slate-50")}>{a}</button>
+            className={cn("rounded-md border px-3 py-2 text-xs font-medium", form.audience === a ? "border-[#AFC2D4] bg-[#EAF0F6] text-[#243B53]" : "border-slate-200 text-slate-600 hover:bg-slate-50")}>{a}</button>
         ))}</div>
       </Field>
 
@@ -367,7 +367,7 @@ export function AiInputPanel({
         </div>
       </Field>
 
-      <Button onClick={onGenerate} disabled={busy} className="h-9 w-full gap-2 rounded-xs bg-[#6941c6] hover:bg-[#5b36b0]">
+      <Button onClick={onGenerate} disabled={busy} className="h-9 w-full gap-2 rounded-xs bg-[#243B53] hover:bg-[#1B2E42]">
         <Sparkles className={cn("size-4", busy && "animate-pulse")} />{busy ? "AI đang viết..." : hasResult ? "Tạo lại với thông tin mới" : "Tạo content với AI"}
       </Button>
     </section>
@@ -466,12 +466,12 @@ export function AiResultPanel({
           <h2 className="text-lg font-semibold">3. Kết quả gợi ý từ AI</h2>
 
         </div>
-        {hasResult && <span className="inline-flex items-center gap-1.5 rounded-md border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-[#6941c6]"><Sparkles className="size-3.5" />Đã tạo {variants.length} phiên bản nội dung</span>}
+        {hasResult && <span className="inline-flex items-center gap-1.5 rounded-md border border-[#C4D3E1] bg-[#EAF0F6] px-3 py-1.5 text-xs font-medium text-[#243B53]"><Sparkles className="size-3.5" />Đã tạo {variants.length} phiên bản nội dung</span>}
       </div>
 
       {busy ? (
-        <div className="ai-generating-state relative mt-5 overflow-hidden rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 px-5 py-10 text-center">
-          <div className="ai-generating-orbit mx-auto grid size-16 place-items-center rounded-2xl bg-white text-[#6941c6] shadow-[0_12px_35px_rgba(105,65,198,0.18)] ring-1 ring-violet-100">
+        <div className="ai-generating-state relative mt-5 overflow-hidden rounded-xl border border-[#C4D3E1] bg-gradient-to-br from-[#EAF0F6] via-white to-fuchsia-50 px-5 py-10 text-center">
+          <div className="ai-generating-orbit mx-auto grid size-16 place-items-center rounded-2xl bg-white text-[#243B53] shadow-[0_12px_35px_rgba(36, 59, 83, 0.18)] ring-1 ring-[#DCE6F0]">
             <Sparkles className="ai-generating-sparkle size-7" />
             <span className="absolute size-2 rounded-full bg-fuchsia-400" />
           </div>
@@ -484,28 +484,28 @@ export function AiResultPanel({
               <span
                 key={index}
                 className={cn(
-                  "h-1.5 flex-1 overflow-hidden rounded-full bg-violet-100 transition-colors duration-300",
-                  index <= generatingStep && "bg-violet-200",
+                  "h-1.5 flex-1 overflow-hidden rounded-full bg-[#DCE6F0] transition-colors duration-300",
+                  index <= generatingStep && "bg-[#C4D3E1]",
                 )}
               >
-                <span className={cn("block h-full rounded-full bg-[#6941c6] transition-all duration-500", index < generatingStep ? "w-full" : index === generatingStep ? "ai-generating-progress w-full" : "w-0")} />
+                <span className={cn("block h-full rounded-full bg-[#243B53] transition-all duration-500", index < generatingStep ? "w-full" : index === generatingStep ? "ai-generating-progress w-full" : "w-0")} />
               </span>
             ))}
           </div>
           <div className="mt-5 flex justify-center gap-1.5" aria-hidden="true">
-            {[0, 1, 2].map((index) => <span key={index} className="ai-generating-dot size-1.5 rounded-full bg-[#6941c6]" style={{ animationDelay: `${index * 160}ms` }} />)}
+            {[0, 1, 2].map((index) => <span key={index} className="ai-generating-dot size-1.5 rounded-full bg-[#243B53]" style={{ animationDelay: `${index * 160}ms` }} />)}
           </div>
         </div>
       ) : !hasResult ? (
         <div className="grid place-items-center px-4 py-16 text-center">
-          <span className="grid size-12 place-items-center rounded-full bg-violet-50 text-[#6941c6]"><Sparkles className="size-6" /></span>
+          <span className="grid size-12 place-items-center rounded-full bg-[#EAF0F6] text-[#243B53]"><Sparkles className="size-6" /></span>
           <p className="mt-3 text-sm font-medium text-slate-700">Chưa có nội dung gợi ý</p>
           <p className="mt-1 text-sm text-slate-400">Nhập thông tin ở bước 2 rồi bấm “Tạo content với AI”.</p>
         </div>
       ) : (
         <>
           <div role="tablist" className="mt-4 flex gap-1 rounded-xs border border-slate-200 bg-slate-50 p-1 text-xs sm:text-sm">
-            {tabs.map((t) => <button key={t.id} id={`ai-result-tab-${t.id}`} role="tab" aria-selected={tab === t.id} aria-controls={`ai-result-panel-${t.id}`} onClick={() => setTab(t.id)} className={cn("flex-1 whitespace-nowrap rounded-xs px-2 py-1.5 font-medium transition-colors", tab === t.id ? "bg-white text-[#6941c6] shadow-sm" : "text-slate-500 hover:bg-white/60 hover:text-slate-700")}>{t.label}</button>)}
+            {tabs.map((t) => <button key={t.id} id={`ai-result-tab-${t.id}`} role="tab" aria-selected={tab === t.id} aria-controls={`ai-result-panel-${t.id}`} onClick={() => setTab(t.id)} className={cn("flex-1 whitespace-nowrap rounded-xs px-2 py-1.5 font-medium transition-colors", tab === t.id ? "bg-white text-[#243B53] shadow-sm" : "text-slate-500 hover:bg-white/60 hover:text-slate-700")}>{t.label}</button>)}
           </div>
 
           <AnimatedPanel transitionKey={tab} className="min-w-0">
@@ -518,7 +518,7 @@ export function AiResultPanel({
                     AI đã tạo {variants.length} phiên bản nội dung hoàn chỉnh. Bạn có thể chỉnh sửa và sao chép trước khi đăng.
                   </p>
                 </div>
-                <Button size="sm" variant="outline" disabled={busy} onClick={onRegenerate} className="shrink-0 gap-1.5 border-violet-200 text-[#6941c6]">
+                <Button size="sm" variant="outline" disabled={busy} onClick={onRegenerate} className="shrink-0 gap-1.5 border-[#C4D3E1] text-[#243B53]">
                   <RefreshCw className={cn("size-3.5", busy && "animate-spin")} />
                   Tạo lại nội dung
                 </Button>
@@ -541,7 +541,7 @@ export function AiResultPanel({
                       onClick={() => onActive(i)}
                       className={cn(
                         "cursor-pointer rounded-lg border p-4 transition-colors",
-                        isCurrent ? "border-[#6941c6] bg-violet-50/20 shadow-xs" : "border-slate-200 hover:border-violet-200"
+                        isCurrent ? "border-[#243B53] bg-[#EAF0F6]/20 shadow-xs" : "border-slate-200 hover:border-[#C4D3E1]"
                       )}
                     >
                       {/* Tiêu đề phiên bản & Độ dài */}
@@ -564,7 +564,7 @@ export function AiResultPanel({
                                 e.stopPropagation();
                                 void copy(v.caption, "caption");
                               }}
-                              className="text-[11px] text-slate-400 hover:text-[#6941c6] inline-flex items-center gap-1"
+                              className="text-[11px] text-slate-400 hover:text-[#243B53] inline-flex items-center gap-1"
                               title="Chỉ sao chép caption"
                             >
                               <Copy className="size-3" />
@@ -595,7 +595,7 @@ export function AiResultPanel({
                             <button
                               type="button"
                               onClick={() => void copy(fullCta, "CTA")}
-                              className="text-[11px] text-slate-400 hover:text-[#6941c6] inline-flex items-center gap-1"
+                              className="text-[11px] text-slate-400 hover:text-[#243B53] inline-flex items-center gap-1"
                               title="Sao chép CTA kèm link"
                             >
                               <Copy className="size-3" />
@@ -612,8 +612,8 @@ export function AiResultPanel({
                               className={cn(
                                 "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
                                 cta === c
-                                  ? "border-[#6941c6] bg-violet-100/70 font-semibold text-[#6941c6]"
-                                  : "border-slate-200 bg-white text-slate-600 hover:border-violet-200"
+                                  ? "border-[#243B53] bg-[#DCE6F0]/70 font-semibold text-[#243B53]"
+                                  : "border-slate-200 bg-white text-slate-600 hover:border-[#C4D3E1]"
                               )}
                             >
                               {c}
@@ -634,14 +634,14 @@ export function AiResultPanel({
                         <div className="mt-2.5 border-t border-slate-200/60 pt-2">
                           <div className="flex items-center justify-between gap-2">
                             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600">
-                              <Link2 className="size-3 text-[#6941c6]" />
+                              <Link2 className="size-3 text-[#243B53]" />
                               Link đính kèm CTA:
                             </span>
                             {ctaLink && (
                               <button
                                 type="button"
                                 onClick={() => void copy(ctaLink, "link CTA")}
-                                className="text-[11px] text-slate-400 hover:text-[#6941c6] inline-flex items-center gap-1"
+                                className="text-[11px] text-slate-400 hover:text-[#243B53] inline-flex items-center gap-1"
                                 title="Sao chép link"
                               >
                                 <Copy className="size-3" />
@@ -660,8 +660,8 @@ export function AiResultPanel({
                                   className={cn(
                                     "rounded border px-2 py-0.5 text-[11px] transition-colors truncate max-w-[240px]",
                                     ctaLink === item.url
-                                      ? "border-[#6941c6] bg-violet-100/80 font-medium text-[#6941c6]"
-                                      : "border-slate-200 bg-white text-slate-600 hover:border-violet-300"
+                                      ? "border-[#243B53] bg-[#DCE6F0]/80 font-medium text-[#243B53]"
+                                      : "border-slate-200 bg-white text-slate-600 hover:border-[#AFC2D4]"
                                   )}
                                   title={item.url}
                                 >
@@ -701,7 +701,7 @@ export function AiResultPanel({
                             <button
                               type="button"
                               onClick={() => void copy(v.hashtags.join(" "), "hashtag")}
-                              className="text-[11px] text-slate-400 hover:text-[#6941c6] inline-flex items-center gap-1"
+                              className="text-[11px] text-slate-400 hover:text-[#243B53] inline-flex items-center gap-1"
                               title="Chỉ sao chép hashtag"
                             >
                               <Copy className="size-3" />
@@ -727,7 +727,7 @@ export function AiResultPanel({
                           <div className="mt-1.5 flex flex-wrap gap-1.5">
                             {v.hashtags?.length > 0 ? (
                               v.hashtags.map((h) => (
-                                <span key={h} className="rounded-md bg-violet-50 px-2 py-0.5 text-xs text-[#6941c6]">
+                                <span key={h} className="rounded-md bg-[#EAF0F6] px-2 py-0.5 text-xs text-[#243B53]">
                                   {h}
                                 </span>
                               ))
@@ -751,7 +751,7 @@ export function AiResultPanel({
                               e.stopPropagation();
                               void copy(fullPost, "toàn bộ bài viết");
                             }}
-                            className="gap-1.5 border-violet-200 text-[#6941c6] hover:bg-violet-50"
+                            className="gap-1.5 border-[#C4D3E1] text-[#243B53] hover:bg-[#EAF0F6]"
                           >
                             <Copy className="size-3.5" />
                             Sao chép toàn bộ
@@ -783,7 +783,7 @@ export function AiResultPanel({
                 <div><h3 className="text-sm font-semibold">Hình ảnh/Media</h3><p className="mt-0.5 text-xs text-slate-500">Chọn và sắp xếp media dùng cho bài viết.</p></div>
                 <div className="flex flex-wrap gap-2">
                   <Button size="sm" variant="outline" onClick={onChooseLibrary} className="h-8 gap-1.5"><Images className="size-3.5" />Chọn từ thư viện</Button>
-                  <Button size="sm" variant="outline" onClick={() => mediaInput.current?.click()} className="h-8 gap-1.5 border-violet-200 text-[#6941c6]"><Upload className="size-3.5" />Tải ảnh lên</Button>
+                  <Button size="sm" variant="outline" onClick={() => mediaInput.current?.click()} className="h-8 gap-1.5 border-[#C4D3E1] text-[#243B53]"><Upload className="size-3.5" />Tải ảnh lên</Button>
                   <input ref={mediaInput} type="file" accept="image/*,video/*" multiple className="hidden" onChange={(event) => { onFiles(Array.from(event.target.files ?? [])); event.target.value = ""; }} />
                 </div>
               </div>
@@ -798,11 +798,11 @@ export function AiResultPanel({
                   const on = selectedMediaIds.includes(item.id);
                   const order = selectedMediaIds.indexOf(item.id);
                   return (
-                    <div key={item.id} className={cn("group relative aspect-[3/4] overflow-hidden rounded-md border bg-slate-100", on ? "border-[#6941c6] ring-2 ring-[#6941c6]/20" : "border-slate-200")}>
+                    <div key={item.id} className={cn("group relative aspect-[3/4] overflow-hidden rounded-md border bg-slate-100", on ? "border-[#243B53] ring-2 ring-[#243B53]/20" : "border-slate-200")}>
                       <button type="button" aria-pressed={on} aria-label={`${on ? "Bỏ chọn" : "Chọn"} ${item.name}`} onClick={() => toggleMedia(item.id)} className="absolute inset-0 z-10"><span className="sr-only">{on ? "Bỏ chọn" : "Chọn"}</span></button>
                       <MediaView item={item} />
                       <span className="absolute left-2 top-2 z-20 pointer-events-none"><Checkbox on={on} /></span>
-                      {on && <span className="absolute right-2 top-2 z-20 grid size-5 place-items-center rounded-full bg-[#6941c6] text-[10px] font-semibold text-white">{order + 1}</span>}
+                      {on && <span className="absolute right-2 top-2 z-20 grid size-5 place-items-center rounded-full bg-[#243B53] text-[10px] font-semibold text-white">{order + 1}</span>}
                       <div className="absolute inset-x-0 bottom-0 z-20 flex translate-y-full items-center justify-between bg-slate-950/70 p-1.5 text-white transition group-hover:translate-y-0">
                         <button type="button" aria-label="Xem ảnh lớn" onClick={() => setPreviewMedia(item)} className="grid size-7 place-items-center rounded hover:bg-white/15"><Eye className="size-3.5" /></button>
                         {on && <div className="flex items-center"><button type="button" aria-label="Chuyển sang trái" disabled={order === 0} onClick={() => moveMedia(item.id, -1)} className="grid size-7 place-items-center rounded hover:bg-white/15 disabled:opacity-30"><ChevronLeft className="size-4" /></button><GripVertical className="size-3.5 text-white/60" /><button type="button" aria-label="Chuyển sang phải" disabled={order === selectedMediaIds.length - 1} onClick={() => moveMedia(item.id, 1)} className="grid size-7 place-items-center rounded hover:bg-white/15 disabled:opacity-30"><ChevronRight className="size-4" /></button></div>}
@@ -816,7 +816,7 @@ export function AiResultPanel({
                 <div className="mt-4 grid place-items-center rounded-lg border border-dashed border-slate-300 px-4 py-10 text-center"><Images className="size-8 text-slate-300" /><p className="mt-2 text-sm font-medium text-slate-600">Chưa có media</p><p className="mt-1 text-xs text-slate-400">Chọn sản phẩm từ thư viện hoặc tải ảnh lên.</p></div>
               )}
 
-              {variants[active]?.visualBrief && <div className="mt-4 rounded-lg border border-violet-100 bg-violet-50/50 p-3"><p className="text-xs font-semibold text-[#6941c6]">Gợi ý bố cục từ AI</p><p className="mt-1 whitespace-pre-line text-xs leading-5 text-slate-600">{variants[active]?.visualBrief}</p></div>}
+              {variants[active]?.visualBrief && <div className="mt-4 rounded-lg border border-[#DCE6F0] bg-[#EAF0F6]/50 p-3"><p className="text-xs font-semibold text-[#243B53]">Gợi ý bố cục từ AI</p><p className="mt-1 whitespace-pre-line text-xs leading-5 text-slate-600">{variants[active]?.visualBrief}</p></div>}
 
               {previewMedia && <div role="dialog" aria-modal="true" aria-label="Xem media" className="fixed inset-0 z-50 grid place-items-center bg-slate-950/75 p-6" onClick={() => setPreviewMedia(null)}><div className="relative max-h-full max-w-4xl overflow-hidden rounded-lg bg-white p-2 shadow-xl" onClick={(event) => event.stopPropagation()}><MediaView item={previewMedia} className="max-h-[80vh] w-auto object-contain" /><button type="button" aria-label="Đóng" onClick={() => setPreviewMedia(null)} className="absolute right-3 top-3 grid size-8 place-items-center rounded-full bg-black/60 text-white"><X className="size-4" /></button></div></div>}
             </div>
@@ -900,7 +900,7 @@ export function ManualComposer({ form, upd, products, onPickProduct, collection,
                   <button
                     type="button"
                     onClick={onPickProduct}
-                    className="text-xs font-semibold text-[#6941c6] hover:underline"
+                    className="text-xs font-semibold text-[#243B53] hover:underline"
                   >
                     Đổi sản phẩm
                   </button>
@@ -909,12 +909,12 @@ export function ManualComposer({ form, upd, products, onPickProduct, collection,
             }
           >
             {collection && (
-              <div className="mb-2.5 flex items-center justify-between rounded-lg border border-violet-200 bg-violet-50/70 p-2.5 text-xs">
+              <div className="mb-2.5 flex items-center justify-between rounded-lg border border-[#C4D3E1] bg-[#EAF0F6]/70 p-2.5 text-xs">
                 <div className="flex items-center gap-2 min-w-0">
-                  <FolderHeart className="size-4 shrink-0 text-[#6941c6]" />
+                  <FolderHeart className="size-4 shrink-0 text-[#243B53]" />
                   <span className="truncate">
                     BST: <strong className="text-slate-900">{collection.title}</strong>
-                    {collection.category && <span className="ml-1 text-violet-700 font-medium">({collection.category})</span>}
+                    {collection.category && <span className="ml-1 text-[#243B53] font-medium">({collection.category})</span>}
                   </span>
                 </div>
                 {onClearCollection && (
@@ -965,13 +965,13 @@ export function ManualComposer({ form, upd, products, onPickProduct, collection,
                             onClick={() => onToggleProductImage?.(item.id)}
                             className={cn(
                               "group relative aspect-[3/4] overflow-hidden rounded-lg border-2 bg-slate-100 transition",
-                              selected ? "border-[#6941c6] ring-2 ring-violet-100" : "border-transparent hover:border-violet-200",
+                              selected ? "border-[#243B53] ring-2 ring-[#DCE6F0]" : "border-transparent hover:border-[#C4D3E1]",
                             )}
                             title={`${selected ? "Bỏ chọn" : "Chọn"} ${item.name}`}
                           >
                             <MediaView item={item} />
                             <span className="absolute left-1.5 top-1.5"><Checkbox on={selected} /></span>
-                            {selected && <span className="absolute inset-x-1 bottom-1 rounded bg-[#6941c6]/90 px-1 py-0.5 text-center text-[8px] font-semibold text-white">Trong bài viết</span>}
+                            {selected && <span className="absolute inset-x-1 bottom-1 rounded bg-[#243B53]/90 px-1 py-0.5 text-center text-[8px] font-semibold text-white">Trong bài viết</span>}
                           </button>
                         );
                         })}</div>
@@ -984,9 +984,9 @@ export function ManualComposer({ form, upd, products, onPickProduct, collection,
               <button
                 type="button"
                 onClick={onPickProduct}
-                className="w-full rounded-lg border border-dashed border-violet-300 bg-violet-50/40 p-4 text-center transition-colors hover:bg-violet-50"
+                className="w-full rounded-lg border border-dashed border-[#AFC2D4] bg-[#EAF0F6]/40 p-4 text-center transition-colors hover:bg-[#EAF0F6]"
               >
-                <div className="flex flex-col items-center gap-1.5 text-xs text-[#6941c6] font-medium">
+                <div className="flex flex-col items-center gap-1.5 text-xs text-[#243B53] font-medium">
                   <Plus className="size-5" />
                   <span>Chọn sản phẩm từ danh mục kho ÉLANE hoặc BST</span>
                 </div>
@@ -1004,7 +1004,7 @@ export function ManualComposer({ form, upd, products, onPickProduct, collection,
                 </div>
               ))}
               {media.length < MAX_MEDIA && (
-                <label className={cn("grid aspect-[3/4] cursor-pointer place-items-center rounded-md border border-dashed border-violet-300 bg-violet-50/40 text-center text-[11px] font-medium text-[#6941c6] hover:bg-violet-50 focus-within:ring-2 focus-within:ring-[#6941c6]", media.length === 0 && "col-span-2 aspect-auto py-6")}>
+                <label className={cn("grid aspect-[3/4] cursor-pointer place-items-center rounded-md border border-dashed border-[#AFC2D4] bg-[#EAF0F6]/40 text-center text-[11px] font-medium text-[#243B53] hover:bg-[#EAF0F6] focus-within:ring-2 focus-within:ring-[#243B53]", media.length === 0 && "col-span-2 aspect-auto py-6")}>
                   <input type="file" accept="image/*,video/*" multiple onChange={pick} className="sr-only" />
                   <span className="grid justify-items-center gap-1"><Plus className="size-4" /><span>Tải media<br />(Ảnh/Video)</span></span>
                 </label>
@@ -1015,7 +1015,7 @@ export function ManualComposer({ form, upd, products, onPickProduct, collection,
           <Box title="Gắn thẻ sản phẩm trong media" hint="Chọn vị trí sản phẩm hiển thị trên ảnh (tùy chọn)">
             <div className="flex items-center gap-3">
               <div className="h-14 w-11 shrink-0 overflow-hidden rounded-md">{media[0]?.kind === "image" ? <MediaView item={media[0]} /> : <Placeholder tint={firstProduct?.tint} />}</div>
-              <Button type="button" variant="outline" onClick={() => toast.info("Gắn thẻ sản phẩm trên ảnh sẽ nối với API sản phẩm")} className="gap-1.5 border-violet-200 text-[#6941c6]"><Plus className="size-4" />Thêm thẻ sản phẩm</Button>
+              <Button type="button" variant="outline" onClick={() => toast.info("Gắn thẻ sản phẩm trên ảnh sẽ nối với API sản phẩm")} className="gap-1.5 border-[#C4D3E1] text-[#243B53]"><Plus className="size-4" />Thêm thẻ sản phẩm</Button>
             </div>
           </Box>
 
@@ -1036,7 +1036,7 @@ export function ManualComposer({ form, upd, products, onPickProduct, collection,
         {/* ---- Cột phải ---- */}
         <div className="space-y-4">
           <Box title={<>Nội dung bài viết <span className="text-rose-500">*</span></>}>
-            <div className="overflow-hidden rounded-md border border-slate-200 focus-within:border-[#6941c6]">
+            <div className="overflow-hidden rounded-md border border-slate-200 focus-within:border-[#243B53]">
               <div className="flex items-center gap-0.5 border-b border-slate-200 bg-slate-50 px-2 py-1.5">
                 {tools.map(({ label, icon: Icon, run }) => <button key={label} type="button" aria-label={label} title={label} onClick={run} className="grid size-7 place-items-center rounded text-slate-600 hover:bg-white"><Icon className="size-4" /></button>)}
               </div>
@@ -1050,15 +1050,15 @@ export function ManualComposer({ form, upd, products, onPickProduct, collection,
           <Box title="Hashtag">
             <div className="flex flex-wrap gap-1.5">
               {form.hashtags.map((h) => (
-                <span key={h} className="inline-flex items-center gap-1 rounded bg-violet-50 py-1 pl-2 pr-1 text-xs text-[#6941c6]">{h}
-                  <button type="button" aria-label={`Xóa ${h}`} onClick={() => upd({ hashtags: form.hashtags.filter((x) => x !== h) })} className="grid size-4 place-items-center rounded hover:bg-violet-100"><X className="size-3" /></button></span>
+                <span key={h} className="inline-flex items-center gap-1 rounded bg-[#EAF0F6] py-1 pl-2 pr-1 text-xs text-[#243B53]">{h}
+                  <button type="button" aria-label={`Xóa ${h}`} onClick={() => upd({ hashtags: form.hashtags.filter((x) => x !== h) })} className="grid size-4 place-items-center rounded hover:bg-[#DCE6F0]"><X className="size-3" /></button></span>
               ))}
               {form.hashtags.length === 0 && !adding && <span className="text-xs text-slate-400">Chưa có hashtag</span>}
             </div>
             <div className="mt-2 flex items-center justify-between gap-2">
               {adding
-                ? <input autoFocus value={tag} onChange={(e) => setTag(e.target.value)} onBlur={addTag} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } if (e.key === "Escape") { setTag(""); setAdding(false); } }} placeholder="#hashtag" className="h-8 w-40 rounded-md border border-slate-200 px-2 text-xs outline-none focus:border-[#6941c6]" />
-                : <Button type="button" size="sm" variant="outline" disabled={form.hashtags.length >= MAX_TAGS} onClick={() => setAdding(true)} className="gap-1 border-violet-200 text-[#6941c6]"><Plus className="size-3.5" />Thêm hashtag</Button>}
+                ? <input autoFocus value={tag} onChange={(e) => setTag(e.target.value)} onBlur={addTag} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } if (e.key === "Escape") { setTag(""); setAdding(false); } }} placeholder="#hashtag" className="h-8 w-40 rounded-md border border-slate-200 px-2 text-xs outline-none focus:border-[#243B53]" />
+                : <Button type="button" size="sm" variant="outline" disabled={form.hashtags.length >= MAX_TAGS} onClick={() => setAdding(true)} className="gap-1 border-[#C4D3E1] text-[#243B53]"><Plus className="size-3.5" />Thêm hashtag</Button>}
               <span className="text-xs text-slate-400">{form.hashtags.length}/{MAX_TAGS}</span>
             </div>
           </Box>

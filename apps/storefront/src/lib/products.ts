@@ -39,7 +39,16 @@ export type Product = {
   colorways: Array<{ id: string; thumbnail: string; images: string[] }>;
   colors: { name: string; hex: string }[];
   sizes: string[];
-  variants: Array<{ id: string; sku: string; colorwayId: string; size: string; available: number }>;
+  variants: Array<{
+    id: string;
+    sku: string;
+    colorwayId: string;
+    size: string;
+    available: number;
+    /** Price for this exact SKU. Product-level price is only a catalog range/minimum. */
+    price?: number;
+    compareAtPrice?: number | null;
+  }>;
   isNew?: boolean | undefined;
   bestSeller?: boolean | undefined;
   rating: number;
@@ -104,6 +113,8 @@ export function mapApiProduct(p: ApiProduct): Product {
       colorwayId: v.colorway_id ?? v.color?.code ?? "",
       size: v.size.label,
       available: v.available ?? 0,
+      price: v.price_vnd,
+      compareAtPrice: v.compare_at_price_vnd,
     })),
     isNew: p.is_new,
     bestSeller: p.best_seller,

@@ -24,7 +24,7 @@ const ORDER: ChannelId[] = ["facebook", "instagram", "tiktok", "shopee", "websit
 const TONE: Record<string, string> = {
   emerald: "bg-emerald-100 text-emerald-600",
   blue: "bg-blue-100 text-blue-600",
-  violet: "bg-violet-100 text-violet-600",
+  violet: "bg-[#DCE6F0] text-[#1B2E42]",
   orange: "bg-orange-100 text-orange-500",
 };
 
@@ -34,14 +34,14 @@ const ART_TINT: Record<ChannelId, string> = {
   instagram: "from-fuchsia-100 to-orange-50",
   tiktok: "from-rose-100 to-cyan-50",
   shopee: "from-orange-100 to-amber-50",
-  website: "from-violet-100 to-indigo-50",
+  website: "from-[#DCE6F0] to-indigo-50",
   zalo: "from-sky-100 to-blue-50",
 };
 
 const FEATURE_TOGGLES = [
   { key: "products", label: "Đồng bộ sản phẩm", icon: Package, tone: "bg-blue-100 text-blue-600" },
   { key: "orders", label: "Đồng bộ đơn hàng", icon: ClipboardList, tone: "bg-emerald-100 text-emerald-600" },
-  { key: "posts", label: "Tự động đăng bài", icon: PenSquare, tone: "bg-violet-100 text-violet-600" },
+  { key: "posts", label: "Tự động đăng bài", icon: PenSquare, tone: "bg-[#DCE6F0] text-[#1B2E42]" },
   { key: "replies", label: "Trả lời tin nhắn", icon: MessageCircle, tone: "bg-rose-100 text-rose-500" },
 ] as const;
 
@@ -89,7 +89,7 @@ export function ConnectPage({ ctx }: { ctx: SocialCtx }) {
                 size="sm"
                 variant="outline"
                 onClick={() => setShowAll((v) => !v)}
-                className="border-violet-200 bg-white text-[#6941c6] hover:bg-violet-50 hover:text-[#6941c6]"
+                className="border-[#C4D3E1] bg-white text-[#243B53] hover:bg-[#EAF0F6] hover:text-[#243B53]"
               >
                 {showAll ? "Thu gọn" : "Xem tất cả"}
               </Button>
@@ -155,7 +155,7 @@ export function ConnectPage({ ctx }: { ctx: SocialCtx }) {
                     e.stopPropagation();
                     go("add-channel", { wizardChannel: c.id });
                   }}
-                  className="relative z-10 mt-4 w-full gap-2 border-[#6941c6]/50 bg-white font-semibold text-[#6941c6] hover:bg-violet-50 hover:text-[#6941c6]"
+                  className="relative z-10 mt-4 w-full gap-2 border-[#243B53]/50 bg-white font-semibold text-[#243B53] hover:bg-[#EAF0F6] hover:text-[#243B53]"
                 >
                   Kết nối {m.name}
                   <ArrowRight className="size-4" />
@@ -180,7 +180,7 @@ function ConnectedChannel({ ctx, channel: c, open, onToggle }: { ctx: SocialCtx;
   const [flags, setFlags] = useState<Record<string, boolean>>({ products: true, orders: true, posts: true, replies: true });
 
   return (
-    <article className={cn("rounded-xs border border-slate-200 bg-white", open && "border-[#6941c6] ring-1 ring-[#6941c6]/20")}>
+    <article className={cn("rounded-xs border border-slate-200 bg-white", open && "border-[#243B53] ring-1 ring-[#243B53]/20")}>
       <div className="flex flex-wrap items-start gap-x-6 gap-y-4 p-4">
         <ChannelLogo id={c.id} size="lg" />
 
@@ -196,7 +196,7 @@ function ConnectedChannel({ ctx, channel: c, open, onToggle }: { ctx: SocialCtx;
           <div className="mt-2 flex items-center gap-2">
             <Avatar src={c.avatarUrl} className="size-8" label={c.accountName?.charAt(0).toUpperCase()} />
             <span className="truncate text-sm text-slate-700">{c.handle ?? c.accountName}</span>
-            <a href={c.url} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-[#6941c6]">
+            <a href={c.url} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-[#243B53]">
               <ExternalLink className="size-3.5" />
             </a>
           </div>
@@ -220,7 +220,7 @@ function ConnectedChannel({ ctx, channel: c, open, onToggle }: { ctx: SocialCtx;
             <RefreshCw className="size-3.5" />
             Đồng bộ
           </Button>
-          <Button size="sm" onClick={() => ctx.go("channel-manage", { channel: c.id })} className="gap-1.5 bg-[#6941c6] hover:bg-[#5b36b0]">
+          <Button size="sm" onClick={() => ctx.go("channel-manage", { channel: c.id })} className="gap-1.5 bg-[#243B53] hover:bg-[#1B2E42]">
             <Settings2 className="size-3.5" />
             Quản lý
           </Button>
@@ -311,21 +311,21 @@ function Floating({ className, children }: { className: string; children: ReactN
 function ExpandPromo({ canChannelWrite }: { canChannelWrite: boolean }) {
   return (
     <aside className={cn(card, "p-3")}>
-      <div className="flex h-full flex-col rounded-xl bg-gradient-to-b from-violet-100 via-violet-50 to-violet-100/70 p-5">
+      <div className="flex h-full flex-col rounded-xl bg-gradient-to-b from-[#DCE6F0] via-[#EAF0F6] to-[#DCE6F0]/70 p-5">
         {/* Minh hoạ */}
         <div className="relative mx-auto h-[190px] w-full max-w-[300px]">
           {/* Màn hình */}
           <div className="absolute left-1/2 top-9 w-[168px] -translate-x-1/2">
-            <div className="rounded-lg border-[5px] border-violet-200 bg-white p-2 shadow-md">
+            <div className="rounded-lg border-[5px] border-[#C4D3E1] bg-white p-2 shadow-md">
               <svg viewBox="0 0 120 60" className="h-[72px] w-full" fill="none">
                 {[10, 24, 38, 52, 66, 80, 94].map((x, i) => (
-                  <rect key={x} x={x} y={52 - (i + 2) * 5} width="8" height={(i + 2) * 5} rx="1.5" className="fill-violet-100" />
+                  <rect key={x} x={x} y={52 - (i + 2) * 5} width="8" height={(i + 2) * 5} rx="1.5" className="fill-[#DCE6F0]" />
                 ))}
-                <polyline points="6,46 24,36 42,40 62,22 82,28 112,8" stroke="#8b5cf6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                <polyline points="6,46 24,36 42,40 62,22 82,28 112,8" stroke="#243B53" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <div className="mx-auto h-3 w-10 bg-violet-200" />
-            <div className="mx-auto h-1.5 w-20 rounded-full bg-violet-200" />
+            <div className="mx-auto h-3 w-10 bg-[#C4D3E1]" />
+            <div className="mx-auto h-1.5 w-20 rounded-full bg-[#C4D3E1]" />
           </div>
 
           <Floating className="left-[44px] top-0 scale-[0.8]"><ChannelLogo id="instagram" size="lg" /></Floating>
@@ -340,7 +340,7 @@ function ExpandPromo({ canChannelWrite }: { canChannelWrite: boolean }) {
         {canChannelWrite && <Button
           variant="outline"
           onClick={() => toast.info("Tính năng sẽ sớm được bổ sung")}
-          className="mt-4 w-fit gap-2 border-[#6941c6]/50 bg-white font-medium text-[#6941c6] hover:bg-violet-50 hover:text-[#6941c6]"
+          className="mt-4 w-fit gap-2 border-[#243B53]/50 bg-white font-medium text-[#243B53] hover:bg-[#EAF0F6] hover:text-[#243B53]"
         >
           Tìm hiểu thêm
           <ArrowRight className="size-4" />
@@ -401,7 +401,7 @@ function ChannelSummary({ ctx, channel: c }: { ctx: SocialCtx; channel: ChannelA
               <p className="truncate text-sm font-semibold">{c.accountName}</p>
               <p className="truncate text-xs text-slate-500">{c.handle}</p>
             </div>
-            <Button size="sm" variant="outline" onClick={() => ctx.go("add-channel", { wizardChannel: c.id })} className="border-violet-200 text-[#6941c6]">
+            <Button size="sm" variant="outline" onClick={() => ctx.go("add-channel", { wizardChannel: c.id })} className="border-[#C4D3E1] text-[#243B53]">
               Kết nối lại
             </Button>
           </div>
@@ -449,7 +449,7 @@ function ChannelSummary({ ctx, channel: c }: { ctx: SocialCtx; channel: ChannelA
               </li>
             ))}
           </ul>
-          <button onClick={() => void ctx.refreshAll()} className="mt-3 text-xs font-medium text-[#6941c6] hover:underline">
+          <button onClick={() => void ctx.refreshAll()} className="mt-3 text-xs font-medium text-[#243B53] hover:underline">
             Đồng bộ dữ liệu mới nhất →
           </button>
         </div>

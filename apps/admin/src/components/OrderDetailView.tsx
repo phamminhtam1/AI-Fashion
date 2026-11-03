@@ -147,17 +147,17 @@ export type FullOrderDetail = {
 
 const CARD =
   "rounded-xs border border-slate-200 bg-white";
-const BRAND_LINK = "text-[#6d3df0] hover:underline cursor-pointer";
-const BRAND_BTN = "bg-[#6d3df0] hover:bg-[#5a2fd6] text-white";
+const BRAND_LINK = "text-[#243B53] hover:underline cursor-pointer";
+const BRAND_BTN = "bg-[#243B53] hover:bg-[#1B2E42] text-white";
 
 const TIMELINE_ICON = {
-  placed: { Icon: ShoppingCart, color: "text-violet-600", bg: "bg-violet-100" },
+  placed: { Icon: ShoppingCart, color: "text-[#1B2E42]", bg: "bg-[#DCE6F0]" },
   payment: { Icon: CreditCard, color: "text-emerald-600", bg: "bg-emerald-100" },
-  picking: { Icon: Package, color: "text-violet-600", bg: "bg-violet-100" },
-  packed: { Icon: Package, color: "text-violet-600", bg: "bg-violet-100" },
+  picking: { Icon: Package, color: "text-[#1B2E42]", bg: "bg-[#DCE6F0]" },
+  packed: { Icon: Package, color: "text-[#1B2E42]", bg: "bg-[#DCE6F0]" },
   shipped: { Icon: Truck, color: "text-blue-600", bg: "bg-blue-100" },
   cancelled: { Icon: AlertCircle, color: "text-rose-600", bg: "bg-rose-100" },
-  refunded: { Icon: RefreshCcw, color: "text-purple-600", bg: "bg-purple-100" },
+  refunded: { Icon: RefreshCcw, color: "text-[#1B2E42]", bg: "bg-[#DCE6F0]" },
   custom: { Icon: Check, color: "text-slate-600", bg: "bg-slate-100" },
 } as const;
 
@@ -235,7 +235,7 @@ export function buildOrderTimeline(params: {
       time: paidAt || updatedAt || placedAt || "—",
       completed: true,
       actor: "Quản trị viên",
-      statusBadge: { label: "Đã hoàn tiền", className: "bg-purple-50 text-purple-700 border-purple-200" },
+      statusBadge: { label: "Đã hoàn tiền", className: "bg-[#EAF0F6] text-[#243B53] border-[#C4D3E1]" },
     });
   } else if (isPaid) {
     const sepayId = sepayTransaction?.id ? ` (Mã GD SePay: #${sepayTransaction.id})` : "";
@@ -472,7 +472,7 @@ function formatPaymentStatus(status: string | null | undefined): {
     return { label: "Đã thanh toán", badgeClass: "bg-emerald-100 text-emerald-600" };
   }
   if (s === "refunded") {
-    return { label: "Đã hoàn tiền", badgeClass: "bg-purple-100 text-purple-700" };
+    return { label: "Đã hoàn tiền", badgeClass: "bg-[#DCE6F0] text-[#243B53]" };
   }
   if (s === "failed" || s === "cancelled") {
     return { label: "Đã hủy (Hết hạn)", badgeClass: "bg-rose-100 text-rose-600" };
@@ -1111,7 +1111,7 @@ export function OrderDetailView({
       time: formatVnDateTime(new Date()),
       completed: true,
       actor: "Quản trị viên",
-      statusBadge: { label: "Nội bộ", className: "bg-violet-50 text-violet-700 border-violet-200" },
+      statusBadge: { label: "Nội bộ", className: "bg-[#EAF0F6] text-[#243B53] border-[#C4D3E1]" },
     };
     setOrder((prev) => ({
       ...prev,
@@ -1186,7 +1186,7 @@ export function OrderDetailView({
     return (
       <div className="orders-detail-view flex min-h-[480px] items-center justify-center rounded-xs border border-slate-200 bg-white p-12">
         <div className="flex flex-col items-center gap-2 text-sm text-slate-500">
-          <Loader2 className="size-6 animate-spin text-[#6d3df0]" />
+          <Loader2 className="size-6 animate-spin text-[#243B53]" />
           <p>Đang tải chi tiết đơn hàng #{orderNumber || orderId}...</p>
         </div>
       </div>
@@ -1262,7 +1262,7 @@ export function OrderDetailView({
             <Button
               onClick={handleMarkPaid}
               disabled={isMarkingPaid}
-              className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-none hover:bg-[#53389e] cursor-pointer"
+              className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white shadow-none hover:bg-[#1B2E42] cursor-pointer"
             >
               {isMarkingPaid ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -1279,7 +1279,7 @@ export function OrderDetailView({
               <DropdownMenuTrigger asChild>
                 <Button
                   disabled={isFulfilling}
-                  className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-none hover:bg-[#53389e] transition-colors cursor-pointer"
+                  className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white shadow-none hover:bg-[#1B2E42] transition-colors cursor-pointer"
                 >
                   {isFulfilling ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -1345,7 +1345,7 @@ export function OrderDetailView({
               className={cn(
                 "h-9 gap-1.5 rounded-xs px-4 text-sm font-medium shadow-xs transition-colors cursor-pointer",
                 isDelivered
-                  ? "bg-[#6941c6] text-white hover:bg-[#53389e]"
+                  ? "bg-[#243B53] text-white hover:bg-[#1B2E42]"
                   : BRAND_BTN,
               )}
             >
@@ -1365,7 +1365,7 @@ export function OrderDetailView({
       {/* ── 2. Order progress ── */}
       <section className={cn(CARD, "orders-modern-progress grid grid-cols-1 overflow-hidden lg:grid-cols-[minmax(15rem,0.82fr)_minmax(0,1.55fr)]")} aria-label="Tiến trình đơn hàng">
         <div className="orders-progress-summary flex flex-col justify-center border-b border-slate-200 bg-[#f8f7fc] px-5 py-5 lg:border-b-0 lg:border-r lg:px-6">
-          <span className={cn("mb-3 flex size-11 items-center justify-center rounded-full text-white", overallProgress.tone === "emerald" ? "bg-emerald-600" : overallProgress.tone === "rose" ? "bg-rose-600" : overallProgress.tone === "amber" ? "bg-amber-600" : overallProgress.tone === "blue" ? "bg-blue-600" : overallProgress.tone === "purple" ? "bg-purple-600" : "bg-[#6941c6]")}>
+          <span className={cn("mb-3 flex size-11 items-center justify-center rounded-full text-white", overallProgress.tone === "emerald" ? "bg-emerald-600" : overallProgress.tone === "rose" ? "bg-rose-600" : overallProgress.tone === "amber" ? "bg-amber-600" : overallProgress.tone === "blue" ? "bg-blue-600" : overallProgress.tone === "purple" ? "bg-[#1B2E42]" : "bg-[#243B53]")}>
             <overallProgress.Icon className="size-5" strokeWidth={2} aria-hidden="true" />
           </span>
           <p className="text-xs font-medium text-slate-500">Trạng thái đơn hàng</p>
@@ -1618,7 +1618,7 @@ export function OrderDetailView({
                         aria-hidden="true"
                         className={cn(
                           "absolute left-1/2 w-0.5 -translate-x-1/2 transition-colors duration-300",
-                          isCompleted ? "bg-gradient-to-b from-[#6d3df0] via-violet-400 to-[#6d3df0]/60" : "bg-slate-200",
+                          isCompleted ? "bg-gradient-to-b from-[#243B53] via-[#6F8BA6] to-[#243B53]/60" : "bg-slate-200",
                         )}
                         style={{ top: isFirst ? "50%" : 0, bottom: isLast ? "50%" : 0 }}
                       />
@@ -1629,7 +1629,7 @@ export function OrderDetailView({
                         </div>
                       ) : isCompleted ? (
                         <span
-                          className="relative z-10 size-3 rounded-full border-2 border-[#6d3df0] bg-[#6d3df0] ring-4 ring-violet-200/80 shadow-[0_0_8px_rgba(109,61,240,0.4)] transition-all duration-300 group-hover:scale-135 group-hover:ring-violet-300 group-hover:shadow-[0_0_12px_rgba(109,61,240,0.6)]"
+                          className="relative z-10 size-3 rounded-full border-2 border-[#243B53] bg-[#243B53] ring-4 ring-[#C4D3E1]/80 shadow-[0_0_8px_rgba(36,59,83,0.4)] transition-all duration-300 group-hover:scale-135 group-hover:ring-[#AFC2D4] group-hover:shadow-[0_0_12px_rgba(36,59,83,0.6)]"
                         />
                       ) : (
                         <span className="relative z-10 size-2.5 rounded-full border-2 border-slate-300 bg-white transition-transform duration-200 group-hover:scale-125 group-hover:border-slate-400" />
@@ -1642,7 +1642,7 @@ export function OrderDetailView({
                         className={cn(
                           "relative flex size-10 shrink-0 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-115 group-hover:shadow-md",
                           isCompleted
-                            ? cn(cfg.bg, cfg.color, "shadow-2xs ring-1 ring-black/5 group-hover:ring-2 group-hover:ring-violet-300/80")
+                            ? cn(cfg.bg, cfg.color, "shadow-2xs ring-1 ring-black/5 group-hover:ring-2 group-hover:ring-[#AFC2D4]/80")
                             : isCurrent
                               ? "bg-amber-100 text-amber-600 ring-2 ring-amber-300 shadow-[0_0_14px_rgba(245,158,11,0.3)] animate-pulse"
                               : "bg-slate-100 text-slate-400 group-hover:bg-slate-200/80",
@@ -1719,7 +1719,7 @@ export function OrderDetailView({
                   if (e.key === "Enter") handleAddNote();
                 }}
                 placeholder="Thêm ghi chú nội bộ cho đơn hàng này..."
-                className="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#6d3df0] focus:outline-none focus:ring-1 focus:ring-[#6d3df0]"
+                className="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#243B53] focus:outline-none focus:ring-1 focus:ring-[#243B53]"
               />
               <Button
                 type="button"
@@ -1833,7 +1833,7 @@ export function OrderDetailView({
             </div>
 
             <div className="mt-3 flex items-center gap-4">
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-semibold text-[#6d3df0]">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#DCE6F0] text-sm font-semibold text-[#243B53]">
                 {order.customer.avatarInitials}
               </div>
               <div className="min-w-0 text-sm leading-[20px] text-slate-600">
@@ -2167,7 +2167,7 @@ export function OrderDetailView({
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-violet-100 text-[#6d3df0]">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-[#DCE6F0] text-[#243B53]">
                   <History className="size-5" />
                 </div>
                 <div>
@@ -2190,7 +2190,7 @@ export function OrderDetailView({
               className={cn(
                 "rounded-md px-3 py-1 font-medium transition-colors",
                 activityFilter === "all"
-                  ? "bg-[#6d3df0] text-white"
+                  ? "bg-[#243B53] text-white"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200",
               )}
             >
@@ -2202,7 +2202,7 @@ export function OrderDetailView({
               className={cn(
                 "rounded-md px-3 py-1 font-medium transition-colors",
                 activityFilter === "payment"
-                  ? "bg-[#6d3df0] text-white"
+                  ? "bg-[#243B53] text-white"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200",
               )}
             >
@@ -2214,7 +2214,7 @@ export function OrderDetailView({
               className={cn(
                 "rounded-md px-3 py-1 font-medium transition-colors",
                 activityFilter === "warehouse"
-                  ? "bg-[#6d3df0] text-white"
+                  ? "bg-[#243B53] text-white"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200",
               )}
             >
@@ -2232,7 +2232,7 @@ export function OrderDetailView({
               className={cn(
                 "rounded-md px-3 py-1 font-medium transition-colors",
                 activityFilter === "other"
-                  ? "bg-[#6d3df0] text-white"
+                  ? "bg-[#243B53] text-white"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200",
               )}
             >
@@ -2317,14 +2317,14 @@ export function OrderDetailView({
           {/* Add custom event log */}
           <div className="border-t border-slate-200 pt-3 space-y-2">
             <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-              <Plus className="size-3.5 text-[#6d3df0]" />
+              <Plus className="size-3.5 text-[#243B53]" />
               <span>Ghi nhận sự kiện hoạt động mới</span>
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <select
                 value={newActivityType}
                 onChange={(e) => setNewActivityType(e.target.value)}
-                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 focus:border-[#6d3df0] focus:outline-none"
+                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 focus:border-[#243B53] focus:outline-none"
               >
                 <option value="Liên hệ khách hàng">Liên hệ khách hàng</option>
                 <option value="Vận chuyển / Shipper">Vận chuyển / Shipper</option>

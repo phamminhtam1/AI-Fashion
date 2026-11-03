@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { toast } from "sonner";
-import { products, registerProducts, type Product } from "./products";
+import { fetchProductsByIds, products, registerProducts, type Product } from "./products";
 import { fetchStorefrontSettings, storeApi, ApiError, type StoreOrderItem, type StoreOrderSummary, type StorefrontSettings } from "./api";
 
 /** Free-shipping threshold (VND) — matches announcement bar. */
@@ -51,6 +51,14 @@ export function getCartItemImage(it: CartItem, p?: Product): string {
   const cwId = it.colorwayId || v?.colorwayId;
   const cw = p.colorways.find((c) => c.id === cwId);
   return cw?.thumbnail || cw?.images?.[0] || p.images[0] || "";
+}
+
+/** Resolve the actual SKU price. Product.price is a catalog-level minimum and
+ * can be zero when another size/color variant is configured without a price. */
+export function getCartItemUnitPrice(it: CartItem, p?: Product): number {
+  const variant = p?.variants.find((x) => x.id === it.variantId);
+  if (typeof variant?.price === "number") return variant.price;
+  return it.unitPrice ?? (p ? p.salePrice ?? p.price : 0);
 }
 
 export type PlaceOrderInput = {
@@ -272,6 +280,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (ready) localStorage.setItem("elane-cart", JSON.stringify(cart));
   }, [cart, ready]);
+
+  // Refresh persisted cart snapshots from the canonical SKU price. Older cart
+  // entries may contain the product-level minimum (which can be 0) instead of
+  // the selected variant's price.
+  useEffect(() => {
+    if (!ready || cart.length === 0) return;
+    let cancelled = false;
+    void fetchProductsByIds([...new Set(cart.map((item) => item.productId))])
+      .then((loaded) => {
+        if (cancelled) return;
+        const byId = new Map(loaded.map((product) => [product.id, product]));
+        setCart((current) => {
+          let changed = false;
+          const next = current.map((item) => {
+            const product = byId.get(item.productId);
+            const variant = product?.variants.find((entry) => entry.id === item.variantId);
+            if (!variant || typeof variant.price !== "number" || item.unitPrice === variant.price) return item;
+            changed = true;
+            return { ...item, unitPrice: variant.price, productName: product.name, productSlug: product.slug };
+          });
+          return changed ? next : current;
+        });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [cart, ready]);
   useEffect(() => {
     if (ready) localStorage.setItem("elane-wish", JSON.stringify(wishlist));
   }, [wishlist, ready]);
@@ -391,7 +425,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         maxStock: v.available,
         productName: p.name,
         productSlug: p.slug,
-        unitPrice: p.salePrice ?? p.price,
+        unitPrice: typeof v.price === "number" ? v.price : p.salePrice ?? p.price,
       };
       setBuyNowItem(item);
       try {
@@ -438,7 +472,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const image = cw?.thumbnail || cw?.images?.[0] || p.images[0];
       // Quick add may receive a product outside the first page of the catalog cache.
       registerProducts([p]);
-      const unitPrice = p.salePrice ?? p.price;
+      const unitPrice = typeof v.price === "number" ? v.price : p.salePrice ?? p.price;
       setCart((c) => {
         const i = c.findIndex((x) => x.variantId === variantId);
         if (i >= 0) {
@@ -525,7 +559,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     cartCount: cart.reduce((s, x) => s + x.qty, 0),
     subtotal: cart.reduce((s, x) => {
       const cached = products.find((p) => p.id === x.productId);
-      const unitPrice = cached ? (cached.salePrice ?? cached.price) : (x.unitPrice ?? 0);
+      const unitPrice = getCartItemUnitPrice(x, cached);
       return s + unitPrice * x.qty;
     }, 0),
   };

@@ -12,7 +12,7 @@ const iconByKind = {
 } as const;
 
 const toneByKind = {
-  new_order: "bg-violet-50 text-violet-700",
+  new_order: "bg-[#EAF0F6] text-[#243B53]",
   payment_success: "bg-emerald-50 text-emerald-700",
   low_stock: "bg-amber-50 text-amber-700",
 } as const;
@@ -139,7 +139,7 @@ export function AdminNotificationsBell({ permissions, accountId }: { permissions
             type="button"
             disabled={!unread.length}
             onClick={markAllRead}
-            className="inline-flex items-center gap-1.5 rounded-xs px-2 py-1.5 text-[11px] font-medium text-violet-700 transition-colors hover:bg-violet-50 disabled:pointer-events-none disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-xs px-2 py-1.5 text-[11px] font-medium text-[#243B53] transition-colors hover:bg-[#EAF0F6] disabled:pointer-events-none disabled:opacity-40"
           >
             <CheckCheck className="size-3.5" /> Đánh dấu đã đọc
           </button>
@@ -150,7 +150,7 @@ export function AdminNotificationsBell({ permissions, accountId }: { permissions
           ) : loadError && !items.length ? (
             <div className="px-4 py-8 text-center">
               <p className="text-xs text-slate-600">Không tải được thông báo.</p>
-              <button type="button" onClick={() => void refresh()} className="mt-2 text-xs font-medium text-violet-700 hover:underline">Thử lại</button>
+              <button type="button" onClick={() => void refresh()} className="mt-2 text-xs font-medium text-[#243B53] hover:underline">Thử lại</button>
             </div>
           ) : items.length ? items.map((item) => {
             const Icon = iconByKind[item.kind];
@@ -167,7 +167,7 @@ export function AdminNotificationsBell({ permissions, accountId }: { permissions
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center justify-between gap-2">
                     <span className="truncate text-xs font-semibold text-slate-800">{item.title}</span>
-                    {isUnread && <span className="size-1.5 shrink-0 rounded-full bg-violet-600" />}
+                    {isUnread && <span className="size-1.5 shrink-0 rounded-full bg-[#1B2E42]" />}
                   </span>
                   <span className="mt-1 block text-xs leading-5 text-slate-600">{item.message}</span>
                   <span className="mt-1.5 flex items-center gap-1 text-[10px] text-slate-400"><Clock3 className="size-3" />{timeAgo(item.created_at)}</span>

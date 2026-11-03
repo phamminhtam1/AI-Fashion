@@ -161,7 +161,7 @@ export function SocialCommerceManager({ page: controlled, onPageChange, initialP
     catch (error) { toast.error(error instanceof Error ? error.message : "AI chưa thể trả lời lại"); }
   }, [load]);
 
-  if (loading) return <div className="grid min-h-[460px] place-items-center"><Loader2 className="size-7 animate-spin text-[#6941c6]" /></div>;
+  if (loading) return <div className="grid min-h-[460px] place-items-center"><Loader2 className="size-7 animate-spin text-[#243B53]" /></div>;
 
   const ctx: SocialCtx = {
     permissions, canChannelWrite, canContentWrite, canPublish,

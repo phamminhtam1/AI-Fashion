@@ -702,7 +702,7 @@ export function CreateOrderView({
           <Button
             disabled={isSubmitting}
             onClick={handleCreateOrder}
-            className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4.5 text-sm font-medium text-white shadow-xs hover:bg-[#53389e] transition-colors disabled:opacity-60 cursor-pointer"
+            className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4.5 text-sm font-medium text-white shadow-xs hover:bg-[#1B2E42] transition-colors disabled:opacity-60 cursor-pointer"
           >
             {isSubmitting ? (
               <Loader2 className="size-3.5 animate-spin" />
@@ -739,7 +739,7 @@ export function CreateOrderView({
                   }}
                   onFocus={() => setIsCustomerSearchOpen(true)}
                   placeholder="Tìm theo tên, email hoặc số điện thoại..."
-                  className="h-10 rounded-xs border-slate-200 pl-9 pr-8 text-sm placeholder:text-slate-400 focus-visible:ring-[#6941c6]"
+                  className="h-10 rounded-xs border-slate-200 pl-9 pr-8 text-sm placeholder:text-slate-400 focus-visible:ring-[#243B53]"
                 />
                 {customerSearchQuery && (
                   <button
@@ -777,7 +777,7 @@ export function CreateOrderView({
                           }}
                           className="flex w-full items-center gap-3 rounded-xs p-2 text-left hover:bg-slate-50 transition-colors"
                         >
-                          <div className="flex size-7 items-center justify-center rounded-full bg-purple-100 text-xs font-semibold text-[#6941c6]">
+                          <div className="flex size-7 items-center justify-center rounded-full bg-[#DCE6F0] text-xs font-semibold text-[#243B53]">
                             {c.name
                               .split(" ")
                               .map((n) => n[0])
@@ -802,7 +802,7 @@ export function CreateOrderView({
               {selectedCustomer ? (
                 <div className="flex items-center justify-between rounded-xs border border-slate-200 bg-slate-50/60 p-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#f4f3ff] text-sm font-semibold text-[#6941c6] shadow-2xs">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#EAF0F6] text-sm font-semibold text-[#243B53] shadow-2xs">
                       {selectedCustomer.name
                         .split(" ")
                         .map((n) => n[0])
@@ -1014,14 +1014,14 @@ export function CreateOrderView({
                       value={paymentStatus}
                       onChange={(e) => setPaymentStatus(e.target.value as any)}
                       className={cn(
-                        "w-full h-9 rounded-xs border border-slate-200 bg-white px-2.5 text-sm font-medium focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6] outline-none transition-colors",
+                        "w-full h-9 rounded-xs border border-slate-200 bg-white px-2.5 text-sm font-medium focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53] outline-none transition-colors",
                         paymentStatus === "paid"
                           ? "text-emerald-700"
                           : paymentStatus === "pending"
                             ? "text-amber-700"
                             : paymentStatus === "failed"
                               ? "text-rose-700"
-                              : "text-purple-700",
+                              : "text-[#243B53]",
                       )}
                     >
                       <option value="pending">● Chờ thanh toán</option>
@@ -1040,11 +1040,11 @@ export function CreateOrderView({
                       value={fulfillmentStatus}
                       onChange={(e) => setFulfillmentStatus(e.target.value as any)}
                       className={cn(
-                        "w-full h-9 rounded-xs border border-slate-200 bg-white px-2.5 text-sm font-medium focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6] outline-none transition-colors",
+                        "w-full h-9 rounded-xs border border-slate-200 bg-white px-2.5 text-sm font-medium focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53] outline-none transition-colors",
                         fulfillmentStatus === "delivered"
                           ? "text-emerald-700"
                           : fulfillmentStatus === "shipping"
-                            ? "text-indigo-700"
+                            ? "text-[#243B53]"
                             : fulfillmentStatus === "processing"
                               ? "text-blue-700"
                               : "text-amber-700",
@@ -1067,7 +1067,7 @@ export function CreateOrderView({
                     <select
                       value={paymentMethod}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="w-full h-9 rounded-xs border border-slate-200 bg-white px-2.5 text-sm text-slate-800 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6] outline-none"
+                      className="w-full h-9 rounded-xs border border-slate-200 bg-white px-2.5 text-sm text-slate-800 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53] outline-none"
                     >
                       <option value="Credit Card">Thẻ tín dụng</option>
                       <option value="Bank Transfer">Chuyển khoản ngân hàng (VietQR)</option>
@@ -1084,7 +1084,7 @@ export function CreateOrderView({
                     <select
                       value={fulfillmentLocation}
                       onChange={(e) => setFulfillmentLocation(e.target.value)}
-                      className="w-full h-9 rounded-xs border border-slate-200 bg-white px-2.5 text-sm text-slate-800 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6] outline-none"
+                      className="w-full h-9 rounded-xs border border-slate-200 bg-white px-2.5 text-sm text-slate-800 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53] outline-none"
                     >
                       <option value="Main Warehouse">Kho chính</option>
                       <option value="Atelier Hanoi">Cửa hàng Hà Nội</option>
@@ -1112,7 +1112,7 @@ export function CreateOrderView({
                   <select
                     value={shippingMethod}
                     onChange={(e) => setShippingMethod(e.target.value as any)}
-                    className="w-full h-9 rounded-xs border border-slate-200 bg-white px-2.5 text-sm text-slate-800 font-medium focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6] outline-none"
+                    className="w-full h-9 rounded-xs border border-slate-200 bg-white px-2.5 text-sm text-slate-800 font-medium focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53] outline-none"
                   >
                     <option value="standard">Giao hàng tiêu chuẩn (30.000 ₫)</option>
                     <option value="express">Giao hàng nhanh (50.000 ₫)</option>
@@ -1131,7 +1131,7 @@ export function CreateOrderView({
                       value={estimatedDelivery}
                       onChange={(e) => setEstimatedDelivery(e.target.value)}
                       placeholder="VD: 18/01 – 22/01/2024"
-                      className="h-9 rounded-xs border-slate-200 pl-9 text-sm text-slate-800 focus-visible:ring-[#6941c6]"
+                      className="h-9 rounded-xs border-slate-200 pl-9 text-sm text-slate-800 focus-visible:ring-[#243B53]"
                     />
                   </div>
                 </div>
@@ -1261,7 +1261,7 @@ export function CreateOrderView({
                     type="checkbox"
                     checked={sameAsShipping}
                     onChange={(e) => setSameAsShipping(e.target.checked)}
-                    className="rounded-2xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
+                    className="rounded-2xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
                   />
                   <span>Giống địa chỉ giao hàng</span>
                 </label>
@@ -1382,7 +1382,7 @@ export function CreateOrderView({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="VD: Khách yêu cầu gói quà hoặc có hướng dẫn đặc biệt..."
-                  className="h-9.5 rounded-xs border-slate-200 text-sm placeholder:text-slate-400 focus-visible:ring-[#6941c6]"
+                  className="h-9.5 rounded-xs border-slate-200 text-sm placeholder:text-slate-400 focus-visible:ring-[#243B53]"
                 />
               </div>
             </div>
@@ -1419,7 +1419,7 @@ export function CreateOrderView({
                       <button
                         type="button"
                         onClick={() => setIsDiscountOpen(true)}
-                        className="text-xs font-semibold text-[#6941c6] hover:underline"
+                        className="text-xs font-semibold text-[#243B53] hover:underline"
                       >
                         Thêm giảm giá
                       </button>
@@ -1451,7 +1451,7 @@ export function CreateOrderView({
                 onClick={() => {
                   window.scrollTo({ top: 380, behavior: "smooth" });
                 }}
-                className="text-sm font-semibold text-[#6941c6] hover:underline"
+                className="text-sm font-semibold text-[#243B53] hover:underline"
               >
                 Chỉnh sửa
               </button>
@@ -1533,7 +1533,7 @@ export function CreateOrderView({
               {/* Step 1: Customer selected */}
               <div className="flex items-start gap-3 text-sm">
                 {isCustomerSelected ? (
-                  <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#6941c6] text-white">
+                  <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#243B53] text-white">
                     <Check className="size-3" />
                   </div>
                 ) : (
@@ -1550,7 +1550,7 @@ export function CreateOrderView({
               {/* Step 2: Add at least one product */}
               <div className="flex items-start gap-3 text-sm">
                 {hasProducts ? (
-                  <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#6941c6] text-white">
+                  <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#243B53] text-white">
                     <Check className="size-3" />
                   </div>
                 ) : (
@@ -1567,7 +1567,7 @@ export function CreateOrderView({
               {/* Step 3: Set payment method */}
               <div className="flex items-start gap-3 text-sm">
                 {isPaymentMethodSet ? (
-                  <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#6941c6] text-white">
+                  <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#243B53] text-white">
                     <Check className="size-3" />
                   </div>
                 ) : (
@@ -1584,7 +1584,7 @@ export function CreateOrderView({
               {/* Step 4: Set shipping address */}
               <div className="flex items-start gap-3 text-sm">
                 {isShippingAddressSet ? (
-                  <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#6941c6] text-white">
+                  <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#243B53] text-white">
                     <Check className="size-3" />
                   </div>
                 ) : (
@@ -1653,7 +1653,7 @@ export function CreateOrderView({
                     value={drawerSearchQuery}
                     onChange={(e) => setDrawerSearchQuery(e.target.value)}
                     placeholder="Tìm theo tên sản phẩm, mã SKU hoặc từ khóa..."
-                    className="h-9.5 w-full rounded-xs border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#6941c6] focus:outline-none focus:ring-1 focus:ring-[#6941c6]"
+                    className="h-9.5 w-full rounded-xs border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#243B53] focus:outline-none focus:ring-1 focus:ring-[#243B53]"
                   />
                 </div>
 
@@ -1666,7 +1666,7 @@ export function CreateOrderView({
                       <select
                         value={drawerCategoryFilter}
                         onChange={(e) => setDrawerCategoryFilter(e.target.value)}
-                        className="h-9.5 min-w-[130px] rounded-xs border border-slate-200 bg-white pl-3 pr-8 text-sm font-medium text-slate-700 outline-none appearance-none hover:border-slate-300 focus:border-[#6941c6]"
+                        className="h-9.5 min-w-[130px] rounded-xs border border-slate-200 bg-white pl-3 pr-8 text-sm font-medium text-slate-700 outline-none appearance-none hover:border-slate-300 focus:border-[#243B53]"
                       >
                         <option value="all">Tất cả danh mục</option>
                         {realCategories.map((c) => (
@@ -1686,7 +1686,7 @@ export function CreateOrderView({
                       <select
                         value={drawerStatusFilter}
                         onChange={(e) => setDrawerStatusFilter(e.target.value)}
-                        className="h-9.5 min-w-[110px] rounded-xs border border-slate-200 bg-white pl-3 pr-8 text-sm font-medium text-slate-700 outline-none appearance-none hover:border-slate-300 focus:border-[#6941c6]"
+                        className="h-9.5 min-w-[110px] rounded-xs border border-slate-200 bg-white pl-3 pr-8 text-sm font-medium text-slate-700 outline-none appearance-none hover:border-slate-300 focus:border-[#243B53]"
                       >
                         <option value="all">Tất cả trạng thái</option>
                         <option value="published">Đang hoạt động</option>
@@ -1704,7 +1704,7 @@ export function CreateOrderView({
                       <select
                         value={drawerStockFilter}
                         onChange={(e) => setDrawerStockFilter(e.target.value)}
-                        className="h-9.5 min-w-[120px] rounded-xs border border-slate-200 bg-white pl-3 pr-8 text-sm font-medium text-slate-700 outline-none appearance-none hover:border-slate-300 focus:border-[#6941c6]"
+                        className="h-9.5 min-w-[120px] rounded-xs border border-slate-200 bg-white pl-3 pr-8 text-sm font-medium text-slate-700 outline-none appearance-none hover:border-slate-300 focus:border-[#243B53]"
                       >
                         <option value="all">Tất cả sản phẩm</option>
                         <option value="in_stock">Chỉ sản phẩm còn hàng</option>
@@ -1744,7 +1744,7 @@ export function CreateOrderView({
                             className={cn(
                               "size-4 rounded-xs border flex items-center justify-center cursor-pointer transition-colors",
                               allFilteredSelected
-                                ? "bg-[#6941c6] border-[#6941c6] text-white"
+                                ? "bg-[#243B53] border-[#243B53] text-white"
                                 : "border-slate-300 bg-white hover:border-slate-400",
                             )}
                           >
@@ -1765,7 +1765,7 @@ export function CreateOrderView({
                         <tr>
                           <td colSpan={8} className="py-20 text-center text-sm text-slate-400">
                             <div className="flex flex-col items-center justify-center gap-2">
-                              <Loader2 className="size-5 animate-spin text-[#6941c6]" />
+                              <Loader2 className="size-5 animate-spin text-[#243B53]" />
                               <span>Đang tải danh sách sản phẩm...</span>
                             </div>
                           </td>
@@ -1789,7 +1789,7 @@ export function CreateOrderView({
                               key={item.id}
                               className={cn(
                                 "hover:bg-slate-50/70 transition-colors",
-                                isSelected && "bg-purple-50/30",
+                                isSelected && "bg-[#EAF0F6]/30",
                               )}
                             >
                               {/* Checkbox */}
@@ -1799,7 +1799,7 @@ export function CreateOrderView({
                                   className={cn(
                                     "size-4 rounded-xs border flex items-center justify-center cursor-pointer transition-colors",
                                     isSelected
-                                      ? "bg-[#6941c6] border-[#6941c6] text-white"
+                                      ? "bg-[#243B53] border-[#243B53] text-white"
                                       : "border-slate-300 bg-white hover:border-slate-400",
                                   )}
                                 >
@@ -1893,8 +1893,8 @@ export function CreateOrderView({
                                   className={cn(
                                     "h-7.5 rounded-xs px-3.5 text-sm font-semibold shadow-2xs transition-colors shrink-0",
                                     isSelected
-                                      ? "bg-purple-100 text-[#6941c6] hover:bg-purple-200"
-                                      : "bg-[#6941c6] text-white hover:bg-[#53389e]",
+                                      ? "bg-[#DCE6F0] text-[#243B53] hover:bg-[#C4D3E1]"
+                                      : "bg-[#243B53] text-white hover:bg-[#1B2E42]",
                                   )}
                                 >
                                   {isSelected ? "Đã thêm" : "Thêm"}
@@ -1910,7 +1910,7 @@ export function CreateOrderView({
                   {/* Loading more indicator */}
                   {isLoadingMore && (
                     <div className="py-3 flex items-center justify-center gap-2 text-sm text-slate-500 bg-slate-50/70 border-t border-slate-100">
-                      <Loader2 className="size-3.5 animate-spin text-[#6941c6]" />
+                      <Loader2 className="size-3.5 animate-spin text-[#243B53]" />
                       <span>Đang tải thêm 10 sản phẩm...</span>
                     </div>
                   )}
@@ -1927,7 +1927,7 @@ export function CreateOrderView({
                     <button
                       type="button"
                       onClick={handleClearAllSelected}
-                      className="text-sm font-semibold text-[#6941c6] hover:underline cursor-pointer"
+                      className="text-sm font-semibold text-[#243B53] hover:underline cursor-pointer"
                     >
                       Xóa tất cả
                     </button>
@@ -2074,7 +2074,7 @@ export function CreateOrderView({
                   type="button"
                   onClick={handleAddSelectedToOrder}
                   disabled={drawerSelectedItems.length === 0}
-                  className="h-9 rounded-xs bg-[#6941c6] px-5 text-sm font-semibold text-white shadow-2xs hover:bg-[#53389e] disabled:opacity-50"
+                  className="h-9 rounded-xs bg-[#243B53] px-5 text-sm font-semibold text-white shadow-2xs hover:bg-[#1B2E42] disabled:opacity-50"
                 >
                   Thêm vào đơn hàng
                 </Button>
@@ -2118,7 +2118,7 @@ export function CreateOrderView({
                 setIsDiscountOpen(false);
                 toast.success(`Đã áp dụng giảm giá -${formatVnd(discountAmount)}`);
               }}
-              className="rounded-xs bg-[#6941c6] text-white hover:bg-[#53389e] w-full"
+              className="rounded-xs bg-[#243B53] text-white hover:bg-[#1B2E42] w-full"
             >
               Áp dụng
             </Button>

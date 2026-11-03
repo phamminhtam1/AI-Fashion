@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  AlertCircle, ArrowLeft, ArrowUp, ChevronDown, ClipboardCheck, ClipboardList, Copy, Crown,
+  AlertCircle, ArrowUp, ChevronDown, ClipboardCheck, ClipboardList, Copy, Crown,
   ExternalLink, Eye, FileClock, FolderSync, Heart, Info, LayoutGrid, Lock, MessageCircle,
   Package, PenSquare, RefreshCw, ShoppingBag, Sparkles, Unplug, BadgeCheck, Check,
 } from "lucide-react";
@@ -10,7 +10,7 @@ import { AnimatedPanel } from "@/components/ui/AnimatedPanel";
 import { cn } from "@/lib/utils";
 import { CHANNEL_META } from "../mock";
 import type { ChannelId, SocialCtx } from "../types";
-import { ChannelLogo, card, fmt } from "../ui";
+import { ChannelLogo, SocialBackButton, card, fmt } from "../ui";
 
 type ManageTab = "overview" | "sync" | "posts" | "automation" | "inbox" | "security" | "logs";
 
@@ -25,7 +25,7 @@ const TABS: { id: ManageTab; label: string; icon: React.ComponentType<{ classNam
 ];
 
 const OUTLINE_VIOLET =
-  "h-8 border-violet-200 bg-white px-3 text-xs font-medium text-[#6941c6] hover:bg-violet-50 hover:text-[#6941c6]";
+  "h-8 border-[#C4D3E1] bg-white px-3 text-xs font-medium text-[#243B53] hover:bg-[#EAF0F6] hover:text-[#243B53]";
 
 /* ───────────── Công tắc xanh (Bật/Tắt) ───────────── */
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
@@ -85,8 +85,8 @@ function TrendChart() {
     <svg viewBox="0 0 540 185" className="mt-4 h-auto w-full select-none" role="img" aria-label="Xu hướng người theo dõi 7 ngày qua">
       <defs>
         <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.02" />
+          <stop offset="0%" stopColor="#243B53" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="#243B53" stopOpacity="0.02" />
         </linearGradient>
       </defs>
       {[["15K", 25], ["10K", 70], ["5K", 115], ["0", 160]].map(([label, y]) => (
@@ -96,7 +96,7 @@ function TrendChart() {
         </g>
       ))}
       <path d={area} fill="url(#trendFill)" />
-      <path d={line} fill="none" stroke="#8b5cf6" strokeWidth="2.5" strokeLinecap="round" />
+      <path d={line} fill="none" stroke="#243B53" strokeWidth="2.5" strokeLinecap="round" />
       {TREND.map((p, i) => (
         <text key={p.date} x={40 + i * 76} y="180" fill="#94a3b8" fontSize="11" textAnchor="middle">{p.date}</text>
       ))}
@@ -140,10 +140,10 @@ const POSTS = [
 
 const ACTIVITIES = [
   { icon: ShoppingBag, tone: "text-emerald-600 bg-emerald-50", text: "Đồng bộ sản phẩm thành công", time: "12/06/2024 14:00" },
-  { icon: PenSquare, tone: "text-indigo-600 bg-indigo-50", text: "Bài viết đã được đăng", time: "12/06/2024 13:45" },
+  { icon: PenSquare, tone: "text-[#243B53] bg-[#EAF0F6]", text: "Bài viết đã được đăng", time: "12/06/2024 13:45" },
   { icon: MessageCircle, tone: "text-rose-500 bg-rose-50", text: "Nhận 12 bình luận mới", time: "12/06/2024 13:20" },
   { icon: ClipboardCheck, tone: "text-emerald-600 bg-emerald-50", text: "Đồng bộ đơn hàng thành công", time: "12/06/2024 12:10" },
-  { icon: Sparkles, tone: "text-indigo-600 bg-indigo-50", text: "Trả lời tin nhắn tự động", time: "12/06/2024 11:30" },
+  { icon: Sparkles, tone: "text-[#243B53] bg-[#EAF0F6]", text: "Trả lời tin nhắn tự động", time: "12/06/2024 11:30" },
   { icon: Package, tone: "text-emerald-600 bg-emerald-50", text: "Cập nhật tồn kho thành công", time: "12/06/2024 10:15" },
   { icon: AlertCircle, tone: "text-rose-500 bg-rose-50", text: "Có lỗi kết nối API (đã tự động thử lại)", time: "12/06/2024 09:45" },
 ];
@@ -201,15 +201,8 @@ export function ChannelManagePage({ ctx }: { ctx: SocialCtx }) {
     <div className="space-y-5 pb-12 text-slate-900">
       {/* ───────── HEADER ───────── */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <button
-            type="button"
-            onClick={() => ctx.go("connect")}
-            className="mt-1.5 grid size-9 place-items-center rounded-xs text-slate-700 hover:bg-slate-100"
-            aria-label="Quay lại"
-          >
-            <ArrowLeft className="size-5" />
-          </button>
+        <div className="flex items-center gap-3">
+          <SocialBackButton onClick={() => ctx.go("connect")} />
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-2xl font-bold tracking-tight">Quản lý kênh – {meta.name}</h1>
@@ -266,7 +259,7 @@ export function ChannelManagePage({ ctx }: { ctx: SocialCtx }) {
                   href={channel.url || "#"}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-0.5 inline-flex items-center gap-1 text-xs text-slate-600 hover:text-[#6941c6]"
+                  className="mt-0.5 inline-flex items-center gap-1 text-xs text-slate-600 hover:text-[#243B53]"
                 >
                   {channel.handle || "@elane.shop.vn"}
                   <ExternalLink className="size-3" />
@@ -369,11 +362,11 @@ export function ChannelManagePage({ ctx }: { ctx: SocialCtx }) {
               className={cn(
                 "flex items-center gap-2 whitespace-nowrap border-b-2 px-6 py-4 text-sm font-medium transition-colors",
                 active
-                  ? "border-[#6941c6] bg-violet-50 text-[#6941c6]"
+                  ? "border-[#243B53] bg-[#EAF0F6] text-[#243B53]"
                   : "border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900",
               )}
             >
-              <Icon className={cn("size-4", active ? "text-[#6941c6]" : "text-slate-400")} />
+              <Icon className={cn("size-4", active ? "text-[#243B53]" : "text-slate-400")} />
               {t.label}
             </button>
           );
@@ -447,7 +440,7 @@ export function ChannelManagePage({ ctx }: { ctx: SocialCtx }) {
                 ))}
               </ul>
 
-              <div className="mt-auto flex items-start gap-3 rounded-xl border border-violet-100 bg-violet-50/70 p-4">
+              <div className="mt-auto flex items-start gap-3 rounded-xl border border-[#DCE6F0] bg-[#EAF0F6]/70 p-4">
                 <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-500">
                   <Crown className="size-5 fill-amber-400" />
                 </span>
@@ -527,8 +520,8 @@ export function ChannelManagePage({ ctx }: { ctx: SocialCtx }) {
 
               <div className="mt-3 divide-y divide-slate-100">
                 <SyncRow icon={ShoppingBag} tone="bg-emerald-50 text-emerald-600" title="Sản phẩm" desc="Đồng bộ sản phẩm từ hệ thống lên Instagram Shop." time="19/10/2026 14:00" on={syncProducts} setOn={setSyncProducts} />
-                <SyncRow icon={ClipboardCheck} tone="bg-violet-50 text-[#6941c6]" title="Đơn hàng" desc="Đồng bộ đơn hàng từ Instagram về hệ thống." time="19/10/2026 13:30" on={syncOrders} setOn={setSyncOrders} />
-                <SyncRow icon={ClipboardList} tone="bg-violet-50 text-[#6941c6]" title="Tồn kho" desc="Cập nhật tồn kho tự động." time="19/10/2026 12:10" on={syncStock} setOn={setSyncStock} />
+                <SyncRow icon={ClipboardCheck} tone="bg-[#EAF0F6] text-[#243B53]" title="Đơn hàng" desc="Đồng bộ đơn hàng từ Instagram về hệ thống." time="19/10/2026 13:30" on={syncOrders} setOn={setSyncOrders} />
+                <SyncRow icon={ClipboardList} tone="bg-[#EAF0F6] text-[#243B53]" title="Tồn kho" desc="Cập nhật tồn kho tự động." time="19/10/2026 12:10" on={syncStock} setOn={setSyncStock} />
               </div>
             </section>
 
@@ -615,10 +608,10 @@ export function ChannelManagePage({ ctx }: { ctx: SocialCtx }) {
 
       {tab === "posts" && (
         <section className={cn(card, "p-6 text-center")}>
-          <PenSquare className="mx-auto size-12 text-[#6941c6]" />
+          <PenSquare className="mx-auto size-12 text-[#243B53]" />
           <h2 className="mt-3 text-lg font-semibold">Quản lý bài viết và lịch đăng</h2>
           <p className="mt-1 text-sm text-slate-500">Xem và lên lịch các bài viết được đăng tải lên {meta.name}.</p>
-          <Button onClick={() => ctx.go("posts")} className="mt-5 bg-[#6941c6] hover:bg-[#5b36b0]">
+          <Button onClick={() => ctx.go("posts")} className="mt-5 bg-[#243B53] hover:bg-[#1B2E42]">
             Mở trang Quản lý bài viết
           </Button>
         </section>
@@ -626,10 +619,10 @@ export function ChannelManagePage({ ctx }: { ctx: SocialCtx }) {
 
       {tab === "automation" && (
         <section className={cn(card, "p-6 text-center")}>
-          <Sparkles className="mx-auto size-12 text-[#6941c6]" />
+          <Sparkles className="mx-auto size-12 text-[#243B53]" />
           <h2 className="mt-3 text-lg font-semibold">AI &amp; Tự động hóa nội dung</h2>
           <p className="mt-1 text-sm text-slate-500">Sử dụng trí tuệ nhân tạo để tạo bài viết, caption và tự động trả lời khách hàng.</p>
-          <Button onClick={() => ctx.go("ai-content")} className="mt-5 bg-[#6941c6] hover:bg-[#5b36b0]">
+          <Button onClick={() => ctx.go("ai-content")} className="mt-5 bg-[#243B53] hover:bg-[#1B2E42]">
             Khám phá Content Studio AI
           </Button>
         </section>
@@ -637,11 +630,11 @@ export function ChannelManagePage({ ctx }: { ctx: SocialCtx }) {
 
       {tab === "inbox" && (
         <section className={cn(card, "p-6 text-center")}>
-          <MessageCircle className="mx-auto size-12 text-[#6941c6]" />
+          <MessageCircle className="mx-auto size-12 text-[#243B53]" />
           <h2 className="mt-3 text-lg font-semibold">Tin nhắn &amp; Bình luận tập trung</h2>
           <p className="mt-1 text-sm text-slate-500">Tất cả hội thoại và bình luận từ {meta.name} được gom về một nơi.</p>
           <div className="mt-5 flex justify-center gap-3">
-            <Button onClick={() => ctx.go("messages")} className="bg-[#6941c6] hover:bg-[#5b36b0]">Quản lý tin nhắn</Button>
+            <Button onClick={() => ctx.go("messages")} className="bg-[#243B53] hover:bg-[#1B2E42]">Quản lý tin nhắn</Button>
             <Button variant="outline" onClick={() => ctx.go("comments")}>Quản lý bình luận</Button>
           </div>
         </section>

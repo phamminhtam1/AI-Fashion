@@ -68,12 +68,21 @@ function slugify(value: string) {
 function parseGalleryImages(
   value: unknown,
 ): Array<{ url: string; layout: "half" | "wide" }> {
-  if (value === undefined) return [] as Array<{ url: string; layout: "half" | "wide" }>;
+  if (value === undefined)
+    return [] as Array<{ url: string; layout: "half" | "wide" }>;
   if (!Array.isArray(value) || value.length > 40)
-    throw new ApiError(400, "invalid_gallery", "Album có thể chứa tối đa 40 ảnh");
+    throw new ApiError(
+      400,
+      "invalid_gallery",
+      "Album có thể chứa tối đa 40 ảnh",
+    );
   return value.map((image: unknown) => {
     if (!image || typeof image !== "object")
-      throw new ApiError(400, "invalid_gallery", "Danh sách ảnh album không hợp lệ");
+      throw new ApiError(
+        400,
+        "invalid_gallery",
+        "Danh sách ảnh album không hợp lệ",
+      );
     const url = String((image as { url?: unknown }).url ?? "").trim();
     const layout = (image as { layout?: unknown }).layout;
     const isLocalPath = url.startsWith("/") && !url.startsWith("//");
@@ -90,7 +99,11 @@ function parseGalleryImages(
       (!isLocalPath && !isWebUrl) ||
       (layout !== "half" && layout !== "wide")
     )
-      throw new ApiError(400, "invalid_gallery", "Danh sách ảnh album không hợp lệ");
+      throw new ApiError(
+        400,
+        "invalid_gallery",
+        "Danh sách ảnh album không hợp lệ",
+      );
     return { url, layout: layout as "half" | "wide" };
   });
 }
@@ -121,9 +134,7 @@ async function toApiCollection(
     id: row.id,
     name: row.name,
     slug: row.slug,
-    tagline: row.tagline,
     category: row.category,
-    description: row.description,
     cover_image_url: coverImageUrl,
     hero_image_url: row.heroImageUrl,
     gallery_images: row.galleryImages ?? [],
@@ -214,9 +225,7 @@ adminCollectionRoutes.post("/", async (c) => {
       .values({
         name,
         slug,
-        tagline: String(body.tagline ?? "").trim() || null,
         category: String(body.category ?? COLLECTION_CATEGORIES[4]),
-        description: String(body.description ?? "").trim() || null,
         coverImageUrl,
         heroImageUrl: String(body.hero_image_url ?? "").trim() || null,
         galleryImages: parseGalleryImages(body.gallery_images),
@@ -299,8 +308,6 @@ adminCollectionRoutes.patch("/:id", async (c) => {
       throw new ApiError(409, "slug_exists", "Đường dẫn này đã được dùng");
     patch.slug = slug;
   }
-  if (body.tagline !== undefined)
-    patch.tagline = String(body.tagline).trim() || null;
   if (body.category !== undefined) {
     const category = String(body.category);
     if (
@@ -315,8 +322,6 @@ adminCollectionRoutes.patch("/:id", async (c) => {
       );
     patch.category = category;
   }
-  if (body.description !== undefined)
-    patch.description = String(body.description).trim() || null;
   if (body.cover_image_url !== undefined)
     patch.coverImageUrl = String(body.cover_image_url).trim() || null;
   if (body.hero_image_url !== undefined)

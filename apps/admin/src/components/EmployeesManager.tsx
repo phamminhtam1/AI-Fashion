@@ -40,11 +40,11 @@ import { cn } from "@/lib/utils";
 
 /* ═════════════════════════ Design tokens (đo từ design) ═════════════════════════ */
 
-const BRAND = "#6941c6"; // màu nhấn thống nhất với các trang quản trị
+const BRAND = "#243B53"; // màu nhấn thống nhất với các trang quản trị
 const MUTED = "text-[#5a6a8e]"; // mô tả, chú thích
 
-const outlineBtn = "rounded-xs border-slate-200 bg-white font-medium text-slate-700 shadow-none transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2";
-const primaryBtn = "h-9 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-none transition-colors hover:bg-[#53389e] focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2";
+const outlineBtn = "rounded-xs border-slate-200 bg-white font-medium text-slate-700 shadow-none transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2";
+const primaryBtn = "h-9 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white shadow-none transition-colors hover:bg-[#1B2E42] focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2";
 
 type IconType = ComponentType<{ className?: string; strokeWidth?: number }>;
 
@@ -83,7 +83,7 @@ const fallbackRoles: RoleOption[] = [
 
 /** Màu icon bám theo nhóm vai trò, đồng bộ với thẻ vai trò bên tab kế bên. */
 const roleStyle: Record<string, { icon: IconType; color: string }> = {
-  system_owner: { icon: Crown, color: "text-[#6941c6]" },
+  system_owner: { icon: Crown, color: "text-[#243B53]" },
   ops_manager: { icon: Users, color: "text-[#2878c7]" },
   content_editor: { icon: PenLine, color: "text-[#c44575]" },
   sales_staff: { icon: ShoppingCart, color: "text-[#16886b]" },
@@ -91,7 +91,7 @@ const roleStyle: Record<string, { icon: IconType; color: string }> = {
 };
 
 const metricTone = {
-  brand: { border: "border-t-[#6941c6]", icon: "text-[#6941c6]", value: "text-[#6941c6]", selected: "bg-[#f8f6ff] ring-[#6941c6]/25" },
+  brand: { border: "border-t-[#243B53]", icon: "text-[#243B53]", value: "text-[#243B53]", selected: "bg-[#EAF0F6] ring-[#243B53]/25" },
   success: { border: "border-t-emerald-500", icon: "text-emerald-600", value: "text-emerald-700", selected: "bg-emerald-50/70 ring-emerald-500/25" },
   warning: { border: "border-t-amber-500", icon: "text-amber-600", value: "text-amber-700", selected: "bg-amber-50/70 ring-amber-500/25" },
   danger: { border: "border-t-rose-500", icon: "text-rose-600", value: "text-rose-700", selected: "bg-rose-50/70 ring-rose-500/25" },
@@ -372,7 +372,7 @@ export function EmployeesManager({ embedded = false, permissions = [] }: { embed
       <div className="flex flex-wrap gap-3.5">
         <div className="relative min-w-[240px] flex-1">
           <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" strokeWidth={1.75} />
-          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm kiếm theo tên, email, số điện thoại..." className="h-9 rounded-xs border-slate-200 bg-white pl-10 text-sm shadow-none placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#6941c6]" />
+          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm kiếm theo tên, email, số điện thoại..." className="h-9 rounded-xs border-slate-200 bg-white pl-10 text-sm shadow-none placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#243B53]" />
         </div>
         <FilterSelect className="w-[179px]" value={role} options={roleFilters} onChange={setRole} />
         <FilterSelect className="w-[187px]" value={status} options={statusFilters} onChange={setStatus} />
@@ -453,7 +453,7 @@ export function EmployeesManager({ embedded = false, permissions = [] }: { embed
                           aria-label="Thao tác khác"
                           aria-expanded={menu?.id === employee.id}
                           onClick={(event) => openMenu(event, employee.id)}
-                          className={cn("size-8 rounded-xs border-slate-200 bg-white p-0 text-slate-600 shadow-none transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2", menu?.id === employee.id && "border-slate-300 bg-slate-100 text-slate-900")}
+                          className={cn("size-8 rounded-xs border-slate-200 bg-white p-0 text-slate-600 shadow-none transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2", menu?.id === employee.id && "border-slate-300 bg-slate-100 text-slate-900")}
                         >
                           <MoreHorizontal className="size-4" strokeWidth={1.75} />
                         </Button>
@@ -522,8 +522,8 @@ export function EmployeesManager({ embedded = false, permissions = [] }: { embed
     </Dialog>
 
     <Dialog open={Boolean(detailEmployee)} onOpenChange={(open) => { if (!open) setDetailEmployee(null); }}><DialogContent className="rounded-xs"><DialogHeader><DialogTitle>Chi tiết nhân viên</DialogTitle><DialogDescription>Thông tin được tải từ tài khoản nhân viên trong hệ thống.</DialogDescription></DialogHeader>{detailEmployee && <div className="space-y-4"><div className="flex items-center gap-3">{detailEmployee.avatarUrl ? <img src={detailEmployee.avatarUrl} alt={detailEmployee.name} className="size-14 rounded-full object-cover" /> : <span className="grid size-14 place-items-center rounded-full bg-slate-100 font-semibold text-slate-700">{detailEmployee.initials}</span>}<div><p className="font-semibold text-slate-900">{detailEmployee.name}</p><p className="text-sm text-slate-500">{detailEmployee.email}</p></div></div><div className="grid grid-cols-2 gap-3 text-sm"><Info label="Vai trò" value={detailEmployee.role} /><Info label="Trạng thái" value={statusLabel[detailEmployee.status]} /><Info label="Ngày tham gia" value={detailEmployee.joined} /><Info label="Hoạt động cuối" value={detailEmployee.lastActive} /></div></div>}</DialogContent></Dialog>
-    <Dialog open={Boolean(roleEmployee)} onOpenChange={(open) => { if (!open) setRoleEmployee(null); }}><DialogContent className="rounded-xs"><DialogHeader><DialogTitle>Đổi vai trò</DialogTitle><DialogDescription>Vai trò mới sẽ được áp dụng ngay cho nhân viên.</DialogDescription></DialogHeader><select value={selectedRoleCode} onChange={(event) => setSelectedRoleCode(event.target.value)} className="h-9 rounded-xs border border-slate-200 bg-white px-3 text-sm focus:border-[#6941c6] focus:outline-none focus:ring-1 focus:ring-[#6941c6]">{roleOptions.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}</select><DialogFooter><Button variant="outline" className={outlineBtn} onClick={() => setRoleEmployee(null)}>Hủy</Button><Button onClick={() => void saveRole()} disabled={!selectedRoleCode || actionId === roleEmployee?.id} className={primaryBtn}>Lưu thay đổi</Button></DialogFooter></DialogContent></Dialog>
-    <Dialog open={createOpen} onOpenChange={setCreateOpen}><DialogContent className="rounded-xs"><DialogHeader><DialogTitle>Thêm nhân viên</DialogTitle><DialogDescription>Tạo tài khoản và gán vai trò ngay từ trang phân quyền.</DialogDescription></DialogHeader><form onSubmit={createEmployee} className="space-y-3"><Input required className="h-9 rounded-xs" placeholder="Họ và tên" value={createForm.full_name} onChange={(event) => setCreateForm((current) => ({ ...current, full_name: event.target.value }))} /><Input required className="h-9 rounded-xs" type="email" placeholder="Email công việc" value={createForm.work_email} onChange={(event) => setCreateForm((current) => ({ ...current, work_email: event.target.value }))} /><Input className="h-9 rounded-xs" placeholder="Số điện thoại" value={createForm.phone} onChange={(event) => setCreateForm((current) => ({ ...current, phone: event.target.value }))} /><select value={createForm.role_code} onChange={(event) => setCreateForm((current) => ({ ...current, role_code: event.target.value }))} className="h-9 w-full rounded-xs border border-slate-200 bg-white px-3 text-sm focus:border-[#6941c6] focus:outline-none focus:ring-1 focus:ring-[#6941c6]">{roleOptions.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}</select><Input required minLength={8} className="h-9 rounded-xs" type="password" placeholder="Mật khẩu tạm thời" value={createForm.password} onChange={(event) => setCreateForm((current) => ({ ...current, password: event.target.value }))} /><DialogFooter><Button type="button" variant="outline" className={outlineBtn} onClick={() => setCreateOpen(false)}>Hủy</Button><Button type="submit" disabled={createSaving} className={primaryBtn}>{createSaving ? "Đang tạo..." : "Tạo nhân viên"}</Button></DialogFooter></form></DialogContent></Dialog>
+    <Dialog open={Boolean(roleEmployee)} onOpenChange={(open) => { if (!open) setRoleEmployee(null); }}><DialogContent className="rounded-xs"><DialogHeader><DialogTitle>Đổi vai trò</DialogTitle><DialogDescription>Vai trò mới sẽ được áp dụng ngay cho nhân viên.</DialogDescription></DialogHeader><select value={selectedRoleCode} onChange={(event) => setSelectedRoleCode(event.target.value)} className="h-9 rounded-xs border border-slate-200 bg-white px-3 text-sm focus:border-[#243B53] focus:outline-none focus:ring-1 focus:ring-[#243B53]">{roleOptions.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}</select><DialogFooter><Button variant="outline" className={outlineBtn} onClick={() => setRoleEmployee(null)}>Hủy</Button><Button onClick={() => void saveRole()} disabled={!selectedRoleCode || actionId === roleEmployee?.id} className={primaryBtn}>Lưu thay đổi</Button></DialogFooter></DialogContent></Dialog>
+    <Dialog open={createOpen} onOpenChange={setCreateOpen}><DialogContent className="rounded-xs"><DialogHeader><DialogTitle>Thêm nhân viên</DialogTitle><DialogDescription>Tạo tài khoản và gán vai trò ngay từ trang phân quyền.</DialogDescription></DialogHeader><form onSubmit={createEmployee} className="space-y-3"><Input required className="h-9 rounded-xs" placeholder="Họ và tên" value={createForm.full_name} onChange={(event) => setCreateForm((current) => ({ ...current, full_name: event.target.value }))} /><Input required className="h-9 rounded-xs" type="email" placeholder="Email công việc" value={createForm.work_email} onChange={(event) => setCreateForm((current) => ({ ...current, work_email: event.target.value }))} /><Input className="h-9 rounded-xs" placeholder="Số điện thoại" value={createForm.phone} onChange={(event) => setCreateForm((current) => ({ ...current, phone: event.target.value }))} /><select value={createForm.role_code} onChange={(event) => setCreateForm((current) => ({ ...current, role_code: event.target.value }))} className="h-9 w-full rounded-xs border border-slate-200 bg-white px-3 text-sm focus:border-[#243B53] focus:outline-none focus:ring-1 focus:ring-[#243B53]">{roleOptions.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}</select><Input required minLength={8} className="h-9 rounded-xs" type="password" placeholder="Mật khẩu tạm thời" value={createForm.password} onChange={(event) => setCreateForm((current) => ({ ...current, password: event.target.value }))} /><DialogFooter><Button type="button" variant="outline" className={outlineBtn} onClick={() => setCreateOpen(false)}>Hủy</Button><Button type="submit" disabled={createSaving} className={primaryBtn}>{createSaving ? "Đang tạo..." : "Tạo nhân viên"}</Button></DialogFooter></form></DialogContent></Dialog>
   </div>;
 }
 
@@ -540,7 +540,7 @@ function Checkbox({ checked, onChange, label }: { checked: boolean; onChange: ()
       aria-label={label}
       onClick={onChange}
       style={checked ? { backgroundColor: BRAND, borderColor: BRAND } : undefined}
-      className={cn("grid size-4 shrink-0 place-items-center rounded-xs border text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2", !checked && "border-slate-300 bg-white")}
+      className={cn("grid size-4 shrink-0 place-items-center rounded-xs border text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2", !checked && "border-slate-300 bg-white")}
     >
       {checked && <Check className="size-3" strokeWidth={3} />}
     </button>
@@ -554,7 +554,7 @@ function StatCard({ icon: Icon, tone, active, onClick, value, label, note }: { i
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={cn("w-full rounded-xs border border-slate-200 border-t-2 p-4 text-left transition duration-300 ease-in-out hover:-translate-y-0.5 hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2", colors.border, active && cn("ring-1", colors.selected))}
+      className={cn("w-full rounded-xs border border-slate-200 border-t-2 p-4 text-left transition duration-300 ease-in-out hover:-translate-y-0.5 hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2", colors.border, active && cn("ring-1", colors.selected))}
     >
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-medium text-slate-600">{label}</p>
@@ -572,7 +572,7 @@ function FilterSelect({ value, options, onChange = () => undefined, className }:
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-9 w-full appearance-none rounded-xs border border-slate-200 bg-white pl-3.5 pr-10 text-sm text-slate-800 outline-none transition-colors focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+        className="h-9 w-full appearance-none rounded-xs border border-slate-200 bg-white pl-3.5 pr-10 text-sm text-slate-800 outline-none transition-colors focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
       >
         {options.map((option) => <option key={option}>{option}</option>)}
       </select>
@@ -602,7 +602,7 @@ function MenuItem({ icon: Icon, label, danger = false, disabled = false, onClick
       role="menuitem"
       disabled={disabled}
       onClick={onClick}
-      className={cn("flex h-9 w-full items-center gap-3 px-3 text-left text-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#6941c6] disabled:cursor-not-allowed disabled:opacity-50", danger ? "text-rose-700 hover:bg-rose-50" : "text-slate-700")}
+      className={cn("flex h-9 w-full items-center gap-3 px-3 text-left text-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#243B53] disabled:cursor-not-allowed disabled:opacity-50", danger ? "text-rose-700 hover:bg-rose-50" : "text-slate-700")}
     >
       <Icon className="size-4 shrink-0 text-slate-400" strokeWidth={1.75} />
       {label}
@@ -625,6 +625,6 @@ function ChannelIcon({ code }: { code: string }) {
   if (code.includes("face")) return <span className={base} style={{ backgroundColor: "#1877f2" }} title="Facebook">f</span>;
   if (code.includes("tik")) return <span className={base} style={{ backgroundColor: "#000" }} title="TikTok"><Music2 className="size-4" strokeWidth={2} /></span>;
   if (code.includes("shopee")) return <span className={base} style={{ backgroundColor: "#ee4d2d" }} title="Shopee">S</span>;
-  if (code.includes("web")) return <span className={cn(base, "rounded-full")} style={{ backgroundColor: "#6d3df0" }} title="Website"><Globe className="size-4" strokeWidth={1.75} /></span>;
+  if (code.includes("web")) return <span className={cn(base, "rounded-full")} style={{ backgroundColor: "#243B53" }} title="Website"><Globe className="size-4" strokeWidth={1.75} /></span>;
   return <span className={cn(base, "bg-slate-400")} title={code}>{code.slice(0, 1).toUpperCase()}</span>;
 }

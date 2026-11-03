@@ -572,7 +572,7 @@ export function AiKeysManager() {
                         ) : key.status === "REVOKED" ? (
                           <Badge
                             variant="outline"
-                            className="border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 gap-1 text-xs font-medium"
+                            className="border-[#243B53]/30 bg-[#243B53]/10 text-[#1B2E42] dark:text-[#6F8BA6] gap-1 text-xs font-medium"
                           >
                             Khóa bị sai / Khóa
                           </Badge>

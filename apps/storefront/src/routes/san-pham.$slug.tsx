@@ -5,6 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { fetchProductsByIds, formatVND, getCategory, getProduct, products, type Product } from "@/lib/products";
 import { useStore } from "@/lib/store";
 import { ProductCard } from "@/components/site/ProductCard";
+import { SectionHeading } from "@/components/site/SectionHeading";
 import { colorwayHasStock, findVariant, isSizeInStock } from "@/lib/variant-stock";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -695,7 +696,7 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
       />
 
       <section className="mt-24">
-        <h2 className="mb-8 text-3xl">Có thể bạn cũng thích</h2>
+        <SectionHeading title="Có thể bạn cũng thích" />
         <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 lg:grid-cols-4 lg:gap-y-10">
           {related.map((x) => <ProductCard key={x.id} product={x} />)}
         </div>
@@ -703,7 +704,7 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
 
       {recentlyViewed.length > 0 && (
         <section className="mt-24">
-          <h2 className="mb-8 text-3xl">Sản phẩm bạn đã xem</h2>
+          <SectionHeading title="Sản phẩm bạn đã xem" />
           <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 lg:grid-cols-4 lg:gap-y-10">
             {recentlyViewed.map((item) => <ProductCard key={item.id} product={item} />)}
           </div>

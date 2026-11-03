@@ -82,7 +82,10 @@ import { useConfirmDialog } from "@/components/ConfirmDialog";
 
 type StockFilter = "" | "in" | "out" | "low";
 type StatusCounts = { all: number; published: number; draft: number; archived: number };
-type ProductFilterCategory = Pick<ProductMeta["categories"][number], "id" | "name" | "slug" | "parent_id">;
+type ProductFilterCategory = Pick<
+  ProductMeta["categories"][number],
+  "id" | "name" | "slug" | "parent_id"
+>;
 type ProductCategoryNode = { category: ProductFilterCategory; children: ProductCategoryNode[] };
 
 function productImageUrl(path?: string | null) {
@@ -396,7 +399,9 @@ const DEMO_PRODUCTS: AdminProduct[] = [
     occasion: "Công sở",
     category: { slug: "outerwear", name: "Áo khoác" },
     size_chart: null,
-    images: ["https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=300&auto=format&fit=crop&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=300&auto=format&fit=crop&q=80",
+    ],
     variants: [
       {
         id: "v-1",
@@ -426,7 +431,9 @@ const DEMO_PRODUCTS: AdminProduct[] = [
     occasion: "Dự tiệc",
     category: { slug: "dresses", name: "Váy / Đầm" },
     size_chart: null,
-    images: ["https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=300&auto=format&fit=crop&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=300&auto=format&fit=crop&q=80",
+    ],
     variants: [
       {
         id: "v-2",
@@ -456,7 +463,9 @@ const DEMO_PRODUCTS: AdminProduct[] = [
     occasion: "Dạo phố",
     category: { slug: "knitwear", name: "Đồ len" },
     size_chart: null,
-    images: ["https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=300&auto=format&fit=crop&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=300&auto=format&fit=crop&q=80",
+    ],
     variants: [
       {
         id: "v-3",
@@ -486,7 +495,9 @@ const DEMO_PRODUCTS: AdminProduct[] = [
     occasion: "Công sở",
     category: { slug: "bags", name: "Túi xách" },
     size_chart: null,
-    images: ["https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=300&auto=format&fit=crop&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=300&auto=format&fit=crop&q=80",
+    ],
     variants: [
       {
         id: "v-4",
@@ -516,7 +527,9 @@ const DEMO_PRODUCTS: AdminProduct[] = [
     occasion: "Thường ngày",
     category: { slug: "footwear", name: "Giày dép" },
     size_chart: null,
-    images: ["https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=300&auto=format&fit=crop&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=300&auto=format&fit=crop&q=80",
+    ],
     variants: [
       {
         id: "v-5",
@@ -546,7 +559,9 @@ const DEMO_PRODUCTS: AdminProduct[] = [
     occasion: "Phụ kiện",
     category: { slug: "accessories", name: "Phụ kiện" },
     size_chart: null,
-    images: ["https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=300&auto=format&fit=crop&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=300&auto=format&fit=crop&q=80",
+    ],
     variants: [
       {
         id: "v-6",
@@ -576,7 +591,9 @@ const DEMO_PRODUCTS: AdminProduct[] = [
     occasion: "Công sở",
     category: { slug: "bottoms", name: "Quần / Chân váy" },
     size_chart: null,
-    images: ["https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=300&auto=format&fit=crop&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=300&auto=format&fit=crop&q=80",
+    ],
     variants: [
       {
         id: "v-7",
@@ -606,7 +623,9 @@ const DEMO_PRODUCTS: AdminProduct[] = [
     occasion: "Công sở",
     category: { slug: "outerwear", name: "Áo khoác" },
     size_chart: null,
-    images: ["https://images.unsplash.com/photo-1548624313-039e222d730b?w=300&auto=format&fit=crop&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1548624313-039e222d730b?w=300&auto=format&fit=crop&q=80",
+    ],
     variants: [
       {
         id: "v-8",
@@ -636,7 +655,9 @@ const DEMO_PRODUCTS: AdminProduct[] = [
     occasion: "Phụ kiện",
     category: { slug: "accessories", name: "Phụ kiện" },
     size_chart: null,
-    images: ["https://images.unsplash.com/photo-1630019852942-f89202989a59?w=300&auto=format&fit=crop&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1630019852942-f89202989a59?w=300&auto=format&fit=crop&q=80",
+    ],
     variants: [
       {
         id: "v-9",
@@ -666,7 +687,9 @@ const DEMO_PRODUCTS: AdminProduct[] = [
     occasion: "Dự tiệc",
     category: { slug: "dresses", name: "Váy / Đầm" },
     size_chart: null,
-    images: ["https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?w=300&auto=format&fit=crop&q=80"],
+    images: [
+      "https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?w=300&auto=format&fit=crop&q=80",
+    ],
     variants: [
       {
         id: "v-10",
@@ -693,7 +716,8 @@ export function ProductsManager({
   const navigate = useNavigate();
   const location = useLocation();
   const route = resolveAdminPath(location.pathname);
-  const hasPermission = (permission: string) => permissions.includes("*") || permissions.includes(permission);
+  const hasPermission = (permission: string) =>
+    permissions.includes("*") || permissions.includes(permission);
   const canWrite = hasPermission("product.write");
   const canPublish = hasPermission("product.publish");
   const canDelete = hasPermission("product.delete");
@@ -804,9 +828,12 @@ export function ProductsManager({
   const handleOpenAddVariant = () => {
     const defaultPrefix = form.slug
       ? `EL-${form.slug.slice(0, 4).toUpperCase()}`
-      : (detailData.sku ? detailData.sku : "EL-PROD");
+      : detailData.sku
+        ? detailData.sku
+        : "EL-PROD";
     // Đồng bộ: kế thừa ảnh đã có trên trang nếu bộ màu chưa có ảnh
-    const initialImages = detailData.images && detailData.images.length > 0 ? [...detailData.images] : [];
+    const initialImages =
+      detailData.images && detailData.images.length > 0 ? [...detailData.images] : [];
     setNewColorwayForm({
       name: "",
       colorHex: "#111111",
@@ -819,19 +846,21 @@ export function ProductsManager({
     setAddVariantModalOpen(true);
   };
 
-
   const metaRef = useRef<ProductMeta | null>(null);
 
   // Fetch static metadata (categories, sizes, colors, occasions) once on mount.
   useEffect(() => {
     let cancelled = false;
-    adminApi.productMeta().catch(() => null).then((m) => {
-      if (cancelled) return;
-      if (m) {
-        metaRef.current = m;
-        setMeta(m);
-      }
-    });
+    adminApi
+      .productMeta()
+      .catch(() => null)
+      .then((m) => {
+        if (cancelled) return;
+        if (m) {
+          metaRef.current = m;
+          setMeta(m);
+        }
+      });
     return () => {
       cancelled = true;
     };
@@ -855,7 +884,11 @@ export function ProductsManager({
         limit?: number;
       } = { page, limit };
       if (query.trim()) params.q = query.trim();
-      if (statusFilter !== "all" && statusFilter !== "low_stock" && statusFilter !== "out_of_stock") {
+      if (
+        statusFilter !== "all" &&
+        statusFilter !== "low_stock" &&
+        statusFilter !== "out_of_stock"
+      ) {
         params.status = statusFilter;
       }
       if (categoryId) params.category_id = categoryId;
@@ -945,7 +978,19 @@ export function ProductsManager({
     }
 
     void load();
-  }, [page, limit, query, statusFilter, categoryId, occasionId, priceMin, priceMax, stock, sortBy, load]);
+  }, [
+    page,
+    limit,
+    query,
+    statusFilter,
+    categoryId,
+    occasionId,
+    priceMin,
+    priceMax,
+    stock,
+    sortBy,
+    load,
+  ]);
 
   const allFilteredSelected = items.length > 0 && items.every((p) => selected.has(p.id));
   const someFilteredSelected = items.some((p) => selected.has(p.id));
@@ -1022,12 +1067,20 @@ export function ProductsManager({
                       return next;
                     });
                   }}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-xs text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6]/40"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-xs text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53]/40"
                 >
-                  <ChevronRight className={cn("size-4 transition-transform duration-300 ease-in-out", isExpanded && "rotate-90")} />
+                  <ChevronRight
+                    className={cn(
+                      "size-4 transition-transform duration-300 ease-in-out",
+                      isExpanded && "rotate-90",
+                    )}
+                  />
                 </button>
               ) : (
-                <span className="flex size-8 shrink-0 items-center justify-center" aria-hidden="true">
+                <span
+                  className="flex size-8 shrink-0 items-center justify-center"
+                  aria-hidden="true"
+                >
                   <span className="size-4" />
                 </span>
               )}
@@ -1041,7 +1094,7 @@ export function ProductsManager({
                   setCategoryPickerOpen(false);
                 }}
                 className={cn(
-                  "min-w-0 h-8 flex-1 truncate rounded-xs px-2 text-left text-sm transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6]/40",
+                  "min-w-0 h-8 flex-1 truncate rounded-xs px-2 text-left text-sm transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53]/40",
                   isSelected ? "bg-slate-100 font-medium text-slate-900" : "text-slate-700",
                 )}
               >
@@ -1049,10 +1102,12 @@ export function ProductsManager({
               </button>
             </div>
             {children.length > 0 && (
-              <div className={cn(
-                "grid transition-[grid-template-rows] duration-200",
-                isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-              )}>
+              <div
+                className={cn(
+                  "grid transition-[grid-template-rows] duration-200",
+                  isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                )}
+              >
                 <div className="min-h-0 overflow-hidden">
                   <div inert={!isExpanded}>
                     <div className="ml-4 border-l border-slate-200 pl-2 pt-1">
@@ -1075,8 +1130,8 @@ export function ProductsManager({
   }, [categoryId, filterCategories]);
 
   const moreFilterCount = (priceMin || priceMax ? 1 : 0) + (stock ? 1 : 0);
-  const priceRangeInvalid = Boolean(priceMinDraft && priceMaxDraft)
-    && Number(priceMinDraft) > Number(priceMaxDraft);
+  const priceRangeInvalid =
+    Boolean(priceMinDraft && priceMaxDraft) && Number(priceMinDraft) > Number(priceMaxDraft);
 
   function resetAdvancedFilters() {
     setPriceMinDraft("");
@@ -1145,16 +1200,23 @@ export function ProductsManager({
       size_chart_id: "",
       status: (p.status as FormState["status"]) || "published",
       price_vnd: p.price_vnd != null && p.price_vnd > 0 ? String(p.price_vnd) : "",
-      compare_at_price_vnd: p.sale_compare_vnd != null && p.sale_compare_vnd > 0 ? String(p.sale_compare_vnd) : "",
+      compare_at_price_vnd:
+        p.sale_compare_vnd != null && p.sale_compare_vnd > 0 ? String(p.sale_compare_vnd) : "",
       cost_vnd:
         p.cost_vnd != null && p.cost_vnd > 0
           ? String(p.cost_vnd)
-          : (p.price_vnd && p.price_vnd > 0 ? String(Math.round(p.price_vnd * 0.3)) : ""),
+          : p.price_vnd && p.price_vnd > 0
+            ? String(Math.round(p.price_vnd * 0.3))
+            : "",
     });
 
     // Collect all media across images, colorways, and media assets
-    const pImages = (p.images || []).map((img) => productImageUrl(img) || img).filter(Boolean) as string[];
-    const mediaUrls = (p.media || []).map((m) => productImageUrl(m.url) || m.url).filter(Boolean) as string[];
+    const pImages = (p.images || [])
+      .map((img) => productImageUrl(img) || img)
+      .filter(Boolean) as string[];
+    const mediaUrls = (p.media || [])
+      .map((m) => productImageUrl(m.url) || m.url)
+      .filter(Boolean) as string[];
     const cwUrls = (p.colorways || [])
       .flatMap((cw) => [cw.thumbnail, ...(cw.images || [])])
       .map((img) => (img ? productImageUrl(img) || img : null))
@@ -1184,28 +1246,26 @@ export function ProductsManager({
     const vars: ProductVariantItem[] =
       p.variants && p.variants.length > 0
         ? p.variants.map((v, idx) => {
-          const rawImg =
-            v.image_url ||
-            (v.colorway_id ? colorwayImageMap.get(v.colorway_id) : null) ||
-            imgList[0];
-          const swatch = rawImg ? productImageUrl(rawImg) || rawImg : imgList[0];
+            const rawImg =
+              v.image_url ||
+              (v.colorway_id ? colorwayImageMap.get(v.colorway_id) : null) ||
+              imgList[0];
+            const swatch = rawImg ? productImageUrl(rawImg) || rawImg : imgList[0];
 
-          return {
-            id: v.id || `var-${idx}`,
-            color: v.color?.name || `Màu ${idx + 1}`,
-            colorHex: v.color?.hex || (idx % 2 === 0 ? "#c19a6b" : "#111111"),
-            size: v.size?.label || (idx % 2 === 0 ? "S" : "M"),
-            sku: v.sku || `EL-COAT-00${idx + 1}`,
-            stock: v.available ?? v.on_hand ?? (idx === 3 ? 22 : 40 - idx * 2),
-            price: Number(v.price_vnd) || Number(p.price_vnd) || 0,
-            status: ((v.available ?? v.on_hand ?? 40) < 25 ? "low_stock" : "in_stock") as
-              | "in_stock"
-              | "low_stock"
-              | "out_of_stock",
-            swatch,
-            colorwayId: v.colorway_id,
-          };
-        })
+            return {
+              id: v.id || `var-${idx}`,
+              color: v.color?.name || `Màu ${idx + 1}`,
+              colorHex: v.color?.hex || (idx % 2 === 0 ? "#c19a6b" : "#111111"),
+              size: v.size?.label || (idx % 2 === 0 ? "S" : "M"),
+              sku: v.sku || `EL-COAT-00${idx + 1}`,
+              stock: v.available ?? v.on_hand ?? (idx === 3 ? 22 : 40 - idx * 2),
+              price: Number(v.price_vnd) || Number(p.price_vnd) || 0,
+              status: ((v.available ?? v.on_hand ?? 40) < 25 ? "low_stock" : "in_stock") as
+                "in_stock" | "low_stock" | "out_of_stock",
+              swatch,
+              colorwayId: v.colorway_id,
+            };
+          })
         : DEFAULT_VARIANTS;
 
     // Construct colorways list with their respective image sets
@@ -1213,7 +1273,8 @@ export function ProductsManager({
     if (p.colorways && p.colorways.length > 0) {
       colorwaysList = p.colorways.map((cw, idx) => {
         const matchingVars = (p.variants || []).filter((v) => v.colorway_id === cw.id);
-        const name = matchingVars[0]?.color?.name || matchingVars[0]?.color_name || `Màu ${idx + 1}`;
+        const name =
+          matchingVars[0]?.color?.name || matchingVars[0]?.color_name || `Màu ${idx + 1}`;
         const hex = matchingVars[0]?.color?.hex || (idx % 2 === 0 ? "#c19a6b" : "#111111");
         const cwImgs = [
           cw.thumbnail,
@@ -1227,7 +1288,10 @@ export function ProductsManager({
           id: cw.id,
           name,
           colorHex: hex,
-          images: uniqueImgs.length > 0 ? uniqueImgs : DEFAULT_COLORWAYS[idx % DEFAULT_COLORWAYS.length].images,
+          images:
+            uniqueImgs.length > 0
+              ? uniqueImgs
+              : DEFAULT_COLORWAYS[idx % DEFAULT_COLORWAYS.length].images,
         };
       });
     }
@@ -1238,7 +1302,9 @@ export function ProductsManager({
       );
       if (uniqueColors.length > 0) {
         colorwaysList = uniqueColors.map((cName, idx) => {
-          const matchingVar = (p.variants || []).find((v) => (v.color?.name || v.color_name) === cName);
+          const matchingVar = (p.variants || []).find(
+            (v) => (v.color?.name || v.color_name) === cName,
+          );
           const hex = matchingVar?.color?.hex || (idx % 2 === 0 ? "#c19a6b" : "#111111");
           return {
             id: `cw-${slugify(cName!)}-${idx}`,
@@ -1348,7 +1414,8 @@ export function ProductsManager({
       const currentEditing = editingRef.current;
       const isAlreadyTarget =
         currentEditing &&
-        (currentEditing.id === param || currentEditing.slug.toLowerCase() === param.toLowerCase()) &&
+        (currentEditing.id === param ||
+          currentEditing.slug.toLowerCase() === param.toLowerCase()) &&
         viewRef.current === targetView;
 
       if (isAlreadyTarget) return;
@@ -1420,7 +1487,10 @@ export function ProductsManager({
     }
   }, [canWrite, route.tabId, route.action, route.subParam, navigate]);
 
-  async function save(customStatus?: "published" | "draft" | "archived", andReturnToList: boolean = false) {
+  async function save(
+    customStatus?: "published" | "draft" | "archived",
+    andReturnToList: boolean = false,
+  ) {
     if (!canWrite) {
       toast.error("Bạn không có quyền tạo hoặc chỉnh sửa sản phẩm");
       return;
@@ -1442,7 +1512,9 @@ export function ProductsManager({
           primary_category_id: form.primary_category_id,
           status: targetStatus,
           price_vnd: price,
-          compare_at_price_vnd: form.compare_at_price_vnd ? Number(form.compare_at_price_vnd) : null,
+          compare_at_price_vnd: form.compare_at_price_vnd
+            ? Number(form.compare_at_price_vnd)
+            : null,
           cost_vnd: form.cost_vnd ? Number(form.cost_vnd) : null,
         });
 
@@ -1451,30 +1523,34 @@ export function ProductsManager({
           prev.map((item) =>
             item.id === editing.id
               ? {
-                ...item,
-                name: form.name.trim(),
-                material: form.material.trim(),
-                description: form.description,
-                status: targetStatus,
-                price_vnd: price,
-                sale_compare_vnd: form.compare_at_price_vnd ? Number(form.compare_at_price_vnd) : null,
-                cost_vnd: form.cost_vnd ? Number(form.cost_vnd) : null,
-              }
+                  ...item,
+                  name: form.name.trim(),
+                  material: form.material.trim(),
+                  description: form.description,
+                  status: targetStatus,
+                  price_vnd: price,
+                  sale_compare_vnd: form.compare_at_price_vnd
+                    ? Number(form.compare_at_price_vnd)
+                    : null,
+                  cost_vnd: form.cost_vnd ? Number(form.cost_vnd) : null,
+                }
               : item,
           ),
         );
         setEditing((prev) =>
           prev
             ? {
-              ...prev,
-              name: form.name.trim(),
-              material: form.material.trim(),
-              description: form.description,
-              status: targetStatus,
-              price_vnd: price,
-              sale_compare_vnd: form.compare_at_price_vnd ? Number(form.compare_at_price_vnd) : null,
-              cost_vnd: form.cost_vnd ? Number(form.cost_vnd) : null,
-            }
+                ...prev,
+                name: form.name.trim(),
+                material: form.material.trim(),
+                description: form.description,
+                status: targetStatus,
+                price_vnd: price,
+                sale_compare_vnd: form.compare_at_price_vnd
+                  ? Number(form.compare_at_price_vnd)
+                  : null,
+                cost_vnd: form.cost_vnd ? Number(form.cost_vnd) : null,
+              }
             : null,
         );
         setForm((f) => ({ ...f, status: targetStatus }));
@@ -1500,7 +1576,9 @@ export function ProductsManager({
               material: form.material.trim(),
               status: targetStatus,
               price_vnd: price,
-              sale_compare_vnd: form.compare_at_price_vnd ? Number(form.compare_at_price_vnd) : null,
+              sale_compare_vnd: form.compare_at_price_vnd
+                ? Number(form.compare_at_price_vnd)
+                : null,
               cost_vnd: form.cost_vnd ? Number(form.cost_vnd) : null,
               is_new: true,
               best_seller: false,
@@ -1589,7 +1667,7 @@ export function ProductsManager({
     });
     if (!ok) return;
     try {
-      await adminApi.deleteProduct(p.id, true).catch(() => { });
+      await adminApi.deleteProduct(p.id, true).catch(() => {});
       setItems((prev) => prev.filter((item) => item.id !== p.id));
       setTotal((t) => Math.max(0, t - 1));
       toast.success("Đã xóa sản phẩm");
@@ -1616,7 +1694,9 @@ export function ProductsManager({
       await load();
       toast.success(`Đã chuyển trạng thái sang: ${adminLabel(newStatus)}`);
     } catch (error) {
-      toast.error(error instanceof Error ? adminErrorMessage(error) : "Cập nhật trạng thái thất bại");
+      toast.error(
+        error instanceof Error ? adminErrorMessage(error) : "Cập nhật trạng thái thất bại",
+      );
     }
   }
 
@@ -1639,7 +1719,9 @@ export function ProductsManager({
         `"${(p.description || "").replace(/"/g, '""')}"`,
       ];
     });
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -1659,7 +1741,7 @@ export function ProductsManager({
     setBulkBusy(true);
     try {
       for (const id of selected) {
-        await adminApi.publishProduct(id).catch(() => { });
+        await adminApi.publishProduct(id).catch(() => {});
       }
       setItems((prev) =>
         prev.map((item) => (selected.has(item.id) ? { ...item, status: "published" } : item)),
@@ -1688,7 +1770,9 @@ export function ProductsManager({
       if (succeeded === ids.length) {
         toast.success(`Đã chuyển ${succeeded} sản phẩm sang bản nháp`);
       } else {
-        toast.error(`Đã chuyển ${succeeded}/${ids.length} sản phẩm. Một số sản phẩm chưa cập nhật được.`);
+        toast.error(
+          `Đã chuyển ${succeeded}/${ids.length} sản phẩm. Một số sản phẩm chưa cập nhật được.`,
+        );
       }
     } finally {
       setBulkBusy(false);
@@ -1703,7 +1787,7 @@ export function ProductsManager({
     setBulkBusy(true);
     try {
       for (const id of selected) {
-        await adminApi.deleteProduct(id, false).catch(() => { });
+        await adminApi.deleteProduct(id, false).catch(() => {});
       }
       setItems((prev) =>
         prev.map((item) => (selected.has(item.id) ? { ...item, status: "archived" } : item)),
@@ -1730,7 +1814,7 @@ export function ProductsManager({
     setBulkBusy(true);
     try {
       for (const id of selected) {
-        await adminApi.deleteProduct(id, true).catch(() => { });
+        await adminApi.deleteProduct(id, true).catch(() => {});
       }
       setItems((prev) => prev.filter((item) => !selected.has(item.id)));
       setTotal((t) => Math.max(0, t - selected.size));
@@ -1795,10 +1879,7 @@ export function ProductsManager({
       return;
     }
 
-    const imgs =
-      newColorwayForm.images.length > 0
-        ? newColorwayForm.images
-        : [DEFAULT_IMAGES[0]];
+    const imgs = newColorwayForm.images.length > 0 ? newColorwayForm.images : [DEFAULT_IMAGES[0]];
 
     const newCwId = `cw-${slugify(newColorwayForm.name)}-${Date.now()}`;
     const newCw: ColorwayItem = {
@@ -1813,7 +1894,7 @@ export function ProductsManager({
       color: newColorwayForm.name.trim(),
       colorHex: newColorwayForm.colorHex,
       size: sz === "ONE_SIZE" ? "Một cỡ" : sz,
-      sku: `${(newColorwayForm.skuPrefix.trim() || "EL-PROD")}-${sz}`,
+      sku: `${newColorwayForm.skuPrefix.trim() || "EL-PROD"}-${sz}`,
       stock: 0,
       price: Number(newColorwayForm.pricePerSize) || Number(form.price_vnd) || 0,
       status: "out_of_stock",
@@ -1831,7 +1912,9 @@ export function ProductsManager({
 
     setActiveMediaIndex(0);
     setAddVariantModalOpen(false);
-    toast.success(`Đã thêm bộ màu "${newColorwayForm.name}" với ${newVars.length} biến thể (tồn kho: 0) và ${imgs.length} ảnh!`);
+    toast.success(
+      `Đã thêm bộ màu "${newColorwayForm.name}" với ${newVars.length} biến thể (tồn kho: 0) và ${imgs.length} ảnh!`,
+    );
   };
 
   const handleOpenStockIn = (v: ProductVariantItem) => {
@@ -1947,7 +2030,9 @@ export function ProductsManager({
                   onClick={() => {
                     const prefix = form.slug
                       ? `EL-${form.slug.slice(0, 4).toUpperCase()}-${preset.sku}`
-                      : (detailData.sku ? `${detailData.sku}-${preset.sku}` : `EL-${preset.sku}`);
+                      : detailData.sku
+                        ? `${detailData.sku}-${preset.sku}`
+                        : `EL-${preset.sku}`;
                     setNewColorwayForm((f) => ({
                       ...f,
                       name: preset.name,
@@ -1958,11 +2043,14 @@ export function ProductsManager({
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-xs border px-2.5 py-1 text-sm transition-colors cursor-pointer",
                     newColorwayForm.name === preset.name
-                      ? "border-[#6941c6] bg-[#f4f3ff] text-[#6941c6] font-semibold shadow-none"
+                      ? "border-[#243B53] bg-[#EAF0F6] text-[#243B53] font-semibold shadow-none"
                       : "border-slate-200 bg-white text-slate-700 font-semibold hover:bg-slate-100",
                   )}
                 >
-                  <span className="size-2.5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: preset.hex }} />
+                  <span
+                    className="size-2.5 rounded-full border border-black/10 shrink-0"
+                    style={{ backgroundColor: preset.hex }}
+                  />
                   <span>{preset.name}</span>
                 </button>
               ))}
@@ -1991,13 +2079,17 @@ export function ProductsManager({
                   <input
                     type="color"
                     value={newColorwayForm.colorHex}
-                    onChange={(e) => setNewColorwayForm((f) => ({ ...f, colorHex: e.target.value }))}
+                    onChange={(e) =>
+                      setNewColorwayForm((f) => ({ ...f, colorHex: e.target.value }))
+                    }
                     className="size-9 rounded-xs border border-slate-200 cursor-pointer p-0.5"
                   />
                   <Input
                     className="h-9 tabular-nums text-sm font-semibold text-slate-900 rounded-xs"
                     value={newColorwayForm.colorHex}
-                    onChange={(e) => setNewColorwayForm((f) => ({ ...f, colorHex: e.target.value }))}
+                    onChange={(e) =>
+                      setNewColorwayForm((f) => ({ ...f, colorHex: e.target.value }))
+                    }
                   />
                 </div>
               </div>
@@ -2010,7 +2102,6 @@ export function ProductsManager({
               <label className="font-semibold text-slate-900 text-sm">
                 2. Bộ ảnh của bộ màu ({newColorwayForm.images.length} ảnh)
               </label>
-
             </div>
 
             {/* Images grid */}
@@ -2020,10 +2111,14 @@ export function ProductsManager({
                   key={idx}
                   className={cn(
                     "group relative aspect-3/4 rounded-xs overflow-hidden border bg-slate-100",
-                    idx === 0 ? "border-[#6941c6] ring-2 ring-[#6941c6]/30" : "border-slate-200",
+                    idx === 0 ? "border-[#243B53] ring-2 ring-[#243B53]/30" : "border-slate-200",
                   )}
                 >
-                  <img src={imgUrl} alt={`Ảnh ${idx + 1}`} className="h-full w-full object-cover object-top" />
+                  <img
+                    src={imgUrl}
+                    alt={`Ảnh ${idx + 1}`}
+                    className="h-full w-full object-cover object-top"
+                  />
                   {idx === 0 && (
                     <span className="absolute left-1 top-1 rounded bg-slate-900/85 px-1 py-0.5 text-xs font-semibold text-white shadow-xs">
                       Bìa
@@ -2060,7 +2155,7 @@ export function ProductsManager({
               ))}
 
               {/* Upload image button */}
-              <label className="flex aspect-3/4 flex-col items-center justify-center rounded-xs border border-dashed border-slate-300 bg-white p-2 text-center text-xs font-medium text-slate-500 hover:border-[#6941c6] hover:bg-[#f4f3ff]/30 hover:text-[#6941c6] transition-colors cursor-pointer">
+              <label className="flex aspect-3/4 flex-col items-center justify-center rounded-xs border border-dashed border-slate-300 bg-white p-2 text-center text-xs font-medium text-slate-500 hover:border-[#243B53] hover:bg-[#EAF0F6]/30 hover:text-[#243B53] transition-colors cursor-pointer">
                 <input
                   type="file"
                   multiple
@@ -2078,7 +2173,7 @@ export function ProductsManager({
                     }
                   }}
                 />
-                <Upload className="size-4 mb-1 text-slate-400 group-hover:text-[#6941c6]" />
+                <Upload className="size-4 mb-1 text-slate-400 group-hover:text-[#243B53]" />
                 <span className="leading-tight">Tải ảnh lên</span>
               </label>
             </div>
@@ -2149,7 +2244,7 @@ export function ProductsManager({
                     className={cn(
                       "h-8 min-w-10 rounded-xs px-2.5 text-sm font-semibold transition-colors cursor-pointer",
                       isSelected
-                        ? "bg-[#6941c6] text-white shadow-xs"
+                        ? "bg-[#243B53] text-white shadow-xs"
                         : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100",
                     )}
                   >
@@ -2175,7 +2270,9 @@ export function ProductsManager({
                   type="number"
                   className="mt-1 h-8.5 tabular-nums text-sm rounded-xs"
                   value={newColorwayForm.pricePerSize}
-                  onChange={(e) => setNewColorwayForm((f) => ({ ...f, pricePerSize: Number(e.target.value) }))}
+                  onChange={(e) =>
+                    setNewColorwayForm((f) => ({ ...f, pricePerSize: Number(e.target.value) }))
+                  }
                 />
               </div>
             </div>
@@ -2186,7 +2283,10 @@ export function ProductsManager({
           <Button variant="outline" onClick={() => setAddVariantModalOpen(false)}>
             Hủy
           </Button>
-          <Button onClick={handleAddColorwayAndVariants} className="bg-[#6941c6] text-white hover:bg-[#53389e]">
+          <Button
+            onClick={handleAddColorwayAndVariants}
+            className="bg-[#243B53] text-white hover:bg-[#1B2E42]"
+          >
             Thêm bộ màu & biến thể
           </Button>
         </DialogFooter>
@@ -2230,7 +2330,9 @@ export function ProductsManager({
               )}
               <div className="min-w-0 flex-1 space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-slate-950 text-base">{stockInTarget.color}</span>
+                  <span className="font-semibold text-slate-950 text-base">
+                    {stockInTarget.color}
+                  </span>
                   <span className="rounded-xs bg-white px-2 py-0.5 font-semibold text-slate-800 border border-slate-200 text-sm">
                     Kích cỡ {stockInTarget.size}
                   </span>
@@ -2239,7 +2341,8 @@ export function ProductsManager({
                   SKU: {stockInTarget.sku}
                 </div>
                 <div className="text-sm text-slate-600 font-medium pt-0.5">
-                  Tồn kho hiện tại: <span className="font-semibold text-slate-950">{currentStock}</span> sản phẩm
+                  Tồn kho hiện tại:{" "}
+                  <span className="font-semibold text-slate-950">{currentStock}</span> sản phẩm
                 </div>
               </div>
               <div>
@@ -2289,7 +2392,7 @@ export function ProductsManager({
                     className={cn(
                       "rounded-xs px-2.5 py-1 text-sm font-semibold transition cursor-pointer border",
                       Number(stockInQty) === num
-                        ? "bg-[#6941c6] text-white border-[#6941c6]"
+                        ? "bg-[#243B53] text-white border-[#243B53]"
                         : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50",
                     )}
                   >
@@ -2318,20 +2421,26 @@ export function ProductsManager({
               <div className="flex items-center gap-1.5">
                 <span className="text-slate-500 font-semibold line-through">{currentStock}</span>
                 <span className="text-slate-400 font-semibold">→</span>
-                <span className="text-lg font-semibold text-[#6941c6] tabular-nums">{afterStock}</span>
+                <span className="text-lg font-semibold text-[#243B53] tabular-nums">
+                  {afterStock}
+                </span>
                 <span className="text-slate-700 font-semibold">sản phẩm</span>
               </div>
             </div>
           </div>
 
           <DialogFooter className="mt-5 sm:justify-end gap-2">
-            <Button variant="outline" onClick={() => setStockInModalOpen(false)} className="text-sm font-semibold">
+            <Button
+              variant="outline"
+              onClick={() => setStockInModalOpen(false)}
+              className="text-sm font-semibold"
+            >
               Hủy
             </Button>
             <Button
               onClick={handleConfirmStockIn}
               disabled={addQty <= 0}
-              className="bg-[#6941c6] text-white hover:bg-[#53389e] flex items-center gap-1.5 text-sm font-semibold cursor-pointer"
+              className="bg-[#243B53] text-white hover:bg-[#1B2E42] flex items-center gap-1.5 text-sm font-semibold cursor-pointer"
             >
               <PackagePlus className="size-4" />
               Xác nhận nhập kho
@@ -2344,8 +2453,12 @@ export function ProductsManager({
 
   if (
     route.tabId === "products" &&
-    (route.action === "detail" || route.action === "edit" || (route.subParam && route.subParam !== "themsanpham")) &&
-    (!editing || (editing.id !== route.subParam && editing.slug.toLowerCase() !== route.subParam?.toLowerCase()))
+    (route.action === "detail" ||
+      route.action === "edit" ||
+      (route.subParam && route.subParam !== "themsanpham")) &&
+    (!editing ||
+      (editing.id !== route.subParam &&
+        editing.slug.toLowerCase() !== route.subParam?.toLowerCase()))
   ) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[460px] gap-3.5 text-slate-500 bg-white rounded-xl border border-slate-200/80 p-12 shadow-2xs">
@@ -2407,64 +2520,70 @@ export function ProductsManager({
 
           <div className="flex items-center gap-2 self-end sm:self-auto">
             {/* Edit product button */}
-            {canWrite && <Button
+            {canWrite && (
+              <Button
                 variant="outline"
-                onClick={() => editing ? openEdit(editing) : setView("form")}
+                onClick={() => (editing ? openEdit(editing) : setView("form"))}
                 className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
               >
                 <Pencil className="size-3.5 text-slate-500" />
                 Chỉnh sửa sản phẩm
-              </Button>}
+              </Button>
+            )}
 
             {/* Duplicate button */}
-            {canWrite && <Button
+            {canWrite && (
+              <Button
                 variant="outline"
                 onClick={duplicateProduct}
                 className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
               >
                 <Copy className="size-3.5 text-slate-500" />
                 Nhân bản
-              </Button>}
+              </Button>
+            )}
 
             {/* Update ⌵ Dropdown */}
-            {canWrite && <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  disabled={saving}
-                  className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors"
-                >
-                  {saving ? "Đang cập nhật…" : "Cập nhật"}
-                  <ChevronDown className="size-3.5 opacity-80" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52 rounded-xs p-1 shadow-lg">
-                <DropdownMenuItem
-                  onClick={() => save("published", false)}
-                  className="cursor-pointer text-sm font-semibold text-slate-900"
-                >
-                  Cập nhật và tiếp tục hiển thị
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => save("draft", false)}
-                  className="cursor-pointer text-sm font-semibold text-slate-700"
-                >
-                  Lưu bản nháp
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => save(undefined, true)}
-                  className="cursor-pointer text-sm font-semibold text-slate-700"
-                >
-                  Cập nhật và về danh sách
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => save("archived", false)}
-                  className="cursor-pointer text-sm font-semibold text-rose-600"
-                >
-                  Lưu trữ sản phẩm
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>}
+            {canWrite && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    disabled={saving}
+                    className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#1B2E42] transition-colors"
+                  >
+                    {saving ? "Đang cập nhật…" : "Cập nhật"}
+                    <ChevronDown className="size-3.5 opacity-80" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52 rounded-xs p-1 shadow-lg">
+                  <DropdownMenuItem
+                    onClick={() => save("published", false)}
+                    className="cursor-pointer text-sm font-semibold text-slate-900"
+                  >
+                    Cập nhật và tiếp tục hiển thị
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => save("draft", false)}
+                    className="cursor-pointer text-sm font-semibold text-slate-700"
+                  >
+                    Lưu bản nháp
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => save(undefined, true)}
+                    className="cursor-pointer text-sm font-semibold text-slate-700"
+                  >
+                    Cập nhật và về danh sách
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => save("archived", false)}
+                    className="cursor-pointer text-sm font-semibold text-rose-600"
+                  >
+                    Lưu trữ sản phẩm
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
 
@@ -2486,23 +2605,27 @@ export function ProductsManager({
                             className="size-2 rounded-full border border-black/10 shrink-0"
                             style={{
                               backgroundColor:
-                                detailData.colorways?.find((c) => c.id === detailData.selectedColorwayId)?.colorHex ||
-                                "#c19a6b",
+                                detailData.colorways?.find(
+                                  (c) => c.id === detailData.selectedColorwayId,
+                                )?.colorHex || "#c19a6b",
                             }}
                           />
-                          {detailData.colorways?.find((c) => c.id === detailData.selectedColorwayId)?.name || "Bộ màu"}
+                          {detailData.colorways?.find((c) => c.id === detailData.selectedColorwayId)
+                            ?.name || "Bộ màu"}
                         </span>
                       )}
                     </div>
-                    {canWrite && <Button
+                    {canWrite && (
+                      <Button
                         variant="outline"
                         size="sm"
                         onClick={handleOpenAddVariant}
                         className="h-7.5 px-2.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 gap-1 shadow-2xs"
                       >
-                        <Plus className="size-3.5 text-[#6941c6]" />
+                        <Plus className="size-3.5 text-[#243B53]" />
                         <span>Thêm bộ màu</span>
-                      </Button>}
+                      </Button>
+                    )}
                   </div>
 
                   {/* Colorway Pills Bar */}
@@ -2529,7 +2652,12 @@ export function ProductsManager({
                               style={{ backgroundColor: cw.colorHex || "#c19a6b" }}
                             />
                             <span>{cw.name}</span>
-                            <span className={cn("text-xs font-semibold", isSelected ? "text-slate-300" : "text-slate-500")}>
+                            <span
+                              className={cn(
+                                "text-xs font-semibold",
+                                isSelected ? "text-slate-300" : "text-slate-500",
+                              )}
+                            >
                               ({cw.images.length})
                             </span>
                           </button>
@@ -2550,7 +2678,7 @@ export function ProductsManager({
                             className={cn(
                               "relative aspect-3/4 w-full shrink-0 overflow-hidden rounded-xs border bg-slate-100 transition-colors focus:outline-hidden",
                               isActive
-                                ? "border-[#6941c6] ring-2 ring-[#6941c6]/30 shadow-xs"
+                                ? "border-[#243B53] ring-2 ring-[#243B53]/30 shadow-xs"
                                 : "border-slate-200/80 opacity-75 hover:opacity-100 hover:border-slate-300",
                             )}
                           >
@@ -2589,14 +2717,16 @@ export function ProductsManager({
                 <div>
                   <div className="flex items-center justify-between">
                     <h2 className="text-slate-950 admin-section-title">Tổng quan sản phẩm</h2>
-                    {canWrite && <Button
+                    {canWrite && (
+                      <Button
                         variant="outline"
                         size="sm"
                         onClick={() => (editing ? openEdit(editing) : setView("form"))}
                         className="h-7.5 px-3 rounded-xs border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs"
                       >
                         Chỉnh sửa
-                      </Button>}
+                      </Button>
+                    )}
                   </div>
 
                   {/* Description */}
@@ -2613,7 +2743,10 @@ export function ProductsManager({
                     <h3 className="text-slate-950 admin-subsection-title">Đặc điểm nổi bật</h3>
                     <div className="mt-2 space-y-1.5">
                       {detailData.keyFeatures.map((feat, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                        <div
+                          key={i}
+                          className="flex items-center gap-2 text-sm font-semibold text-slate-800"
+                        >
                           <Check className="size-3.5 text-slate-900 stroke-[2.5] shrink-0" />
                           <span>{feat}</span>
                         </div>
@@ -2625,31 +2758,41 @@ export function ProductsManager({
                 {/* Metadata rows */}
                 <div className="border-t border-slate-200/70 pt-3.5 mt-3.5 space-y-2.5 text-sm">
                   <div className="flex items-center">
-                    <span className="w-28 sm:w-32 shrink-0 font-semibold text-slate-600">Danh mục</span>
+                    <span className="w-28 sm:w-32 shrink-0 font-semibold text-slate-600">
+                      Danh mục
+                    </span>
                     <span className="font-semibold text-slate-950 flex items-center gap-1.5">
-                      {categoryDisplay.includes(">") ? (
-                        categoryDisplay.split(">").map((s, idx, arr) => (
-                          <span key={idx} className="flex items-center gap-1.5">
-                            {s.trim()}
-                            {idx < arr.length - 1 && <ChevronRight className="size-3 text-slate-400" />}
-                          </span>
-                        ))
-                      ) : (
-                        categoryDisplay
-                      )}
+                      {categoryDisplay.includes(">")
+                        ? categoryDisplay.split(">").map((s, idx, arr) => (
+                            <span key={idx} className="flex items-center gap-1.5">
+                              {s.trim()}
+                              {idx < arr.length - 1 && (
+                                <ChevronRight className="size-3 text-slate-400" />
+                              )}
+                            </span>
+                          ))
+                        : categoryDisplay}
                     </span>
                   </div>
                   <div className="flex items-center">
-                    <span className="w-28 sm:w-32 shrink-0 font-semibold text-slate-600">Thương hiệu</span>
+                    <span className="w-28 sm:w-32 shrink-0 font-semibold text-slate-600">
+                      Thương hiệu
+                    </span>
                     <span className="font-semibold text-slate-950">{detailData.brand}</span>
                   </div>
                   <div className="flex items-center">
-                    <span className="w-28 sm:w-32 shrink-0 font-semibold text-slate-600">Mùa / Bộ sưu tập</span>
+                    <span className="w-28 sm:w-32 shrink-0 font-semibold text-slate-600">
+                      Mùa / Bộ sưu tập
+                    </span>
                     <span className="font-semibold text-slate-900">{detailData.season}</span>
                   </div>
                   <div className="flex items-center">
-                    <span className="w-28 sm:w-32 shrink-0 font-semibold text-slate-600">Chất liệu</span>
-                    <span className="font-semibold text-slate-900">{form.material || detailData.material}</span>
+                    <span className="w-28 sm:w-32 shrink-0 font-semibold text-slate-600">
+                      Chất liệu
+                    </span>
+                    <span className="font-semibold text-slate-900">
+                      {form.material || detailData.material}
+                    </span>
                   </div>
 
                   {/* Tags */}
@@ -2685,7 +2828,11 @@ export function ProductsManager({
                               placeholder="Tên thẻ..."
                               className="h-8 text-sm font-semibold"
                             />
-                            <Button size="sm" onClick={handleAddTag} className="h-8 bg-[#6941c6] text-sm font-semibold text-white">
+                            <Button
+                              size="sm"
+                              onClick={handleAddTag}
+                              className="h-8 bg-[#243B53] text-sm font-semibold text-white"
+                            >
                               Thêm
                             </Button>
                           </div>
@@ -2696,7 +2843,9 @@ export function ProductsManager({
 
                   {/* Available channels */}
                   <div className="flex items-center pt-0.5">
-                    <span className="w-28 sm:w-32 shrink-0 font-semibold text-slate-600">Kênh bán hàng</span>
+                    <span className="w-28 sm:w-32 shrink-0 font-semibold text-slate-600">
+                      Kênh bán hàng
+                    </span>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-50 px-2.5 py-1 text-sm font-semibold text-slate-800">
                         <span className="size-1.5 rounded-full bg-emerald-500" />
@@ -2722,15 +2871,17 @@ export function ProductsManager({
                 <h2 className="text-slate-950 admin-section-title">
                   Biến thể và tồn kho ({detailData.variants.length})
                 </h2>
-                {canWrite && <Button
+                {canWrite && (
+                  <Button
                     variant="outline"
                     size="sm"
                     onClick={handleOpenAddVariant}
                     className="h-7.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 gap-1.5 shadow-2xs"
                   >
-                    <Plus className="size-3.5 text-[#6941c6]" />
+                    <Plus className="size-3.5 text-[#243B53]" />
                     Thêm biến thể / bộ màu
-                  </Button>}
+                  </Button>
+                )}
               </div>
 
               {/* Table */}
@@ -2747,7 +2898,7 @@ export function ProductsManager({
                               selectedVariantIds.size === detailData.variants.length
                             }
                             onChange={toggleAllVariants}
-                            className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
+                            className="size-3.5 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
                           />
                         </th>
                         <th className="px-3 py-2.5 font-semibold text-slate-700">Màu sắc</th>
@@ -2764,18 +2915,24 @@ export function ProductsManager({
                         <tr>
                           <td colSpan={8} className="px-4 py-10 text-center text-slate-400">
                             <Boxes className="mx-auto size-8 text-slate-300 mb-2" />
-                            <p className="font-semibold text-slate-900 text-sm">Chưa có biến thể nào</p>
-                            <p className="text-sm font-medium text-slate-500 mt-0.5">Bấm "Thêm biến thể / bộ màu" để tạo bộ màu và kích cỡ</p>
-                            {canWrite && <Button
+                            <p className="font-semibold text-slate-900 text-sm">
+                              Chưa có biến thể nào
+                            </p>
+                            <p className="text-sm font-medium text-slate-500 mt-0.5">
+                              Bấm "Thêm biến thể / bộ màu" để tạo bộ màu và kích cỡ
+                            </p>
+                            {canWrite && (
+                              <Button
                                 type="button"
                                 size="sm"
                                 variant="outline"
                                 onClick={handleOpenAddVariant}
-                                className="mt-3 text-sm font-semibold gap-1 border-slate-200 text-[#6941c6] hover:bg-[#f4f3ff]"
+                                className="mt-3 text-sm font-semibold gap-1 border-slate-200 text-[#243B53] hover:bg-[#EAF0F6]"
                               >
                                 <Plus className="size-3.5" />
                                 <span>Thêm biến thể</span>
-                              </Button>}
+                              </Button>
+                            )}
                           </td>
                         </tr>
                       ) : (
@@ -2795,7 +2952,7 @@ export function ProductsManager({
                                   type="checkbox"
                                   checked={isChecked}
                                   onChange={() => toggleVariant(v.id)}
-                                  className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
+                                  className="size-3.5 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
                                 />
                               </td>
                               {/* Color Swatch + Name */}
@@ -2815,15 +2972,23 @@ export function ProductsManager({
                                       />
                                     )}
                                   </div>
-                                  <span className="text-sm font-semibold text-slate-950">{v.color}</span>
+                                  <span className="text-sm font-semibold text-slate-950">
+                                    {v.color}
+                                  </span>
                                 </div>
                               </td>
                               {/* Size */}
-                              <td className="px-3 py-2.5 text-sm font-semibold text-slate-800">{v.size}</td>
+                              <td className="px-3 py-2.5 text-sm font-semibold text-slate-800">
+                                {v.size}
+                              </td>
                               {/* SKU */}
-                              <td className="px-3 py-2.5 tabular-nums text-slate-600 font-semibold text-sm">{v.sku}</td>
+                              <td className="px-3 py-2.5 tabular-nums text-slate-600 font-semibold text-sm">
+                                {v.sku}
+                              </td>
                               {/* Stock */}
-                              <td className="px-3 py-2.5 text-sm font-semibold text-slate-900 tabular-nums">{v.stock}</td>
+                              <td className="px-3 py-2.5 text-sm font-semibold text-slate-900 tabular-nums">
+                                {v.stock}
+                              </td>
                               {/* Price */}
                               <td className="px-3 py-2.5 text-sm font-semibold text-slate-950 tabular-nums">
                                 {formatPrice(v.price)}
@@ -2858,21 +3023,28 @@ export function ProductsManager({
                                       <MoreHorizontal className="size-4" />
                                     </button>
                                   </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="w-40 rounded-xs p-1 shadow-lg">
-                                    {canReadInventory && <DropdownMenuItem
+                                  <DropdownMenuContent
+                                    align="end"
+                                    className="w-40 rounded-xs p-1 shadow-lg"
+                                  >
+                                    {canReadInventory && (
+                                      <DropdownMenuItem
                                         onClick={() => handleOpenStockIn(v)}
                                         className="cursor-pointer text-sm text-slate-800 flex items-center gap-1.5 font-semibold"
                                       >
-                                        <PackagePlus className="size-3.5 text-[#6941c6]" />
+                                        <PackagePlus className="size-3.5 text-[#243B53]" />
                                         <span>Nhập kho</span>
-                                      </DropdownMenuItem>}
+                                      </DropdownMenuItem>
+                                    )}
                                     {canWrite && <DropdownMenuSeparator />}
-                                    {canWrite && <DropdownMenuItem
+                                    {canWrite && (
+                                      <DropdownMenuItem
                                         onClick={() => handleDeleteVariant(v.id)}
                                         className="cursor-pointer text-sm font-semibold text-rose-600"
                                       >
                                         Xóa biến thể
-                                      </DropdownMenuItem>}
+                                      </DropdownMenuItem>
+                                    )}
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </td>
@@ -2890,14 +3062,16 @@ export function ProductsManager({
             <div className="rounded-xs border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs">
               <div className="flex items-center justify-between">
                 <h2 className="text-slate-950 admin-section-title">Nội dung và SEO</h2>
-                {canWrite && <Button
+                {canWrite && (
+                  <Button
                     variant="outline"
                     size="sm"
                     onClick={() => toast.success("Đã lưu thiết lập Content & SEO!")}
                     className="h-7.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                   >
                     Chỉnh sửa
-                  </Button>}
+                  </Button>
+                )}
               </div>
 
               <div className="mt-3.5 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -2906,7 +3080,7 @@ export function ProductsManager({
                   <div>
                     <label className="text-sm font-semibold text-slate-700">Tiêu đề trang</label>
                     <Input
-                      className="mt-1 h-9 rounded-xs border-slate-200 text-sm font-semibold text-slate-900 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                      className="mt-1 h-9 rounded-xs border-slate-200 text-sm font-semibold text-slate-900 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                       value={detailData.pageTitle}
                       onChange={(e) => setDetailData((d) => ({ ...d, pageTitle: e.target.value }))}
                       placeholder="Áo khoác len cổ điển | ÉLANE"
@@ -2917,7 +3091,7 @@ export function ProductsManager({
                     <label className="text-sm font-semibold text-slate-700">Đường dẫn trang</label>
                     <div className="relative mt-1">
                       <Input
-                        className="h-9 rounded-xs border-slate-200 pr-9 tabular-nums text-sm font-semibold text-slate-800 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                        className="h-9 rounded-xs border-slate-200 pr-9 tabular-nums text-sm font-semibold text-slate-800 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                         value={detailData.urlSlug}
                         onChange={(e) => setDetailData((d) => ({ ...d, urlSlug: e.target.value }))}
                         placeholder="elane.com/products/the-classic-wool-coat"
@@ -2937,7 +3111,7 @@ export function ProductsManager({
                     <label className="text-sm font-semibold text-slate-700">Mô tả tìm kiếm</label>
                     <textarea
                       rows={3}
-                      className="mt-1 w-full rounded-xs border border-slate-200 bg-white p-2.5 text-sm font-medium text-slate-800 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6] leading-relaxed resize-none"
+                      className="mt-1 w-full rounded-xs border border-slate-200 bg-white p-2.5 text-sm font-medium text-slate-800 outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53] leading-relaxed resize-none"
                       value={detailData.metaDescription}
                       onChange={(e) =>
                         setDetailData((d) => ({ ...d, metaDescription: e.target.value }))
@@ -2952,7 +3126,9 @@ export function ProductsManager({
 
                 {/* Right side: Google preview card */}
                 <div>
-                  <label className="text-sm font-semibold text-slate-700">Xem trước trên Google</label>
+                  <label className="text-sm font-semibold text-slate-700">
+                    Xem trước trên Google
+                  </label>
                   <div className="mt-1 rounded-xs border border-slate-200/90 bg-slate-50/60 p-3.5 shadow-2xs font-sans">
                     {/* Header snippet: Logo + Domain + Breadcrumb */}
                     <div className="flex items-center gap-2">
@@ -2962,7 +3138,10 @@ export function ProductsManager({
                       <div className="min-w-0 leading-tight">
                         <div className="text-sm font-semibold text-slate-900">ÉLANE</div>
                         <div className="truncate text-xs text-slate-500 tabular-nums">
-                          https://{detailData.urlSlug.replace("elane.com/", "elane.com > ").replace(/\//g, " > ")}
+                          https://
+                          {detailData.urlSlug
+                            .replace("elane.com/", "elane.com > ")
+                            .replace(/\//g, " > ")}
                         </div>
                       </div>
                     </div>
@@ -2993,20 +3172,24 @@ export function ProductsManager({
             <div className="rounded-xs border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs">
               <div className="flex items-center justify-between">
                 <h2 className="text-slate-950 admin-section-title">Tóm tắt sản phẩm</h2>
-                {canWrite && <Button
+                {canWrite && (
+                  <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => editing ? openEdit(editing) : setView("form")}
+                    onClick={() => (editing ? openEdit(editing) : setView("form"))}
                     className="h-7.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs"
                   >
                     Chỉnh sửa
-                  </Button>}
+                  </Button>
+                )}
               </div>
 
               <div className="mt-3.5 space-y-2.5 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-600">SKU</span>
-                  <span className="tabular-nums font-semibold text-slate-900">{detailData.sku}</span>
+                  <span className="tabular-nums font-semibold text-slate-900">
+                    {detailData.sku}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-600">Danh mục</span>
@@ -3019,12 +3202,16 @@ export function ProductsManager({
 
                 <div className="pt-1.5 flex items-center justify-between">
                   <span className="font-semibold text-slate-600">Giá bán</span>
-                  <span className="text-sm font-semibold text-slate-950">{formatPrice(Number(form.price_vnd || 0))}</span>
+                  <span className="text-sm font-semibold text-slate-950">
+                    {formatPrice(Number(form.price_vnd || 0))}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-600">Giá gốc</span>
                   <span className="font-semibold text-slate-800">
-                    {form.compare_at_price_vnd ? formatPrice(Number(form.compare_at_price_vnd)) : "—"}
+                    {form.compare_at_price_vnd
+                      ? formatPrice(Number(form.compare_at_price_vnd))
+                      : "—"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -3035,7 +3222,9 @@ export function ProductsManager({
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-600">Tổng tồn kho</span>
-                  <span className="text-sm font-semibold text-slate-950">{totalStockUnits} sản phẩm</span>
+                  <span className="text-sm font-semibold text-slate-950">
+                    {totalStockUnits} sản phẩm
+                  </span>
                 </div>
 
                 <div className="my-2 border-t border-slate-200/80" />
@@ -3083,7 +3272,7 @@ export function ProductsManager({
                 {/* Orders */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="flex size-8 items-center justify-center rounded-xs bg-[#f4f3ff] text-[#6941c6]">
+                    <div className="flex size-8 items-center justify-center rounded-xs bg-[#EAF0F6] text-[#243B53]">
                       <ShoppingBag className="size-4" />
                     </div>
                     <span className="text-sm font-semibold text-slate-800">Đơn hàng</span>
@@ -3096,7 +3285,7 @@ export function ProductsManager({
                 {/* Revenue */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="flex size-8 items-center justify-center rounded-xs bg-[#f4f3ff] text-[#6941c6]">
+                    <div className="flex size-8 items-center justify-center rounded-xs bg-[#EAF0F6] text-[#243B53]">
                       <DollarSign className="size-4" />
                     </div>
                     <span className="text-sm font-semibold text-slate-800">Doanh thu</span>
@@ -3109,7 +3298,7 @@ export function ProductsManager({
                 {/* Conversion rate */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="flex size-8 items-center justify-center rounded-xs bg-[#f4f3ff] text-[#6941c6]">
+                    <div className="flex size-8 items-center justify-center rounded-xs bg-[#EAF0F6] text-[#243B53]">
                       <Percent className="size-4" />
                     </div>
                     <span className="text-sm font-semibold text-slate-800">Tỷ lệ chuyển đổi</span>
@@ -3122,7 +3311,7 @@ export function ProductsManager({
                 {/* Product views */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="flex size-8 items-center justify-center rounded-xs bg-[#f4f3ff] text-[#6941c6]">
+                    <div className="flex size-8 items-center justify-center rounded-xs bg-[#EAF0F6] text-[#243B53]">
                       <Eye className="size-4" />
                     </div>
                     <span className="text-sm font-semibold text-slate-800">Lượt xem sản phẩm</span>
@@ -3135,10 +3324,12 @@ export function ProductsManager({
                 {/* Wishlist saves */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="flex size-8 items-center justify-center rounded-xs bg-[#f4f3ff] text-[#6941c6]">
+                    <div className="flex size-8 items-center justify-center rounded-xs bg-[#EAF0F6] text-[#243B53]">
                       <Heart className="size-4" />
                     </div>
-                    <span className="text-sm font-semibold text-slate-800">Lượt thêm vào yêu thích</span>
+                    <span className="text-sm font-semibold text-slate-800">
+                      Lượt thêm vào yêu thích
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-base font-semibold text-slate-950">—</span>
@@ -3168,7 +3359,9 @@ export function ProductsManager({
                     <div className="flex size-8 items-center justify-center rounded-xs border border-slate-200 bg-slate-50 text-slate-700">
                       <Store className="size-4" />
                     </div>
-                    <span className="text-sm font-semibold text-slate-900">Cửa hàng trực tuyến</span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      Cửa hàng trực tuyến
+                    </span>
                   </div>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-0.5 text-sm font-semibold text-emerald-700">
                     <span className="size-1.5 rounded-full bg-emerald-500" />
@@ -3197,7 +3390,9 @@ export function ProductsManager({
                       <ShoppingBag className="size-4" />
                     </div>
                     <div>
-                      <span className="text-sm font-semibold text-slate-900">Sàn thương mại điện tử</span>
+                      <span className="text-sm font-semibold text-slate-900">
+                        Sàn thương mại điện tử
+                      </span>
                       <p className="text-sm font-semibold text-slate-500">15/01/2025</p>
                     </div>
                   </div>
@@ -3256,7 +3451,9 @@ export function ProductsManager({
                         <p className="text-sm font-medium text-slate-500">bởi {act.actor}</p>
                       </div>
                     </div>
-                    <span className="shrink-0 text-sm font-semibold text-slate-500">{act.time}</span>
+                    <span className="shrink-0 text-sm font-semibold text-slate-500">
+                      {act.time}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -3278,7 +3475,10 @@ export function ProductsManager({
       .filter((v) => v.status === "in_stock" || (Number(v.stock) || 0) >= 25)
       .reduce((acc, v) => acc + (Number(v.stock) || 0), 0);
     const lowStockUnits = detailData.variants
-      .filter((v) => v.status === "low_stock" || ((Number(v.stock) || 0) > 0 && (Number(v.stock) || 0) < 25))
+      .filter(
+        (v) =>
+          v.status === "low_stock" || ((Number(v.stock) || 0) > 0 && (Number(v.stock) || 0) < 25),
+      )
       .reduce((acc, v) => acc + (Number(v.stock) || 0), 0);
     const outOfStockUnits = detailData.variants
       .filter((v) => v.status === "out_of_stock" || (Number(v.stock) || 0) === 0)
@@ -3289,15 +3489,18 @@ export function ProductsManager({
     const isDetailsDone = Boolean(form.name?.trim() && form.price_vnd?.trim());
     const isVariantsDone = (detailData.variants?.length || 0) > 0;
     const isSeoDone = Boolean(
-      detailData.pageTitle?.trim() || detailData.metaDescription?.trim() || form.description?.trim()
+      detailData.pageTitle?.trim() ||
+      detailData.metaDescription?.trim() ||
+      form.description?.trim(),
     );
 
     const activeColorway = detailData.colorways?.find(
-      (c) => c.id === (detailData.selectedColorwayId || detailData.colorways[0]?.id)
+      (c) => c.id === (detailData.selectedColorwayId || detailData.colorways[0]?.id),
     );
-    const activeCwImages = (activeColorway && activeColorway.images?.length > 0)
-      ? activeColorway.images
-      : (detailData.images || []);
+    const activeCwImages =
+      activeColorway && activeColorway.images?.length > 0
+        ? activeColorway.images
+        : detailData.images || [];
 
     const handleDeleteImageFromActiveCw = (imgIndex: number) => {
       setDetailData((d) => {
@@ -3386,7 +3589,7 @@ export function ProductsManager({
             ];
           } else {
             cws = cws.map((cw) =>
-              cw.id === activeCwId ? { ...cw, images: [...cw.images, ...newUrls] } : cw
+              cw.id === activeCwId ? { ...cw, images: [...cw.images, ...newUrls] } : cw,
             );
           }
 
@@ -3402,7 +3605,6 @@ export function ProductsManager({
         toast.success(`Đã thêm ${newUrls.length} ảnh vào bộ màu!`);
       }
     };
-
 
     return (
       <div className="products-manager-view products-manager-form space-y-5 font-sans pb-12">
@@ -3460,7 +3662,10 @@ export function ProductsManager({
             <Button
               variant="outline"
               onClick={() => {
-                window.open(`/sanpham/${editing?.slug || form.slug || "the-classic-wool-coat"}`, "_blank");
+                window.open(
+                  `/sanpham/${editing?.slug || form.slug || "the-classic-wool-coat"}`,
+                  "_blank",
+                );
               }}
               className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
             >
@@ -3468,76 +3673,78 @@ export function ProductsManager({
               Xem trước
             </Button>
 
-            {canWrite && <>
-              {/* Save draft button */}
-              <Button
-                variant="outline"
-                onClick={() => save("draft", false)}
-                disabled={saving}
-                className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
-              >
-                <Archive className="size-3.5 text-slate-500" />
-                Lưu bản nháp
-              </Button>
-
-              {/* Create product or Update product dropdown */}
-              {!editing ? (
+            {canWrite && (
+              <>
+                {/* Save draft button */}
                 <Button
-                  onClick={() => save(form.status as any, false)}
+                  variant="outline"
+                  onClick={() => save("draft", false)}
                   disabled={saving}
-                  className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
+                  className="h-9 gap-1.5 rounded-xs border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
                 >
-                  {saving ? "Đang tạo…" : "Tạo sản phẩm"}
+                  <Archive className="size-3.5 text-slate-500" />
+                  Lưu bản nháp
                 </Button>
-              ) : (
-                <div className="inline-flex rounded-xs shadow-xs">
+
+                {/* Create product or Update product dropdown */}
+                {!editing ? (
                   <Button
                     onClick={() => save(form.status as any, false)}
                     disabled={saving}
-                    className="h-9 rounded-r-none bg-[#6941c6] px-3.5 text-sm font-semibold text-white hover:bg-[#53389e] transition-colors shadow-xs"
+                    className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#1B2E42] transition-colors cursor-pointer"
                   >
-                    {saving ? "Đang cập nhật…" : "Cập nhật sản phẩm"}
+                    {saving ? "Đang tạo…" : "Tạo sản phẩm"}
                   </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        disabled={saving}
-                        className="h-9 rounded-l-none border-l border-white/20 bg-[#6941c6] px-2 text-white hover:bg-[#53389e] transition-colors shadow-xs"
-                      >
-                        <ChevronDown className="size-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52 rounded-xs p-1 shadow-lg">
-                      <DropdownMenuItem
-                        onClick={() => save("published", false)}
-                        className="cursor-pointer text-sm font-medium"
-                      >
-                        Cập nhật và tiếp tục hiển thị
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => save("draft", false)}
-                        className="cursor-pointer text-sm font-medium text-slate-700"
-                      >
-                        Lưu bản nháp
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => save(undefined, true)}
-                        className="cursor-pointer text-sm font-medium text-slate-700"
-                      >
-                        Cập nhật và về danh sách
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => save("archived", false)}
-                        className="cursor-pointer text-sm font-medium text-rose-600"
-                      >
-                        Lưu trữ sản phẩm
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              )}
-            </>}
+                ) : (
+                  <div className="inline-flex rounded-xs shadow-xs">
+                    <Button
+                      onClick={() => save(form.status as any, false)}
+                      disabled={saving}
+                      className="h-9 rounded-r-none bg-[#243B53] px-3.5 text-sm font-semibold text-white hover:bg-[#1B2E42] transition-colors shadow-xs"
+                    >
+                      {saving ? "Đang cập nhật…" : "Cập nhật sản phẩm"}
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          disabled={saving}
+                          className="h-9 rounded-l-none border-l border-white/20 bg-[#243B53] px-2 text-white hover:bg-[#1B2E42] transition-colors shadow-xs"
+                        >
+                          <ChevronDown className="size-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52 rounded-xs p-1 shadow-lg">
+                        <DropdownMenuItem
+                          onClick={() => save("published", false)}
+                          className="cursor-pointer text-sm font-medium"
+                        >
+                          Cập nhật và tiếp tục hiển thị
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => save("draft", false)}
+                          className="cursor-pointer text-sm font-medium text-slate-700"
+                        >
+                          Lưu bản nháp
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => save(undefined, true)}
+                          className="cursor-pointer text-sm font-medium text-slate-700"
+                        >
+                          Cập nhật và về danh sách
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => save("archived", false)}
+                          className="cursor-pointer text-sm font-medium text-rose-600"
+                        >
+                          Lưu trữ sản phẩm
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
 
@@ -3552,7 +3759,9 @@ export function ProductsManager({
                 <div className="flex-1 flex flex-col min-h-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-slate-950 admin-section-title">Hình ảnh và video sản phẩm</h2>
+                      <h2 className="text-slate-950 admin-section-title">
+                        Hình ảnh và video sản phẩm
+                      </h2>
                       {activeColorway && (
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-50 px-2.5 py-0.5 text-sm font-semibold text-slate-800">
                           <span
@@ -3563,15 +3772,17 @@ export function ProductsManager({
                         </span>
                       )}
                     </div>
-                    {canWrite && <Button
+                    {canWrite && (
+                      <Button
                         variant="outline"
                         size="sm"
                         onClick={handleOpenAddVariant}
                         className="h-7.5 px-2.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 gap-1 shadow-2xs"
                       >
-                        <Plus className="size-3.5 text-[#6941c6]" />
+                        <Plus className="size-3.5 text-[#243B53]" />
                         <span>Thêm bộ màu</span>
-                      </Button>}
+                      </Button>
+                    )}
                   </div>
 
                   {/* Colorway Pills Bar */}
@@ -3587,7 +3798,7 @@ export function ProductsManager({
                             type="button"
                             onClick={() => handleSelectColorway(cw.id)}
                             className={cn(
-                    "inline-flex items-center gap-1.5 rounded-xs px-2.5 py-1 text-sm font-semibold transition-colors cursor-pointer",
+                              "inline-flex items-center gap-1.5 rounded-xs px-2.5 py-1 text-sm font-semibold transition-colors cursor-pointer",
                               isSelected
                                 ? "bg-slate-900 text-white shadow-xs"
                                 : "bg-slate-100 text-slate-700 hover:bg-slate-200/80 hover:text-slate-950",
@@ -3598,7 +3809,12 @@ export function ProductsManager({
                               style={{ backgroundColor: cw.colorHex || "#c19a6b" }}
                             />
                             <span>{cw.name}</span>
-                            <span className={cn("text-xs font-semibold", isSelected ? "text-slate-300" : "text-slate-500")}>
+                            <span
+                              className={cn(
+                                "text-xs font-semibold",
+                                isSelected ? "text-slate-300" : "text-slate-500",
+                              )}
+                            >
                               ({cw.images.length})
                             </span>
                           </button>
@@ -3615,7 +3831,7 @@ export function ProductsManager({
                       <div className="flex w-20 sm:w-24 shrink-0 flex-col gap-2.5 select-none">
                         <div
                           onClick={() => mediaFileInputRef.current?.click()}
-                          className="relative aspect-square w-full rounded-xs border-2 border-[#6941c6] bg-slate-50 flex items-center justify-center overflow-hidden cursor-pointer shadow-2xs hover:opacity-90 transition-opacity"
+                          className="relative aspect-square w-full rounded-xs border-2 border-[#243B53] bg-slate-50 flex items-center justify-center overflow-hidden cursor-pointer shadow-2xs hover:opacity-90 transition-opacity"
                           title="Tải ảnh lên bộ màu này"
                         >
                           <ImageIcon className="size-6 text-slate-400 stroke-1" />
@@ -3624,7 +3840,7 @@ export function ProductsManager({
                         <button
                           type="button"
                           onClick={() => mediaFileInputRef.current?.click()}
-                          className="flex aspect-square w-full flex-col items-center justify-center rounded-xs border border-dashed border-slate-300 bg-white text-xs font-medium text-slate-600 hover:border-[#6941c6] hover:bg-[#f4f3ff]/30 hover:text-[#6941c6] transition-colors cursor-pointer"
+                          className="flex aspect-square w-full flex-col items-center justify-center rounded-xs border border-dashed border-slate-300 bg-white text-xs font-medium text-slate-600 hover:border-[#243B53] hover:bg-[#EAF0F6]/30 hover:text-[#243B53] transition-colors cursor-pointer"
                         >
                           <Plus className="size-4 mb-0.5 text-slate-500" />
                           <span>Thêm ảnh</span>
@@ -3653,18 +3869,20 @@ export function ProductsManager({
                           <Button
                             type="button"
                             onClick={() => mediaFileInputRef.current?.click()}
-                            className="h-8.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white hover:bg-[#53389e] transition-colors shadow-xs"
+                            className="h-8.5 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white hover:bg-[#1B2E42] transition-colors shadow-xs"
                           >
                             Tải tệp lên
                           </Button>
-                          {canWrite && <Button
+                          {canWrite && (
+                            <Button
                               type="button"
                               variant="outline"
                               onClick={handleOpenAddVariant}
                               className="h-8.5 rounded-xs border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50"
                             >
                               Thêm bộ màu
-                            </Button>}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -3681,9 +3899,9 @@ export function ProductsManager({
                                 type="button"
                                 onClick={() => setActiveMediaIndex(idx)}
                                 className={cn(
-                              "relative aspect-square w-full shrink-0 overflow-hidden rounded-xs border bg-slate-100 transition-colors focus:outline-hidden",
+                                  "relative aspect-square w-full shrink-0 overflow-hidden rounded-xs border bg-slate-100 transition-colors focus:outline-hidden",
                                   isActive
-                                    ? "border-[#6941c6] ring-2 ring-[#6941c6]/30 shadow-xs"
+                                    ? "border-[#243B53] ring-2 ring-[#243B53]/30 shadow-xs"
                                     : "border-slate-200/80 opacity-80 hover:opacity-100 hover:border-slate-300",
                                 )}
                               >
@@ -3713,7 +3931,7 @@ export function ProductsManager({
                         <button
                           type="button"
                           onClick={() => mediaFileInputRef.current?.click()}
-                          className="flex aspect-square w-full shrink-0 flex-col items-center justify-center rounded-xs border border-dashed border-slate-300 bg-white text-xs font-medium text-slate-500 hover:border-[#6941c6] hover:bg-[#f4f3ff]/30 hover:text-[#6941c6] transition-colors"
+                          className="flex aspect-square w-full shrink-0 flex-col items-center justify-center rounded-xs border border-dashed border-slate-300 bg-white text-xs font-medium text-slate-500 hover:border-[#243B53] hover:bg-[#EAF0F6]/30 hover:text-[#243B53] transition-colors"
                           title="Thêm ảnh vào bộ màu này"
                         >
                           <Plus className="size-3.5 mb-0.5 text-slate-400" />
@@ -3745,7 +3963,9 @@ export function ProductsManager({
                           <Star
                             className={cn(
                               "size-3",
-                              activeMediaIndex === 0 ? "fill-amber-400 text-amber-500" : "text-slate-400",
+                              activeMediaIndex === 0
+                                ? "fill-amber-400 text-amber-500"
+                                : "text-slate-400",
                             )}
                           />
                           {activeMediaIndex === 0 ? "Ảnh bìa bộ màu" : "Đặt làm ảnh bìa"}
@@ -3782,7 +4002,7 @@ export function ProductsManager({
                         setDetailData((d) => ({ ...d, pageTitle: `${name} | ÉLANE` }));
                       }}
                       placeholder="VD: Áo khoác len cổ điển"
-                      className="mt-1 h-9 rounded-xs border-slate-200 text-sm font-semibold text-slate-900 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                      className="mt-1 h-9 rounded-xs border-slate-200 text-sm font-semibold text-slate-900 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                     />
                   </div>
 
@@ -3798,7 +4018,7 @@ export function ProductsManager({
                           setDetailData((d) => ({ ...d, sku: val }));
                         }}
                         placeholder="VD: EL-COAT-001"
-                        className="mt-1 h-9 rounded-xs border-slate-200 tabular-nums text-sm font-semibold text-slate-900 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                        className="mt-1 h-9 rounded-xs border-slate-200 tabular-nums text-sm font-semibold text-slate-900 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                       />
                     </div>
                     <div>
@@ -3807,7 +4027,7 @@ export function ProductsManager({
                         <select
                           value={detailData.brand || "ÉLANE"}
                           onChange={(e) => setDetailData((d) => ({ ...d, brand: e.target.value }))}
-                          className="h-9 w-full appearance-none rounded-xs border border-slate-200 bg-white px-2.5 pr-7 text-sm font-semibold text-slate-900 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                          className="h-9 w-full appearance-none rounded-xs border border-slate-200 bg-white px-2.5 pr-7 text-sm font-semibold text-slate-900 outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                         >
                           <option value="ÉLANE">ÉLANE</option>
                           <option value="ÉLANE Studio">ÉLANE Studio</option>
@@ -3833,7 +4053,7 @@ export function ProductsManager({
                               setDetailData((d) => ({ ...d, categoryPath: cat.name }));
                             }
                           }}
-                          className="h-9 w-full appearance-none rounded-xs border border-slate-200 bg-white px-2.5 pr-7 text-sm font-semibold text-slate-900 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                          className="h-9 w-full appearance-none rounded-xs border border-slate-200 bg-white px-2.5 pr-7 text-sm font-semibold text-slate-900 outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                         >
                           <option value="">Chọn danh mục</option>
                           {filterCategories.map((c) => (
@@ -3851,9 +4071,12 @@ export function ProductsManager({
                         <select
                           value={form.status}
                           onChange={(e) =>
-                            setForm((f) => ({ ...f, status: e.target.value as FormState["status"] }))
+                            setForm((f) => ({
+                              ...f,
+                              status: e.target.value as FormState["status"],
+                            }))
                           }
-                          className="h-9 w-full appearance-none rounded-xs border border-slate-200 bg-white px-2.5 pr-7 text-sm font-semibold text-slate-900 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                          className="h-9 w-full appearance-none rounded-xs border border-slate-200 bg-white px-2.5 pr-7 text-sm font-semibold text-slate-900 outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                         >
                           <option value="draft">● Bản nháp</option>
                           <option value="published">● Đang bán</option>
@@ -3869,24 +4092,30 @@ export function ProductsManager({
                     <div>
                       <label className="text-sm font-semibold text-slate-700">Giá bán</label>
                       <div className="relative mt-1">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-semibold">₫</span>
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-semibold">
+                          ₫
+                        </span>
                         <Input
                           value={form.price_vnd}
                           onChange={(e) => setForm((f) => ({ ...f, price_vnd: e.target.value }))}
                           placeholder="0.00"
-                          className="h-9 pl-6 rounded-xs border-slate-200 text-sm font-semibold text-slate-900 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                          className="h-9 pl-6 rounded-xs border-slate-200 text-sm font-semibold text-slate-900 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                         />
                       </div>
                     </div>
                     <div>
                       <label className="text-sm font-semibold text-slate-700">Giá gốc</label>
                       <div className="relative mt-1">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-semibold">₫</span>
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-semibold">
+                          ₫
+                        </span>
                         <Input
                           value={form.compare_at_price_vnd}
-                          onChange={(e) => setForm((f) => ({ ...f, compare_at_price_vnd: e.target.value }))}
+                          onChange={(e) =>
+                            setForm((f) => ({ ...f, compare_at_price_vnd: e.target.value }))
+                          }
                           placeholder="0.00"
-                          className="h-9 pl-6 rounded-xs border-slate-200 text-sm font-semibold text-slate-900 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                          className="h-9 pl-6 rounded-xs border-slate-200 text-sm font-semibold text-slate-900 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                         />
                       </div>
                     </div>
@@ -3895,24 +4124,30 @@ export function ProductsManager({
                   {/* Cost per item & Season */}
                   <div className="mt-2.5 grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-semibold text-slate-700">Giá vốn mỗi sản phẩm</label>
+                      <label className="text-sm font-semibold text-slate-700">
+                        Giá vốn mỗi sản phẩm
+                      </label>
                       <div className="relative mt-1">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-semibold">₫</span>
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-semibold">
+                          ₫
+                        </span>
                         <Input
                           value={form.cost_vnd}
                           onChange={(e) => setForm((f) => ({ ...f, cost_vnd: e.target.value }))}
                           placeholder="0.00"
-                          className="h-9 pl-6 rounded-xs border-slate-200 text-sm font-semibold text-slate-900 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                          className="h-9 pl-6 rounded-xs border-slate-200 text-sm font-semibold text-slate-900 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm font-semibold text-slate-700">Mùa / Bộ sưu tập</label>
+                      <label className="text-sm font-semibold text-slate-700">
+                        Mùa / Bộ sưu tập
+                      </label>
                       <div className="relative mt-1">
                         <select
                           value={detailData.season}
                           onChange={(e) => setDetailData((d) => ({ ...d, season: e.target.value }))}
-                          className="h-9 w-full appearance-none rounded-xs border border-slate-200 bg-white px-2.5 pr-7 text-sm font-semibold text-slate-900 outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                          className="h-9 w-full appearance-none rounded-xs border border-slate-200 bg-white px-2.5 pr-7 text-sm font-semibold text-slate-900 outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                         >
                           <option value="">Chọn mùa / bộ sưu tập</option>
                           <option value="Fall / Winter 2024">Thu / Đông 2024</option>
@@ -3933,7 +4168,7 @@ export function ProductsManager({
                       value={form.material}
                       onChange={(e) => setForm((f) => ({ ...f, material: e.target.value }))}
                       placeholder="VD: 70% len, 30% polyester"
-                      className="mt-1 h-9 rounded-xs border-slate-200 text-sm font-semibold text-slate-900 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                      className="mt-1 h-9 rounded-xs border-slate-200 text-sm font-semibold text-slate-900 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                     />
                   </div>
                 </div>
@@ -3994,7 +4229,11 @@ export function ProductsManager({
                               placeholder="Tên thẻ..."
                               className="h-8 text-sm font-semibold"
                             />
-                            <Button size="sm" onClick={handleAddTag} className="h-8 bg-[#6941c6] text-sm font-semibold text-white">
+                            <Button
+                              size="sm"
+                              onClick={handleAddTag}
+                              className="h-8 bg-[#243B53] text-sm font-semibold text-white"
+                            >
                               Thêm
                             </Button>
                           </div>
@@ -4010,7 +4249,7 @@ export function ProductsManager({
                         type="checkbox"
                         checked={channelOnline}
                         onChange={(e) => setChannelOnline(e.target.checked)}
-                        className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
+                        className="size-3.5 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
                       />
                       <span>Cửa hàng trực tuyến</span>
                     </label>
@@ -4020,7 +4259,7 @@ export function ProductsManager({
                         type="checkbox"
                         checked={channelInstagram}
                         onChange={(e) => setChannelInstagram(e.target.checked)}
-                        className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
+                        className="size-3.5 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
                       />
                       <span>Cửa hàng Instagram</span>
                     </label>
@@ -4030,7 +4269,7 @@ export function ProductsManager({
                         type="checkbox"
                         checked={channelMarketplace}
                         onChange={(e) => setChannelMarketplace(e.target.checked)}
-                        className="size-3.5 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
+                        className="size-3.5 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
                       />
                       <span>Sàn thương mại điện tử</span>
                     </label>
@@ -4045,15 +4284,17 @@ export function ProductsManager({
                 <h2 className="text-slate-950 admin-section-title">
                   Biến thể ({detailData.variants.length})
                 </h2>
-                {canWrite && <Button
+                {canWrite && (
+                  <Button
                     variant="outline"
                     size="sm"
                     onClick={handleOpenAddVariant}
                     className="h-7.5 rounded-xs border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 gap-1.5 shadow-2xs"
                   >
-                    <Plus className="size-3.5 text-[#6941c6]" />
+                    <Plus className="size-3.5 text-[#243B53]" />
                     Thêm biến thể
-                  </Button>}
+                  </Button>
+                )}
               </div>
 
               {/* Table */}
@@ -4062,13 +4303,25 @@ export function ProductsManager({
                   <table className="w-full min-w-[640px] table-fixed text-left">
                     <thead className="border-y border-slate-200 bg-slate-50/80 text-sm font-semibold tracking-tight text-slate-700">
                       <tr>
-                        <th className="w-[20%] px-3 py-2.5 font-semibold text-slate-700">Màu sắc</th>
-                        <th className="w-[8%] px-3 py-2.5 text-center font-semibold text-slate-700">Kích cỡ</th>
+                        <th className="w-[20%] px-3 py-2.5 font-semibold text-slate-700">
+                          Màu sắc
+                        </th>
+                        <th className="w-[8%] px-3 py-2.5 text-center font-semibold text-slate-700">
+                          Kích cỡ
+                        </th>
                         <th className="w-[18%] px-3 py-2.5 font-semibold text-slate-700">SKU</th>
-                        <th className="w-[15%] px-3 py-2.5 font-semibold text-slate-700">Tồn kho</th>
-                        <th className="w-[13%] px-3 py-2.5 font-semibold text-slate-700">Giá bán</th>
-                        <th className="w-[17%] px-3 py-2.5 text-center font-semibold text-slate-700">Trạng thái</th>
-                        <th className="w-[9%] min-w-[72px] whitespace-nowrap px-2 py-2.5 text-center font-semibold text-slate-700">Thao tác</th>
+                        <th className="w-[15%] px-3 py-2.5 font-semibold text-slate-700">
+                          Tồn kho
+                        </th>
+                        <th className="w-[13%] px-3 py-2.5 font-semibold text-slate-700">
+                          Giá bán
+                        </th>
+                        <th className="w-[17%] px-3 py-2.5 text-center font-semibold text-slate-700">
+                          Trạng thái
+                        </th>
+                        <th className="w-[9%] min-w-[72px] whitespace-nowrap px-2 py-2.5 text-center font-semibold text-slate-700">
+                          Thao tác
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -4076,17 +4329,22 @@ export function ProductsManager({
                         <tr>
                           <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
                             <Package className="mx-auto size-9 text-slate-300 stroke-1 mb-2" />
-                            <p className="font-semibold text-slate-900 text-sm">Chưa có biến thể nào</p>
-                            <p className="text-sm font-medium text-slate-500 mt-1 max-w-sm mx-auto">
-                              Thêm biến thể theo kích cỡ, màu sắc hoặc kiểu dáng để quản lý tồn kho và giá bán.
+                            <p className="font-semibold text-slate-900 text-sm">
+                              Chưa có biến thể nào
                             </p>
-                            {canWrite && <Button
+                            <p className="text-sm font-medium text-slate-500 mt-1 max-w-sm mx-auto">
+                              Thêm biến thể theo kích cỡ, màu sắc hoặc kiểu dáng để quản lý tồn kho
+                              và giá bán.
+                            </p>
+                            {canWrite && (
+                              <Button
                                 type="button"
                                 onClick={handleOpenAddVariant}
-                                className="mt-3.5 h-8.5 rounded-xs bg-[#6941c6] px-4 text-sm font-semibold text-white hover:bg-[#53389e] transition-colors shadow-xs"
+                                className="mt-3.5 h-8.5 rounded-xs bg-[#243B53] px-4 text-sm font-semibold text-white hover:bg-[#1B2E42] transition-colors shadow-xs"
                               >
                                 Thêm biến thể
-                              </Button>}
+                              </Button>
+                            )}
                           </td>
                         </tr>
                       ) : (
@@ -4118,15 +4376,21 @@ export function ProductsManager({
                                       />
                                     )}
                                   </div>
-                                  <span className="text-sm font-semibold text-slate-950 truncate">{v.color}</span>
+                                  <span className="text-sm font-semibold text-slate-950 truncate">
+                                    {v.color}
+                                  </span>
                                 </div>
                               </td>
 
                               {/* Size */}
-                              <td className="px-3 py-2.5 text-center text-sm font-semibold text-slate-800">{v.size}</td>
+                              <td className="px-3 py-2.5 text-center text-sm font-semibold text-slate-800">
+                                {v.size}
+                              </td>
 
                               {/* SKU */}
-                              <td className="px-3 py-2.5 tabular-nums text-sm font-semibold text-slate-600 truncate">{v.sku}</td>
+                              <td className="px-3 py-2.5 tabular-nums text-sm font-semibold text-slate-600 truncate">
+                                {v.sku}
+                              </td>
 
                               {/* Stock */}
                               <td className="px-3 py-2.5 text-sm font-semibold text-slate-900 tabular-nums">
@@ -4159,7 +4423,10 @@ export function ProductsManager({
                               </td>
 
                               {/* Actions */}
-                              <td className="whitespace-nowrap px-2 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+                              <td
+                                className="whitespace-nowrap px-2 py-2.5 text-center"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <button
@@ -4170,12 +4437,15 @@ export function ProductsManager({
                                       <MoreHorizontal className="size-4" />
                                     </button>
                                   </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="w-40 rounded-xs p-1 shadow-lg">
+                                  <DropdownMenuContent
+                                    align="end"
+                                    className="w-40 rounded-xs p-1 shadow-lg"
+                                  >
                                     <DropdownMenuItem
                                       onClick={() => handleOpenStockIn(v)}
                                       className="cursor-pointer text-sm text-slate-800 flex items-center gap-1.5 font-semibold"
                                     >
-                                      <PackagePlus className="size-3.5 text-[#6941c6]" />
+                                      <PackagePlus className="size-3.5 text-[#243B53]" />
                                       <span>Nhập kho</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
@@ -4237,7 +4507,11 @@ export function ProductsManager({
                   <span className="font-semibold text-slate-600">Trạng thái thiết lập</span>
                   <span className="inline-flex items-center gap-1.5 text-slate-700 font-semibold">
                     <span className="size-1.5 rounded-full bg-slate-400" />
-                    {form.status === "published" ? "Đang bán" : form.status === "archived" ? "Đã lưu trữ" : "Bản nháp"}
+                    {form.status === "published"
+                      ? "Đang bán"
+                      : form.status === "archived"
+                        ? "Đã lưu trữ"
+                        : "Bản nháp"}
                   </span>
                 </div>
               </div>
@@ -4264,7 +4538,9 @@ export function ProductsManager({
                     <div className="flex size-8 items-center justify-center rounded-xs border border-slate-200 bg-slate-50 text-slate-700">
                       <Store className="size-4 text-emerald-600" />
                     </div>
-                    <span className="text-sm font-semibold text-slate-900">Cửa hàng trực tuyến</span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      Cửa hàng trực tuyến
+                    </span>
                   </div>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-0.5 text-sm font-semibold text-emerald-700">
                     <span className="size-1.5 rounded-full bg-emerald-500" />
@@ -4292,7 +4568,9 @@ export function ProductsManager({
                     <div className="flex size-8 items-center justify-center rounded-xs border border-slate-200 bg-slate-50 text-slate-700">
                       <ShoppingBag className="size-4 text-slate-500" />
                     </div>
-                    <span className="text-sm font-semibold text-slate-900">Sàn thương mại điện tử</span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      Sàn thương mại điện tử
+                    </span>
                   </div>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-sm font-semibold text-slate-700">
                     <span className="size-1.5 rounded-full bg-slate-400" />
@@ -4304,7 +4582,9 @@ export function ProductsManager({
 
             {/* Card 3: Publishing checklist */}
             <div className="rounded-xs border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs">
-              <h2 className="text-slate-950 admin-section-title">Danh sách kiểm tra trước khi đăng</h2>
+              <h2 className="text-slate-950 admin-section-title">
+                Danh sách kiểm tra trước khi đăng
+              </h2>
 
               <div className="mt-3.5 space-y-3.5">
                 {/* 1. Add media */}
@@ -4317,8 +4597,12 @@ export function ProductsManager({
                     <div className="mt-0.5 size-5 shrink-0 rounded-full border-2 border-slate-300" />
                   )}
                   <div>
-                    <p className="text-sm font-semibold text-slate-900 leading-tight">Thêm hình ảnh</p>
-                    <p className="text-sm font-medium text-slate-500 mt-0.5">Tải lên ít nhất một hình ảnh sản phẩm</p>
+                    <p className="text-sm font-semibold text-slate-900 leading-tight">
+                      Thêm hình ảnh
+                    </p>
+                    <p className="text-sm font-medium text-slate-500 mt-0.5">
+                      Tải lên ít nhất một hình ảnh sản phẩm
+                    </p>
                   </div>
                 </div>
 
@@ -4332,8 +4616,12 @@ export function ProductsManager({
                     <div className="mt-0.5 size-5 shrink-0 rounded-full border-2 border-slate-300" />
                   )}
                   <div>
-                    <p className="text-sm font-semibold text-slate-900 leading-tight">Điền thông tin sản phẩm</p>
-                    <p className="text-sm font-medium text-slate-500 mt-0.5">Điền tên, danh mục, giá bán và các thông tin khác</p>
+                    <p className="text-sm font-semibold text-slate-900 leading-tight">
+                      Điền thông tin sản phẩm
+                    </p>
+                    <p className="text-sm font-medium text-slate-500 mt-0.5">
+                      Điền tên, danh mục, giá bán và các thông tin khác
+                    </p>
                   </div>
                 </div>
 
@@ -4347,8 +4635,12 @@ export function ProductsManager({
                     <div className="mt-0.5 size-5 shrink-0 rounded-full border-2 border-slate-300" />
                   )}
                   <div>
-                    <p className="text-sm font-semibold text-slate-900 leading-tight">Thêm biến thể</p>
-                    <p className="text-sm font-medium text-slate-500 mt-0.5">Tạo ít nhất một biến thể theo kích cỡ, màu sắc…</p>
+                    <p className="text-sm font-semibold text-slate-900 leading-tight">
+                      Thêm biến thể
+                    </p>
+                    <p className="text-sm font-medium text-slate-500 mt-0.5">
+                      Tạo ít nhất một biến thể theo kích cỡ, màu sắc…
+                    </p>
                   </div>
                 </div>
 
@@ -4362,8 +4654,12 @@ export function ProductsManager({
                     <div className="mt-0.5 size-5 shrink-0 rounded-full border-2 border-slate-300" />
                   )}
                   <div>
-                    <p className="text-sm font-semibold text-slate-900 leading-tight">Thêm nội dung SEO</p>
-                    <p className="text-sm font-medium text-slate-500 mt-0.5">Viết tiêu đề trang và mô tả tìm kiếm</p>
+                    <p className="text-sm font-semibold text-slate-900 leading-tight">
+                      Thêm nội dung SEO
+                    </p>
+                    <p className="text-sm font-medium text-slate-500 mt-0.5">
+                      Viết tiêu đề trang và mô tả tìm kiếm
+                    </p>
                   </div>
                 </div>
               </div>
@@ -4388,37 +4684,64 @@ export function ProductsManager({
 
               <div className="h-4 w-px bg-slate-200 mx-0.5" />
 
-              <button type="button" className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700">
+              <button
+                type="button"
+                className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700"
+              >
                 <Bold className="size-3.5" />
               </button>
-              <button type="button" className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700">
+              <button
+                type="button"
+                className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700"
+              >
                 <Italic className="size-3.5" />
               </button>
-              <button type="button" className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700">
+              <button
+                type="button"
+                className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700"
+              >
                 <Underline className="size-3.5" />
               </button>
 
               <div className="h-4 w-px bg-slate-200 mx-0.5" />
 
-              <button type="button" className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700">
+              <button
+                type="button"
+                className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700"
+              >
                 <List className="size-3.5" />
               </button>
-              <button type="button" className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700">
+              <button
+                type="button"
+                className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700"
+              >
                 <ListOrdered className="size-3.5" />
               </button>
 
               <div className="h-4 w-px bg-slate-200 mx-0.5" />
 
-              <button type="button" className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700">
+              <button
+                type="button"
+                className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700"
+              >
                 <Link2 className="size-3.5" />
               </button>
-              <button type="button" className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700">
+              <button
+                type="button"
+                className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700"
+              >
                 <ImageIcon className="size-3.5" />
               </button>
-              <button type="button" className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700">
+              <button
+                type="button"
+                className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700"
+              >
                 <Play className="size-3.5" />
               </button>
-              <button type="button" className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700">
+              <button
+                type="button"
+                className="inline-flex size-7 items-center justify-center rounded-xs hover:bg-slate-200/60 text-slate-700"
+              >
                 <Maximize2 className="size-3.5" />
               </button>
             </div>
@@ -4430,7 +4753,7 @@ export function ProductsManager({
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 placeholder="Nhập mô tả chi tiết sản phẩm..."
-                className="w-full rounded-xs border border-slate-200 bg-white p-3 text-sm font-medium text-slate-800 leading-relaxed outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6] resize-none"
+                className="w-full rounded-xs border border-slate-200 bg-white p-3 text-sm font-medium text-slate-800 leading-relaxed outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53] resize-none"
               />
               <span className="mt-1 block text-right text-sm font-medium text-slate-400">
                 {form.description.length} ký tự
@@ -4451,7 +4774,7 @@ export function ProductsManager({
                     value={detailData.pageTitle}
                     onChange={(e) => setDetailData((d) => ({ ...d, pageTitle: e.target.value }))}
                     placeholder="VD: Áo khoác len cổ điển | ÉLANE"
-                    className="mt-1 h-9 rounded-xs border-slate-200 text-sm font-semibold text-slate-900 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                    className="mt-1 h-9 rounded-xs border-slate-200 text-sm font-semibold text-slate-900 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                   />
                 </div>
 
@@ -4465,7 +4788,7 @@ export function ProductsManager({
                       setForm((f) => ({ ...f, slug: val }));
                     }}
                     placeholder="VD: ao-khoac-len-co-dien"
-                    className="mt-1 h-9 rounded-xs border-slate-200 tabular-nums text-sm font-semibold text-slate-900 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+                    className="mt-1 h-9 rounded-xs border-slate-200 tabular-nums text-sm font-semibold text-slate-900 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
                   />
                 </div>
 
@@ -4474,9 +4797,11 @@ export function ProductsManager({
                   <textarea
                     rows={3}
                     value={detailData.metaDescription}
-                    onChange={(e) => setDetailData((d) => ({ ...d, metaDescription: e.target.value }))}
+                    onChange={(e) =>
+                      setDetailData((d) => ({ ...d, metaDescription: e.target.value }))
+                    }
                     placeholder="Nhập mô tả ngắn cho công cụ tìm kiếm..."
-                    className="mt-1 w-full rounded-xs border border-slate-200 bg-white p-2.5 text-sm font-medium text-slate-800 leading-relaxed outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6] resize-none"
+                    className="mt-1 w-full rounded-xs border border-slate-200 bg-white p-2.5 text-sm font-medium text-slate-800 leading-relaxed outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53] resize-none"
                   />
                   <span className="mt-0.5 block text-right text-sm font-medium text-slate-400">
                     {detailData.metaDescription.length} ký tự
@@ -4486,7 +4811,9 @@ export function ProductsManager({
 
               {/* Right col: Google preview */}
               <div>
-                <label className="text-sm font-semibold text-slate-700">Xem trước trên Google</label>
+                <label className="text-sm font-semibold text-slate-700">
+                  Xem trước trên Google
+                </label>
                 <div className="mt-1 rounded-xs border border-slate-200/90 bg-slate-50/60 p-3.5 shadow-2xs font-sans">
                   {/* Logo + Domain + Breadcrumb */}
                   <div className="flex items-center gap-2">
@@ -4496,7 +4823,8 @@ export function ProductsManager({
                     <div className="min-w-0 leading-tight">
                       <div className="text-sm font-semibold text-slate-900">ÉLANE</div>
                       <div className="truncate text-xs text-slate-500 tabular-nums">
-                        https://elane.com/{detailData.urlSlug.replace(/^elane\.com\/products\/?/, "")}
+                        https://elane.com/
+                        {detailData.urlSlug.replace(/^elane\.com\/products\/?/, "")}
                       </div>
                     </div>
                   </div>
@@ -4507,12 +4835,15 @@ export function ProductsManager({
                     onClick={(e) => e.preventDefault()}
                     className="mt-2 block text-base font-semibold text-[#1a0dab] hover:underline leading-snug line-clamp-1"
                   >
-                    {detailData.pageTitle || (form.name ? `${form.name} | ÉLANE` : "Tiêu đề sản phẩm sẽ hiển thị tại đây")}
+                    {detailData.pageTitle ||
+                      (form.name ? `${form.name} | ÉLANE` : "Tiêu đề sản phẩm sẽ hiển thị tại đây")}
                   </a>
 
                   {/* Snippet text */}
                   <p className="mt-1 text-sm font-medium text-[#4d5156] leading-relaxed line-clamp-3">
-                    {detailData.metaDescription || form.description || "Nhập mô tả tìm kiếm để xem trước tại đây..."}
+                    {detailData.metaDescription ||
+                      form.description ||
+                      "Nhập mô tả tìm kiếm để xem trước tại đây..."}
                   </p>
                 </div>
               </div>
@@ -4526,7 +4857,9 @@ export function ProductsManager({
         <Dialog open={editProductModalOpen} onOpenChange={setEditProductModalOpen}>
           <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-xs bg-white p-6 shadow-2xl">
             <DialogHeader>
-              <DialogTitle className="text-slate-950 admin-section-title">Chỉnh sửa thông tin sản phẩm</DialogTitle>
+              <DialogTitle className="text-slate-950 admin-section-title">
+                Chỉnh sửa thông tin sản phẩm
+              </DialogTitle>
             </DialogHeader>
 
             <div className="mt-4 space-y-4 text-sm">
@@ -4577,7 +4910,10 @@ export function ProductsManager({
                       setForm((f) => ({ ...f, primary_category_id: val }));
                       const found = filterCategories.find((c) => c.id === val || c.slug === val);
                       if (found) {
-                        setDetailData((d) => ({ ...d, categoryPath: `${found.name} > Áo khoác dài` }));
+                        setDetailData((d) => ({
+                          ...d,
+                          categoryPath: `${found.name} > Áo khoác dài`,
+                        }));
                       }
                     }}
                   >
@@ -4606,7 +4942,9 @@ export function ProductsManager({
                     className="mt-1 h-9 rounded-xs border-slate-200 tabular-nums text-sm font-semibold text-slate-900"
                     type="number"
                     value={form.compare_at_price_vnd}
-                    onChange={(e) => setForm((f) => ({ ...f, compare_at_price_vnd: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, compare_at_price_vnd: e.target.value }))
+                    }
                   />
                 </div>
                 <div>
@@ -4624,7 +4962,7 @@ export function ProductsManager({
                 <label className="font-semibold text-slate-700">Mô tả chi tiết</label>
                 <textarea
                   rows={4}
-                  className="mt-1 w-full rounded-xs border border-slate-200 bg-white p-2.5 text-sm font-medium text-slate-900 outline-none focus:border-[#6941c6]"
+                  className="mt-1 w-full rounded-xs border border-slate-200 bg-white p-2.5 text-sm font-medium text-slate-900 outline-none focus:border-[#243B53]"
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 />
@@ -4632,7 +4970,11 @@ export function ProductsManager({
             </div>
 
             <DialogFooter className="mt-6 sm:justify-end gap-2">
-              <Button variant="outline" className="h-9 rounded-xs text-sm font-semibold" onClick={() => setEditProductModalOpen(false)}>
+              <Button
+                variant="outline"
+                className="h-9 rounded-xs text-sm font-semibold"
+                onClick={() => setEditProductModalOpen(false)}
+              >
                 Hủy
               </Button>
               <Button
@@ -4640,7 +4982,7 @@ export function ProductsManager({
                   setEditProductModalOpen(false);
                   save(form.status, false);
                 }}
-                className="h-9 rounded-xs bg-[#6941c6] text-sm font-semibold text-white hover:bg-[#53389e]"
+                className="h-9 rounded-xs bg-[#243B53] text-sm font-semibold text-white hover:bg-[#1B2E42]"
               >
                 Lưu thay đổi
               </Button>
@@ -4652,7 +4994,9 @@ export function ProductsManager({
         <Dialog open={editOverviewModalOpen} onOpenChange={setEditOverviewModalOpen}>
           <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto rounded-xs bg-white p-6 shadow-2xl">
             <DialogHeader>
-              <DialogTitle className="text-slate-950 admin-section-title">Chỉnh sửa tổng quan sản phẩm</DialogTitle>
+              <DialogTitle className="text-slate-950 admin-section-title">
+                Chỉnh sửa tổng quan sản phẩm
+              </DialogTitle>
             </DialogHeader>
 
             <div className="mt-4 space-y-4 text-sm">
@@ -4660,17 +5004,19 @@ export function ProductsManager({
                 <label className="font-semibold text-slate-700">Mô tả sản phẩm</label>
                 <textarea
                   rows={4}
-                  className="mt-1 w-full rounded-xs border border-slate-200 bg-white p-2.5 text-sm font-medium text-slate-900 outline-none focus:border-[#6941c6]"
+                  className="mt-1 w-full rounded-xs border border-slate-200 bg-white p-2.5 text-sm font-medium text-slate-900 outline-none focus:border-[#243B53]"
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700">Đặc điểm nổi bật (mỗi dòng một đặc điểm)</label>
+                <label className="font-semibold text-slate-700">
+                  Đặc điểm nổi bật (mỗi dòng một đặc điểm)
+                </label>
                 <textarea
                   rows={4}
-                  className="mt-1 w-full rounded-xs border border-slate-200 bg-white p-2.5 text-sm font-medium text-slate-900 outline-none focus:border-[#6941c6]"
+                  className="mt-1 w-full rounded-xs border border-slate-200 bg-white p-2.5 text-sm font-medium text-slate-900 outline-none focus:border-[#243B53]"
                   value={detailData.keyFeatures.join("\n")}
                   onChange={(e) =>
                     setDetailData((d) => ({
@@ -4715,7 +5061,11 @@ export function ProductsManager({
             </div>
 
             <DialogFooter className="mt-6 sm:justify-end gap-2">
-              <Button variant="outline" className="h-9 rounded-xs text-sm font-semibold" onClick={() => setEditOverviewModalOpen(false)}>
+              <Button
+                variant="outline"
+                className="h-9 rounded-xs text-sm font-semibold"
+                onClick={() => setEditOverviewModalOpen(false)}
+              >
                 Đóng
               </Button>
               <Button
@@ -4723,7 +5073,7 @@ export function ProductsManager({
                   setEditOverviewModalOpen(false);
                   toast.success("Đã cập nhật tổng quan sản phẩm!");
                 }}
-                className="h-9 rounded-xs bg-[#6941c6] text-sm font-semibold text-white hover:bg-[#53389e]"
+                className="h-9 rounded-xs bg-[#243B53] text-sm font-semibold text-white hover:bg-[#1B2E42]"
               >
                 Cập nhật
               </Button>
@@ -4735,7 +5085,9 @@ export function ProductsManager({
         <Dialog open={editSummaryModalOpen} onOpenChange={setEditSummaryModalOpen}>
           <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto rounded-xs bg-white p-6 shadow-2xl">
             <DialogHeader>
-              <DialogTitle className="text-slate-950 admin-section-title">Chỉnh sửa tóm tắt & giá bán</DialogTitle>
+              <DialogTitle className="text-slate-950 admin-section-title">
+                Chỉnh sửa tóm tắt & giá bán
+              </DialogTitle>
             </DialogHeader>
 
             <div className="mt-4 space-y-4 text-sm">
@@ -4780,7 +5132,11 @@ export function ProductsManager({
             </div>
 
             <DialogFooter className="mt-6 sm:justify-end gap-2">
-              <Button variant="outline" className="h-9 rounded-xs text-sm font-semibold" onClick={() => setEditSummaryModalOpen(false)}>
+              <Button
+                variant="outline"
+                className="h-9 rounded-xs text-sm font-semibold"
+                onClick={() => setEditSummaryModalOpen(false)}
+              >
                 Hủy
               </Button>
               <Button
@@ -4788,7 +5144,7 @@ export function ProductsManager({
                   setEditSummaryModalOpen(false);
                   save(form.status, false);
                 }}
-                className="h-9 rounded-xs bg-[#6941c6] text-sm font-semibold text-white hover:bg-[#53389e]"
+                className="h-9 rounded-xs bg-[#243B53] text-sm font-semibold text-white hover:bg-[#1B2E42]"
               >
                 Lưu
               </Button>
@@ -4806,7 +5162,9 @@ export function ProductsManager({
         <Dialog open={manageChannelsModalOpen} onOpenChange={setManageChannelsModalOpen}>
           <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto rounded-xs bg-white p-6 shadow-2xl">
             <DialogHeader>
-              <DialogTitle className="text-slate-950 admin-section-title">Quản lý kênh phân phối</DialogTitle>
+              <DialogTitle className="text-slate-950 admin-section-title">
+                Quản lý kênh phân phối
+              </DialogTitle>
             </DialogHeader>
 
             <div className="mt-4 space-y-4 text-sm">
@@ -4815,7 +5173,9 @@ export function ProductsManager({
                   <Store className="size-4.5 text-slate-700" />
                   <div>
                     <span className="font-semibold text-slate-900">Cửa hàng trực tuyến</span>
-                    <p className="text-sm font-medium text-slate-500">trang web chính thức elane.com</p>
+                    <p className="text-sm font-medium text-slate-500">
+                      trang web chính thức elane.com
+                    </p>
                   </div>
                 </div>
                 <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-sm font-semibold text-emerald-700">
@@ -4825,7 +5185,7 @@ export function ProductsManager({
 
               <div className="flex items-center justify-between rounded-xs border border-slate-200 p-3.5">
                 <div className="flex items-center gap-3">
-                  <Instagram className="size-4.5 text-[#6941c6]" />
+                  <Instagram className="size-4.5 text-[#243B53]" />
                   <div>
                     <span className="font-semibold text-slate-900">Cửa hàng Instagram</span>
                     <p className="text-sm font-medium text-slate-500">Đồng bộ danh mục Instagram</p>
@@ -4865,7 +5225,9 @@ export function ProductsManager({
         <Dialog open={viewAllActivityOpen} onOpenChange={setViewAllActivityOpen}>
           <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto rounded-xs bg-white p-6 shadow-2xl">
             <DialogHeader>
-              <DialogTitle className="text-slate-950 admin-section-title">Lịch sử hoạt động sản phẩm</DialogTitle>
+              <DialogTitle className="text-slate-950 admin-section-title">
+                Lịch sử hoạt động sản phẩm
+              </DialogTitle>
             </DialogHeader>
 
             <div className="mt-4 divide-y divide-slate-100 space-y-3">
@@ -4875,7 +5237,9 @@ export function ProductsManager({
                     <div className="mt-1 size-2 rounded-full bg-slate-400 shrink-0" />
                     <div>
                       <p className="font-semibold text-slate-950">{act.title}</p>
-                      <p className="text-sm font-medium text-slate-500">Thực hiện bởi: {act.actor}</p>
+                      <p className="text-sm font-medium text-slate-500">
+                        Thực hiện bởi: {act.actor}
+                      </p>
                     </div>
                   </div>
                   <span className="text-sm font-semibold text-slate-500 shrink-0">{act.time}</span>
@@ -4921,50 +5285,61 @@ export function ProductsManager({
             <Download className="size-3.5 text-slate-500" />
             <span>Xuất dữ liệu</span>
           </Button>
-          {canWrite && <Button
+          {canWrite && (
+            <Button
               onClick={openCreate}
-            className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-none hover:bg-[#53389e] transition-colors cursor-pointer"
+              className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white shadow-none hover:bg-[#1B2E42] transition-colors cursor-pointer"
             >
               <Plus className="size-3.5" />
               <span>Thêm sản phẩm</span>
-            </Button>}
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Catalog summary and status distribution also filter the list. */}
-      <div role="tablist" aria-label="Lọc sản phẩm theo trạng thái" className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+      <div
+        role="tablist"
+        aria-label="Lọc sản phẩm theo trạng thái"
+        className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4"
+      >
         {[
           {
             id: "all",
             label: "Tất cả sản phẩm",
             count: statusCounts.all,
-            color: "bg-[#6941c6]",
+            color: "bg-[#243B53]",
+            activeStyle: "border-[#243B53] bg-[#EAF0F6]",
           },
           {
             id: "published",
             label: "Đang bán",
             count: statusCounts.published,
             color: "bg-emerald-500",
+            activeStyle: "border-emerald-500 bg-emerald-50/50",
           },
           {
             id: "draft",
             label: "Bản nháp",
             count: statusCounts.draft,
             color: "bg-amber-500",
+            activeStyle: "border-amber-500 bg-amber-50/50",
           },
           {
             id: "archived",
             label: "Đã lưu trữ",
             count: statusCounts.archived,
             color: "bg-slate-400",
+            activeStyle: "border-slate-400 bg-slate-50",
           },
         ].map((tab) => {
           const active = statusFilter === tab.id;
-          const percentage = tab.id === "all"
-            ? 100
-            : statusDistributionTotal > 0
-              ? Math.round((tab.count / statusDistributionTotal) * 100)
-              : 0;
+          const percentage =
+            tab.id === "all"
+              ? 100
+              : statusDistributionTotal > 0
+                ? Math.round((tab.count / statusDistributionTotal) * 100)
+                : 0;
 
           return (
             <button
@@ -4977,22 +5352,27 @@ export function ProductsManager({
                 setPage(1);
               }}
               className={cn(
-                "group relative flex min-h-[112px] flex-col justify-between overflow-hidden rounded-xs border bg-white p-4 text-left transition duration-200 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6941c6] focus-visible:ring-offset-2",
+                "product-summary-card group relative flex min-h-[112px] flex-col justify-between overflow-hidden rounded-xs border bg-white p-4 text-left hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53] focus-visible:ring-offset-2",
                 active
-                  ? "border-[#6941c6]/50 bg-[#f8f7ff]"
+                  ? tab.activeStyle
                   : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/60",
               )}
             >
-              <span className={cn(
-                "absolute inset-x-0 top-0 h-[3px]",
-                tab.color,
-                active ? "opacity-100" : "opacity-45 group-hover:opacity-75",
-              )} aria-hidden="true" />
+              <span
+                className={cn(
+                  "absolute inset-x-0 top-0 h-[3px]",
+                  tab.color,
+                  active ? "opacity-100" : "opacity-45 group-hover:opacity-75",
+                )}
+                aria-hidden="true"
+              />
               <span className="flex w-full items-center justify-between gap-3 pt-0.5">
-                <span className={cn(
-                  "text-[13px]",
-                  active ? "font-semibold text-slate-900" : "font-medium text-slate-600",
-                )}>
+                <span
+                  className={cn(
+                    "text-[13px]",
+                    active ? "font-semibold text-slate-900" : "font-medium text-slate-600",
+                  )}
+                >
                   {tab.label}
                 </span>
                 {tab.id !== "all" && (
@@ -5003,10 +5383,12 @@ export function ProductsManager({
               </span>
 
               <span className="flex w-full items-baseline gap-2">
-                <span className={cn(
-                  "text-[26px] font-semibold leading-none tabular-nums tracking-tight",
-                  active ? "text-slate-950" : "text-slate-800",
-                )}>
+                <span
+                  className={cn(
+                    "text-[26px] font-semibold leading-none tabular-nums tracking-tight",
+                    active ? "text-slate-950" : "text-slate-800",
+                  )}
+                >
                   <AnimatedValue value={tab.count.toLocaleString("vi-VN")} />
                 </span>
                 <span className="text-xs font-medium text-slate-500">sản phẩm</span>
@@ -5015,9 +5397,15 @@ export function ProductsManager({
               {tab.id === "all" ? (
                 <span className="text-xs text-slate-500">Toàn bộ danh mục</span>
               ) : (
-                <span className="block h-1 w-full overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
+                <span
+                  className="block h-1 w-full overflow-hidden rounded-full bg-slate-100"
+                  aria-hidden="true"
+                >
                   <span
-                    className={cn("block h-full rounded-full transition-[width] duration-300", tab.color)}
+                    className={cn(
+                      "block h-full rounded-full transition-[width] duration-300",
+                      tab.color,
+                    )}
                     style={{ width: `${percentage}%` }}
                   />
                 </span>
@@ -5037,7 +5425,7 @@ export function ProductsManager({
               value={queryInput}
               onChange={(e) => setQueryInput(e.target.value)}
               placeholder="Tìm tên sản phẩm hoặc SKU"
-              className="h-9 rounded-xs border-slate-200 bg-white pl-9 pr-8 text-sm text-slate-800 shadow-none placeholder:text-slate-400 focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]"
+              className="h-9 rounded-xs border-slate-200 bg-white pl-9 pr-8 text-sm text-slate-800 shadow-none placeholder:text-slate-400 focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]"
             />
             {queryInput ? (
               <button
@@ -5058,7 +5446,7 @@ export function ProductsManager({
                 size="sm"
                 className={cn(
                   "h-9 gap-1.5 rounded-xs border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50",
-                  categoryId && "border-[#6941c6] text-[#6941c6] bg-[#f4f3ff]",
+                  categoryId && "border-[#243B53] text-[#243B53] bg-[#EAF0F6]",
                 )}
               >
                 <span>{activeCategoryLabel}</span>
@@ -5086,7 +5474,9 @@ export function ProductsManager({
                 </button>
               </div>
               <div className="max-h-[min(24rem,60vh)] overflow-y-auto pr-1">
-                {categoryTree.length > 0 ? renderCategoryTree(categoryTree) : (
+                {categoryTree.length > 0 ? (
+                  renderCategoryTree(categoryTree)
+                ) : (
                   <p className="px-2 py-3 text-sm text-slate-500">Chưa có danh mục.</p>
                 )}
               </div>
@@ -5111,19 +5501,22 @@ export function ProductsManager({
                 size="sm"
                 className={cn(
                   "h-9 gap-1.5 rounded-xs border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50",
-                  moreFilterCount > 0 && "border-[#6941c6] text-[#6941c6] bg-[#f4f3ff]",
+                  moreFilterCount > 0 && "border-[#243B53] text-[#243B53] bg-[#EAF0F6]",
                 )}
               >
                 <SlidersHorizontal className="size-3.5 text-slate-500" />
                 <span>Bộ lọc khác</span>
                 {moreFilterCount > 0 && (
-                  <span className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-[#6941c6] text-xs font-semibold text-white">
+                  <span className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-[#243B53] text-xs font-semibold text-white">
                     {moreFilterCount}
                   </span>
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-[360px] max-w-[calc(100vw-1.5rem)] p-4 shadow-lg rounded-xs">
+            <PopoverContent
+              align="start"
+              className="w-[360px] max-w-[calc(100vw-1.5rem)] p-4 shadow-lg rounded-xs"
+            >
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-3">
                   <div>
@@ -5141,7 +5534,9 @@ export function ProductsManager({
 
                 <section aria-labelledby="product-price-filter" className="space-y-2">
                   <div className="flex items-baseline justify-between gap-3">
-                    <h5 id="product-price-filter" className="text-sm font-medium text-slate-800">Giá bán</h5>
+                    <h5 id="product-price-filter" className="text-sm font-medium text-slate-800">
+                      Giá bán
+                    </h5>
                     <span className="text-xs text-slate-500">VND</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -5152,7 +5547,9 @@ export function ProductsManager({
                         aria-label="Giá bán tối thiểu"
                         placeholder="Không giới hạn"
                         value={priceMinDraft}
-                        onChange={(event) => setPriceMinDraft(event.target.value.replace(/[^\d]/g, ""))}
+                        onChange={(event) =>
+                          setPriceMinDraft(event.target.value.replace(/[^\d]/g, ""))
+                        }
                         className="h-9 text-sm tabular-nums"
                       />
                     </label>
@@ -5163,23 +5560,44 @@ export function ProductsManager({
                         aria-label="Giá bán tối đa"
                         placeholder="Không giới hạn"
                         value={priceMaxDraft}
-                        onChange={(event) => setPriceMaxDraft(event.target.value.replace(/[^\d]/g, ""))}
+                        onChange={(event) =>
+                          setPriceMaxDraft(event.target.value.replace(/[^\d]/g, ""))
+                        }
                         className="h-9 text-sm tabular-nums"
                       />
                     </label>
                   </div>
                   {priceRangeInvalid && (
-                    <p role="alert" className="text-xs text-rose-700">Giá tối đa phải lớn hơn hoặc bằng giá tối thiểu.</p>
+                    <p role="alert" className="text-xs text-rose-700">
+                      Giá tối đa phải lớn hơn hoặc bằng giá tối thiểu.
+                    </p>
                   )}
                 </section>
 
                 <section aria-labelledby="product-stock-filter" className="space-y-2">
-                  <h5 id="product-stock-filter" className="text-sm font-medium text-slate-800">Tình trạng tồn kho</h5>
+                  <h5 id="product-stock-filter" className="text-sm font-medium text-slate-800">
+                    Tình trạng tồn kho
+                  </h5>
                   <div role="group" aria-label="Lọc theo tồn kho" className="space-y-1">
                     {[
-                      { id: "", title: "Tất cả mức tồn kho", detail: "Không giới hạn tồn kho", marker: "bg-slate-400" },
-                      { id: "in", title: "Còn hàng", detail: "Trên 20 sản phẩm", marker: "bg-emerald-500" },
-                      { id: "low", title: "Sắp hết hàng", detail: "Từ 1 đến 20 sản phẩm", marker: "bg-amber-500" },
+                      {
+                        id: "",
+                        title: "Tất cả mức tồn kho",
+                        detail: "Không giới hạn tồn kho",
+                        marker: "bg-slate-400",
+                      },
+                      {
+                        id: "in",
+                        title: "Còn hàng",
+                        detail: "Trên 20 sản phẩm",
+                        marker: "bg-emerald-500",
+                      },
+                      {
+                        id: "low",
+                        title: "Sắp hết hàng",
+                        detail: "Từ 1 đến 20 sản phẩm",
+                        marker: "bg-amber-500",
+                      },
                       { id: "out", title: "Hết hàng", detail: "0 sản phẩm", marker: "bg-rose-500" },
                     ].map((option) => (
                       <button
@@ -5194,12 +5612,22 @@ export function ProductsManager({
                             : "border-transparent hover:bg-slate-50",
                         )}
                       >
-                        <span className={cn("size-2 shrink-0 rounded-full", option.marker)} aria-hidden="true" />
+                        <span
+                          className={cn("size-2 shrink-0 rounded-full", option.marker)}
+                          aria-hidden="true"
+                        />
                         <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-medium text-slate-800">{option.title}</span>
+                          <span className="block text-sm font-medium text-slate-800">
+                            {option.title}
+                          </span>
                           <span className="block text-xs text-slate-500">{option.detail}</span>
                         </span>
-                        <Check className={cn("size-4 shrink-0 text-slate-800", stockDraft === option.id ? "opacity-100" : "opacity-0")} />
+                        <Check
+                          className={cn(
+                            "size-4 shrink-0 text-slate-800",
+                            stockDraft === option.id ? "opacity-100" : "opacity-0",
+                          )}
+                        />
                       </button>
                     ))}
                   </div>
@@ -5210,7 +5638,7 @@ export function ProductsManager({
                     type="button"
                     disabled={priceRangeInvalid}
                     onClick={applyAdvancedFilters}
-                    className="h-9 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white hover:bg-[#53389e] disabled:opacity-50"
+                    className="h-9 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white hover:bg-[#1B2E42] disabled:opacity-50"
                   >
                     Áp dụng bộ lọc
                   </Button>
@@ -5289,10 +5717,7 @@ export function ProductsManager({
                   className="cursor-pointer text-sm"
                 >
                   <Check
-                    className={cn(
-                      "mr-2 size-3.5",
-                      sortBy === s.id ? "opacity-100" : "opacity-0",
-                    )}
+                    className={cn("mr-2 size-3.5", sortBy === s.id ? "opacity-100" : "opacity-0")}
                   />
                   {s.label}
                 </DropdownMenuItem>
@@ -5307,42 +5732,50 @@ export function ProductsManager({
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xs border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700">
           <span className="font-medium">Đã chọn {selectedCount} sản phẩm</span>
           <div className="flex items-center gap-2">
-            {canPublish && <Button
-              size="sm"
-              variant="outline"
-              disabled={bulkBusy}
-              onClick={bulkPublish}
-              className="h-8 rounded-xs bg-white border-slate-200 text-sm text-[#6941c6] hover:bg-[#f4f3ff]"
-            >
-              Đăng bán
-            </Button>}
-            {canWrite && <Button
-              size="sm"
-              variant="outline"
-              disabled={bulkBusy}
-              onClick={bulkDraft}
-              className="h-8 rounded-xs border-amber-200 bg-white text-sm text-amber-700 hover:bg-amber-50"
-            >
-              Chuyển bản nháp
-            </Button>}
-            {canWrite && <Button
-              size="sm"
-              variant="outline"
-              disabled={bulkBusy}
-              onClick={bulkArchive}
-              className="h-8 rounded-xs border-slate-200 bg-white text-sm text-slate-700 hover:bg-slate-50"
-            >
-              Lưu trữ
-            </Button>}
-            {canDelete && <Button
-              size="sm"
-              variant="outline"
-              disabled={bulkBusy}
-              onClick={bulkDestroy}
-              className="h-8 rounded-xs bg-white border-red-200 text-sm text-red-600 hover:bg-red-50"
-            >
-              Xóa
-            </Button>}
+            {canPublish && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkBusy}
+                onClick={bulkPublish}
+                className="h-8 rounded-xs bg-white border-slate-200 text-sm text-[#243B53] hover:bg-[#EAF0F6]"
+              >
+                Đăng bán
+              </Button>
+            )}
+            {canWrite && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkBusy}
+                onClick={bulkDraft}
+                className="h-8 rounded-xs border-amber-200 bg-white text-sm text-amber-700 hover:bg-amber-50"
+              >
+                Chuyển bản nháp
+              </Button>
+            )}
+            {canWrite && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkBusy}
+                onClick={bulkArchive}
+                className="h-8 rounded-xs border-slate-200 bg-white text-sm text-slate-700 hover:bg-slate-50"
+              >
+                Lưu trữ
+              </Button>
+            )}
+            {canDelete && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkBusy}
+                onClick={bulkDestroy}
+                className="h-8 rounded-xs bg-white border-red-200 text-sm text-red-600 hover:bg-red-50"
+              >
+                Xóa
+              </Button>
+            )}
             <Button
               size="sm"
               variant="ghost"
@@ -5358,357 +5791,408 @@ export function ProductsManager({
 
       {/* Main Content: Table or Grid */}
       <AnimatedPanel transitionKey={`${statusFilter}:${viewMode}`} className="min-w-0">
-      {viewMode === "table" ? (
-        <div className="admin-table-frame overflow-hidden rounded-xs border border-slate-200 bg-white">
-          <div className="overflow-x-auto">
-            <table className="admin-data-table w-full min-w-[860px] table-fixed text-left text-sm">
-              <colgroup>
-                <col className="w-[44px]" />
-                <col />
-                <col className="w-[145px]" />
-                <col className="w-[125px]" />
-                <col className="w-[120px]" />
-                <col className="w-[130px]" />
-                <col className="w-[44px]" />
-              </colgroup>
-              <thead className="border-b border-slate-200 bg-white text-xs font-medium text-slate-500">
-                <tr>
-                  <th className="w-11 px-3 py-2.5">
-                    <input
-                      type="checkbox"
-                      aria-label="Chọn tất cả"
-                      checked={allFilteredSelected}
-                      ref={(el) => {
-                        if (el) el.indeterminate = someFilteredSelected && !allFilteredSelected;
-                      }}
-                      onChange={toggleAllFiltered}
-                      className="size-4 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
-                    />
-                  </th>
-                  <th className="px-3 py-2.5 font-medium">Sản phẩm</th>
-                  <th className="px-3 py-2.5 font-medium">Danh mục</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Giá bán</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Tồn kho</th>
-                  <th className="px-3 py-2.5 font-medium">Trạng thái</th>
-                  <th className="px-2 py-2.5" aria-label="Thao tác" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {loading && items.length === 0
-                  ? Array.from({ length: 5 }, (_, index) => (
-                      <tr key={`product-loading-${index}`} className="h-[62px]">
-                        <td className="px-3 py-3"><div className="size-4  rounded bg-slate-100" /></td>
-                        <td className="px-3 py-2.5">
-                          <div className="flex items-center gap-3">
-                            <div className="size-10  rounded-xs bg-slate-100" />
-                            <div className="space-y-2">
-                              <div className="h-3 w-40  rounded bg-slate-100" />
-                              <div className="h-2.5 w-28  rounded bg-slate-100" />
-                            </div>
-                          </div>
-                        </td>
-                        <td colSpan={5}><div className="mx-3 h-3  rounded bg-slate-100" /></td>
-                      </tr>
-                    ))
-                  : items.map((p) => {
-                  const thumb = productImageUrl(p.images?.[0] ?? p.media?.[0]?.url);
-                  const isChecked = selected.has(p.id);
-                  const sku = p.variants?.[0]?.sku ?? `EL-${p.id.slice(0, 6).toUpperCase()}`;
-                  const categoryName = p.category?.name ?? "Chung";
-                  const stockTotal = p.stock_total ?? 0;
-                  const isLow = stockTotal > 0 && stockTotal <= 20;
-                  const isOut = stockTotal === 0;
-
-                  return (
-                    <tr
-                      key={p.id}
-                      className={cn(
-                        "h-[62px] transition-colors hover:bg-slate-50",
-                        isChecked && "bg-[#f8f7ff]",
-                      )}
-                    >
-                      {/* Checkbox */}
-                      <td className="px-3 py-3">
-                        <input
-                          type="checkbox"
-                          aria-label={`Chọn ${p.name}`}
-                          checked={isChecked}
-                          onChange={() => toggleOne(p.id)}
-                          className="size-4 rounded-xs border-slate-300 text-[#6941c6] focus:ring-[#6941c6]"
-                        />
-                      </td>
-
-                      {/* Product: thumbnail, name and SKU */}
-                      <td className="min-w-0 px-3 py-2.5">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div className="size-10 shrink-0 overflow-hidden rounded-xs border border-slate-200 bg-slate-100">
-                            {thumb ? (
-                              <img
-                                src={thumb}
-                                alt={p.name}
-                                className="h-full w-full object-cover object-center"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center bg-slate-100 text-sm font-medium text-slate-400">
-                                {p.name.slice(0, 2).toUpperCase()}
+        {viewMode === "table" ? (
+          <div className="admin-table-frame overflow-hidden rounded-xs border border-slate-200 bg-white">
+            <div className="overflow-x-auto">
+              <table className="admin-data-table w-full min-w-[860px] table-fixed text-left text-sm">
+                <colgroup>
+                  <col className="w-[44px]" />
+                  <col />
+                  <col className="w-[145px]" />
+                  <col className="w-[125px]" />
+                  <col className="w-[120px]" />
+                  <col className="w-[130px]" />
+                  <col className="w-[44px]" />
+                </colgroup>
+                <thead className="border-b border-slate-200 bg-white text-xs font-medium text-slate-500">
+                  <tr>
+                    <th className="w-11 px-3 py-2.5">
+                      <input
+                        type="checkbox"
+                        aria-label="Chọn tất cả"
+                        checked={allFilteredSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = someFilteredSelected && !allFilteredSelected;
+                        }}
+                        onChange={toggleAllFiltered}
+                        className="size-4 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
+                      />
+                    </th>
+                    <th className="px-3 py-2.5 font-medium">Sản phẩm</th>
+                    <th className="px-3 py-2.5 font-medium">Danh mục</th>
+                    <th className="px-3 py-2.5 text-right font-medium">Giá bán</th>
+                    <th className="px-3 py-2.5 text-right font-medium">Tồn kho</th>
+                    <th className="px-3 py-2.5 font-medium">Trạng thái</th>
+                    <th className="px-2 py-2.5" aria-label="Thao tác" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {loading && items.length === 0
+                    ? Array.from({ length: 5 }, (_, index) => (
+                        <tr key={`product-loading-${index}`} className="h-[62px]">
+                          <td className="px-3 py-3">
+                            <div className="size-4  rounded bg-slate-100" />
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <div className="flex items-center gap-3">
+                              <div className="size-10  rounded-xs bg-slate-100" />
+                              <div className="space-y-2">
+                                <div className="h-3 w-40  rounded bg-slate-100" />
+                                <div className="h-2.5 w-28  rounded bg-slate-100" />
                               </div>
+                            </div>
+                          </td>
+                          <td colSpan={5}>
+                            <div className="mx-3 h-3  rounded bg-slate-100" />
+                          </td>
+                        </tr>
+                      ))
+                    : items.map((p) => {
+                        const thumb = productImageUrl(p.images?.[0] ?? p.media?.[0]?.url);
+                        const isChecked = selected.has(p.id);
+                        const sku = p.variants?.[0]?.sku ?? `EL-${p.id.slice(0, 6).toUpperCase()}`;
+                        const categoryName = p.category?.name ?? "Chung";
+                        const stockTotal = p.stock_total ?? 0;
+                        const isLow = stockTotal > 0 && stockTotal <= 20;
+                        const isOut = stockTotal === 0;
+
+                        return (
+                          <tr
+                            key={p.id}
+                            className={cn(
+                              "h-[62px] transition-colors hover:bg-slate-50",
+                              isChecked && "bg-[#EAF0F6]",
                             )}
-                          </div>
-                          <div className="min-w-0">
-                            <button
-                              type="button"
-                              onClick={() => openDetail(p)}
-                              className="block w-full truncate text-left text-sm font-semibold text-slate-900 transition-colors hover:text-[#6941c6]"
-                              title={p.name}
+                          >
+                            {/* Checkbox */}
+                            <td className="px-3 py-3">
+                              <input
+                                type="checkbox"
+                                aria-label={`Chọn ${p.name}`}
+                                checked={isChecked}
+                                onChange={() => toggleOne(p.id)}
+                                className="size-4 rounded-xs border-slate-300 text-[#243B53] focus:ring-[#243B53]"
+                              />
+                            </td>
+
+                            {/* Product: thumbnail, name and SKU */}
+                            <td className="min-w-0 px-3 py-2.5">
+                              <div className="flex min-w-0 items-center gap-3">
+                                <div className="size-10 shrink-0 overflow-hidden rounded-xs border border-slate-200 bg-slate-100">
+                                  {thumb ? (
+                                    <img
+                                      src={thumb}
+                                      alt={p.name}
+                                      className="h-full w-full object-cover object-center"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center bg-slate-100 text-sm font-medium text-slate-400">
+                                      {p.name.slice(0, 2).toUpperCase()}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => openDetail(p)}
+                                    className="block w-full truncate text-left text-sm font-semibold text-slate-900 transition-colors hover:text-[#243B53]"
+                                    title={p.name}
+                                  >
+                                    {p.name}
+                                  </button>
+                                  <p
+                                    className="mt-0.5 truncate text-xs font-medium text-slate-500"
+                                    title={sku}
+                                  >
+                                    {sku} · {p.variants?.length ?? 0} biến thể
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Category */}
+                            <td
+                              className="truncate px-3 py-3 text-sm text-slate-600"
+                              title={categoryName}
                             >
-                              {p.name}
-                            </button>
-                            <p className="mt-0.5 truncate text-xs font-medium text-slate-500" title={sku}>
-                              {sku} · {p.variants?.length ?? 0} biến thể
-                            </p>
-                          </div>
-                        </div>
-                      </td>
+                              {categoryName}
+                            </td>
 
-                      {/* Category */}
-                      <td className="truncate px-3 py-3 text-sm text-slate-600" title={categoryName}>{categoryName}</td>
+                            {/* Price */}
+                            <td className="px-3 py-3 text-right text-sm font-medium text-slate-900 tabular-nums">
+                              {formatPrice(Number(p.price_vnd))}
+                            </td>
 
-                      {/* Price */}
-                      <td className="px-3 py-3 text-right text-sm font-medium text-slate-900 tabular-nums">
-                        {formatPrice(Number(p.price_vnd))}
-                      </td>
+                            {/* Inventory status and count */}
+                            <td className="px-3 py-3 text-right">
+                              <div className="inline-flex flex-col items-end gap-0.5">
+                                <span className="text-sm font-semibold text-slate-900 tabular-nums">
+                                  {stockTotal}
+                                </span>
+                                {isOut ? (
+                                  <span className="text-xs font-medium text-rose-700">
+                                    Hết hàng
+                                  </span>
+                                ) : isLow ? (
+                                  <span className="text-xs font-medium text-amber-700">
+                                    Sắp hết
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-slate-500">còn hàng</span>
+                                )}
+                              </div>
+                            </td>
 
-                      {/* Inventory status and count */}
-                      <td className="px-3 py-3 text-right">
-                        <div className="inline-flex flex-col items-end gap-0.5">
-                          <span className="text-sm font-semibold text-slate-900 tabular-nums">{stockTotal}</span>
-                          {isOut ? (
-                            <span className="text-xs font-medium text-rose-700">Hết hàng</span>
-                          ) : isLow ? (
-                            <span className="text-xs font-medium text-amber-700">Sắp hết</span>
-                          ) : (
-                            <span className="text-xs text-slate-500">còn hàng</span>
-                          )}
-                        </div>
-                      </td>
+                            {/* Publication status */}
+                            <td className="px-3 py-3">
+                              {p.status === "published" ? (
+                                <span className="inline-flex whitespace-nowrap items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                                  Đang bán
+                                </span>
+                              ) : p.status === "draft" ? (
+                                <span className="inline-flex whitespace-nowrap items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
+                                  <span className="size-1.5 rounded-full bg-slate-400" />
+                                  Bản nháp
+                                </span>
+                              ) : (
+                                <span className="inline-flex whitespace-nowrap items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
+                                  <span className="size-1.5 rounded-full bg-slate-400" />
+                                  Đã lưu trữ
+                                </span>
+                              )}
+                            </td>
 
-                      {/* Publication status */}
-                      <td className="px-3 py-3">
-                        {p.status === "published" ? (
-                          <span className="inline-flex whitespace-nowrap items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                            <span className="size-1.5 rounded-full bg-emerald-500" />Đang bán
-                          </span>
-                        ) : p.status === "draft" ? (
-                          <span className="inline-flex whitespace-nowrap items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
-                            <span className="size-1.5 rounded-full bg-slate-400" />Bản nháp
-                          </span>
-                        ) : (
-                          <span className="inline-flex whitespace-nowrap items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
-                            <span className="size-1.5 rounded-full bg-slate-400" />Đã lưu trữ
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-2 py-3 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-8 rounded-xs text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                            >
-                              <MoreHorizontal className="size-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48 p-1 shadow-lg rounded-xs">
-                            <DropdownMenuItem
-                              onClick={() => openDetail(p)}
-                              className="cursor-pointer text-sm font-medium"
-                            >
-                              <Eye className="size-3.5 mr-2 text-slate-500" />
-                              Xem chi tiết (Detail)
-                            </DropdownMenuItem>
-                            {canWrite && <DropdownMenuItem
-                                onClick={() => openEdit(p)}
-                                className="cursor-pointer text-sm font-medium text-[#6941c6]"
-                              >
-                                <Pencil className="size-3.5 mr-2 text-[#6941c6]" />
-                                Chỉnh sửa (Edit product)
-                              </DropdownMenuItem>}
-                            {canReadInventory && <DropdownMenuItem
-                                onClick={() => setStockDetail(p)}
-                                className="cursor-pointer text-sm"
-                              >
-                                <Boxes className="size-3.5 mr-2 text-slate-500" />
-                                Xem chi tiết tồn kho
-                              </DropdownMenuItem>}
-                            {canReadInventory && <DropdownMenuItem
-                                onClick={() =>
-                                  onNavigate?.("inventory", {
-                                    productId: p.id,
-                                    productName: p.name,
-                                  })
-                                }
-                                className="cursor-pointer text-sm"
-                              >
-                                Quản lý tồn kho
-                              </DropdownMenuItem>}
-                            {(canWrite || canPublish || canDelete) && <DropdownMenuSeparator />}
-                            {p.status === "published" ? (
-                              canWrite && <DropdownMenuItem
-                                  onClick={() => updateStatus(p, "draft")}
-                                  className="cursor-pointer text-sm text-amber-600"
+                            {/* Actions */}
+                            <td className="px-2 py-3 text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-8 rounded-xs text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                  >
+                                    <MoreHorizontal className="size-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-48 p-1 shadow-lg rounded-xs"
                                 >
-                                  Chuyển về bản nháp
-                                </DropdownMenuItem>
-                            ) : (
-                              canPublish && <DropdownMenuItem
-                                  onClick={() => updateStatus(p, "published")}
-                                  className="cursor-pointer text-sm text-emerald-600"
-                                >
-                                  Đăng bán sản phẩm
-                                </DropdownMenuItem>
-                            )}
-                            {canDelete && <DropdownMenuItem
-                                onClick={() => remove(p)}
-                                className="cursor-pointer text-sm text-red-600 focus:text-red-700"
-                              >
-                                Xóa sản phẩm
-                              </DropdownMenuItem>}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  );
-                  })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Empty state */}
-          {!loading && !loadError && items.length === 0 && (
-            <div className="flex flex-col items-center justify-center p-12 text-center">
-              <Package className="size-10 text-slate-300" />
-              <h3 className="mt-3 text-slate-800 admin-subsection-title">Không tìm thấy sản phẩm</h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Thử thay đổi từ khóa tìm kiếm hoặc xóa các bộ lọc đang áp dụng.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearAllFilters}
-                className="mt-4 rounded-xs text-sm"
-              >
-                Xóa tất cả bộ lọc
-              </Button>
+                                  <DropdownMenuItem
+                                    onClick={() => openDetail(p)}
+                                    className="cursor-pointer text-sm font-medium"
+                                  >
+                                    <Eye className="size-3.5 mr-2 text-slate-500" />
+                                    Xem chi tiết (Detail)
+                                  </DropdownMenuItem>
+                                  {canWrite && (
+                                    <DropdownMenuItem
+                                      onClick={() => openEdit(p)}
+                                      className="cursor-pointer text-sm font-medium text-[#243B53]"
+                                    >
+                                      <Pencil className="size-3.5 mr-2 text-[#243B53]" />
+                                      Chỉnh sửa (Edit product)
+                                    </DropdownMenuItem>
+                                  )}
+                                  {canReadInventory && (
+                                    <DropdownMenuItem
+                                      onClick={() => setStockDetail(p)}
+                                      className="cursor-pointer text-sm"
+                                    >
+                                      <Boxes className="size-3.5 mr-2 text-slate-500" />
+                                      Xem chi tiết tồn kho
+                                    </DropdownMenuItem>
+                                  )}
+                                  {canReadInventory && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        onNavigate?.("inventory", {
+                                          productId: p.id,
+                                          productName: p.name,
+                                        })
+                                      }
+                                      className="cursor-pointer text-sm"
+                                    >
+                                      Quản lý tồn kho
+                                    </DropdownMenuItem>
+                                  )}
+                                  {(canWrite || canPublish || canDelete) && (
+                                    <DropdownMenuSeparator />
+                                  )}
+                                  {p.status === "published"
+                                    ? canWrite && (
+                                        <DropdownMenuItem
+                                          onClick={() => updateStatus(p, "draft")}
+                                          className="cursor-pointer text-sm text-amber-600"
+                                        >
+                                          Chuyển về bản nháp
+                                        </DropdownMenuItem>
+                                      )
+                                    : canPublish && (
+                                        <DropdownMenuItem
+                                          onClick={() => updateStatus(p, "published")}
+                                          className="cursor-pointer text-sm text-emerald-600"
+                                        >
+                                          Đăng bán sản phẩm
+                                        </DropdownMenuItem>
+                                      )}
+                                  {canDelete && (
+                                    <DropdownMenuItem
+                                      onClick={() => remove(p)}
+                                      className="cursor-pointer text-sm text-red-600 focus:text-red-700"
+                                    >
+                                      Xóa sản phẩm
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                </tbody>
+              </table>
             </div>
-          )}
-          {!loading && loadError && (
-            <div className="flex flex-col items-center justify-center p-12 text-center">
-              <Package className="size-8 text-slate-400" />
-              <h3 className="mt-3 text-slate-800 admin-subsection-title">Chưa tải được danh sách sản phẩm</h3>
-              <p className="mt-1 text-sm text-slate-500">Kiểm tra kết nối rồi thử lại.</p>
-              <Button variant="outline" size="sm" onClick={() => void load()} className="mt-4 rounded-xs text-sm">
-                Thử tải lại
-              </Button>
-            </div>
-          )}
-        </div>
-      ) : (
-        /* Grid View */
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-          {items.map((p) => {
-            const thumb = productImageUrl(p.images?.[0] ?? p.media?.[0]?.url);
-            const sku = p.variants?.[0]?.sku ?? `EL-${p.id.slice(0, 6).toUpperCase()}`;
-            const stockTotal = p.stock_total ?? 0;
-            const isLow = stockTotal > 0 && stockTotal <= 20;
-            const isOut = stockTotal === 0;
 
-            return (
-              <div
-                key={p.id}
-                className="group flex flex-col overflow-hidden rounded-xs border border-slate-200/90 bg-white shadow-xs transition-shadow hover:shadow-md"
-              >
-                <div
-                  className="relative aspect-4/3 w-full overflow-hidden bg-slate-100 cursor-pointer"
-                  onClick={() => openDetail(p)}
+            {/* Empty state */}
+            {!loading && !loadError && items.length === 0 && (
+              <div className="flex flex-col items-center justify-center p-12 text-center">
+                <Package className="size-10 text-slate-300" />
+                <h3 className="mt-3 text-slate-800 admin-subsection-title">
+                  Không tìm thấy sản phẩm
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Thử thay đổi từ khóa tìm kiếm hoặc xóa các bộ lọc đang áp dụng.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearAllFilters}
+                  className="mt-4 rounded-xs text-sm"
                 >
-                  {thumb ? (
-                    <img
-                      src={thumb}
-                      alt={p.name}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-slate-100 text-sm font-medium text-slate-400">
-                      {p.name.slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
-                  {/* Floating Status Badge */}
-                  <div className="absolute top-2.5 right-2.5">
-                    <span className={cn(
-                      "inline-flex items-center gap-1 rounded-full border bg-white/95 px-2.5 py-0.5 text-sm font-semibold shadow-xs",
-                      p.status === "published"
-                        ? "border-emerald-200 text-emerald-700"
-                        : p.status === "archived"
-                          ? "border-slate-200 text-slate-600"
-                          : "border-slate-200 text-slate-700",
-                    )}>
-                      <span className={cn(
-                        "size-1.5 rounded-full",
-                        p.status === "published"
-                          ? "bg-emerald-500"
-                          : p.status === "archived"
-                            ? "bg-slate-400"
-                            : "bg-slate-500",
-                      )} />
-                      {p.status === "published" ? "Đang bán" : p.status === "archived" ? "Đã lưu trữ" : "Bản nháp"}
-                    </span>
-                  </div>
-                </div>
+                  Xóa tất cả bộ lọc
+                </Button>
+              </div>
+            )}
+            {!loading && loadError && (
+              <div className="flex flex-col items-center justify-center p-12 text-center">
+                <Package className="size-8 text-slate-400" />
+                <h3 className="mt-3 text-slate-800 admin-subsection-title">
+                  Chưa tải được danh sách sản phẩm
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">Kiểm tra kết nối rồi thử lại.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void load()}
+                  className="mt-4 rounded-xs text-sm"
+                >
+                  Thử tải lại
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Grid View */
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+            {items.map((p) => {
+              const thumb = productImageUrl(p.images?.[0] ?? p.media?.[0]?.url);
+              const sku = p.variants?.[0]?.sku ?? `EL-${p.id.slice(0, 6).toUpperCase()}`;
+              const stockTotal = p.stock_total ?? 0;
+              const isLow = stockTotal > 0 && stockTotal <= 20;
+              const isOut = stockTotal === 0;
 
-                <div className="flex flex-1 flex-col p-4">
-                  <div className="flex items-center justify-between text-sm font-medium text-slate-500">
-                    <span className="tabular-nums font-semibold text-slate-700">{sku}</span>
-                    <span className="font-semibold text-slate-800">{p.category?.name ?? "Chung"}</span>
-                  </div>
-                  <h3
+              return (
+                <div
+                  key={p.id}
+                  className="group flex flex-col overflow-hidden rounded-xs border border-slate-200/90 bg-white shadow-xs transition-shadow hover:shadow-md"
+                >
+                  <div
+                    className="relative aspect-4/3 w-full overflow-hidden bg-slate-100 cursor-pointer"
                     onClick={() => openDetail(p)}
-                    className="mt-1.5 cursor-pointer text-slate-950 hover:text-[#6941c6] line-clamp-1 admin-subsection-title"
                   >
-                    {p.name}
-                  </h3>
-                  <p className="mt-1 text-sm font-medium text-slate-600 line-clamp-2">
-                    {p.material || p.description}
-                  </p>
-
-                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                    <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                    {thumb ? (
+                      <img
+                        src={thumb}
+                        alt={p.name}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-slate-100 text-sm font-medium text-slate-400">
+                        {p.name.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    {/* Floating Status Badge */}
+                    <div className="absolute top-2.5 right-2.5">
                       <span
                         className={cn(
-                          "size-2 rounded-full",
-                          isOut
-                            ? "bg-rose-500"
-                            : isLow
-                              ? "bg-amber-500"
-                              : "bg-emerald-500",
+                          "inline-flex items-center gap-1 rounded-full border bg-white/95 px-2.5 py-0.5 text-sm font-semibold shadow-xs",
+                          p.status === "published"
+                            ? "border-emerald-200 text-emerald-700"
+                            : p.status === "archived"
+                              ? "border-slate-200 text-slate-600"
+                              : "border-slate-200 text-slate-700",
                         )}
-                      />
-                      <span className="font-semibold text-slate-900">{stockTotal} còn hàng</span>
+                      >
+                        <span
+                          className={cn(
+                            "size-1.5 rounded-full",
+                            p.status === "published"
+                              ? "bg-emerald-500"
+                              : p.status === "archived"
+                                ? "bg-slate-400"
+                                : "bg-slate-500",
+                          )}
+                        />
+                        {p.status === "published"
+                          ? "Đang bán"
+                          : p.status === "archived"
+                            ? "Đã lưu trữ"
+                            : "Bản nháp"}
+                      </span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-950">
-                      {formatPrice(Number(p.price_vnd))}
-                    </span>
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-4">
+                    <div className="flex items-center justify-between text-sm font-medium text-slate-500">
+                      <span className="tabular-nums font-semibold text-slate-700">{sku}</span>
+                      <span className="font-semibold text-slate-800">
+                        {p.category?.name ?? "Chung"}
+                      </span>
+                    </div>
+                    <h3
+                      onClick={() => openDetail(p)}
+                      className="mt-1.5 cursor-pointer text-slate-950 hover:text-[#243B53] line-clamp-1 admin-subsection-title"
+                    >
+                      {p.name}
+                    </h3>
+                    <p className="mt-1 text-sm font-medium text-slate-600 line-clamp-2">
+                      {p.material || p.description}
+                    </p>
+
+                    <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                      <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                        <span
+                          className={cn(
+                            "size-2 rounded-full",
+                            isOut ? "bg-rose-500" : isLow ? "bg-amber-500" : "bg-emerald-500",
+                          )}
+                        />
+                        <span className="font-semibold text-slate-900">{stockTotal} còn hàng</span>
+                      </div>
+                      <span className="text-sm font-semibold text-slate-950">
+                        {formatPrice(Number(p.price_vnd))}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
       </AnimatedPanel>
 
       <AdminPagination
@@ -5727,7 +6211,9 @@ export function ProductsManager({
       <Dialog open={!!stockDetail} onOpenChange={(open) => !open && setStockDetail(null)}>
         <DialogContent className="max-h-[85vh] max-w-2xl overflow-hidden rounded-xs bg-white p-6 shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-slate-900 admin-section-title">Chi tiết tồn kho</DialogTitle>
+            <DialogTitle className="text-slate-900 admin-section-title">
+              Chi tiết tồn kho
+            </DialogTitle>
             <p className="text-sm text-slate-500">{stockDetail?.name}</p>
           </DialogHeader>
 

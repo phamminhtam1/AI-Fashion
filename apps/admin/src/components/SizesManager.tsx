@@ -453,7 +453,7 @@ export function SizesManager({ permissions = [] }: { permissions?: string[] }) {
             <Download className="size-3.5 text-slate-500" />
             <span>Xuất file</span>
           </Button>
-          {canWrite && <Button asChild className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer">
+          {canWrite && <Button asChild className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#1B2E42] transition-colors cursor-pointer">
             <a
               href="/bangsize/thembang"
               onClick={(e) => {
@@ -491,7 +491,7 @@ export function SizesManager({ permissions = [] }: { permissions?: string[] }) {
                   className={cn(
                     "flex items-center gap-2.5 rounded-xs border p-2 transition-colors",
                     active
-                      ? "border-[#6941c6]/60 bg-[#f4f3ff]"
+                      ? "border-[#243B53]/60 bg-[#EAF0F6]"
                       : "border-border/70 bg-white hover:bg-secondary/40",
                   )}
                 >
@@ -646,7 +646,7 @@ export function SizesManager({ permissions = [] }: { permissions?: string[] }) {
                     className={cn(
                       "-mb-px border-b-2 px-1 pb-2 text-sm font-medium transition-colors cursor-pointer",
                       detailTab === id
-                        ? "border-[#6941c6] text-[#6941c6] font-semibold"
+                        ? "border-[#243B53] text-[#243B53] font-semibold"
                         : "border-transparent text-slate-500 hover:text-slate-900",
                     )}
                   >
@@ -779,7 +779,7 @@ export function SizesManager({ permissions = [] }: { permissions?: string[] }) {
                             <Button
                               type="button"
                               size="sm"
-                              className="h-7 text-sm rounded-xs bg-[#6941c6] text-white hover:bg-[#53389e]"
+                              className="h-7 text-sm rounded-xs bg-[#243B53] text-white hover:bg-[#1B2E42]"
                               onClick={() => {
                                 setCatOpen(false);
                                 saveCategoryIds(activeChart, Array.from(catDraft));
@@ -1037,7 +1037,7 @@ export function SizesManager({ permissions = [] }: { permissions?: string[] }) {
 
             <div className="flex gap-2 pt-2">
               <Button
-                className="h-9 flex-1 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#53389e] transition-colors cursor-pointer"
+                className="h-9 flex-1 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white shadow-xs hover:bg-[#1B2E42] transition-colors cursor-pointer"
                 disabled={saving}
                 onClick={saveChart}
               >

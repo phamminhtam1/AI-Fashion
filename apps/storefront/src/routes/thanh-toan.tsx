@@ -22,7 +22,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { formatVND, products } from "@/lib/products";
-import { useStore, getCartItemImage } from "@/lib/store";
+import { useStore, getCartItemImage, getCartItemUnitPrice } from "@/lib/store";
 import {
   checkPaymentStatus,
   fetchBankInfo,
@@ -835,7 +835,7 @@ function Checkout() {
   const checkoutItems = isBuyNowMode && buyNowItem ? [buyNowItem] : cart;
   const currentSubtotal = checkoutItems.reduce((acc, it) => {
     const p = products.find((x) => x.id === it.productId);
-    const pr = p ? p.salePrice ?? p.price : it.unitPrice ?? 0;
+    const pr = getCartItemUnitPrice(it, p);
     return acc + pr * it.qty;
   }, 0);
 
@@ -1358,7 +1358,7 @@ function Checkout() {
               const p = products.find((x) => x.id === it.productId);
               const itemImg = getCartItemImage(it, p);
               const itemName = p?.name ?? it.productName ?? "Sản phẩm";
-              const itemPrice = (p ? (p.salePrice ?? p.price) : (it.unitPrice ?? 0)) * it.qty;
+              const itemPrice = getCartItemUnitPrice(it, p) * it.qty;
               const productSlug = p?.slug ?? it.productSlug;
               return (
                 <li key={i} className="flex items-start gap-3.5 py-4 text-sm sm:gap-4">

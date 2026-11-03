@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ComponentType, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
-  Activity, AlertTriangle, AlignLeft, ArrowLeft, BarChart3, Bookmark, Calendar, CalendarClock, CheckCircle2,
+  Activity, AlertTriangle, AlignLeft, BarChart3, Bookmark, Calendar, CalendarClock, CheckCircle2,
   ChevronDown, ChevronLeft, ChevronRight, Clock, Copy, ExternalLink, Eye, FileText, Hash, Heart, Info, Link2, MessageCircle, MessageSquareText,
   Loader2, MoreVertical, RefreshCw, Repeat, Send, Settings, Share2, ShoppingBag, Sparkles, TrendingUp, User, Users, X,
 } from "lucide-react";
@@ -10,17 +10,17 @@ import { Button } from "@/components/ui/button";
 import { adminApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { CHANNEL_META } from "../mock";
-import { ChannelLogo, Modal } from "../ui";
+import { ChannelLogo, Modal, SocialBackButton } from "../ui";
 import type { PostItem } from "../useUpcomingPosts";
 import { ACTIONS, MENUS, toState, type ActionId, type PostState } from "./postActions";
 
 /* ═════════════════════════ Design tokens (đo trực tiếp từ design) ═════════════════════════ */
 
 /** Tím thương hiệu của nút chính / hashtag / link. */
-const BRAND = "#512ebb";
-const BRAND_HOVER = "#4526a3";
+const BRAND = "#243B53";
+const BRAND_HOVER = "#1B2E42";
 /** Tím của toggle + chấm timeline. */
-const ACCENT = "#5f23c8";
+const ACCENT = "#243B53";
 
 /** Khung card: nền trắng, viền 1px rất nhạt, bo 12px, bóng gần như không thấy. */
 const panel = "rounded-xs border border-[#eceef4] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]";
@@ -221,7 +221,7 @@ const BADGE: Record<PostState, { label: string; icon: IconType; cls: string; ico
   draft: { label: "Bản nháp", icon: FileText, cls: "bg-slate-100 text-slate-600" },
   pending: { label: "Chờ duyệt", icon: Clock, cls: "bg-[#fef3d4] text-[#7e3b01]", iconCls: "text-[#e19629]" },
   approved: { label: "Đã duyệt", icon: CheckCircle2, cls: "bg-emerald-100 text-emerald-700" },
-  scheduled: { label: "Đã lên lịch", icon: CalendarClock, cls: "bg-violet-100 text-violet-700" },
+  scheduled: { label: "Đã lên lịch", icon: CalendarClock, cls: "bg-[#DCE6F0] text-[#243B53]" },
   published: { label: "Đã đăng", icon: CheckCircle2, cls: "bg-emerald-100 text-emerald-700" },
   failed: { label: "Lỗi đăng", icon: AlertTriangle, cls: "bg-rose-100 text-rose-700" },
 };
@@ -542,19 +542,12 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
 
   return (
     <div ref={rootRef} className="space-y-5 pb-12 text-[#0b0c24]">
-      {actionLoading && <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/25 p-4 backdrop-blur-[2px]" role="status" aria-live="polite"><div className="flex w-full max-w-xs flex-col items-center rounded-2xl border border-white/70 bg-white px-6 py-5 text-center shadow-2xl"><span className="grid size-12 place-items-center rounded-full bg-violet-100 text-[#512ebb]"><Loader2 className="size-6 animate-spin" /></span><p className="mt-3 text-sm font-semibold text-slate-900">Đang xử lý bài viết…</p><p className="mt-1 text-xs leading-5 text-slate-500">Đang gửi yêu cầu lên nền tảng. Vui lòng chờ.</p></div></div>}
+      {actionLoading && <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/25 p-4 backdrop-blur-[2px]" role="status" aria-live="polite"><div className="flex w-full max-w-xs flex-col items-center rounded-2xl border border-white/70 bg-white px-6 py-5 text-center shadow-2xl"><span className="grid size-12 place-items-center rounded-full bg-[#DCE6F0] text-[#243B53]"><Loader2 className="size-6 animate-spin" /></span><p className="mt-3 text-sm font-semibold text-slate-900">Đang xử lý bài viết…</p><p className="mt-1 text-xs leading-5 text-slate-500">Đang gửi yêu cầu lên nền tảng. Vui lòng chờ.</p></div></div>}
 
       {/* ───────── HEADER ───────── */}
       <div className="flex flex-wrap items-center justify-between gap-4 pr-[15px]">
-        <div className="flex items-start gap-[22px]">
-          <button
-            type="button"
-            onClick={onBack}
-            className="grid size-9 shrink-0 place-items-center rounded-xs border border-[#e3e5ec] bg-white text-[#0b0c24] transition hover:bg-slate-50"
-            aria-label="Quay lại danh sách"
-          >
-            <ArrowLeft className="size-[18px]" strokeWidth={1.75} />
-          </button>
+        <div className="flex items-center gap-[22px]">
+          <SocialBackButton onClick={onBack} label="Quay lại danh sách" />
           <div>
             <h1 className="text-2xl font-bold leading-8 tracking-tight text-black">Chi tiết bài viết</h1>
             <p className="mt-0.5 text-[13px] text-slate-600">Xem chi tiết nội dung, lịch đăng và lịch sử phê duyệt của bài viết.</p>
@@ -740,7 +733,7 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
                   <FieldLabel icon={Hash}>Hashtag</FieldLabel>
                   <div className="mt-2.5 flex flex-wrap gap-x-[7px] gap-y-2">
                     {tags.length ? tags.map((tag: string) => (
-                      <span key={tag} className="rounded-full bg-[#f2effe] px-3 py-[3px] text-xs font-medium" style={{ color: BRAND }}>{tag}</span>
+                      <span key={tag} className="rounded-full bg-[#EAF0F6] px-3 py-[3px] text-xs font-medium" style={{ color: BRAND }}>{tag}</span>
                     )) : <span className="text-xs text-slate-400">Chưa có hashtag</span>}
                   </div>
                 </div>
@@ -752,7 +745,7 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
                       href={cta.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-2.5 flex items-center justify-between gap-3 rounded-xl bg-[#f2effe] py-2.5 pl-5 pr-4 transition hover:bg-[#ebe6fd]"
+                      className="mt-2.5 flex items-center justify-between gap-3 rounded-xl bg-[#EAF0F6] py-2.5 pl-5 pr-4 transition hover:bg-[#EAF0F6]"
                     >
                       <div className="min-w-0">
                         <p className="text-[13px] font-semibold leading-[18px] text-[#0b0c24]">{cta.label}</p>
@@ -772,7 +765,7 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
                           key={prod.id}
                           href={`/sanpham/chitiet/${encodeURIComponent(prod.id)}`}
                           title={`Xem chi tiết ${prod.name}`}
-                          className="flex min-w-0 flex-auto items-center gap-2.5 rounded-lg bg-[#f5f6fa] p-1 pr-3 transition hover:bg-[#eef0f6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#512ebb]/40"
+                          className="flex min-w-0 flex-auto items-center gap-2.5 rounded-lg bg-[#f5f6fa] p-1 pr-3 transition hover:bg-[#eef0f6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#243B53]/40"
                         >
                           <div className="h-[38px] w-[34px] shrink-0 overflow-hidden rounded-md bg-slate-100">
                             <img src={prod.img} alt={prod.name} className="size-full object-cover" />
@@ -959,10 +952,10 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
                       type="button"
                       onClick={handleSyncMetrics}
                       disabled={syncingMetrics}
-                      className="inline-flex h-7 items-center gap-1.5 rounded-xs border border-[#e3e5ec] bg-white px-2.5 text-xs font-medium text-[#0b0c24] transition-colors hover:border-[#512ebb] hover:bg-violet-50 hover:text-[#512ebb] disabled:opacity-50"
+                      className="inline-flex h-7 items-center gap-1.5 rounded-xs border border-[#e3e5ec] bg-white px-2.5 text-xs font-medium text-[#0b0c24] transition-colors hover:border-[#243B53] hover:bg-[#EAF0F6] hover:text-[#243B53] disabled:opacity-50"
                       title="Lấy dữ liệu tương tác thực tế từ Meta Graph API"
                     >
-                      <RefreshCw className={cn("size-3.5", syncingMetrics && "animate-spin text-[#512ebb]")} />
+                      <RefreshCw className={cn("size-3.5", syncingMetrics && "animate-spin text-[#243B53]")} />
                       {syncingMetrics ? "Đang đồng bộ..." : "Đồng bộ real-time"}
                     </button>
                   </div>
@@ -980,15 +973,15 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
             {isPublished ? (
               <>
                 <div className="mt-3.5 grid grid-cols-2 gap-[11px] sm:grid-cols-3">
-                  <MetricTile icon={Eye} iconCls="text-[#5f23c8]" value={liveMetrics.reach.toLocaleString("vi-VN")} label="Lượt tiếp cận" />
-                  <MetricTile icon={TrendingUp} iconCls="text-indigo-500" value={liveMetrics.impressions.toLocaleString("vi-VN")} label="Lượt hiển thị" />
+                  <MetricTile icon={Eye} iconCls="text-[#243B53]" value={liveMetrics.reach.toLocaleString("vi-VN")} label="Lượt tiếp cận" />
+                  <MetricTile icon={TrendingUp} iconCls="text-[#243B53]" value={liveMetrics.impressions.toLocaleString("vi-VN")} label="Lượt hiển thị" />
                   <MetricTile icon={Heart} iconCls="text-rose-500" value={liveMetrics.likes.toLocaleString("vi-VN")} label="Lượt thích" />
                   <MetricTile icon={MessageCircle} iconCls="text-blue-500" value={liveMetrics.comments.toLocaleString("vi-VN")} label="Bình luận" />
                   <MetricTile icon={Bookmark} iconCls="text-amber-500" value={liveMetrics.saves.toLocaleString("vi-VN")} label="Lượt lưu" />
                   <MetricTile icon={Share2} iconCls="text-emerald-500" value={liveMetrics.shares.toLocaleString("vi-VN")} label="Chia sẻ" />
                 </div>
 
-                <div className="mt-[11px] flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#f2effe] px-4 py-3">
+                <div className="mt-[11px] flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#EAF0F6] px-4 py-3">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-[#2a2d45]">Tổng tương tác trực tiếp:</span>
                     <span className="text-[13px] font-semibold" style={{ color: BRAND }}>{totalInteractions.toLocaleString("vi-VN")}</span>
@@ -1003,8 +996,8 @@ export function PostDetailPage({ post, onBack, onAction, actionLoading = false }
               </>
             ) : (
               <div className="mt-3.5 flex flex-wrap gap-[11px]">
-                <MetricTile icon={Eye} iconCls="text-[#5f23c8]" value={forecast.reach} label="Lượt tiếp cận ước tính" />
-                <MetricTile icon={Users} iconCls="text-[#5f23c8]" value={forecast.engagement} label="Lượt tương tác ước tính" />
+                <MetricTile icon={Eye} iconCls="text-[#243B53]" value={forecast.reach} label="Lượt tiếp cận ước tính" />
+                <MetricTile icon={Users} iconCls="text-[#243B53]" value={forecast.engagement} label="Lượt tương tác ước tính" />
                 <MetricTile icon={Heart} iconCls="text-rose-500" value={forecast.rate} label="Tỷ lệ tương tác" />
               </div>
             )}

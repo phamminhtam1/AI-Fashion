@@ -19,3 +19,7 @@ apps/*/.env.*
 packages/*/.env
 packages/*/.env.*
 !packages/*/.env.example
+.agents/
+.taste-skill/
+.tmp/
+skills-lock.json

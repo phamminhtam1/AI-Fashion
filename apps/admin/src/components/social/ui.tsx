@@ -4,10 +4,10 @@ import { ArrowDown, ArrowLeft, ArrowUp, Check, Facebook, Globe, Heart, Instagram
 import { cn } from "@/lib/utils";
 import type { ChannelId } from "./types";
 
-export const BRAND = "#6941c6";
+export const BRAND = "#243B53";
 export const card = "rounded-xs border border-slate-200/90 bg-white shadow-2xs";
-export const inputCls = "h-9 w-full rounded-xs border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]";
-export const areaCls = "w-full rounded-xs border border-slate-200 bg-white p-3 text-sm outline-none focus:border-[#6941c6] focus:ring-1 focus:ring-[#6941c6]";
+export const inputCls = "h-9 w-full rounded-xs border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]";
+export const areaCls = "w-full rounded-xs border border-slate-200 bg-white p-3 text-sm outline-none focus:border-[#243B53] focus:ring-1 focus:ring-[#243B53]";
 export const fmt = (n: number) => n.toLocaleString("en-US");
 export const vnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
 export const usd = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -55,7 +55,7 @@ export function Delta({ value, className }: { value: number; className?: string 
   return <span className={cn("inline-flex items-center gap-0.5 text-xs font-medium", up ? "text-emerald-600" : "text-rose-600", className)}><Icon className="size-3" />{Math.abs(value).toFixed(1)}%</span>;
 }
 export function Pill({ tone, children }: { tone: "green" | "amber" | "slate" | "rose" | "violet"; children: ReactNode }) {
-  const t = { green: "bg-emerald-50 text-emerald-700", amber: "bg-orange-50 text-orange-600", slate: "bg-slate-100 text-slate-600", rose: "bg-rose-50 text-rose-700", violet: "bg-violet-50 text-violet-700" }[tone];
+  const t = { green: "bg-emerald-50 text-emerald-700", amber: "bg-orange-50 text-orange-600", slate: "bg-slate-100 text-slate-600", rose: "bg-rose-50 text-rose-700", violet: "bg-[#EAF0F6] text-[#243B53]" }[tone];
   return <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium", t)}>{children}</span>;
 }
 export const Dot = ({ className }: { className?: string }) => <span className={cn("size-1.5 rounded-full bg-current", className)} />;
@@ -63,7 +63,7 @@ export const Dot = ({ className }: { className?: string }) => <span className={c
 export function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
-      className={cn("relative h-6 w-11 shrink-0 rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6941c6]", checked ? "bg-[#6941c6]" : "bg-slate-300")}>
+      className={cn("relative h-6 w-11 shrink-0 rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#243B53]", checked ? "bg-[#243B53]" : "bg-slate-300")}>
       <span className={cn("absolute top-0.5 size-5 rounded-full bg-white shadow transition-all", checked ? "left-[22px]" : "left-0.5")} />
     </button>
   );
@@ -86,12 +86,28 @@ export function Avatar({ label = "É", src, className }: { label?: string; src?:
 export function PageHeader({ title, desc, actions, onBack }: { title: ReactNode; desc?: string; actions?: ReactNode; onBack?: () => void }) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-start gap-3">
-        {onBack && <button onClick={onBack} aria-label="Quay lại" className="mt-1 grid size-8 place-items-center rounded-xs hover:bg-slate-100"><ArrowLeft className="size-5" /></button>}
+      <div className="flex items-center gap-3">
+        {onBack && <SocialBackButton onClick={onBack} />}
         <div><h1 className="admin-page-title flex flex-wrap items-center gap-2">{title}</h1>{desc && <p className="mt-1 text-sm text-slate-500">{desc}</p>}</div>
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
+  );
+}
+
+export function SocialBackButton({ onClick, label = "Quay lại", className }: { onClick: () => void; label?: string; className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "social-back-button group inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[#D7E1EA] bg-[#EAF0F6] px-3 text-sm font-semibold text-[#1B2E42] transition-colors hover:border-[#243B53] hover:bg-[#243B53] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#829BB2] focus-visible:ring-offset-2",
+        className,
+      )}
+    >
+      <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
+      {label}
+    </button>
   );
 }
 
@@ -105,15 +121,15 @@ export function Stepper({ steps, current }: { steps: { title: string; desc?: str
             <div className="flex shrink-0 items-center gap-2">
               <span className={cn(
                 "social-step-dot grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold transition-all duration-300",
-                on && "is-active bg-[#6941c6] text-white shadow-[0_0_0_4px_rgba(105,65,198,0.12)]",
-                done && "bg-[#6941c6] text-white",
+                on && "is-active bg-[#243B53] text-white shadow-[0_0_0_4px_rgba(36, 59, 83, 0.12)]",
+                done && "bg-[#243B53] text-white",
                 !on && !done && "bg-slate-100 text-slate-500",
               )}>{done ? <Check className="size-3.5" strokeWidth={3} /> : n}</span>
-              <span className={cn("hidden whitespace-nowrap text-sm font-semibold sm:block", on || done ? "text-[#6941c6]" : "text-slate-500")}>{s.title}</span>
+              <span className={cn("hidden whitespace-nowrap text-sm font-semibold sm:block", on || done ? "text-[#243B53]" : "text-slate-500")}>{s.title}</span>
             </div>
             {i < steps.length - 1 && (
               <span className="relative mx-3 h-px min-w-5 flex-1 overflow-hidden bg-slate-200" aria-hidden="true">
-                <span className={cn("social-step-line absolute inset-y-0 left-0 bg-[#6941c6]", done ? "is-complete w-full" : "w-0")} />
+                <span className={cn("social-step-line absolute inset-y-0 left-0 bg-[#243B53]", done ? "is-complete w-full" : "w-0")} />
               </span>
             )}
           </li>

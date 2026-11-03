@@ -376,8 +376,8 @@ const KIND_OPTIONS: Array<{
       id: "percent",
       title: "Giảm giá theo %",
       desc: "Giảm giá theo phần trăm giá trị đơn hàng",
-      icon: <Percent className="size-5 text-violet-600" />,
-      tint: "bg-violet-500/10",
+      icon: <Percent className="size-5 text-[#1B2E42]" />,
+      tint: "bg-[#243B53]/10",
     },
     {
       id: "fixed",
@@ -866,7 +866,7 @@ function PromotionForm({
       />
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-4">
+        <div className="flex items-center gap-4">
           <Button
             variant="outline"
             size="icon"
@@ -901,7 +901,7 @@ function PromotionForm({
               Xem trước
             </Button>
           )}
-          <Button className="h-9 gap-1.5 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white hover:bg-[#53389e]" disabled={saving} onClick={() => void submit()}>
+          <Button className="h-9 gap-1.5 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white hover:bg-[#1B2E42]" disabled={saving} onClick={() => void submit()}>
             {editing && <Save className="size-4" />}
             {saving ? "Đang lưu…" : editing ? "Lưu thay đổi" : "Lưu khuyến mãi"}
           </Button>
@@ -1691,7 +1691,7 @@ export function DiscountCodesManager({ permissions = [] }: { permissions?: strin
               </p>
             </div>
           </div>
-          {canWrite && <Button asChild className="h-9 rounded-xs bg-[#6941c6] px-4 text-sm font-medium text-white hover:bg-[#53389e]">
+          {canWrite && <Button asChild className="h-9 rounded-xs bg-[#243B53] px-4 text-sm font-medium text-white hover:bg-[#1B2E42]">
             <a
               href="/khuyenmai/them"
               onClick={(e) => {
@@ -1701,7 +1701,7 @@ export function DiscountCodesManager({ permissions = [] }: { permissions?: strin
             >
               <Plus className="mr-2 size-4" /> Tạo khuyến mãi
             </a>
-            </Button>}
+          </Button>}
         </div>
 
         <section className="overflow-hidden rounded-xl border border-border bg-card">
@@ -1937,160 +1937,160 @@ export function DiscountCodesManager({ permissions = [] }: { permissions?: strin
 
           {/* Table */}
           <AnimatedPanel transitionKey={tab} className="min-w-0">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1080px] table-fixed text-left text-sm">
-              <thead className="bg-slate-50/80">
-                <tr className="border-b border-slate-200 text-sm font-semibold tracking-tight text-slate-700">
-                  <th className="w-12 px-4 py-3.5 font-medium">#</th>
-                  <th className="px-4 py-3.5">Tên chương trình</th>
-                  <th className="px-4 py-3.5">Mã code</th>
-                  <th className="px-4 py-3.5">Loại</th>
-                  <th className="px-4 py-3.5">Giá trị</th>
-                  <th className="px-4 py-3.5">Thời gian</th>
-                  <th className="px-4 py-3.5">Trạng thái</th>
-                  <th className="px-4 py-3.5">Lượt dùng</th>
-                  <th className="w-24 whitespace-nowrap px-3 py-3.5 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={9} className="py-16 text-center text-sm text-muted-foreground">
-                      Đang tải…
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1080px] table-fixed text-left text-sm">
+                <thead className="bg-slate-50/80">
+                  <tr className="border-b border-slate-200 text-sm font-semibold tracking-tight text-slate-700">
+                    <th className="w-12 px-4 py-3.5 font-medium">#</th>
+                    <th className="px-4 py-3.5">Tên chương trình</th>
+                    <th className="px-4 py-3.5">Mã code</th>
+                    <th className="px-4 py-3.5">Loại</th>
+                    <th className="px-4 py-3.5">Giá trị</th>
+                    <th className="px-4 py-3.5">Thời gian</th>
+                    <th className="px-4 py-3.5">Trạng thái</th>
+                    <th className="px-4 py-3.5">Lượt dùng</th>
+                    <th className="w-24 whitespace-nowrap px-3 py-3.5 text-right">Thao tác</th>
                   </tr>
-                ) : visible.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="py-16 text-center">
-                      <div className="grid place-items-center gap-2">
-                        <Tag className="size-8 text-muted-foreground/40" />
-                        <p className="text-sm font-medium">Không tìm thấy khuyến mãi</p>
-                        <p className="text-sm text-muted-foreground">Thử điều chỉnh bộ lọc hoặc tạo khuyến mãi mới.</p>
-                        <Button variant="outline" size="sm" onClick={resetFilters} className="mt-1 bg-white">
-                          Xóa bộ lọc
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  paged.map((c, idx) => {
-                    const x = c as DiscountExtra;
-                    const st = stateOf(c);
-                    const ui = STATE_UI[st];
-                    const start = fmtDate(c.starts_at);
-                    const end = fmtDate(c.ends_at);
-                    return (
-                      <tr
-                        key={c.id}
-                        className="border-b border-border/70 transition-colors last:border-b-0 hover:bg-secondary/30"
-                      >
-                        <td className="px-4 py-4 text-muted-foreground">{(page - 1) * pageSize + idx + 1}</td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-3">
-                            <PromoThumb c={x} />
-                            <div className="min-w-0">
-                              <a
-                                href={`/khuyenmai/sua/${c.id}`}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  openEdit(c);
-                                }}
-                                className="block max-w-[240px] truncate text-[14px] font-semibold hover:underline"
-                              >
-                                {c.name}
-                              </a>
-                              <p className="max-w-[240px] truncate text-xs text-muted-foreground">
-                                {x.description ||
-                                  (c.min_order_vnd ? `Đơn tối thiểu ${formatVnd(c.min_order_vnd)}` : "Áp dụng cho mọi đơn hàng")}
-                              </p>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={9} className="py-16 text-center text-sm text-muted-foreground">
+                        Đang tải…
+                      </td>
+                    </tr>
+                  ) : visible.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="py-16 text-center">
+                        <div className="grid place-items-center gap-2">
+                          <Tag className="size-8 text-muted-foreground/40" />
+                          <p className="text-sm font-medium">Không tìm thấy khuyến mãi</p>
+                          <p className="text-sm text-muted-foreground">Thử điều chỉnh bộ lọc hoặc tạo khuyến mãi mới.</p>
+                          <Button variant="outline" size="sm" onClick={resetFilters} className="mt-1 bg-white">
+                            Xóa bộ lọc
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paged.map((c, idx) => {
+                      const x = c as DiscountExtra;
+                      const st = stateOf(c);
+                      const ui = STATE_UI[st];
+                      const start = fmtDate(c.starts_at);
+                      const end = fmtDate(c.ends_at);
+                      return (
+                        <tr
+                          key={c.id}
+                          className="border-b border-border/70 transition-colors last:border-b-0 hover:bg-secondary/30"
+                        >
+                          <td className="px-4 py-4 text-muted-foreground">{(page - 1) * pageSize + idx + 1}</td>
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-3">
+                              <PromoThumb c={x} />
+                              <div className="min-w-0">
+                                <a
+                                  href={`/khuyenmai/sua/${c.id}`}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    openEdit(c);
+                                  }}
+                                  className="block max-w-[240px] truncate text-[14px] font-semibold hover:underline"
+                                >
+                                  {c.name}
+                                </a>
+                                <p className="max-w-[240px] truncate text-xs text-muted-foreground">
+                                  {x.description ||
+                                    (c.min_order_vnd ? `Đơn tối thiểu ${formatVnd(c.min_order_vnd)}` : "Áp dụng cho mọi đơn hàng")}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-foreground/85">{c.code}</td>
-                        <td className="px-4 py-4 text-foreground/85">{typeLabel(c)}</td>
-                        <td className="px-4 py-4 font-semibold tabular-nums">{formatValue(c)}</td>
-                        <td className="px-4 py-4 text-foreground/85 tabular-nums">
-                          <p>{start ?? "Ngay lập tức"}</p>
-                          <p>{end ?? "Không hết hạn"}</p>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span
-                            className={cn(
-                              "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium",
-                              ui.pill,
-                            )}
-                          >
-                            <span className={cn("size-1.5 rounded-full", ui.dot)} />
-                            {ui.label}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 tabular-nums text-foreground/85">{formatUsage(c)}</td>
-                        <td className="px-3 py-4 text-right">
-                          <Popover open={menuId === c.id} onOpenChange={(o) => setMenuId(o ? c.id : null)}>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="icon" className="size-8" aria-label={`Thao tác với ${c.code}`}>
-                                <MoreHorizontal className="size-4" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent align="end" className="w-52 p-1">
-                              <MenuItem
-                                icon={<Pencil className="size-3.5" />}
-                                label="Chỉnh sửa"
-                                onClick={() => {
-                                  setMenuId(null);
-                                  openEdit(c);
-                                }}
-                              />
-                              <MenuItem
-                                icon={<Copy className="size-3.5" />}
-                                label="Sao chép mã"
-                                onClick={() => {
-                                  setMenuId(null);
-                                  void navigator.clipboard.writeText(c.code).then(
-                                    () => toast.success(`Đã sao chép ${c.code}`),
-                                    () => toast.error("Không sao chép được"),
-                                  );
-                                }}
-                              />
-                              {c.status === "active" ? (
-                                <MenuItem
-                                  icon={<Ban className="size-3.5" />}
-                                  label="Vô hiệu hóa"
-                                  onClick={() => {
-                                    setMenuId(null);
-                                    void disable(c);
-                                  }}
-                                />
-                              ) : (
-                                <MenuItem
-                                  icon={<Power className="size-3.5" />}
-                                  label="Bật lại"
-                                  onClick={() => {
-                                    setMenuId(null);
-                                    void enable(c);
-                                  }}
-                                />
+                          </td>
+                          <td className="px-4 py-4 text-foreground/85">{c.code}</td>
+                          <td className="px-4 py-4 text-foreground/85">{typeLabel(c)}</td>
+                          <td className="px-4 py-4 font-semibold tabular-nums">{formatValue(c)}</td>
+                          <td className="px-4 py-4 text-foreground/85 tabular-nums">
+                            <p>{start ?? "Ngay lập tức"}</p>
+                            <p>{end ?? "Không hết hạn"}</p>
+                          </td>
+                          <td className="px-4 py-4">
+                            <span
+                              className={cn(
+                                "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium",
+                                ui.pill,
                               )}
-                              <div className="my-1 border-t border-border/60" />
-                              <MenuItem
-                                icon={<Trash2 className="size-3.5" />}
-                                label="Xóa khuyến mãi"
-                                destructive
-                                onClick={() => {
-                                  setMenuId(null);
-                                  void removePromo(c);
-                                }}
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                            >
+                              <span className={cn("size-1.5 rounded-full", ui.dot)} />
+                              {ui.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 tabular-nums text-foreground/85">{formatUsage(c)}</td>
+                          <td className="px-3 py-4 text-right">
+                            <Popover open={menuId === c.id} onOpenChange={(o) => setMenuId(o ? c.id : null)}>
+                              <PopoverTrigger asChild>
+                                <Button variant="ghost" size="icon" className="size-8" aria-label={`Thao tác với ${c.code}`}>
+                                  <MoreHorizontal className="size-4" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent align="end" className="w-52 p-1">
+                                <MenuItem
+                                  icon={<Pencil className="size-3.5" />}
+                                  label="Chỉnh sửa"
+                                  onClick={() => {
+                                    setMenuId(null);
+                                    openEdit(c);
+                                  }}
+                                />
+                                <MenuItem
+                                  icon={<Copy className="size-3.5" />}
+                                  label="Sao chép mã"
+                                  onClick={() => {
+                                    setMenuId(null);
+                                    void navigator.clipboard.writeText(c.code).then(
+                                      () => toast.success(`Đã sao chép ${c.code}`),
+                                      () => toast.error("Không sao chép được"),
+                                    );
+                                  }}
+                                />
+                                {c.status === "active" ? (
+                                  <MenuItem
+                                    icon={<Ban className="size-3.5" />}
+                                    label="Vô hiệu hóa"
+                                    onClick={() => {
+                                      setMenuId(null);
+                                      void disable(c);
+                                    }}
+                                  />
+                                ) : (
+                                  <MenuItem
+                                    icon={<Power className="size-3.5" />}
+                                    label="Bật lại"
+                                    onClick={() => {
+                                      setMenuId(null);
+                                      void enable(c);
+                                    }}
+                                  />
+                                )}
+                                <div className="my-1 border-t border-border/60" />
+                                <MenuItem
+                                  icon={<Trash2 className="size-3.5" />}
+                                  label="Xóa khuyến mãi"
+                                  destructive
+                                  onClick={() => {
+                                    setMenuId(null);
+                                    void removePromo(c);
+                                  }}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </AnimatedPanel>
 
           <Pager
