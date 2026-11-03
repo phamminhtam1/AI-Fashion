@@ -227,8 +227,9 @@ function ListingContent({
   }, [items]);
 
   return (
-    <div className="mx-auto max-w-[1600px] px-6 pb-10 pt-5 md:px-8">
-      <nav aria-label="Breadcrumb" className="text-base text-muted-foreground font-medium flex items-center gap-2 flex-wrap">
+    <div className="mx-auto max-w-[1600px] px-4 pb-10 pt-5 md:px-6">
+      <nav aria-label="Breadcrumb" className="relative left-1/2 mb-8 flex w-screen max-w-[100vw] -translate-x-1/2 px-4 md:px-6">
+        <span className="flex w-fit max-w-full flex-wrap items-center gap-2 border-b border-border/60 pb-4 text-base font-medium text-muted-foreground">
         <Link to="/" className="hover:text-foreground transition-colors">
           Trang chủ
         </Link>
@@ -251,6 +252,7 @@ function ListingContent({
             <span className="text-foreground">{initialData.title}</span>
           </span>
         )}
+        </span>
       </nav>
       {/* Main layout: Left sidebar column ("1 dãy bên trái") + Right product list */}
       <div className="mt-8 flex items-start gap-8 lg:gap-10">

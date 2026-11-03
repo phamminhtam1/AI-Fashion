@@ -74,7 +74,7 @@
 
 @layer base {
   * { border-color: var(--color-border); }
-  html { background: var(--color-background); font-size: 90%; scrollbar-gutter: stable; }
+  html { background: var(--color-background); font-size: 90%; }
   body { margin: 0; background-color: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans); font-size: var(--text-sm); line-height: var(--text-sm--line-height); letter-spacing: 0; -webkit-font-smoothing: antialiased; }
   button, a, input, textarea, select { font-family: inherit; letter-spacing: 0; }
   select {

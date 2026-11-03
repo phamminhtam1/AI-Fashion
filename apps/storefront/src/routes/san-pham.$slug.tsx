@@ -343,8 +343,9 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
   );
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 py-6 md:px-8 md:py-10">
-      <nav aria-label="Breadcrumb" className="mb-8 flex flex-wrap items-center gap-2 text-base font-medium text-muted-foreground md:mb-10">
+    <div className="mx-auto max-w-[1600px] px-4 py-6 md:px-6 md:py-10">
+      <nav aria-label="Breadcrumb" className="relative left-1/2 mb-8 flex w-screen max-w-[100vw] -translate-x-1/2 px-4 md:mb-10 md:px-6">
+        <span className="flex w-fit max-w-full flex-wrap items-center gap-2 border-b border-border/60 pb-4 text-base font-medium text-muted-foreground">
         <Link to="/" className="hover:text-foreground transition-colors">Trang chủ</Link>
         <span className="opacity-40">/</span>
         {cat && (
@@ -354,6 +355,7 @@ function ProductDetail({ product: p, slug }: { product: Product; slug: string })
           </>
         )}
         <span className="text-foreground">{p.name}</span>
+        </span>
       </nav>
 
       <div className="grid gap-8 xl:grid-cols-[1.3fr_1fr] xl:gap-12">

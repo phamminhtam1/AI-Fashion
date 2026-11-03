@@ -236,7 +236,7 @@ function Home() {
         <h2 className="mt-2 text-3xl md:text-4xl">#ÉLANEwoman</h2>
         <div className="mt-10 grid grid-cols-3 gap-2 md:grid-cols-6">
           {womanItems.map((item) => (
-            <LookbookItem key={item.id} post={item} />
+            <ElaneWomanItem key={item.id} post={item} />
           ))}
         </div>
       </section>
@@ -245,7 +245,7 @@ function Home() {
   );
 }
 
-function LookbookItem({
+function ElaneWomanItem({
   post,
 }: {
   post: { id: string; title?: string | null; image: string; link?: string | null };

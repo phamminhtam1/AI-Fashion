@@ -68,7 +68,7 @@ import { CustomersManager } from "@/components/CustomersManager";
 import { DiscountCodesManager } from "@/components/DiscountCodesManager";
 import { OrdersManager } from "@/components/OrdersManager";
 import { ElaneWomanManager } from "@/components/ElaneWomanManager";
-import { LookbookManager } from "@/components/LookbookManager";
+import { CollectionsManager } from "@/components/CollectionsManager";
 import { AiKeysManager } from "@/components/AiKeysManager";
 import { OverviewManager } from "@/components/OverviewManager";
 import { SocialCommerceManager, type SocialPage } from "@/components/SocialCommerceManager";
@@ -76,7 +76,16 @@ import { RolesManager } from "@/components/RolesManager";
 import { SettingsManager } from "@/components/SettingsManager";
 import { AdminNotificationsBell } from "@/components/AdminNotificationsBell";
 
-type Me = { account_id: string; email: string; full_name: string; employee_code: string | null; avatar_url: string | null; job_title: string | null; role_name: string | null; permissions: string[] };
+type Me = {
+  account_id: string;
+  email: string;
+  full_name: string;
+  employee_code: string | null;
+  avatar_url: string | null;
+  job_title: string | null;
+  role_name: string | null;
+  permissions: string[];
+};
 
 export function AuthGate() {
   const [me, setMe] = useState<Me | null>(null);
@@ -87,7 +96,9 @@ export function AuthGate() {
   const refreshMe = useCallback(async () => {
     clearAdminApiCache();
     const next = await adminApi.me();
-    setMe((current) => current && JSON.stringify(current) === JSON.stringify(next) ? current : next);
+    setMe((current) =>
+      current && JSON.stringify(current) === JSON.stringify(next) ? current : next,
+    );
   }, []);
 
   useEffect(() => {
@@ -122,13 +133,22 @@ export function AuthGate() {
             }
           }}
         >
-          <p className="text-xs font-medium uppercase tracking-[0.04em] text-primary">ÉLANE · QUẢN TRỊ</p>
+          <p className="text-xs font-medium uppercase tracking-[0.04em] text-primary">
+            ÉLANE · QUẢN TRỊ
+          </p>
           <h1 className="mt-3 font-sans admin-page-title">Đăng nhập</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Trung tâm quản trị — trung tâm điều hành thương mại.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Trung tâm quản trị — trung tâm điều hành thương mại.
+          </p>
           <label className="mt-8 block text-sm font-medium">Email</label>
           <Input className="mt-2" value={email} onChange={(e) => setEmail(e.target.value)} />
           <label className="mt-4 block text-sm font-medium">Mật khẩu</label>
-          <Input className="mt-2" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Input
+            className="mt-2"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
           <Button type="submit" className="mt-8 w-full">
             Vào trang quản trị
           </Button>
@@ -174,7 +194,7 @@ const operations: NavItem[] = [
 ];
 const content: NavItem[] = [
   { id: "elanewoman", label: "ÉLANEwoman", icon: GalleryVerticalEnd },
-  { id: "lookbook", label: "Bộ ảnh", icon: GalleryVerticalEnd },
+  { id: "collections", label: "Bộ sưu tập", icon: GalleryVerticalEnd },
   { id: "reviews", label: "Đánh giá", icon: MessageSquareText, count: 8 },
 ];
 const system: NavItem[] = [
@@ -197,7 +217,6 @@ const modulePermissions: Record<string, string[]> = {
   social: ["channel.read"],
   elanewoman: ["product.read"],
   collections: ["content.read", "product.read"],
-  lookbook: ["content.read", "product.read"],
   journal: ["content.read"],
   reviews: ["content.read"],
   newsletter: ["content.read"],
@@ -219,7 +238,6 @@ const moduleWritePermissions: Record<string, string[]> = {
   social: ["channel.write", "content.write"],
   elanewoman: ["product.write"],
   collections: ["content.write", "product.write"],
-  lookbook: ["product.write"],
   journal: ["content.write"],
   reviews: ["content.write"],
   newsletter: ["content.write"],
@@ -235,7 +253,9 @@ function canAccessModule(moduleId: string, permissions: string[]) {
 
 function canInteractModule(moduleId: string, permissions: string[]) {
   if (permissions.includes("*")) return true;
-  return (moduleWritePermissions[moduleId] ?? []).some((permission) => permissions.includes(permission));
+  return (moduleWritePermissions[moduleId] ?? []).some((permission) =>
+    permissions.includes(permission),
+  );
 }
 
 const configs: Record<string, ModuleConfig> = {
@@ -323,7 +343,14 @@ const configs: Record<string, ModuleConfig> = {
       ["Ưu đãi giữa mùa", "Giảm theo sản phẩm", "Đến 30%", "15–30/09", "842", "Đang chạy"],
       ["WELCOME10", "Mã đơn đầu", "10%", "Không giới hạn", "312", "Đang chạy"],
       ["ÉLANE Privé", "Theo phân khúc", "15%", "20–24/09", "—", "Sắp diễn ra"],
-      ["Miễn phí vận chuyển từ 1 triệu", "Vận chuyển", "100% phí vận chuyển", "Không giới hạn", "1.924", "Đang chạy"],
+      [
+        "Miễn phí vận chuyển từ 1 triệu",
+        "Vận chuyển",
+        "100% phí vận chuyển",
+        "Không giới hạn",
+        "1.924",
+        "Đang chạy",
+      ],
     ],
   },
   collections: {
@@ -340,28 +367,8 @@ const configs: Record<string, ModuleConfig> = {
     columns: ["Bộ sưu tập", "Mùa", "Sản phẩm", "Cập nhật", "Hiệu quả", "Trạng thái"],
     rows: [
       ["Thu / Đông 2026", "AW26", "50", "Hôm nay", "32,4K lượt xem", "Đã xuất bản"],
-      ["La Parisienne", "Bộ ảnh biên tập", "18", "18/09/2026", "18,7K lượt xem", "Đã xuất bản"],
       ["Thanh lịch công sở", "Thiết yếu", "26", "14/09/2026", "14,2K lượt xem", "Đã xuất bản"],
       ["Dạ tiệc mùa lễ hội", "FW26", "32", "12/09/2026", "—", "Bản nháp"],
-    ],
-  },
-  lookbook: {
-    eyebrow: "Thư viện hình ảnh",
-    title: "Bộ ảnh",
-    description: "Quản lý bộ ảnh, thứ tự khung hình và trạng thái xuất bản.",
-    action: "Tải bộ ảnh",
-    tabs: ["Tất cả", "Đã xuất bản", "Đang duyệt", "Bản nháp"],
-    metrics: [
-      { label: "Bộ ảnh", value: "24", note: "8 bộ trong AW26" },
-      { label: "Khung hình", value: "486", note: "42 ảnh chưa dùng" },
-      { label: "Lượt tương tác", value: "12,8%", note: "+2,4 điểm" },
-    ],
-    columns: ["Bộ ảnh", "Bộ sưu tập", "Khung hình", "Người phụ trách", "Cập nhật", "Trạng thái"],
-    rows: [
-      ["Phong cách mùa đông", "AW26", "18", "Linh Hà", "Hôm nay", "Sẵn sàng"],
-      ["La Parisienne", "Bộ ảnh biên tập", "24", "Mai Phương", "18/09/2026", "Đã xuất bản"],
-      ["Phom dáng mềm mại", "Thanh lịch công sở", "16", "An Nhiên", "14/09/2026", "Đang duyệt"],
-      ["Sắc đen về đêm", "Dạ tiệc mùa lễ hội", "21", "Mai Phương", "12/09/2026", "Bản nháp"],
     ],
   },
   journal: {
@@ -377,9 +384,30 @@ const configs: Record<string, ModuleConfig> = {
     ],
     columns: ["Tiêu đề", "Chuyên mục", "Tác giả", "Lịch đăng", "Lượt đọc", "Trạng thái"],
     rows: [
-      ["5 cách phối blazer mùa thu", "Phong cách", "Mai Phương", "22/09 · 09:00", "—", "Đã lên lịch"],
-      ["Chất liệu cashmere và cách bảo quản", "Chăm sóc", "An Nhiên", "20/09 · 08:00", "8.420", "Đã xuất bản"],
-      ["Bảng màu của La Parisienne", "Xu hướng", "Linh Hà", "19/09 · 10:30", "6.218", "Đã xuất bản"],
+      [
+        "5 cách phối blazer mùa thu",
+        "Phong cách",
+        "Mai Phương",
+        "22/09 · 09:00",
+        "—",
+        "Đã lên lịch",
+      ],
+      [
+        "Chất liệu cashmere và cách bảo quản",
+        "Chăm sóc",
+        "An Nhiên",
+        "20/09 · 08:00",
+        "8.420",
+        "Đã xuất bản",
+      ],
+      [
+        "Bảng màu của La Parisienne",
+        "Xu hướng",
+        "Linh Hà",
+        "19/09 · 10:30",
+        "6.218",
+        "Đã xuất bản",
+      ],
       ["Tủ đồ công sở tinh giản", "Hướng dẫn", "Mai Phương", "—", "—", "Chờ duyệt"],
     ],
   },
@@ -396,9 +424,23 @@ const configs: Record<string, ModuleConfig> = {
     ],
     columns: ["Khách hàng", "Sản phẩm", "Điểm", "Nhận xét", "Ngày gửi", "Trạng thái"],
     rows: [
-      ["Mai Anh", "Đầm lụa Noir", "5 sao", "Chất lụa đẹp, dáng rất tôn người", "Hôm nay", "Chờ duyệt"],
+      [
+        "Mai Anh",
+        "Đầm lụa Noir",
+        "5 sao",
+        "Chất lụa đẹp, dáng rất tôn người",
+        "Hôm nay",
+        "Chờ duyệt",
+      ],
       ["Thu Hương", "Blazer Noir", "4 sao", "Form đẹp, tay hơi dài", "Hôm nay", "Chờ duyệt"],
-      ["Ngọc Diễm", "Set tweed Parisienne", "5 sao", "Đóng gói rất chỉn chu", "Hôm qua", "Đã phản hồi"],
+      [
+        "Ngọc Diễm",
+        "Set tweed Parisienne",
+        "5 sao",
+        "Đóng gói rất chỉn chu",
+        "Hôm qua",
+        "Đã phản hồi",
+      ],
       ["Minh Thư", "Áo lụa Ivory", "5 sao", "Màu sắc giống ảnh", "18/09/2026", "Đã duyệt"],
     ],
   },
@@ -491,10 +533,24 @@ const configs: Record<string, ModuleConfig> = {
     ],
     columns: ["Thời gian", "Thành viên", "Hành động", "Đối tượng", "Chi tiết", "Kết quả"],
     rows: [
-      ["09:42", "Thu Vân", "Cập nhật trạng thái", "Đơn #EL-20481", "Đóng gói → Đang giao", "Thành công"],
+      [
+        "09:42",
+        "Thu Vân",
+        "Cập nhật trạng thái",
+        "Đơn #EL-20481",
+        "Đóng gói → Đang giao",
+        "Thành công",
+      ],
       ["09:31", "Mai Phương", "Xuất bản", "Bài tạp chí", "Chăm sóc cashmere", "Thành công"],
       ["09:18", "Linh Hà", "Thay đổi giá", "EL-DR-041", "1.790.000₫ → 1.890.000₫", "Thành công"],
-      ["08:54", "An Nhiên", "Phản hồi đánh giá", "Đánh giá #RV-842", "Phản hồi công khai", "Thành công"],
+      [
+        "08:54",
+        "An Nhiên",
+        "Phản hồi đánh giá",
+        "Đánh giá #RV-842",
+        "Phản hồi công khai",
+        "Thành công",
+      ],
     ],
   },
 };
@@ -522,7 +578,15 @@ configs["categories"] = {
   ],
 };
 
-export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: () => Promise<void>; onLogout: () => void }) {
+export function AdminApp({
+  me,
+  onMeRefresh,
+  onLogout,
+}: {
+  me: Me;
+  onMeRefresh: () => Promise<void>;
+  onLogout: () => void;
+}) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -541,7 +605,12 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
   }, [onMeRefresh]);
 
   // Parse path to active tab, action, subParam, detailId
-  const { tabId: routeTabId, action: routeAction, subParam: routeSubParam, detailId: routeDetailId } = resolveAdminPath(location.pathname);
+  const {
+    tabId: routeTabId,
+    action: routeAction,
+    subParam: routeSubParam,
+    detailId: routeDetailId,
+  } = resolveAdminPath(location.pathname);
   const active = routeTabId;
 
   const [query, setQuery] = useState("");
@@ -605,10 +674,14 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
   const title = allItems.find((item) => item.id === active)?.label ?? "Tổng quan";
   const currentConfig = liveConfigs[active] ?? productConfig;
   const accessibleModuleIds = useMemo(
-    () => new Set(allItems.filter((item) => canAccessModule(item.id, me.permissions)).map((item) => item.id)),
+    () =>
+      new Set(
+        allItems.filter((item) => canAccessModule(item.id, me.permissions)).map((item) => item.id),
+      ),
     [me.permissions],
   );
-  const fallbackModule = allItems.find((item) => accessibleModuleIds.has(item.id))?.id ?? "overview";
+  const fallbackModule =
+    allItems.find((item) => accessibleModuleIds.has(item.id))?.id ?? "overview";
 
   useEffect(() => {
     if (!accessibleModuleIds.has(active)) {
@@ -619,12 +692,14 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
 
   useEffect(() => {
     const writeRoute = routeAction === "create" || routeAction === "edit";
-    const routePermission = active === "social" && routeAction === "create" ? "channel.write" : null;
+    const routePermission =
+      active === "social" && routeAction === "create" ? "channel.write" : null;
     const canWriteRoute = routePermission
       ? me.permissions.includes("*") || me.permissions.includes(routePermission)
       : active === "orders" && routeAction === "create"
-        ? (me.permissions.includes("*") || (me.permissions.includes("order.write") && me.permissions.includes("order.customer.read")))
-      : canInteractModule(active, me.permissions);
+        ? me.permissions.includes("*") ||
+          (me.permissions.includes("order.write") && me.permissions.includes("order.customer.read"))
+        : canInteractModule(active, me.permissions);
     if (writeRoute && !canWriteRoute) {
       toast.error("Bạn không có quyền thực hiện thao tác này");
       navigate({ to: getAdminUrl(active) });
@@ -644,7 +719,7 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
         "promotions",
         "social",
         "elanewoman",
-        "lookbook",
+        "collections",
         "ai_keys",
         "settings",
         "roles",
@@ -672,22 +747,28 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
     // Hydrate Phase 1 modules with API data
     Promise.all([
       canAccessModule("overview", me.permissions) ? adminApi.overview() : Promise.resolve(null),
-      canAccessModule("products", me.permissions) ? adminApi.products({ limit: 20 }) : Promise.resolve(null),
+      canAccessModule("products", me.permissions)
+        ? adminApi.products({ limit: 20 })
+        : Promise.resolve(null),
       canAccessModule("inventory", me.permissions) ? adminApi.inventory() : Promise.resolve(null),
-      (me.permissions.includes("*") || me.permissions.includes("staff.manage")) ? adminApi.staff() : Promise.resolve(null),
+      me.permissions.includes("*") || me.permissions.includes("staff.manage")
+        ? adminApi.staff()
+        : Promise.resolve(null),
       canAccessModule("audit", me.permissions) ? adminApi.audit() : Promise.resolve(null),
-      canAccessModule("orders", me.permissions) ? adminApi.orders().catch(() => ({
-        items: [] as Array<{
-          id: string;
-          order_number: string;
-          customer_name: string;
-          grand_total_vnd: number;
-          payment_method: string;
-          payment_status: string;
-          status: string;
-          placed_at: string;
-        }>,
-      })) : Promise.resolve(null),
+      canAccessModule("orders", me.permissions)
+        ? adminApi.orders().catch(() => ({
+            items: [] as Array<{
+              id: string;
+              order_number: string;
+              customer_name: string;
+              grand_total_vnd: number;
+              payment_method: string;
+              payment_status: string;
+              status: string;
+              placed_at: string;
+            }>,
+          }))
+        : Promise.resolve(null),
     ])
       .then(([overview, products, inventory, staff, audit, orderList]) => {
         if (orderList) {
@@ -753,17 +834,31 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
                   value: String(overview.published_products + overview.draft_products),
                   note: `${overview.published_products} đang bán`,
                 },
-                { label: "Bản nháp", value: String(overview.draft_products), note: "Chưa công khai" },
-                { label: "SKU sắp hết", value: String(overview.low_stock_skus), note: "Theo ngưỡng đặt hàng lại" },
+                {
+                  label: "Bản nháp",
+                  value: String(overview.draft_products),
+                  note: "Chưa công khai",
+                },
+                {
+                  label: "SKU sắp hết",
+                  value: String(overview.low_stock_skus),
+                  note: "Theo ngưỡng đặt hàng lại",
+                },
               ],
-              rows: products.items.slice(0, 20).map((p) => [
-                String(p.name),
-                String((p.variants as Array<{ sku?: string }> | undefined)?.[0]?.sku ?? "—"),
-                String((p.category as { name?: string } | null)?.name ?? "—"),
-                `${Number(p.price_vnd).toLocaleString("vi-VN")}₫`,
-                "—",
-                p.status === "published" ? "Đang bán" : p.status === "draft" ? "Bản nháp" : String(p.status),
-              ]),
+              rows: products.items
+                .slice(0, 20)
+                .map((p) => [
+                  String(p.name),
+                  String((p.variants as Array<{ sku?: string }> | undefined)?.[0]?.sku ?? "—"),
+                  String((p.category as { name?: string } | null)?.name ?? "—"),
+                  `${Number(p.price_vnd).toLocaleString("vi-VN")}₫`,
+                  "—",
+                  p.status === "published"
+                    ? "Đang bán"
+                    : p.status === "draft"
+                      ? "Bản nháp"
+                      : String(p.status),
+                ]),
             };
           }
           if (next.inventory && overview && inventory) {
@@ -772,16 +867,22 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
               metrics: [
                 { label: "SKU theo dõi", value: String(inventory.items.length), note: "Kho MAIN" },
                 { label: "Sắp hết", value: String(overview.low_stock_skus), note: "Cần xử lý" },
-                { label: "Phiếu nháp", value: String(overview.pending_inventory_docs), note: "Chờ ghi sổ" },
+                {
+                  label: "Phiếu nháp",
+                  value: String(overview.pending_inventory_docs),
+                  note: "Chờ ghi sổ",
+                },
               ],
-              rows: inventory.items.slice(0, 20).map((i) => [
-                String(i.sku),
-                "—",
-                String(i.sku),
-                String(i.available),
-                String(i.reserved),
-                Number(i.available) <= Number(i.reorder_point) ? "Sắp hết" : "Ổn định",
-              ]),
+              rows: inventory.items
+                .slice(0, 20)
+                .map((i) => [
+                  String(i.sku),
+                  "—",
+                  String(i.sku),
+                  String(i.available),
+                  String(i.reserved),
+                  Number(i.available) <= Number(i.reorder_point) ? "Sắp hết" : "Ổn định",
+                ]),
             };
           }
           if (next.roles && staff) {
@@ -805,14 +906,18 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
           if (next.audit && audit) {
             next.audit = {
               ...next.audit,
-              rows: audit.items.slice(0, 20).map((a) => [
-                new Date(String(a.occurred_at ?? a.occurredAt ?? Date.now())).toLocaleString("vi-VN"),
-                me.full_name,
-                String(a.action),
-                `${a.resource_type}/${a.resource_id}`,
-                "—",
-                "Thành công",
-              ]),
+              rows: audit.items
+                .slice(0, 20)
+                .map((a) => [
+                  new Date(String(a.occurred_at ?? a.occurredAt ?? Date.now())).toLocaleString(
+                    "vi-VN",
+                  ),
+                  me.full_name,
+                  String(a.action),
+                  `${a.resource_type}/${a.resource_id}`,
+                  "—",
+                  "Thành công",
+                ]),
             };
           }
           if (next.settings) {
@@ -827,7 +932,9 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
           return next;
         });
       })
-      .catch((e) => toast.error(e instanceof Error ? adminErrorMessage(e) : "Không tải được dữ liệu API"));
+      .catch((e) =>
+        toast.error(e instanceof Error ? adminErrorMessage(e) : "Không tải được dữ liệu API"),
+      );
   }, [me.full_name, me.permissions]);
 
   // Navigate cleanly via URL
@@ -857,8 +964,6 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
       navigate({ to: "/bangsize/thembang" });
     } else if (active === "promotions") {
       navigate({ to: "/khuyenmai/them" });
-    } else if (active === "lookbook") {
-      navigate({ to: "/lookbook/them" });
     } else if (active === "elanewoman") {
       navigate({ to: "/elanewoman/them" });
     } else if (active === "ai_keys") {
@@ -904,7 +1009,12 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
       toast.error("Bạn không có quyền truy cập kho hàng");
       return;
     }
-    const requiredPermission = seed.docType === "issue" ? "inventory.issue" : seed.docType === "adjustment" ? "inventory.adjust.request" : "inventory.receive";
+    const requiredPermission =
+      seed.docType === "issue"
+        ? "inventory.issue"
+        : seed.docType === "adjustment"
+          ? "inventory.adjust.request"
+          : "inventory.receive";
     if (!me.permissions.includes("*") && !me.permissions.includes(requiredPermission)) {
       toast.error("Bạn không có quyền tạo loại phiếu kho này");
       return;
@@ -993,7 +1103,10 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
                 >
                   <div className="size-9 rounded-full overflow-hidden border border-slate-200 shrink-0 bg-slate-100">
                     <img
-                      src={me.avatar_url ?? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"}
+                      src={
+                        me.avatar_url ??
+                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
+                      }
                       alt={me.full_name || "Tài khoản quản trị"}
                       className="size-full object-cover"
                     />
@@ -1002,7 +1115,9 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
                     <p className="text-sm font-semibold text-slate-900 truncate">
                       {me.full_name || "Tài khoản quản trị"}
                     </p>
-                    <p className="text-xs text-slate-400 truncate">{me.role_name || me.job_title || "Nhân viên"}</p>
+                    <p className="text-xs text-slate-400 truncate">
+                      {me.role_name || me.job_title || "Nhân viên"}
+                    </p>
                   </div>
                   <ChevronDown className="size-3.5 text-slate-400 hidden sm:block" />
                 </button>
@@ -1012,11 +1127,17 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
                   <p className="text-sm font-semibold text-slate-900">{me.full_name}</p>
                   <p className="text-xs text-slate-400 truncate">{me.email}</p>
                 </div>
-                <DropdownMenuItem onClick={() => choose("settings")} className="cursor-pointer text-sm">
+                <DropdownMenuItem
+                  onClick={() => choose("settings")}
+                  className="cursor-pointer text-sm"
+                >
                   Cài đặt tài khoản
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onLogout} className="cursor-pointer text-sm text-rose-600">
+                <DropdownMenuItem
+                  onClick={onLogout}
+                  className="cursor-pointer text-sm text-rose-600"
+                >
                   Đăng xuất
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -1031,76 +1152,81 @@ export function AdminApp({ me, onMeRefresh, onLogout }: { me: Me; onMeRefresh: (
             transitionKey={`${active}:${routeAction}:${routeSubParam ?? ""}:${socialSubPage ?? ""}`}
             className="min-w-0"
           >
-          {active === "overview" ? (
-            <OverviewManager
-              userName={me?.full_name || me?.email?.split("@")[0] || "Admin"}
-              onNavigate={choose}
-              onNavigateToOrder={(orderNumber) => {
-                setOrderSeed(orderNumber);
-                navigate({ to: `/donhang/${orderNumber}` });
-              }}
-              onNavigateToInventoryProduct={(productId, productName) => {
-                goInventoryForProduct({ productId, productName });
-              }}
-              onCreate={handleOpenCreate}
-            />
-          ) : active === "orders" ? (
-            <OrdersManager
-              permissions={me.permissions}
-              onNavigateToInventory={goInventoryWithSeed}
-              targetOrderNumber={routeSubParam ?? orderSeed}
-              onOrderConsumed={() => setOrderSeed(null)}
-            />
-          ) : active === "categories" ? (
-            <CategoriesManager permissions={me.permissions} />
-          ) : active === "products" ? (
-            <ProductsManager
-              permissions={me.permissions}
-              onNavigate={(section, opts) => {
-                if (section === "inventory") goInventoryForProduct(opts);
-                else choose(section);
-              }}
-            />
-          ) : active === "inventory" ? (
-            <InventoryManager
-              permissions={me.permissions}
-              seed={inventorySeed}
-              onSeedConsumed={() => setInventorySeed(null)}
-            />
-          ) : active === "sizes" ? (
-            <SizesManager permissions={me.permissions} />
-          ) : active === "customers" ? (
-            <CustomersManager
-              permissions={me.permissions}
-              onNavigateToOrder={(orderNumber) => {
-                setOrderSeed(orderNumber);
-                navigate({ to: `/donhang/${orderNumber}` });
-              }}
-            />
-          ) : active === "promotions" ? (
-            <DiscountCodesManager permissions={me.permissions} />
-          ) : active === "social" ? (
-            <SocialCommerceManager permissions={me.permissions} page={socialSubPage} onPageChange={handleSocialPageChange} initialPostId={routeDetailId} />
-          ) : active === "elanewoman" ? (
-            <ElaneWomanManager permissions={me.permissions} />
-          ) : active === "lookbook" ? (
-            <LookbookManager permissions={me.permissions} />
-          ) : active === "settings" ? (
-            <SettingsManager permissions={me.permissions} />
-          ) : active === "ai_keys" ? (
-            <AiKeysManager />
-          ) : active === "roles" ? (
-            <RolesManager permissions={me.permissions} onPermissionsChanged={onMeRefresh} />
-          ) : currentConfig ? (
-            <ModulePage
-              config={currentConfig}
-              query={query}
-              setQuery={setQuery}
-              onCreate={handleOpenCreate}
-              onDetail={openDetail}
-              activeTabId={active}
-            />
-          ) : null}
+            {active === "overview" ? (
+              <OverviewManager
+                userName={me?.full_name || me?.email?.split("@")[0] || "Admin"}
+                onNavigate={choose}
+                onNavigateToOrder={(orderNumber) => {
+                  setOrderSeed(orderNumber);
+                  navigate({ to: `/donhang/${orderNumber}` });
+                }}
+                onNavigateToInventoryProduct={(productId, productName) => {
+                  goInventoryForProduct({ productId, productName });
+                }}
+                onCreate={handleOpenCreate}
+              />
+            ) : active === "orders" ? (
+              <OrdersManager
+                permissions={me.permissions}
+                onNavigateToInventory={goInventoryWithSeed}
+                targetOrderNumber={routeSubParam ?? orderSeed}
+                onOrderConsumed={() => setOrderSeed(null)}
+              />
+            ) : active === "categories" ? (
+              <CategoriesManager permissions={me.permissions} />
+            ) : active === "products" ? (
+              <ProductsManager
+                permissions={me.permissions}
+                onNavigate={(section, opts) => {
+                  if (section === "inventory") goInventoryForProduct(opts);
+                  else choose(section);
+                }}
+              />
+            ) : active === "inventory" ? (
+              <InventoryManager
+                permissions={me.permissions}
+                seed={inventorySeed}
+                onSeedConsumed={() => setInventorySeed(null)}
+              />
+            ) : active === "sizes" ? (
+              <SizesManager permissions={me.permissions} />
+            ) : active === "customers" ? (
+              <CustomersManager
+                permissions={me.permissions}
+                onNavigateToOrder={(orderNumber) => {
+                  setOrderSeed(orderNumber);
+                  navigate({ to: `/donhang/${orderNumber}` });
+                }}
+              />
+            ) : active === "promotions" ? (
+              <DiscountCodesManager permissions={me.permissions} />
+            ) : active === "social" ? (
+              <SocialCommerceManager
+                permissions={me.permissions}
+                page={socialSubPage}
+                onPageChange={handleSocialPageChange}
+                initialPostId={routeDetailId}
+              />
+            ) : active === "elanewoman" ? (
+              <ElaneWomanManager permissions={me.permissions} />
+            ) : active === "collections" ? (
+              <CollectionsManager permissions={me.permissions} />
+            ) : active === "settings" ? (
+              <SettingsManager permissions={me.permissions} />
+            ) : active === "ai_keys" ? (
+              <AiKeysManager />
+            ) : active === "roles" ? (
+              <RolesManager permissions={me.permissions} onPermissionsChanged={onMeRefresh} />
+            ) : currentConfig ? (
+              <ModulePage
+                config={currentConfig}
+                query={query}
+                setQuery={setQuery}
+                onCreate={handleOpenCreate}
+                onDetail={openDetail}
+                activeTabId={active}
+              />
+            ) : null}
           </AnimatedPanel>
         </div>
       </main>
@@ -1164,7 +1290,12 @@ function Sidebar({
     .toUpperCase();
 
   return (
-    <aside className={cn("admin-sidebar flex h-screen min-h-0 flex-col overflow-hidden border-r border-slate-200/90 bg-white p-4", className)}>
+    <aside
+      className={cn(
+        "admin-sidebar flex h-screen min-h-0 flex-col overflow-hidden border-r border-slate-200/90 bg-white p-4",
+        className,
+      )}
+    >
       {/* Brand Header matching mockup */}
       <div className="flex items-center justify-between px-2 pt-1 pb-3">
         <a
@@ -1175,10 +1306,17 @@ function Sidebar({
           }}
           className="cursor-pointer"
         >
-          <p className="font-sans admin-metric font-semibold tracking-tight text-slate-900">ÉLANE</p>
+          <p className="font-sans admin-metric font-semibold tracking-tight text-slate-900">
+            ÉLANE
+          </p>
         </a>
         {close ? (
-          <Button variant="ghost" size="icon" onClick={close} className="size-8 rounded-xs text-slate-400">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={close}
+            className="size-8 rounded-xs text-slate-400"
+          >
             <X className="size-4" />
           </Button>
         ) : (
@@ -1203,8 +1341,20 @@ function Sidebar({
           socialPage={socialPage}
           onSocialPageChange={onSocialPageChange}
         />
-        <NavGroup label="Thư viện" items={content} allowedIds={allowedIds} active={active} choose={onChoose} />
-        <NavGroup label="Hệ thống" items={system} allowedIds={allowedIds} active={active} choose={onChoose} />
+        <NavGroup
+          label="Thư viện"
+          items={content}
+          allowedIds={allowedIds}
+          active={active}
+          choose={onChoose}
+        />
+        <NavGroup
+          label="Hệ thống"
+          items={system}
+          allowedIds={allowedIds}
+          active={active}
+          choose={onChoose}
+        />
       </nav>
 
       {/* Bottom Profile */}
@@ -1216,14 +1366,26 @@ function Sidebar({
           aria-hidden={!allowedIds.has("roles")}
         >
           <div className="size-8 overflow-hidden rounded-full bg-slate-900 font-sans text-sm text-white grid place-items-center">
-            {me.avatar_url ? <img src={me.avatar_url} alt={me.full_name} className="size-full object-cover" /> : initials || "EL"}
+            {me.avatar_url ? (
+              <img src={me.avatar_url} alt={me.full_name} className="size-full object-cover" />
+            ) : (
+              initials || "EL"
+            )}
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-slate-800">{me.full_name}</p>
-            <p className="truncate text-xs text-slate-400">{me.role_name || me.job_title || "Nhân viên"}</p>
+            <p className="truncate text-xs text-slate-400">
+              {me.role_name || me.job_title || "Nhân viên"}
+            </p>
           </div>
         </button>
-        <Button variant="ghost" size="icon" aria-label="Đăng xuất" onClick={onLogout} className="size-8 text-slate-400 hover:text-rose-600 rounded-xs">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Đăng xuất"
+          onClick={onLogout}
+          className="size-8 text-slate-400 hover:text-rose-600 rounded-xs"
+        >
           <LogOut className="size-4" />
         </Button>
       </div>
@@ -1252,7 +1414,9 @@ function NavGroup({
   if (visibleItems.length === 0) return null;
   return (
     <div className="mb-4">
-      <p className="mb-1.5 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="mb-1.5 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        {label}
+      </p>
       <div className="space-y-1">
         {visibleItems.map((item) => {
           const Icon = item.icon;
@@ -1299,40 +1463,70 @@ function NavGroup({
                   )}
                 >
                   <div className="min-h-0 overflow-hidden" inert={!isCurrent}>
-                    <div className={cn("ml-7 border-l border-slate-200/80 pl-2 space-y-0.5 py-1 transition-transform duration-300 ease-in-out", isCurrent ? "translate-y-0" : "-translate-y-1")}>
-                  {[
-                    { id: "overview" as SocialPage, label: "Báo cáo hiệu quả", href: "/kenhbanhang" },
-                    { id: "connect" as SocialPage, label: "Kết nối kênh", href: "/kenhbanhang/ketnoi" },
-                    { id: "channel-manage" as SocialPage, label: "Quản lý kênh", href: "/kenhbanhang/quanly" },
-                    { id: "ai-content" as SocialPage, label: "Content Studio", href: "/kenhbanhang/ai-content" },
-                    { id: "posts" as SocialPage, label: "Bài viết & lịch đăng", href: "/kenhbanhang/baiviet" },
-                    { id: "messages" as SocialPage, label: "Tin nhắn & bình luận", href: "/kenhbanhang/tinnhan" },
-                  ].map((sub) => {
-                    // “Tin nhắn & bình luận” is one sidebar destination with two
-                    // sibling pages, so both routes must retain the same active state.
-                    const currentSocialPage = socialPage ?? "overview";
-                    const isSubActive = sub.id === "messages"
-                      ? currentSocialPage === "messages" || currentSocialPage === "comments"
-                      : currentSocialPage === sub.id;
-                    return (
-                      <a
-                        key={sub.id}
-                        href={sub.href}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          onSocialPageChange(sub.id);
-                        }}
-                        className={cn(
-                          "block rounded-xs px-2.5 py-1 text-xs font-medium transition-colors duration-300 ease-in-out cursor-pointer",
-                          isSubActive
-                            ? "bg-[#f4f3ff] text-[#6941c6] font-semibold"
-                            : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/60",
-                        )}
-                      >
-                        {sub.label}
-                      </a>
-                    );
-                  })}
+                    <div
+                      className={cn(
+                        "ml-7 border-l border-slate-200/80 pl-2 space-y-0.5 py-1 transition-transform duration-300 ease-in-out",
+                        isCurrent ? "translate-y-0" : "-translate-y-1",
+                      )}
+                    >
+                      {[
+                        {
+                          id: "overview" as SocialPage,
+                          label: "Báo cáo hiệu quả",
+                          href: "/kenhbanhang",
+                        },
+                        {
+                          id: "connect" as SocialPage,
+                          label: "Kết nối kênh",
+                          href: "/kenhbanhang/ketnoi",
+                        },
+                        {
+                          id: "channel-manage" as SocialPage,
+                          label: "Quản lý kênh",
+                          href: "/kenhbanhang/quanly",
+                        },
+                        {
+                          id: "ai-content" as SocialPage,
+                          label: "Content Studio",
+                          href: "/kenhbanhang/ai-content",
+                        },
+                        {
+                          id: "posts" as SocialPage,
+                          label: "Bài viết & lịch đăng",
+                          href: "/kenhbanhang/baiviet",
+                        },
+                        {
+                          id: "messages" as SocialPage,
+                          label: "Tin nhắn & bình luận",
+                          href: "/kenhbanhang/tinnhan",
+                        },
+                      ].map((sub) => {
+                        // “Tin nhắn & bình luận” is one sidebar destination with two
+                        // sibling pages, so both routes must retain the same active state.
+                        const currentSocialPage = socialPage ?? "overview";
+                        const isSubActive =
+                          sub.id === "messages"
+                            ? currentSocialPage === "messages" || currentSocialPage === "comments"
+                            : currentSocialPage === sub.id;
+                        return (
+                          <a
+                            key={sub.id}
+                            href={sub.href}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              onSocialPageChange(sub.id);
+                            }}
+                            className={cn(
+                              "block rounded-xs px-2.5 py-1 text-xs font-medium transition-colors duration-300 ease-in-out cursor-pointer",
+                              isSubActive
+                                ? "bg-[#f4f3ff] text-[#6941c6] font-semibold"
+                                : "text-slate-500 hover:text-slate-900 hover:bg-slate-100/60",
+                            )}
+                          >
+                            {sub.label}
+                          </a>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -1392,19 +1586,38 @@ function ModulePage({
         {config.metrics.map((m, i) => (
           <div
             key={m.label}
-            className={cn("rounded-xs border p-5", i === 0 ? "border-accent bg-accent/25" : "border-border")}
+            className={cn(
+              "rounded-xs border p-5",
+              i === 0 ? "border-accent bg-accent/25" : "border-border",
+            )}
           >
             <p className="section-label">{m.label}</p>
-            <p className="mt-3 font-sans admin-metric"><AnimatedValue value={m.value} /></p>
-            <p className={cn("mt-1 text-sm", i === 0 ? "text-primary" : "text-muted-foreground")}>{m.note}</p>
+            <p className="mt-3 font-sans admin-metric">
+              <AnimatedValue value={m.value} />
+            </p>
+            <p className={cn("mt-1 text-sm", i === 0 ? "text-primary" : "text-muted-foreground")}>
+              {m.note}
+            </p>
           </div>
         ))}
       </section>
       <section className="mt-6 overflow-hidden rounded-xs border border-border">
         <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
-          <div role="tablist" aria-label={`Lọc ${config.title}`} className="flex gap-1 overflow-x-auto pb-1 lg:pb-0">
+          <div
+            role="tablist"
+            aria-label={`Lọc ${config.title}`}
+            className="flex gap-1 overflow-x-auto pb-1 lg:pb-0"
+          >
             {config.tabs.map((t) => (
-              <Button key={t} type="button" role="tab" aria-selected={tab === t} variant={tab === t ? "default" : "ghost"} size="sm" onClick={() => setTab(t)}>
+              <Button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={tab === t}
+                variant={tab === t ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setTab(t)}
+              >
                 {t}
               </Button>
             ))}
@@ -1425,59 +1638,70 @@ function ModulePage({
           </div>
         </div>
         <AnimatedPanel transitionKey={tab} role="tabpanel" className="min-w-0">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-left text-sm">
-            <thead className="bg-secondary/55">
-              <tr>
-                {config.columns.map((c) => (
-                  <th key={c} className="px-4 py-3 text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground">
-                    {c}
-                  </th>
-                ))}
-                <th className="w-14" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((row, i) => (
-                <tr key={`${row[0]}-${i}`} className="border-t border-border transition-colors hover:bg-secondary/35">
-                  {row.map((cell, j) => (
-                    <td
-                      key={j}
-                      className={cn(
-                        "px-4 py-3.5",
-                        j === 0 ? "font-medium" : "text-muted-foreground",
-                        j === row.length - 1 && "text-foreground",
-                      )}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[860px] text-left text-sm">
+              <thead className="bg-secondary/55">
+                <tr>
+                  {config.columns.map((c) => (
+                    <th
+                      key={c}
+                      className="px-4 py-3 text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground"
                     >
-                      {j === row.length - 1 ? <Status text={cell} /> : cell}
-                    </td>
+                      {c}
+                    </th>
                   ))}
-                  <td className="px-2">
-                    <Button variant="ghost" size="icon" onClick={() => onDetail(row)} aria-label={`Mở ${row[0]}`}>
-                      <MoreHorizontal />
-                    </Button>
-                  </td>
+                  <th className="w-14" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {filtered.length === 0 && (
-            <div className="grid h-48 place-items-center text-sm text-muted-foreground">
-              Không tìm thấy kết quả phù hợp.
-            </div>
-          )}
-        </div>
-        <div className="flex items-center justify-between border-t border-border px-4 py-3 text-sm text-muted-foreground">
-          <span>Hiển thị {filtered.length} mục</span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled>
-              Trước
-            </Button>
-            <Button variant="outline" size="sm">
-              Sau
-            </Button>
+              </thead>
+              <tbody>
+                {filtered.map((row, i) => (
+                  <tr
+                    key={`${row[0]}-${i}`}
+                    className="border-t border-border transition-colors hover:bg-secondary/35"
+                  >
+                    {row.map((cell, j) => (
+                      <td
+                        key={j}
+                        className={cn(
+                          "px-4 py-3.5",
+                          j === 0 ? "font-medium" : "text-muted-foreground",
+                          j === row.length - 1 && "text-foreground",
+                        )}
+                      >
+                        {j === row.length - 1 ? <Status text={cell} /> : cell}
+                      </td>
+                    ))}
+                    <td className="px-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onDetail(row)}
+                        aria-label={`Mở ${row[0]}`}
+                      >
+                        <MoreHorizontal />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filtered.length === 0 && (
+              <div className="grid h-48 place-items-center text-sm text-muted-foreground">
+                Không tìm thấy kết quả phù hợp.
+              </div>
+            )}
           </div>
-        </div>
+          <div className="flex items-center justify-between border-t border-border px-4 py-3 text-sm text-muted-foreground">
+            <span>Hiển thị {filtered.length} mục</span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" disabled>
+                Trước
+              </Button>
+              <Button variant="outline" size="sm">
+                Sau
+              </Button>
+            </div>
+          </div>
         </AnimatedPanel>
       </section>
       <Footer />
@@ -1524,12 +1748,17 @@ function DetailSheet({
       <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <p className="section-label text-primary">{section}</p>
-          <SheetTitle className="font-sans admin-section-title">{row?.[0] ?? "Chi tiết"}</SheetTitle>
+          <SheetTitle className="font-sans admin-section-title">
+            {row?.[0] ?? "Chi tiết"}
+          </SheetTitle>
           <SheetDescription>Thông tin và lịch sử cập nhật của mục đã chọn.</SheetDescription>
         </SheetHeader>
         <div className="mt-7 space-y-1">
           {row?.map((v, i) => (
-            <div key={i} className="flex items-start justify-between gap-6 border-b border-border py-3">
+            <div
+              key={i}
+              className="flex items-start justify-between gap-6 border-b border-border py-3"
+            >
               <span className="text-sm uppercase tracking-[0.04em] text-muted-foreground">
                 Trường {String(i + 1).padStart(2, "0")}
               </span>
@@ -1600,9 +1829,13 @@ function CreateSheet({
         </SheetHeader>
         {saved ? (
           <div className="mt-10 rounded-xs border border-border bg-secondary p-6 text-center">
-            <div className="mx-auto grid size-10 place-items-center rounded-full bg-foreground text-background">✓</div>
+            <div className="mx-auto grid size-10 place-items-center rounded-full bg-foreground text-background">
+              ✓
+            </div>
             <h3 className="mt-4 font-sans admin-subsection-title">Đã lưu bản nháp</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Đây là thao tác minh họa giao diện, chưa lưu dữ liệu thật.</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Đây là thao tác minh họa giao diện, chưa lưu dữ liệu thật.
+            </p>
             <Button className="mt-5" onClick={() => setOpen(false)}>
               Hoàn tất
             </Button>

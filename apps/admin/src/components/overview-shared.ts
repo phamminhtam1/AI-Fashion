@@ -28,12 +28,4 @@ export type OverviewExt = Overview & {
     image_url?: string | null;
   }[];
   recent_posts?: { id: string; title: string; image_url?: string | null; views: number; status: string }[];
-  recent_lookbooks?: {
-    id: string;
-    title: string;
-    season?: string | null;
-    views: number;
-    status: string;
-    cover_image_url?: string | null;
-  }[];
 };

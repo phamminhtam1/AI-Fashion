@@ -168,7 +168,6 @@ export function Footer() {
               <ul className="space-y-1 text-sm text-[#5f5a54]">
                 <li><Link to="/gioi-thieu" className="inline-flex min-h-10 items-center transition-colors hover:text-[#211f1c]">Về chúng tôi</Link></li>
                 <li><Link to="/bo-suu-tap" className="inline-flex min-h-10 items-center transition-colors hover:text-[#211f1c]">Bộ sưu tập</Link></li>
-                <li><Link to="/lookbook" search={{ collection: undefined }} className="inline-flex min-h-10 items-center transition-colors hover:text-[#211f1c]">Lookbook Runway</Link></li>
                 <li><Link to="/blog" className="inline-flex min-h-10 items-center transition-colors hover:text-[#211f1c]">Tạp chí</Link></li>
                 <li><Link to="/cua-hang" className="inline-flex min-h-10 items-center transition-colors hover:text-[#211f1c]">Hệ thống cửa hàng</Link></li>
                 <li><Link to="/tai-khoan" className="inline-flex min-h-10 items-center transition-colors hover:text-[#211f1c]">Tài khoản</Link></li>
@@ -228,7 +227,6 @@ export function Footer() {
           <ul className="mt-5 space-y-3 text-sm text-[#5f5a54]">
             <li><Link to="/gioi-thieu" className="transition-colors hover:text-[#211f1c]">Về chúng tôi</Link></li>
             <li><Link to="/bo-suu-tap" className="transition-colors hover:text-[#211f1c]">Bộ sưu tập</Link></li>
-            <li><Link to="/lookbook" search={{ collection: undefined }} className="transition-colors hover:text-[#211f1c]">Lookbook Runway</Link></li>
             <li><Link to="/blog" className="transition-colors hover:text-[#211f1c]">Tạp chí</Link></li>
             <li><Link to="/cua-hang" className="transition-colors hover:text-[#211f1c]">Hệ thống cửa hàng</Link></li>
             <li><Link to="/tai-khoan" className="transition-colors hover:text-[#211f1c]">Tài khoản</Link></li>

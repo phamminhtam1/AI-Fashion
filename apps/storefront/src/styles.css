@@ -232,52 +232,6 @@ input:disabled,
   cursor: not-allowed !important;
 }
 
-/* Lookbook editorial layout */
-.lookbook-sticky-photo {
-  position: sticky;
-  top: 1.5rem;
-}
-
-.lookbook-stage-image {
-  animation: lookbook-image-enter 420ms ease-out both;
-}
-
-.lookbook-thumb {
-  outline: 1px solid transparent;
-  outline-offset: 2px;
-  transition: outline-color 180ms ease, opacity 180ms ease;
-  opacity: 0.72;
-}
-
-.lookbook-thumb:hover,
-.lookbook-thumb.is-active {
-  outline-color: var(--color-foreground);
-  opacity: 1;
-}
-
-@keyframes lookbook-image-enter {
-  from {
-    opacity: 0.72;
-    transform: scale(1.008);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@media (max-width: 1023px) {
-  .lookbook-sticky-photo {
-    position: static;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lookbook-stage-image {
-    animation: none;
-  }
-}
-
 /* ==========================================================================
    ÉLANE Page Loader Luxury Animations (Exact Match to Reference HTML)
    ========================================================================== */

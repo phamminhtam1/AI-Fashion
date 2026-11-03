@@ -20,7 +20,6 @@ import {
   orderItems,
   discountCodes,
   elaneWomanPosts,
-  lookbooks,
   productMedia,
   mediaAssets,
 } from "@elane/db";
@@ -512,42 +511,6 @@ adminOpsRoutes.get("/overview", async (c) => {
   } catch {
     // fallback
   }
-
-  // 9. Recent Lookbooks
-  let recentLookbooks: Array<{
-    id: string;
-    title: string;
-    season?: string | null;
-    views: number;
-    status: string;
-    cover_image_url?: string | null;
-  }> = [];
-  try {
-    const lbRows = await db
-      .select({
-        id: lookbooks.id,
-        title: lookbooks.title,
-        season: lookbooks.season,
-        coverImageUrl: lookbooks.coverImageUrl,
-        viewCount: lookbooks.viewCount,
-        status: lookbooks.status,
-      })
-      .from(lookbooks)
-      .orderBy(desc(lookbooks.createdAt))
-      .limit(5);
-
-    recentLookbooks = lbRows.map((l) => ({
-      id: l.id,
-      title: l.title,
-      season: l.season,
-      views: l.viewCount,
-      status: l.status,
-      cover_image_url: l.coverImageUrl,
-    }));
-  } catch {
-    // fallback
-  }
-
   return c.json({
     published_products: pub?.count ?? 0,
     draft_products: draft?.count ?? 0,
@@ -573,7 +536,6 @@ adminOpsRoutes.get("/overview", async (c) => {
     sales_channels: salesChannels,
     active_promotions: activePromotions,
     recent_posts: recentPosts,
-    recent_lookbooks: recentLookbooks,
     customers_by_segment: normalizeCountSeries(
       segRows.map((r) => ({ key: r.key, count: Number(r.count) })),
       ["new", "loyal", "vip"],

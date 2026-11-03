@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { AnimatedPanel } from "@/components/ui/AnimatedPanel";
 import { cn } from "@/lib/utils";
 import { TINTS, type Collection, type Product } from "../mock";
+import { useBodyScrollLock } from "../ui";
 
 /* ------------------------------------------------------------------ */
 /*  Types & Constants                                                 */
@@ -21,16 +22,16 @@ type Props = {
   open: boolean;
   onClose: () => void;
   products: Product[];
-  lookbooks: Collection[];
+  collections: Collection[];
   selectedIds: string[];
-  selectedLookbook: Collection | null;
+  selectedCollection: Collection | null;
   /** true → chỉ cho chọn 1 sản phẩm (dùng cho chế độ "Người tự tạo nội dung") */
   singleSelect?: boolean;
   tagOptions?: TagOptions;
-  onApply: (ids: string[], pickedProducts: Product[], lookbook: Collection | null, tagOptions: TagOptions) => void;
+  onApply: (ids: string[], pickedProducts: Product[], collection: Collection | null, tagOptions: TagOptions) => void;
 };
 
-type Tab = "products" | "lookbooks";
+type Tab = "products" | "collections";
 type PickState = "all" | "selected" | "unselected";
 type StockFilter = "all" | "in" | "out";
 
@@ -148,12 +149,14 @@ function Checkbox({ on }: { on: boolean }) {
 /* ------------------------------------------------------------------ */
 
 export function ProductBstPickerModal({
-  open, onClose, products, lookbooks, selectedIds, selectedLookbook, singleSelect = false, tagOptions = DEFAULT_TAG_OPTIONS, onApply,
+  open, onClose, products, collections, selectedIds, selectedCollection, singleSelect = false, tagOptions = DEFAULT_TAG_OPTIONS, onApply,
 }: Props) {
   const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState<Tab>("products");
+
+  useBodyScrollLock(open);
   const [ids, setIds] = useState<string[]>([]);
-  const [lb, setLb] = useState<Collection | null>(null);
+  const [collection, setCollection] = useState<Collection | null>(null);
   const [opts, setOpts] = useState<TagOptions>(tagOptions);
 
   // Filters
@@ -224,7 +227,7 @@ export function ProductBstPickerModal({
   useEffect(() => {
     if (!open) return;
     setIds(selectedIds);
-    setLb(selectedLookbook);
+    setCollection(selectedCollection);
     setOpts(tagOptions);
     setTab("products");
     setQ("");
@@ -241,10 +244,8 @@ export function ProductBstPickerModal({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
-    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+    return () => { window.removeEventListener("keydown", onKey); };
   }, [open, onClose]);
 
   // ----------------------------------------------------------------
@@ -319,11 +320,11 @@ export function ProductBstPickerModal({
     return apiProducts;
   }, [apiProducts, pick, chosen, ids]);
 
-  // Lookbooks list filtered by keyword
-  const filteredLookbooks = useMemo(() => {
+  // Collections list filtered by keyword
+  const filteredCollections = useMemo(() => {
     const kw = debouncedQ.trim().toLowerCase();
-    return lookbooks.filter((l) => !kw || `${l.title} ${l.season ?? ""}`.toLowerCase().includes(kw));
-  }, [lookbooks, debouncedQ]);
+    return collections.filter((l) => !kw || `${l.title} ${l.category ?? ""}`.toLowerCase().includes(kw));
+  }, [collections, debouncedQ]);
 
   const totalPages = Math.max(1, Math.ceil(apiTotal / PAGE_LIMIT));
 
@@ -341,11 +342,11 @@ export function ProductBstPickerModal({
     });
   };
 
-  const lbProductIds = (lb?.attachedProductIds ?? []).filter((id) => productCache.has(id));
-  const lbMissing = lbProductIds.filter((id) => !ids.includes(id));
+  const collectionProductIds = (collection?.attachedProductIds ?? []).filter((id) => productCache.has(id));
+  const collectionMissing = collectionProductIds.filter((id) => !ids.includes(id));
 
   const confirm = () => {
-    onApply(ids, chosen, lb, opts);
+    onApply(ids, chosen, collection, opts);
     onClose();
   };
 
@@ -378,7 +379,7 @@ export function ProductBstPickerModal({
             <div role="tablist" className="flex gap-2">
               {([
                 ["products", Package, "Sản phẩm"],
-                ["lookbooks", FolderOpen, "Bộ sưu tập"],
+                ["collections", FolderOpen, "Bộ sưu tập"],
               ] as const).map(([id, Icon, label]) => (
                 <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
                   className={cn("-mb-px flex items-center gap-2 rounded-t-lg border-b-2 px-5 py-3 text-sm font-medium transition-colors",
@@ -542,21 +543,21 @@ export function ProductBstPickerModal({
                   })}
                 </ul>
               )
-            ) : filteredLookbooks.length === 0 ? (
+            ) : filteredCollections.length === 0 ? (
               <div className="grid h-48 place-items-center rounded-xl border border-dashed border-slate-200 text-sm text-slate-500">
-                {lookbooks.length === 0 ? "Chưa có bộ sưu tập nào." : "Không tìm thấy bộ sưu tập phù hợp."}
+                {collections.length === 0 ? "Chưa có bộ sưu tập nào." : "Không tìm thấy bộ sưu tập phù hợp."}
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
-                {filteredLookbooks.map((l) => {
-                  const on = lb?.id === l.id;
+                {filteredCollections.map((l) => {
+                  const on = collection?.id === l.id;
                   return (
-                    <button key={l.id} type="button" role="radio" aria-checked={on} onClick={() => setLb(on ? null : l)}
+                    <button key={l.id} type="button" role="radio" aria-checked={on} onClick={() => setCollection(on ? null : l)}
                       className={cn("group rounded-xl border bg-white p-2 text-left transition-all", on ? "border-[#6941c6] ring-1 ring-[#6941c6]" : "border-slate-200 hover:border-violet-300 hover:shadow-sm")}>
                       <div className="relative overflow-hidden rounded-lg bg-slate-100">
                         <Thumb p={{ imageUrl: l.coverImageUrl ?? null, name: l.title }} className="h-40 w-full" />
                         <span className="absolute right-2 top-2"><Checkbox on={on} /></span>
-                        {l.season && <span className="absolute bottom-2 left-2 rounded-md bg-white/90 px-2 py-0.5 text-[11px] font-medium text-slate-600">{l.season}</span>}
+                        {l.category && <span className="absolute bottom-2 left-2 rounded-md bg-white/90 px-2 py-0.5 text-[11px] font-medium text-slate-600">{l.category}</span>}
                       </div>
                       <div className="px-1 pb-1 pt-2.5">
                         <div className="line-clamp-1 text-sm font-medium">{l.title}</div>
@@ -610,33 +611,33 @@ export function ProductBstPickerModal({
           <section className="flex min-h-[260px] flex-1 flex-col overflow-hidden rounded-xs bg-white p-5">
             <header className="flex items-center justify-between">
               <h3 className="text-base font-semibold">Sản phẩm đã chọn ({total})</h3>
-              <button type="button" disabled={!ids.length && !lb} onClick={() => { setIds([]); setLb(null); }}
+              <button type="button" disabled={!ids.length && !collection} onClick={() => { setIds([]); setCollection(null); }}
                 className="flex items-center gap-1.5 text-sm font-medium text-[#6941c6] hover:underline disabled:cursor-not-allowed disabled:text-slate-300 disabled:no-underline">
                 <Trash2 className="size-4" />Xóa tất cả
               </button>
             </header>
 
             <div className="mt-3 min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-1">
-              {lb && (
+              {collection && (
                 <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-2.5">
                   <div className="flex items-center gap-3">
-                    <Thumb p={{ imageUrl: lb.coverImageUrl ?? null, name: lb.title }} className="size-12 shrink-0 rounded-lg" />
+                    <Thumb p={{ imageUrl: collection.coverImageUrl ?? null, name: collection.title }} className="size-12 shrink-0 rounded-lg" />
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium">{lb.title}</div>
-                      <div className="text-xs text-slate-500">Bộ sưu tập{lb.season ? ` · ${lb.season}` : ""} · {lb.itemCount} sản phẩm</div>
+                      <div className="truncate text-sm font-medium">{collection.title}</div>
+                      <div className="text-xs text-slate-500">Bộ sưu tập{collection.category ? ` · ${collection.category}` : ""} · {collection.itemCount} sản phẩm</div>
                     </div>
-                    <button type="button" aria-label="Bỏ bộ sưu tập" onClick={() => setLb(null)} className="grid size-7 place-items-center rounded-full text-slate-400 hover:bg-white hover:text-slate-700"><X className="size-4" /></button>
+                    <button type="button" aria-label="Bỏ bộ sưu tập" onClick={() => setCollection(null)} className="grid size-7 place-items-center rounded-full text-slate-400 hover:bg-white hover:text-slate-700"><X className="size-4" /></button>
                   </div>
-                  {!singleSelect && lbMissing.length > 0 && (
-                    <button type="button" onClick={() => setIds((cur) => [...cur, ...lbMissing])}
+                  {!singleSelect && collectionMissing.length > 0 && (
+                    <button type="button" onClick={() => setIds((cur) => [...cur, ...collectionMissing])}
                       className="mt-2 w-full rounded-lg border border-violet-200 bg-white py-1.5 text-xs font-medium text-[#6941c6] hover:bg-violet-50">
-                      Thêm {lbMissing.length} sản phẩm của bộ sưu tập này
+                      Thêm {collectionMissing.length} sản phẩm của bộ sưu tập này
                     </button>
                   )}
                 </div>
               )}
 
-              {chosen.length === 0 && !lb ? (
+              {chosen.length === 0 && !collection ? (
                 <div className="grid h-full min-h-[140px] place-items-center rounded-xl border border-dashed border-slate-200 px-4 text-center text-sm text-slate-500">
                   <div><Package className="mx-auto mb-2 size-6 text-slate-300" />Chưa chọn sản phẩm nào.<br />Bấm vào thẻ sản phẩm bên trái để thêm.</div>
                 </div>
@@ -690,7 +691,7 @@ export function ProductBstPickerModal({
             </div>
             <div className="mt-5 grid grid-cols-[1fr_1.4fr] gap-3">
               <Button type="button" variant="outline" className="h-9 rounded-xs" onClick={onClose}>Hủy</Button>
-              <Button type="button" className="h-9 rounded-xs text-white hover:opacity-90" style={{ background: `linear-gradient(135deg, ${BRAND}, #8b5cf6)` }} disabled={!ids.length && !lb} onClick={confirm}>
+              <Button type="button" className="h-9 rounded-xs text-white hover:opacity-90" style={{ background: `linear-gradient(135deg, ${BRAND}, #8b5cf6)` }} disabled={!ids.length && !collection} onClick={confirm}>
                 Xác nhận sản phẩm ({total})
               </Button>
             </div>

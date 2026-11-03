@@ -14,7 +14,7 @@ const MAX_BYTES = 10 * 1024 * 1024; // 10MB
 export const adminElaneWomanRoutes = new Hono<AppVars>();
 adminElaneWomanRoutes.use("*", requireAuth);
 
-/** Standalone image upload for ÉLANEwoman lookbook */
+/** Standalone image upload for ÉLANEwoman posts */
 adminElaneWomanRoutes.post("/upload", async (c) => {
   const user = c.get("user")!;
   requirePerm(user, "product.write");

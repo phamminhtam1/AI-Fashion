@@ -191,7 +191,6 @@ export function OverviewManager({ onNavigate, onNavigateToOrder, userName = "Adm
   const channels = data?.sales_channels ?? [];
   const promotions = data?.active_promotions ?? [];
   const posts = data?.recent_posts ?? [];
-  const lookbooks = data?.recent_lookbooks ?? [];
   const recentOrders = (data?.recent_orders ?? []).slice(0, 5);
   const trends = data?.trends ?? {};
   const revenueSeries = daily.slice(-12).map((item) => item.revenue);
@@ -261,10 +260,6 @@ export function OverviewManager({ onNavigate, onNavigateToOrder, userName = "Adm
           <div className="overflow-x-auto"><table className="w-full min-w-[420px] table-fixed text-sm"><colgroup><col /><col style={{width: 85}} /><col style={{width: 135}} /></colgroup><thead className="border-y border-slate-200 bg-slate-50/80 text-sm font-semibold tracking-tight text-slate-700"><tr><th className={th}>Bài viết</th><th className={cn(th, "text-right")}>Lượt xem</th><th className={th}>Trạng thái</th></tr></thead><tbody className="divide-y divide-slate-100">{posts.length ? posts.slice(0, 3).map((post) => { const status = statusOf(post.status); return <tr key={post.id}><td className={td}><div className="flex items-center gap-2.5"><Thumb src={post.image_url} alt={post.title} className="h-9 w-12" /><p className="line-clamp-2 font-semibold leading-5 text-slate-950">{post.title}</p></div></td><td className={cn(td, "text-right font-medium tabular-nums text-slate-600")}>{formatNum(post.views)}</td><td className={td}><StatusPill tone={status.tone}>{status.label}</StatusPill></td></tr>; }) : <PlaceholderRows columns={3} />}</tbody></table></div>
         </Card>
 
-        <Card>
-          <CardHeader title="Bộ ảnh mới nhất" action={<ViewAll onClick={() => onNavigate("lookbook")} />} />
-          <div className="overflow-x-auto"><table className="w-full min-w-[450px] table-fixed text-sm"><colgroup><col /><col style={{width: 85}} /><col style={{width: 135}} /></colgroup><thead className="border-y border-slate-200 bg-slate-50/80 text-sm font-semibold tracking-tight text-slate-700"><tr><th className={th}>Bộ ảnh / Mùa</th><th className={cn(th, "text-right")}>Lượt xem</th><th className={th}>Trạng thái</th></tr></thead><tbody className="divide-y divide-slate-100">{lookbooks.length ? lookbooks.slice(0, 3).map((lookbook) => { const status = statusOf(lookbook.status); return <tr key={lookbook.id}><td className={td}><div className="flex items-center gap-2.5"><Thumb src={lookbook.cover_image_url} alt={lookbook.title} className="h-9 w-12" /><div className="min-w-0"><p className="truncate font-semibold text-slate-950">{lookbook.title}</p><p className="truncate text-xs font-medium text-slate-500">{lookbook.season || "—"}</p></div></div></td><td className={cn(td, "text-right font-medium tabular-nums text-slate-600")}>{formatNum(lookbook.views)}</td><td className={td}><StatusPill tone={status.tone}>{status.label}</StatusPill></td></tr>; }) : <PlaceholderRows columns={3} />}</tbody></table></div>
-        </Card>
       </section>
     </div>
   );

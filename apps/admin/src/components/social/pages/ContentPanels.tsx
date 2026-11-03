@@ -59,8 +59,8 @@ export function AiInputPanel({
   aiKey,
   onManageKeys,
   products = MOCK_PRODUCTS,
-  selectedLookbook,
-  onClearLookbook,
+  selectedCollection,
+  onClearCollection,
   productImages = [],
   selectedProductImageIds = [],
   onToggleProductImage,
@@ -77,8 +77,8 @@ export function AiInputPanel({
   aiKey?: AiKeyInfo | null;
   onManageKeys?: () => void;
   products?: Product[];
-  selectedLookbook?: Collection | null;
-  onClearLookbook?: () => void;
+  selectedCollection?: Collection | null;
+  onClearCollection?: () => void;
   featuredFirst?: boolean;
   productImages?: MediaItem[];
   selectedProductImageIds?: string[];
@@ -169,21 +169,21 @@ export function AiInputPanel({
           </div>
         }
       >
-        {selectedLookbook && (
+        {selectedCollection && (
           <div className="mb-2.5 flex items-center justify-between rounded-lg border border-violet-200 bg-violet-50/70 px-3 py-2 text-xs">
             <div className="flex items-center gap-2 min-w-0">
               <FolderHeart className="size-4 shrink-0 text-[#6941c6]" />
               <span className="truncate">
-                BST đang chọn: <strong className="text-slate-900">{selectedLookbook.title}</strong>
-                {selectedLookbook.season && (
-                  <span className="ml-1 text-violet-700 font-medium">({selectedLookbook.season})</span>
+                BST đang chọn: <strong className="text-slate-900">{selectedCollection.title}</strong>
+                {selectedCollection.category && (
+                  <span className="ml-1 text-violet-700 font-medium">({selectedCollection.category})</span>
                 )}
               </span>
             </div>
-            {onClearLookbook && (
+            {onClearCollection && (
               <button
                 type="button"
-                onClick={onClearLookbook}
+                onClick={onClearCollection}
                 className="ml-2 shrink-0 text-[11px] text-slate-500 hover:text-slate-800 underline"
               >
                 Bỏ chọn BST
@@ -842,9 +842,9 @@ function Box({ title, hint, children, className }: { title: ReactNode; hint?: st
   return <div className={cn(box, className)}><h3 className="text-sm font-semibold">{title}</h3>{hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}<div className="mt-3">{children}</div></div>;
 }
 
-export function ManualComposer({ form, upd, products, onPickProduct, lookbook, onClearLookbook, media, onFiles, onRemoveMedia, productImages = [], selectedProductImageIds = [], onToggleProductImage, targets, onToggleChannel }: {
+export function ManualComposer({ form, upd, products, onPickProduct, collection, onClearCollection, media, onFiles, onRemoveMedia, productImages = [], selectedProductImageIds = [], onToggleProductImage, targets, onToggleChannel }: {
   form: ManualForm; upd: (p: Partial<ManualForm>) => void; products: Product[]; onPickProduct: () => void;
-  lookbook?: Collection | null; onClearLookbook?: () => void;
+  collection?: Collection | null; onClearCollection?: () => void;
   media: MediaItem[]; onFiles: (files: File[]) => void; onRemoveMedia: (id: string) => void; targets: ChannelId[]; onToggleChannel: (id: ChannelId) => void;
   productImages?: MediaItem[]; selectedProductImageIds?: string[]; onToggleProductImage?: (id: string) => void;
 }) {
@@ -908,19 +908,19 @@ export function ManualComposer({ form, upd, products, onPickProduct, lookbook, o
               </div>
             }
           >
-            {lookbook && (
+            {collection && (
               <div className="mb-2.5 flex items-center justify-between rounded-lg border border-violet-200 bg-violet-50/70 p-2.5 text-xs">
                 <div className="flex items-center gap-2 min-w-0">
                   <FolderHeart className="size-4 shrink-0 text-[#6941c6]" />
                   <span className="truncate">
-                    BST: <strong className="text-slate-900">{lookbook.title}</strong>
-                    {lookbook.season && <span className="ml-1 text-violet-700 font-medium">({lookbook.season})</span>}
+                    BST: <strong className="text-slate-900">{collection.title}</strong>
+                    {collection.category && <span className="ml-1 text-violet-700 font-medium">({collection.category})</span>}
                   </span>
                 </div>
-                {onClearLookbook && (
+                {onClearCollection && (
                   <button
                     type="button"
-                    onClick={onClearLookbook}
+                    onClick={onClearCollection}
                     className="ml-2 shrink-0 text-[11px] text-slate-500 hover:text-slate-800 underline"
                   >
                     Bỏ chọn

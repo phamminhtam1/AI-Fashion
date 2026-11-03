@@ -1,14 +1,12 @@
-const PUBLIC_API_URL = (import.meta.env["VITE_API_URL"] as string | undefined) ?? "http://localhost:3001";
+const PUBLIC_API_URL =
+  (import.meta.env["VITE_API_URL"] as string | undefined) ?? "http://localhost:3001";
 
 /** Browser → localhost in dev or relative /api in prod; SSR trong Docker → http://api:3001 */
 function apiBase() {
   if (typeof window === "undefined") {
     return process.env["API_INTERNAL_URL"] ?? (PUBLIC_API_URL || "http://localhost:3001");
   }
-  if (
-    PUBLIC_API_URL.includes("localhost") ||
-    PUBLIC_API_URL.includes("127.0.0.1")
-  ) {
+  if (PUBLIC_API_URL.includes("localhost") || PUBLIC_API_URL.includes("127.0.0.1")) {
     if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
       return "";
     }
@@ -185,7 +183,10 @@ export function mediaUrl(path: string) {
   return `${PUBLIC_API_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-export async function fetchProducts(params: Record<string, string | undefined> = {}, init?: RequestInit) {
+export async function fetchProducts(
+  params: Record<string, string | undefined> = {},
+  init?: RequestInit,
+) {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v) q.set(k, v);
   const qs = q.toString();
@@ -194,6 +195,31 @@ export async function fetchProducts(params: Record<string, string | undefined> =
 
 export async function fetchProduct(slug: string, init?: RequestInit) {
   return get<ApiProduct>(`/products/${slug}`, init);
+}
+
+export type StoreCollection = {
+  id?: string;
+  name: string;
+  slug: string;
+  tagline: string | null;
+  category: string;
+  description: string | null;
+  cover_image_url: string | null;
+  hero_image_url: string | null;
+  gallery_images?: Array<{ url: string; layout: "half" | "wide" }>;
+  sort_order?: number;
+  is_featured: boolean;
+  items?: ApiProduct[];
+};
+
+export async function fetchCollections() {
+  return get<{ items: StoreCollection[]; categories: string[] }>("/collections", {
+    cache: "no-store",
+  });
+}
+
+export async function fetchCollectionBySlug(slug: string) {
+  return get<StoreCollection>(`/collections/${slug}`, { cache: "no-store" }).catch(() => null);
 }
 
 export type PublicProductReview = StoreReview & { customer_name: string; verified: boolean };
@@ -217,7 +243,9 @@ export async function fetchCategories() {
 }
 
 export async function fetchFaqs() {
-  return get<{ items: Array<{ id: string; group: string; question: string; answer: string }> }>("/faqs");
+  return get<{ items: Array<{ id: string; group: string; question: string; answer: string }> }>(
+    "/faqs",
+  );
 }
 
 export async function fetchHomepage() {
@@ -256,38 +284,6 @@ export async function fetchElaneWomanPosts() {
   return get<{ items: ElaneWomanPost[] }>("/elane-woman").catch(() => ({ items: [] }));
 }
 
-export type StoreLookbookItem = {
-  id: string;
-  title: string | null;
-  caption: string | null;
-  image_url: string;
-  product_id: string | null;
-  product_slug: string | null;
-  product_name: string | null;
-  link_url: string | null;
-  sort_order: number;
-};
-
-export type StoreLookbook = {
-  id: string;
-  slug: string;
-  title: string;
-  subtitle: string | null;
-  description: string | null;
-  season: string | null;
-  cover_image_url: string;
-  sort_order: number;
-  items: StoreLookbookItem[];
-};
-
-export async function fetchLookbooks() {
-  return get<{ items: StoreLookbook[] }>("/lookbooks", { cache: "no-store" }).catch(() => ({ items: [] }));
-}
-
-export async function fetchLookbookBySlug(slug: string) {
-  return get<StoreLookbook>(`/lookbooks/${slug}`, { cache: "no-store" }).catch(() => null);
-}
-
 export type ApiSizeChart = {
   id: string;
   name: string;
@@ -314,7 +310,10 @@ export async function fetchSizeChart(id: string) {
 
 export const storeApi = {
   register: (body: { full_name: string; email: string; phone?: string; password: string }) =>
-    storeReq<{ ok: boolean }>("/store/auth/register", { method: "POST", body: JSON.stringify(body) }),
+    storeReq<{ ok: boolean }>("/store/auth/register", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   login: (body: { email: string; password: string }) =>
     storeReq<{ ok: boolean }>("/store/auth/login", { method: "POST", body: JSON.stringify(body) }),
   logout: () => storeReq<{ ok: boolean }>("/store/auth/logout", { method: "POST" }),
@@ -335,8 +334,12 @@ export const storeApi = {
     storeReq<{ ok: boolean }>(`/me/wishlist/${productId}`, { method: "DELETE" }),
   orders: () => storeReq<{ items: StoreOrderSummary[] }>("/me/orders"),
   order: (id: string) => storeReq<StoreOrderDetail>(`/me/orders/${id}`),
-  submitReview: (body: { order_item_id: string; rating: number; title?: string; comment: string }) =>
-    storeReq<StoreReview>("/me/reviews", { method: "POST", body: JSON.stringify(body) }),
+  submitReview: (body: {
+    order_item_id: string;
+    rating: number;
+    title?: string;
+    comment: string;
+  }) => storeReq<StoreReview>("/me/reviews", { method: "POST", body: JSON.stringify(body) }),
   cancelOrder: (id: string) =>
     storeReq<{ id: string; order_number: string; status: string }>(`/me/orders/${id}/cancel`, {
       method: "POST",
@@ -385,8 +388,7 @@ export const storeApi = {
     }
     return data as { id: string; status: string };
   },
-  getTryOn: (id: string): Promise<StoreTryOnJob> =>
-    storeReq<StoreTryOnJob>(`/store/try-ons/${id}`),
+  getTryOn: (id: string): Promise<StoreTryOnJob> => storeReq<StoreTryOnJob>(`/store/try-ons/${id}`),
   listTryOns: (): Promise<{ items: StoreTryOnHistoryItem[] }> =>
     storeReq<{ items: StoreTryOnHistoryItem[] }>("/store/try-ons"),
   deleteTryOn: (id: string): Promise<{ ok: boolean }> =>
@@ -477,4 +479,3 @@ export function fetchBankInfo() {
 }
 
 export { PUBLIC_API_URL as API_URL };
-

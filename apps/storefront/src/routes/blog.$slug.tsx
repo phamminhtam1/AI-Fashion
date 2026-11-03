@@ -26,12 +26,16 @@ function PostPage() {
   const others = posts.filter((x) => x.slug !== slug).slice(0, 3);
   return (
     <article>
-      <header className="mx-auto max-w-3xl px-6 pt-12 text-center">
-        <nav className="text-base text-muted-foreground font-medium flex items-center justify-center gap-2">
+      <div className="w-full px-4 pt-5 md:px-6">
+        <nav aria-label="Breadcrumb" className="relative left-1/2 flex w-screen max-w-[100vw] -translate-x-1/2 px-4 md:px-6">
+          <span className="flex w-fit max-w-full flex-wrap items-center gap-2 border-b border-border/60 pb-4 text-base font-medium text-muted-foreground">
           <Link to="/" className="hover:text-foreground transition-colors">Trang chủ</Link>
           <span className="opacity-40">/</span>
           <Link to="/blog" className="hover:text-foreground transition-colors">Tạp chí</Link>
+          </span>
         </nav>
+      </div>
+      <header className="mx-auto max-w-3xl px-4 pt-3 text-center md:px-6">
         <p className="mt-8 text-[11px] uppercase tracking-[0.3em] text-muted-foreground">{post.category} · {new Date(post.date).toLocaleDateString("vi-VN")} · {post.readTime} phút đọc</p>
         <h1 className="mt-4 text-4xl leading-tight md:text-5xl">{post.title}</h1>
         <p className="mt-6 text-lg text-muted-foreground">{post.excerpt}</p>

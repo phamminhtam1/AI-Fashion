@@ -150,59 +150,6 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
             </button>
             <div className="hidden gap-6 lg:flex items-center">
               <Link to="/bo-suu-tap" className="text-xs font-medium uppercase tracking-widest hover:opacity-60">Bộ sưu tập</Link>
-              <div className="relative group/lb py-2">
-                <Link
-                  to="/lookbook"
-                  search={{ collection: undefined }}
-                  className="text-xs font-medium uppercase tracking-widest hover:opacity-60 flex items-center gap-1 cursor-pointer"
-                >
-                  <span>Lookbook</span>
-                  <ChevronDown className="size-3 opacity-60 transition-transform group-hover/lb:rotate-180" />
-                </Link>
-                <div className="absolute left-0 top-full hidden group-hover/lb:block pt-1 z-50">
-                  <div className="w-56 rounded-xl border border-border bg-background/95 backdrop-blur-md p-2 shadow-xl">
-                    <Link
-                      to="/lookbook"
-                      search={{ collection: undefined }}
-                      className="block rounded-lg px-3 py-2 text-xs uppercase tracking-wider hover:bg-secondary font-medium transition"
-                    >
-                      Tất cả Runway (Thác ảnh)
-                    </Link>
-                    <div className="my-1 border-t border-border/60" />
-                    <div className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                      Bộ sưu tập Lookbook
-                    </div>
-                    <Link
-                      to="/lookbook"
-                      search={{ collection: "autumn-winter-2026" }}
-                      className="block rounded-lg px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition"
-                    >
-                      Thu Đông 2026
-                    </Link>
-                    <Link
-                      to="/lookbook"
-                      search={{ collection: "la-parisienne" }}
-                      className="block rounded-lg px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition"
-                    >
-                      La Parisienne
-                    </Link>
-                    <Link
-                      to="/lookbook"
-                      search={{ collection: "the-office-edit" }}
-                      className="block rounded-lg px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition"
-                    >
-                      The Office Edit
-                    </Link>
-                    <Link
-                      to="/lookbook"
-                      search={{ collection: "evening-noir" }}
-                      className="block rounded-lg px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition"
-                    >
-                      Evening Noir
-                    </Link>
-                  </div>
-                </div>
-              </div>
               <Link to="/blog" className="text-xs font-medium uppercase tracking-widest hover:opacity-60">Tạp chí</Link>
             </div>
           </div>
@@ -390,59 +337,6 @@ export function Header({ navItems: navItemsProp = [] }: { navItems?: NavItem[] }
                 ) : null}
               </div>
             ))}
-            <div className="py-2 border-b border-border/40">
-              <Link
-                to="/lookbook"
-                search={{ collection: undefined }}
-                onClick={() => setMobile(false)}
-                className="py-2 text-sm font-medium uppercase tracking-wider text-foreground flex items-center justify-between"
-              >
-                <span>Lookbook Runway</span>
-                <span className="text-[10px] font-mono text-primary font-normal">ARCHIVE</span>
-              </Link>
-              <div className="pl-3 space-y-2 pt-1 pb-2">
-                <Link
-                  to="/lookbook"
-                  search={{ collection: undefined }}
-                  onClick={() => setMobile(false)}
-                  className="block text-xs text-muted-foreground hover:text-foreground"
-                >
-                  · Tất cả bộ ảnh (Thác ảnh)
-                </Link>
-                <Link
-                  to="/lookbook"
-                  search={{ collection: "autumn-winter-2026" }}
-                  onClick={() => setMobile(false)}
-                  className="block text-xs text-muted-foreground hover:text-foreground"
-                >
-                  · Thu Đông 2026
-                </Link>
-                <Link
-                  to="/lookbook"
-                  search={{ collection: "la-parisienne" }}
-                  onClick={() => setMobile(false)}
-                  className="block text-xs text-muted-foreground hover:text-foreground"
-                >
-                  · La Parisienne
-                </Link>
-                <Link
-                  to="/lookbook"
-                  search={{ collection: "the-office-edit" }}
-                  onClick={() => setMobile(false)}
-                  className="block text-xs text-muted-foreground hover:text-foreground"
-                >
-                  · The Office Edit
-                </Link>
-                <Link
-                  to="/lookbook"
-                  search={{ collection: "evening-noir" }}
-                  onClick={() => setMobile(false)}
-                  className="block text-xs text-muted-foreground hover:text-foreground"
-                >
-                  · Evening Noir
-                </Link>
-              </div>
-            </div>
             {([["/bo-suu-tap", "Bộ sưu tập"], ["/blog", "Tạp chí"], ["/tai-khoan", "Tài khoản"], ["/yeu-thich", "Yêu thích"], ["/cua-hang", "Cửa hàng"], ["/gioi-thieu", "Về chúng tôi"], ["/lien-he", "Liên hệ"]] as const).map(([to, l]) => (
               <Link key={to} to={to} onClick={() => setMobile(false)} className="py-3 text-sm text-muted-foreground">{l}</Link>
             ))}

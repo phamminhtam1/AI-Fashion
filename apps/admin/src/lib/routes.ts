@@ -60,11 +60,6 @@ export const ADMIN_ROUTES: Record<string, AdminRouteConfig> = {
     aliases: ["bo-suu-tap", "collections", "collection"],
     label: "Bộ sưu tập",
   },
-  lookbook: {
-    slug: "lookbook",
-    aliases: ["lookbooks"],
-    label: "Bộ ảnh",
-  },
   journal: {
     slug: "tapchi",
     aliases: ["tap-chi", "journal"],

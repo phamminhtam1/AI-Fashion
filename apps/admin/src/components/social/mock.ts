@@ -135,7 +135,7 @@ export interface Collection {
   id: string;
   title: string;
   slug?: string;
-  season?: string | null;
+  category?: string | null;
   coverImageUrl?: string | null;
   itemCount?: number;
   description?: string | null;

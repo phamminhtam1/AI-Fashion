@@ -143,8 +143,8 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
   const [mediaUrl, setMediaUrl] = useState("");
 
   const [catalogProducts, setCatalogProducts] = useState<Product[]>(MOCK_PRODUCTS);
-  const [catalogLookbooks, setCatalogLookbooks] = useState<Collection[]>([]);
-  const [selectedLookbook, setSelectedLookbook] = useState<Collection | null>(null);
+  const [catalogCollections, setCatalogCollections] = useState<Collection[]>([]);
+  const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
   const [loadingCatalog, setLoadingCatalog] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<"ai" | "manual">("ai");
@@ -203,7 +203,7 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
     return rawSku;
   }
 
-  // 2. Tải danh mục sản phẩm và BST (Lookbook) thật từ hệ thống ÉLANE
+  // 2. Tải danh mục sản phẩm và bộ sưu tập thật từ hệ thống ÉLANE
   useEffect(() => {
     let alive = true;
     setLoadingCatalog(true);
@@ -212,12 +212,12 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
         console.warn("Could not fetch real products:", err);
         return null;
       }),
-      adminApi.lookbooks().catch((err) => {
-        console.warn("Could not fetch real lookbooks:", err);
+      adminApi.collections().catch((err) => {
+        console.warn("Could not fetch real collections:", err);
         return null;
       }),
     ])
-      .then(([prodsRes, lookbooksRes]) => {
+      .then(([prodsRes, collectionsRes]) => {
         if (!alive) return;
         if (prodsRes?.items && prodsRes.items.length > 0) {
           const seenNames = new Set<string>();
@@ -282,20 +282,18 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
           setCatalogProducts(mapped);
         }
 
-        if (lookbooksRes?.items && lookbooksRes.items.length > 0) {
-          const mappedLb: Collection[] = lookbooksRes.items.map((lb) => ({
-            id: lb.id,
-            title: lb.title,
-            slug: lb.slug,
-            season: lb.season,
-            coverImageUrl: lb.cover_image_url,
-            itemCount:
-              lb.item_count || lb.attached_products?.length || lb.attached_product_ids?.length || 0,
-            description: lb.description,
-            attachedProductIds:
-              lb.attached_products?.map((p) => p.id) || lb.attached_product_ids || [],
+        if (collectionsRes?.items && collectionsRes.items.length > 0) {
+          const mappedCollections: Collection[] = collectionsRes.items.map((collection) => ({
+            id: collection.id,
+            title: collection.name,
+            slug: collection.slug,
+            category: collection.category,
+            coverImageUrl: collection.cover_image_url,
+            itemCount: collection.product_count,
+            description: collection.description,
+            attachedProductIds: collection.product_ids || [],
           }));
-          setCatalogLookbooks(mappedLb);
+          setCatalogCollections(mappedCollections);
         }
       })
       .finally(() => {
@@ -332,10 +330,10 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
         url: `https://elane.vn/products/${slug}`,
       });
     }
-    if (selectedLookbook) {
+    if (selectedCollection) {
       list.push({
-        label: `BST: ${selectedLookbook.title}`,
-        url: `https://elane.vn/collections/${selectedLookbook.slug || selectedLookbook.id}`,
+        label: `BST: ${selectedCollection.title}`,
+        url: `https://elane.vn/bo-suu-tap/${selectedCollection.slug || selectedCollection.id}`,
       });
     }
     list.push({
@@ -347,14 +345,14 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
       url: "https://m.me/elane.official",
     });
     return list;
-  }, [aiProducts, selectedLookbook]);
+  }, [aiProducts, selectedCollection]);
 
   // Tự động gợi ý link sản phẩm/BST cho CTA nếu chưa nhập link
   useEffect(() => {
-    if (!aiCtaLink && suggestedLinks.length > 0 && (aiProducts.length > 0 || selectedLookbook)) {
+    if (!aiCtaLink && suggestedLinks.length > 0 && (aiProducts.length > 0 || selectedCollection)) {
       setAiCtaLink(suggestedLinks[0].url);
     }
-  }, [suggestedLinks, aiCtaLink, aiProducts.length, selectedLookbook]);
+  }, [suggestedLinks, aiCtaLink, aiProducts.length, selectedCollection]);
   const productMedia: MediaItem[] = aiProducts.flatMap((product) => {
     const urls = product.imageUrls?.length
       ? product.imageUrls
@@ -489,7 +487,7 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
       .join("\n");
 
     const extra = ai.extra.trim();
-    if (!subjects && !extra && !selectedLookbook) {
+    if (!subjects && !extra && !selectedCollection) {
       return toast.error(
         ctx.aiPreset === "product"
           ? "Hãy chọn ít nhất một sản phẩm"
@@ -497,8 +495,8 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
       );
     }
 
-    const bstContext = selectedLookbook
-      ? `Bộ sưu tập đang chọn: ${selectedLookbook.title}${selectedLookbook.season ? ` (${selectedLookbook.season})` : ""}`
+    const bstContext = selectedCollection
+      ? `Bộ sưu tập đang chọn: ${selectedCollection.title}${selectedCollection.category ? ` (${selectedCollection.category})` : ""}`
       : "";
 
     setGenerating(true);
@@ -800,7 +798,7 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
     setAiCta(CTAS[0]);
     setAiCtaLink("");
     setMenu(false);
-    setSelectedLookbook(null);
+    setSelectedCollection(null);
     setTagOpts(DEFAULT_TAG_OPTIONS);
   }
 
@@ -922,8 +920,8 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
                     window.location.href = "/ai-keys";
                   }}
                   products={catalogProducts}
-                  selectedLookbook={selectedLookbook}
-                  onClearLookbook={() => setSelectedLookbook(null)}
+                  selectedCollection={selectedCollection}
+                  onClearCollection={() => setSelectedCollection(null)}
                   featuredFirst={tagOpts.featured}
                   productImages={productMedia}
                   selectedProductImageIds={aiSourceImageIds}
@@ -979,8 +977,8 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
                 setPickerMode("manual");
                 setPickerOpen(true);
               }}
-              lookbook={selectedLookbook}
-              onClearLookbook={() => setSelectedLookbook(null)}
+              collection={selectedCollection}
+              onClearCollection={() => setSelectedCollection(null)}
               media={media}
               onFiles={(f) => void addFiles(f)}
               onRemoveMedia={removeMedia}
@@ -1061,14 +1059,14 @@ export function AiContentPage({ ctx }: { ctx: SocialCtx }) {
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
         products={catalogProducts}
-        lookbooks={catalogLookbooks}
+        collections={catalogCollections}
         selectedIds={pickerMode === "ai" ? ai.picked : manual.productIds}
-        selectedLookbook={selectedLookbook}
+        selectedCollection={selectedCollection}
         singleSelect={false}
         tagOptions={tagOpts}
-        onApply={(selectedIds, pickedProds, pickedLb, opts) => {
+        onApply={(selectedIds, pickedProds, pickedCollection, opts) => {
           setTagOpts(opts);
-          setSelectedLookbook(pickedLb);
+          setSelectedCollection(pickedCollection);
           if (pickedProds.length > 0) {
             setCatalogProducts((prev) => {
               const existingIds = new Set(prev.map((p) => p.id));

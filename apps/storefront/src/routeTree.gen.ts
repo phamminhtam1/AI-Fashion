@@ -18,7 +18,6 @@ import { Route as GioHangRouteImport } from './routes/gio-hang'
 import { Route as GioiThieuRouteImport } from './routes/gioi-thieu'
 import { Route as HuongDanChonSizeRouteImport } from './routes/huong-dan-chon-size'
 import { Route as LienHeRouteImport } from './routes/lien-he'
-import { Route as LookbookRouteImport } from './routes/lookbook'
 import { Route as TaiKhoanRouteImport } from './routes/tai-khoan'
 import { Route as ThanhToanRouteImport } from './routes/thanh-toan'
 import { Route as TimKiemRouteImport } from './routes/tim-kiem'
@@ -74,11 +73,6 @@ const HuongDanChonSizeRoute = HuongDanChonSizeRouteImport.update({
 const LienHeRoute = LienHeRouteImport.update({
   id: '/lien-he',
   path: '/lien-he',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LookbookRoute = LookbookRouteImport.update({
-  id: '/lookbook',
-  path: '/lookbook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TaiKhoanRoute = TaiKhoanRouteImport.update({
@@ -147,7 +141,6 @@ export interface FileRoutesByFullPath {
   '/gioi-thieu': typeof GioiThieuRoute
   '/huong-dan-chon-size': typeof HuongDanChonSizeRoute
   '/lien-he': typeof LienHeRoute
-  '/lookbook': typeof LookbookRoute
   '/tai-khoan': typeof TaiKhoanRoute
   '/thanh-toan': typeof ThanhToanRoute
   '/tim-kiem': typeof TimKiemRoute
@@ -170,7 +163,6 @@ export interface FileRoutesByTo {
   '/gioi-thieu': typeof GioiThieuRoute
   '/huong-dan-chon-size': typeof HuongDanChonSizeRoute
   '/lien-he': typeof LienHeRoute
-  '/lookbook': typeof LookbookRoute
   '/tai-khoan': typeof TaiKhoanRoute
   '/thanh-toan': typeof ThanhToanRoute
   '/tim-kiem': typeof TimKiemRoute
@@ -194,7 +186,6 @@ export interface FileRoutesById {
   '/gioi-thieu': typeof GioiThieuRoute
   '/huong-dan-chon-size': typeof HuongDanChonSizeRoute
   '/lien-he': typeof LienHeRoute
-  '/lookbook': typeof LookbookRoute
   '/tai-khoan': typeof TaiKhoanRoute
   '/thanh-toan': typeof ThanhToanRoute
   '/tim-kiem': typeof TimKiemRoute
@@ -219,7 +210,6 @@ export interface FileRouteTypes {
     | '/gioi-thieu'
     | '/huong-dan-chon-size'
     | '/lien-he'
-    | '/lookbook'
     | '/tai-khoan'
     | '/thanh-toan'
     | '/tim-kiem'
@@ -242,7 +232,6 @@ export interface FileRouteTypes {
     | '/gioi-thieu'
     | '/huong-dan-chon-size'
     | '/lien-he'
-    | '/lookbook'
     | '/tai-khoan'
     | '/thanh-toan'
     | '/tim-kiem'
@@ -265,7 +254,6 @@ export interface FileRouteTypes {
     | '/gioi-thieu'
     | '/huong-dan-chon-size'
     | '/lien-he'
-    | '/lookbook'
     | '/tai-khoan'
     | '/thanh-toan'
     | '/tim-kiem'
@@ -289,7 +277,6 @@ export interface RootRouteChildren {
   GioiThieuRoute: typeof GioiThieuRoute
   HuongDanChonSizeRoute: typeof HuongDanChonSizeRoute
   LienHeRoute: typeof LienHeRoute
-  LookbookRoute: typeof LookbookRoute
   TaiKhoanRoute: typeof TaiKhoanRoute
   ThanhToanRoute: typeof ThanhToanRoute
   TimKiemRoute: typeof TimKiemRoute
@@ -366,13 +353,6 @@ declare module '@tanstack/react-router' {
       path: '/lien-he'
       fullPath: '/lien-he'
       preLoaderRoute: typeof LienHeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lookbook': {
-      id: '/lookbook'
-      path: '/lookbook'
-      fullPath: '/lookbook'
-      preLoaderRoute: typeof LookbookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tai-khoan': {
@@ -465,7 +445,6 @@ const rootRouteChildren: RootRouteChildren = {
   GioiThieuRoute: GioiThieuRoute,
   HuongDanChonSizeRoute: HuongDanChonSizeRoute,
   LienHeRoute: LienHeRoute,
-  LookbookRoute: LookbookRoute,
   TaiKhoanRoute: TaiKhoanRoute,
   ThanhToanRoute: ThanhToanRoute,
   TimKiemRoute: TimKiemRoute,

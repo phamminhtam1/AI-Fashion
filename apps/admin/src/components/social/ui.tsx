@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ArrowDown, ArrowLeft, ArrowUp, Check, Facebook, Globe, Heart, Instagram, Music2, ShoppingBag, Youtube } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,25 @@ export const areaCls = "w-full rounded-xs border border-slate-200 bg-white p-3 t
 export const fmt = (n: number) => n.toLocaleString("en-US");
 export const vnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
 export const usd = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+export function useBodyScrollLock(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    const body = document.body;
+    const previousOverflow = body.style.overflow;
+    const previousPaddingRight = body.style.paddingRight;
+    const currentPaddingRight = Number.parseFloat(getComputedStyle(body).paddingRight) || 0;
+    const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+
+    body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) body.style.paddingRight = `${currentPaddingRight + scrollbarWidth}px`;
+
+    return () => {
+      body.style.overflow = previousOverflow;
+      body.style.paddingRight = previousPaddingRight;
+    };
+  }, [active]);
+}
 
 /* ---------- Logo kênh ---------- */
 const LOGOS: Record<ChannelId, { bg: string; icon: (c: string) => ReactNode }> = {
@@ -109,6 +128,7 @@ export function Field({ label, hint, children }: { label: ReactNode; hint?: Reac
 }
 
 export function Modal({ open, onClose, children, maxW = "max-w-2xl" }: { open: boolean; onClose: () => void; children: ReactNode; maxW?: string }) {
+  useBodyScrollLock(open);
   if (!open) return null;
   return createPortal(
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>

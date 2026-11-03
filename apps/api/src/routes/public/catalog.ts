@@ -1,5 +1,14 @@
 import { Hono } from "hono";
-import { and, desc, eq, sql, inArray, notInArray, or, ilike } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  sql,
+  inArray,
+  notInArray,
+  or,
+  ilike,
+} from "drizzle-orm";
 import {
   categories,
   occasions,
@@ -27,7 +36,11 @@ import { ApiError } from "../../lib/errors.js";
 
 export const publicCatalogRoutes = new Hono<AppVars>();
 
-async function mapProduct(db: AppVars["Variables"]["db"], p: typeof products.$inferSelect, includeCost = false) {
+async function mapProduct(
+  db: AppVars["Variables"]["db"],
+  p: typeof products.$inferSelect,
+  includeCost = false,
+) {
   const topSellers = await weeklyTopSellerIds(db);
   const variants = await db
     .select({
@@ -44,7 +57,10 @@ async function mapProduct(db: AppVars["Variables"]["db"], p: typeof products.$in
       size_label: sizes.label,
     })
     .from(productVariants)
-    .innerJoin(productColorways, eq(productColorways.id, productVariants.colorwayId))
+    .innerJoin(
+      productColorways,
+      eq(productColorways.id, productVariants.colorwayId),
+    )
     .innerJoin(sizes, eq(sizes.id, productVariants.sizeId))
     .where(eq(productVariants.productId, p.id));
 
@@ -69,11 +85,17 @@ async function mapProduct(db: AppVars["Variables"]["db"], p: typeof products.$in
     })
     .from(productMedia)
     .innerJoin(mediaAssets, eq(mediaAssets.id, productMedia.assetId))
-    .leftJoin(productColorways, eq(productColorways.id, productMedia.colorwayId))
+    .leftJoin(
+      productColorways,
+      eq(productColorways.id, productMedia.colorwayId),
+    )
     .where(eq(productMedia.productId, p.id))
     .orderBy(productMedia.sortOrder);
 
-  media.sort((a, b) => Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order);
+  media.sort(
+    (a, b) =>
+      Number(b.is_cover) - Number(a.is_cover) || a.sort_order - b.sort_order,
+  );
 
   const publicCws = buildPublicColorways(
     media.map((m) => ({
@@ -87,35 +109,72 @@ async function mapProduct(db: AppVars["Variables"]["db"], p: typeof products.$in
   const publicById = new Map(publicCws.map((c) => [c.id, c]));
 
   const cat = p.primaryCategoryId
-    ? await db.select().from(categories).where(eq(categories.id, p.primaryCategoryId)).limit(1)
+    ? await db
+        .select()
+        .from(categories)
+        .where(eq(categories.id, p.primaryCategoryId))
+        .limit(1)
     : [];
-  const occIds = await db.select().from(productOccasions).where(eq(productOccasions.productId, p.id));
+  const occIds = await db
+    .select()
+    .from(productOccasions)
+    .where(eq(productOccasions.productId, p.id));
   let occasionSlug: string | null = null;
   if (occIds[0]) {
-    const occ = await db.select().from(occasions).where(eq(occasions.id, occIds[0].occasionId)).limit(1);
+    const occ = await db
+      .select()
+      .from(occasions)
+      .where(eq(occasions.id, occIds[0].occasionId))
+      .limit(1);
     occasionSlug = occ[0]?.slug ?? null;
   }
 
   const prices = sizeSource.map((v) => v.price_vnd);
-  const compare = sizeSource.map((v) => v.compare_at_price_vnd).filter((x): x is number => x != null);
-  const costs = sizeSource.map((v) => v.cost_vnd).filter((x): x is number => x != null);
+  const compare = sizeSource
+    .map((v) => v.compare_at_price_vnd)
+    .filter((x): x is number => x != null);
+  const costs = sizeSource
+    .map((v) => v.cost_vnd)
+    .filter((x): x is number => x != null);
   const minPrice = prices.length ? Math.min(...prices) : 0;
   const maxCompare = compare.length ? Math.max(...compare) : null;
-  const minCost = costs.length ? Math.min(...costs) : (minPrice > 0 ? Math.round(minPrice * 0.3) : null);
+  const minCost = costs.length
+    ? Math.min(...costs)
+    : minPrice > 0
+      ? Math.round(minPrice * 0.3)
+      : null;
 
   let sizeChart: { id: string; name: string; unit: string } | null = null;
   if (p.sizeChartId) {
-    const charts = await db.select().from(sizeCharts).where(eq(sizeCharts.id, p.sizeChartId)).limit(1);
-    if (charts[0]) sizeChart = { id: charts[0].id, name: charts[0].name, unit: charts[0].unit };
+    const charts = await db
+      .select()
+      .from(sizeCharts)
+      .where(eq(sizeCharts.id, p.sizeChartId))
+      .limit(1);
+    if (charts[0])
+      sizeChart = {
+        id: charts[0].id,
+        name: charts[0].name,
+        unit: charts[0].unit,
+      };
   }
 
   const sizeStockMap = new Map<string, number>();
   const variantStockMap = new Map<
     string,
-    { on_hand: number; reserved: number; available: number; reorder_point: number }
+    {
+      on_hand: number;
+      reserved: number;
+      available: number;
+      reorder_point: number;
+    }
   >();
   if (variants.length) {
-    const wh = await db.select().from(warehouses).where(eq(warehouses.code, "MAIN")).limit(1);
+    const wh = await db
+      .select()
+      .from(warehouses)
+      .where(eq(warehouses.code, "MAIN"))
+      .limit(1);
     if (wh[0]) {
       const bals = await db
         .select({
@@ -142,14 +201,17 @@ async function mapProduct(db: AppVars["Variables"]["db"], p: typeof products.$in
     }
   }
 
-  const sizeStocks = [...new Map(sizeSource.map((v) => [v.size_id, v])).values()].map((v) => ({
+  const sizeStocks = [
+    ...new Map(sizeSource.map((v) => [v.size_id, v])).values(),
+  ].map((v) => ({
     size_id: v.size_id,
     size_code: v.size_code,
     size_label: v.size_label,
     qty: sizeStockMap.get(v.size_id) ?? 0,
   }));
 
-  const images = publicCws[0]?.images ?? media.map((m) => mediaPublicUrl(m.object_key));
+  const images =
+    publicCws[0]?.images ?? media.map((m) => mediaPublicUrl(m.object_key));
 
   return {
     id: p.id,
@@ -189,20 +251,34 @@ async function mapProduct(db: AppVars["Variables"]["db"], p: typeof products.$in
       hex: null as string | null,
       code: c.id,
     })),
-    sizes: [...new Map(sizeSource.map((v) => [v.size_code, { code: v.size_code, label: v.size_label }])).values()],
+    sizes: [
+      ...new Map(
+        sizeSource.map((v) => [
+          v.size_code,
+          { code: v.size_code, label: v.size_label },
+        ]),
+      ).values(),
+    ],
     size_stocks: sizeStocks,
     stock_total: sizeStocks.reduce((n, s) => n + s.qty, 0),
     variants: variants.map((v) => {
       const stock = variantStockMap.get(v.id);
       const label = `Màu ${v.colorway_sort + 1}`;
       const pubCw = publicById.get(v.colorway_id);
-      const variantImage = pubCw?.thumbnail ?? pubCw?.images?.[0] ?? images[0] ?? null;
+      const variantImage =
+        pubCw?.thumbnail ?? pubCw?.images?.[0] ?? images[0] ?? null;
       return {
         id: v.id,
         sku: v.sku,
         price_vnd: v.price_vnd,
         compare_at_price_vnd: v.compare_at_price_vnd,
-        ...(includeCost ? { cost_vnd: v.cost_vnd ?? (v.price_vnd > 0 ? Math.round(v.price_vnd * 0.3) : null) } : {}),
+        ...(includeCost
+          ? {
+              cost_vnd:
+                v.cost_vnd ??
+                (v.price_vnd > 0 ? Math.round(v.price_vnd * 0.3) : null),
+            }
+          : {}),
         status: v.status,
         colorway_id: v.colorway_id,
         size_id: v.size_id,
@@ -250,14 +326,20 @@ publicCatalogRoutes.get("/products", async (c) => {
   let ids: string[] | null = null;
   const idsQuery = c.req.query("ids");
   if (idsQuery) {
-    const parsed = idsQuery.split(",").map((s) => s.trim()).filter(Boolean);
+    const parsed = idsQuery
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
     if (parsed.length > 0) {
       ids = parsed;
     }
   }
   const slugsQuery = c.req.query("slugs");
   if (slugsQuery) {
-    const parsedSlugs = slugsQuery.split(",").map((s) => s.trim()).filter(Boolean);
+    const parsedSlugs = slugsQuery
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
     if (parsedSlugs.length > 0) {
       const slugProds = await db
         .select({ id: products.id })
@@ -282,18 +364,33 @@ publicCatalogRoutes.get("/products", async (c) => {
       }
     }
     const [links, primary] = await Promise.all([
-      db.select().from(productCategories).where(inArray(productCategories.categoryId, catIds)),
+      db
+        .select()
+        .from(productCategories)
+        .where(inArray(productCategories.categoryId, catIds)),
       db
         .select({ id: products.id })
         .from(products)
         .where(inArray(products.primaryCategoryId, catIds)),
     ]);
-    ids = [...new Set([...links.map((l) => l.productId), ...primary.map((p) => p.id)])];
+    ids = [
+      ...new Set([
+        ...links.map((l) => l.productId),
+        ...primary.map((p) => p.id),
+      ]),
+    ];
   }
   if (occasion) {
-    const occ = await db.select().from(occasions).where(eq(occasions.slug, occasion)).limit(1);
+    const occ = await db
+      .select()
+      .from(occasions)
+      .where(eq(occasions.slug, occasion))
+      .limit(1);
     if (!occ[0]) return c.json({ items: [], page, limit, total: 0 });
-    const links = await db.select().from(productOccasions).where(eq(productOccasions.occasionId, occ[0].id));
+    const links = await db
+      .select()
+      .from(productOccasions)
+      .where(eq(productOccasions.occasionId, occ[0].id));
     const set = new Set(links.map((l) => l.productId));
     ids = ids ? ids.filter((id) => set.has(id)) : [...set];
   }
@@ -349,12 +446,18 @@ publicCatalogRoutes.get("/products", async (c) => {
   let orderByClause = [desc(products.publishedAt)];
   if (listing === "hang-moi" && accessoryCatIds.length > 0) {
     orderByClause = [
-      sql`case when ${products.primaryCategoryId} in (${sql.join(accessoryCatIds.map((id) => sql`${id}`), sql`, `)}) then 1 else 0 end`,
+      sql`case when ${products.primaryCategoryId} in (${sql.join(
+        accessoryCatIds.map((id) => sql`${id}`),
+        sql`, `,
+      )}) then 1 else 0 end`,
       desc(products.publishedAt),
     ];
   } else if (listing === "ban-chay" && topSellerIds.length > 0) {
     orderByClause = [
-      sql`case when ${products.id} in (${sql.join(topSellerIds.map((id) => sql`${id}`), sql`, `)}) then 0 else 1 end`,
+      sql`case when ${products.id} in (${sql.join(
+        topSellerIds.map((id) => sql`${id}`),
+        sql`, `,
+      )}) then 0 else 1 end`,
       desc(products.publishedAt),
     ];
   }
@@ -390,7 +493,13 @@ publicCatalogRoutes.get("/products", async (c) => {
 publicCatalogRoutes.get("/products/:id/reviews", async (c) => {
   const db = c.get("db");
   const productId = c.req.param("id");
-  const product = (await db.select({ id: products.id }).from(products).where(eq(products.id, productId)).limit(1))[0];
+  const product = (
+    await db
+      .select({ id: products.id })
+      .from(products)
+      .where(eq(products.id, productId))
+      .limit(1)
+  )[0];
   if (!product) throw new ApiError(404, "not_found", "Không tìm thấy sản phẩm");
 
   const rows = await db
@@ -404,23 +513,46 @@ publicCatalogRoutes.get("/products/:id/reviews", async (c) => {
     })
     .from(productReviews)
     .innerJoin(customers, eq(customers.id, productReviews.customerId))
-    .where(and(eq(productReviews.productId, productId), eq(productReviews.status, "published")))
+    .where(
+      and(
+        eq(productReviews.productId, productId),
+        eq(productReviews.status, "published"),
+      ),
+    )
     .orderBy(desc(productReviews.createdAt))
     .limit(50);
   const summary = await db
-    .select({ count: sql<number>`count(*)::int`, average: sql<number>`coalesce(avg(${productReviews.rating}), 0)::float` })
+    .select({
+      count: sql<number>`count(*)::int`,
+      average: sql<number>`coalesce(avg(${productReviews.rating}), 0)::float`,
+    })
     .from(productReviews)
-    .where(and(eq(productReviews.productId, productId), eq(productReviews.status, "published")));
+    .where(
+      and(
+        eq(productReviews.productId, productId),
+        eq(productReviews.status, "published"),
+      ),
+    );
   return c.json({
-    summary: { count: summary[0]?.count ?? 0, average: Number((summary[0]?.average ?? 0).toFixed(1)) },
-    items: rows.map((r) => ({ ...r, customer_name: r.customer_name || "Khách hàng", verified: true })),
+    summary: {
+      count: summary[0]?.count ?? 0,
+      average: Number((summary[0]?.average ?? 0).toFixed(1)),
+    },
+    items: rows.map((r) => ({
+      ...r,
+      customer_name: r.customer_name || "Khách hàng",
+      verified: true,
+    })),
   });
 });
 
 publicCatalogRoutes.get("/products/:slug", async (c) => {
   const db = c.get("db");
   const slug = c.req.param("slug");
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      slug,
+    );
   const condition = isUuid
     ? or(eq(products.slug, slug), eq(products.id, slug))
     : eq(products.slug, slug);
@@ -440,7 +572,11 @@ publicCatalogRoutes.get("/products/:slug", async (c) => {
 
 publicCatalogRoutes.get("/categories", async (c) => {
   const db = c.get("db");
-  const rows = await db.select().from(categories).where(eq(categories.status, "active")).orderBy(categories.sortOrder);
+  const rows = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.status, "active"))
+    .orderBy(categories.sortOrder);
   return c.json({
     items: rows.map((r) => ({
       id: r.id,
@@ -456,7 +592,54 @@ publicCatalogRoutes.get("/categories", async (c) => {
 publicCatalogRoutes.get("/occasions", async (c) => {
   const db = c.get("db");
   const rows = await db.select().from(occasions);
-  return c.json({ items: rows.map((r) => ({ code: r.code, slug: r.slug, name: r.name })) });
+  return c.json({
+    items: rows.map((r) => ({ code: r.code, slug: r.slug, name: r.name })),
+  });
+});
+
+publicCatalogRoutes.get("/collections", async (c) => {
+  const db = c.get("db");
+  const rows = await db
+    .select()
+    .from(collections)
+    .where(eq(collections.status, "published"))
+    .orderBy(collections.sortOrder, collections.createdAt);
+  const items = await Promise.all(
+    rows.map(async (row) => {
+      let coverImageUrl = row.coverImageUrl;
+      if (!coverImageUrl && row.coverAssetId) {
+        const [asset] = await db
+          .select({ objectKey: mediaAssets.objectKey })
+          .from(mediaAssets)
+          .where(eq(mediaAssets.id, row.coverAssetId))
+          .limit(1);
+        if (asset) coverImageUrl = mediaPublicUrl(asset.objectKey);
+      }
+      return {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        tagline: row.tagline,
+        category: row.category,
+        description: row.description,
+        cover_image_url: coverImageUrl,
+        hero_image_url: row.heroImageUrl,
+        sort_order: row.sortOrder,
+        is_featured: row.isFeatured,
+      };
+    }),
+  );
+  return c.json({
+    items,
+    categories: [
+      "ÁO",
+      "ĐẦM",
+      "CHÂN VÁY",
+      "QUẦN",
+      "SPECIAL RUNWAY COLLECTION",
+      "PHỤ KIỆN",
+    ],
+  });
 });
 
 publicCatalogRoutes.get("/collections/:slug", async (c) => {
@@ -467,7 +650,17 @@ publicCatalogRoutes.get("/collections/:slug", async (c) => {
     .from(collections)
     .where(and(eq(collections.slug, slug), eq(collections.status, "published")))
     .limit(1);
-  if (!rows[0]) throw new ApiError(404, "not_found", "Không tìm thấy bộ sưu tập");
+  if (!rows[0])
+    throw new ApiError(404, "not_found", "Không tìm thấy bộ sưu tập");
+  let coverImageUrl = rows[0].coverImageUrl;
+  if (!coverImageUrl && rows[0].coverAssetId) {
+    const [asset] = await db
+      .select({ objectKey: mediaAssets.objectKey })
+      .from(mediaAssets)
+      .where(eq(mediaAssets.id, rows[0].coverAssetId))
+      .limit(1);
+    if (asset) coverImageUrl = mediaPublicUrl(asset.objectKey);
+  }
   const links = await db
     .select()
     .from(collectionProducts)
@@ -478,14 +671,23 @@ publicCatalogRoutes.get("/collections/:slug", async (c) => {
     const p = await db
       .select()
       .from(products)
-      .where(and(eq(products.id, link.productId), eq(products.status, "published")))
+      .where(
+        and(eq(products.id, link.productId), eq(products.status, "published")),
+      )
       .limit(1);
     if (p[0]) items.push(await mapProduct(db, p[0]));
   }
   return c.json({
+    id: rows[0].id,
     slug: rows[0].slug,
     name: rows[0].name,
+    tagline: rows[0].tagline,
+    category: rows[0].category,
     description: rows[0].description,
+    cover_image_url: coverImageUrl,
+    hero_image_url: rows[0].heroImageUrl,
+    gallery_images: rows[0].galleryImages ?? [],
+    is_featured: rows[0].isFeatured,
     items,
   });
 });

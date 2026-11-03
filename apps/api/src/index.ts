@@ -7,7 +7,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { env } from "./env.js";
 import { ApiError, ensureRequestId, errorBody } from "./lib/errors.js";
-import { attachDb, attachUser, attachCustomer, type AppVars } from "./middleware/auth.js";
+import {
+  attachDb,
+  attachUser,
+  attachCustomer,
+  type AppVars,
+} from "./middleware/auth.js";
 import { adminAuthRoutes } from "./routes/admin/auth.js";
 import { adminProductRoutes } from "./routes/admin/products.js";
 import { adminInventoryRoutes } from "./routes/admin/inventory.js";
@@ -20,9 +25,13 @@ import { adminCustomerRoutes } from "./routes/admin/customers.js";
 import { adminOrderRoutes } from "./routes/admin/orders.js";
 import { adminDiscountCodeRoutes } from "./routes/admin/discount-codes.js";
 import { adminElaneWomanRoutes } from "./routes/admin/elane-woman.js";
-import { adminLookbookRoutes } from "./routes/admin/lookbooks.js";
+import { adminCollectionRoutes } from "./routes/admin/collections.js";
 import { adminAiKeyRoutes } from "./routes/admin/ai-keys.js";
-import { adminSocialRoutes, instagramWebhookRoutes, publishDueSocialContent } from "./routes/admin/social.js";
+import {
+  adminSocialRoutes,
+  instagramWebhookRoutes,
+  publishDueSocialContent,
+} from "./routes/admin/social.js";
 import { storeAuthRoutes } from "./routes/store/auth.js";
 import { storeCouponRoutes } from "./routes/store/coupons.js";
 import { storeTryOnRoutes } from "./routes/store/try-on.js";
@@ -104,7 +113,7 @@ app.route("/api/v1/admin/customers", adminCustomerRoutes);
 app.route("/api/v1/admin/orders", adminOrderRoutes);
 app.route("/api/v1/admin/discount-codes", adminDiscountCodeRoutes);
 app.route("/api/v1/admin/elane-woman", adminElaneWomanRoutes);
-app.route("/api/v1/admin/lookbooks", adminLookbookRoutes);
+app.route("/api/v1/admin/collections", adminCollectionRoutes);
 app.route("/api/v1/admin/ai-keys", adminAiKeyRoutes);
 app.route("/api/v1/admin", adminOpsRoutes);
 
@@ -128,7 +137,10 @@ app.onError((err, c) => {
     return c.json(errorBody(err, rid), err.status as 400);
   }
   console.error(err);
-  return c.json({ code: "internal_error", message: "Lỗi máy chủ", request_id: rid }, 500);
+  return c.json(
+    { code: "internal_error", message: "Lỗi máy chủ", request_id: rid },
+    500,
+  );
 });
 
 console.log(`ÉLANE API listening on ${env.apiHost}:${env.apiPort}`);
